@@ -194,6 +194,8 @@ img { display: block; max-width: 100%; }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-size: 36px;
+  line-height: 36px;
 }
 
 .nav-links {
@@ -1030,6 +1032,148 @@ img { display: block; max-width: 100%; }
 
 @media (max-width: 768px) {
   .automation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================================
+   PRICING
+   ===================================================== */
+
+#pricing {
+  padding: 6rem 0;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 3rem 0 2rem;
+  align-items: start;
+}
+
+.pricing-card {
+  padding: 2.5rem 2rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.35);
+}
+
+.pricing-popular {
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 20px 40px rgba(99,102,241,0.15);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.pricing-tier {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.pricing-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pricing-setup {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.pricing-setup-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pricing-monthly {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-top: -0.5rem;
+}
+
+.pricing-monthly strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.pricing-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex: 1;
+}
+
+.pricing-features li {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pricing-features .check {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.pricing-btn {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.pricing-note {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .pricing-grid {
     grid-template-columns: 1fr;
   }
 }
