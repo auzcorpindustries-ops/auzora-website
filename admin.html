@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auzora Admin</title>
+<style>
+  :root {
+    --bg: #0b0e18;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e293b;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --blue: #38bdf8;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* AUTH SCREEN */
+  #auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px; width: 100%; max-width: 380px; text-align: center;
+  }
+  .auth-logo { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .auth-box input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 14px;
+    margin-bottom: 14px; outline: none;
+  }
+  .auth-box input:focus { border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .auth-error { color: var(--red); font-size: 12px; margin-top: 10px; }
+
+  /* MAIN LAYOUT */
+  #app { display: none; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 24px 0;
+  }
+  .sidebar-logo {
+    font-size: 20px; font-weight: 800; color: var(--accent);
+    padding: 0 20px 24px; border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo span { color: var(--muted); font-size: 11px; font-weight: 400; display: block; margin-top: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+    font-size: 13px; color: var(--muted); cursor: pointer; border-radius: 0;
+    transition: all 0.15s; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(99,102,241,0.08); }
+  .nav-icon { font-size: 16px; }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
+  .logout-btn { font-size: 12px; color: var(--muted); cursor: pointer; }
+  .logout-btn:hover { color: var(--red); }
+
+  .main { margin-left: 220px; padding: 32px; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 32px; font-weight: 700; margin-top: 6px; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .table-toolbar {
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-toolbar h2 { font-size: 15px; font-weight: 600; flex: 1; }
+  .filter-select, .search-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 13px; outline: none;
+  }
+  .filter-select:focus, .search-input:focus { border-color: var(--accent); }
+  .btn-sm {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-sm:hover { background: var(--accent-hover); }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted);
+       padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 14px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .client-name { font-weight: 600; }
+  .client-email { font-size: 12px; color: var(--muted); }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-active { background: rgba(34,197,94,0.12); color: var(--green); }
+  .badge-pending { background: rgba(245,158,11,0.12); color: var(--yellow); }
+  .badge-inactive { background: rgba(100,116,139,0.15); color: var(--muted); }
+  .badge-cancelled { background: rgba(239,68,68,0.12); color: var(--red); }
+  .badge-starter { background: rgba(56,189,248,0.12); color: var(--blue); }
+  .badge-growth { background: rgba(167,139,250,0.12); color: var(--purple); }
+  .badge-full { background: rgba(99,102,241,0.15); color: var(--accent-hover); }
+
+  .action-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 10px; font-size: 12px; color: var(--muted); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .n8n-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .n8n-yes { background: var(--green); }
+  .n8n-no { background: var(--red); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 24px;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; align-items: center; padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 24px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.single { grid-template-columns: 1fr; }
+  .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; outline: none;
+    font-family: var(--font);
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .modal-footer {
+    display: flex; gap: 10px; justify-content: flex-end; padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-ghost {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer;
+  }
+  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+  .btn-save {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-save:hover { background: var(--accent-hover); }
+
+  /* DETAIL SECTIONS */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .detail-item { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .detail-value { font-size: 14px; font-weight: 500; margin-top: 4px; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Auzora</div>
+    <div class="auth-sub">Admin Portal</div>
+    <input type="password" id="admin-pass" placeholder="Admin password" />
+    <button class="btn-primary" onclick="login()">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo">Auzora <span>Admin Portal</span></div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('clients')" id="nav-clients">
+      <span class="nav-icon">👥</span> Clients
+    </div>
+    <div class="nav-item" onclick="showPage('add')" id="nav-add">
+      <span class="nav-icon">➕</span> Add Client
+    </div>
+    <div class="sidebar-footer">
+      <div class="logout-btn" onclick="logout()">⏏ Sign out</div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Overview of all Auzora clients</p>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Clients</div><div class="stat-value" id="stat-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--green)" id="stat-active">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Setup</div><div class="stat-value" style="color:var(--yellow)" id="stat-pending">—</div></div>
+        <div class="stat-card"><div class="stat-label">n8n Configured</div><div class="stat-value" style="color:var(--blue)" id="stat-n8n">—</div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar"><h2>Recent Clients</h2></div>
+        <div id="dashboard-table-body"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- CLIENTS PAGE -->
+    <div class="page" id="page-clients">
+      <div class="page-header">
+        <h1>Clients</h1>
+        <p>Manage all client accounts</p>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>All Clients</h2>
+          <input class="search-input" type="text" placeholder="Search..." id="client-search" oninput="filterClients()" />
+          <select class="filter-select" id="status-filter" onchange="filterClients()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button class="btn-sm" onclick="showPage('add')">+ Add Client</button>
+        </div>
+        <div id="clients-table-body"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ADD CLIENT PAGE -->
+    <div class="page" id="page-add">
+      <div class="page-header">
+        <h1>Add Client</h1>
+        <p>Manually provision a new client account</p>
+      </div>
+      <div class="table-card" style="padding: 28px; max-width: 580px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Business Name *</label>
+            <input type="text" id="new-businessName" placeholder="Acme LLC" />
+          </div>
+          <div class="form-group">
+            <label>Contact Name</label>
+            <input type="text" id="new-contactName" placeholder="Jane Smith" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="new-email" placeholder="jane@acme.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="new-phone" placeholder="555-000-0000" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Plan</label>
+            <select id="new-plan">
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="full">Full Suite</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Industry</label>
+            <input type="text" id="new-industry" placeholder="Real Estate" />
+          </div>
+        </div>
+        <div class="form-row single" style="margin-bottom: 20px;">
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="new-notes" placeholder="Any setup notes..."></textarea>
+          </div>
+        </div>
+        <button class="btn-save" style="width:100%; padding: 12px;" onclick="createClient()">Create Client</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- CLIENT DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Client Details</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn-save" onclick="saveClientEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+const ADMIN_PASS = 'auzora2026'; // change this
+let allClients = [];
+let editingClientId = null;
+
+// AUTH
+function login() {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASS) {
+    localStorage.setItem('auzora_auth', '1');
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadAll();
+  } else {
+    document.getElementById('auth-error').textContent = 'Incorrect password.';
+  }
+}
+function logout() {
+  localStorage.removeItem('auzora_auth');
+  location.reload();
+}
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+if (localStorage.getItem('auzora_auth') === '1') {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setTimeout(loadAll, 0);
+}
+
+// NAVIGATION
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+// TOAST
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// API CALLS
+async function loadAll() {
+  try {
+    const res = await fetch(`${API}/clients`);
+    const data = await res.json();
+    allClients = data.clients || [];
+    renderStats();
+    renderDashboardTable();
+    renderClientsTable(allClients);
+  } catch(e) {
+    toast('Failed to load clients', 'error');
+  }
+}
+
+function renderStats() {
+  document.getElementById('stat-total').textContent = allClients.length;
+  document.getElementById('stat-active').textContent = allClients.filter(c=>c.status==='active').length;
+  document.getElementById('stat-pending').textContent = allClients.filter(c=>c.status==='pending').length;
+  document.getElementById('stat-n8n').textContent = allClients.filter(c=>c.n8nConfigured).length;
+}
+
+function planBadge(plan) {
+  if (!plan) return '';
+  const cls = plan === 'full' ? 'badge-full' : plan === 'growth' ? 'badge-growth' : 'badge-starter';
+  const label = plan === 'full' ? 'Full Suite' : plan.charAt(0).toUpperCase() + plan.slice(1);
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+function statusBadge(status) {
+  const cls = {active:'badge-active',pending:'badge-pending',inactive:'badge-inactive',cancelled:'badge-cancelled'}[status] || 'badge-inactive';
+  return `<span class="badge ${cls}">${status||'unknown'}</span>`;
+}
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+}
+
+function clientRow(c) {
+  const n8nDot = c.n8nConfigured
+    ? '<span class="n8n-dot n8n-yes"></span>Yes'
+    : '<span class="n8n-dot n8n-no"></span>No';
+  return `<tr>
+    <td><div class="client-name">${c.businessName||'—'}</div><div class="client-email">${c.email||''}</div></td>
+    <td>${statusBadge(c.status)}</td>
+    <td>${planBadge(c.plan)}</td>
+    <td>${c.industry||'—'}</td>
+    <td style="font-size:12px">${n8nDot}</td>
+    <td style="color:var(--muted);font-size:12px">${formatDate(c.createdAt)}</td>
+    <td><button class="action-btn" onclick="openDetail('${c.clientId}')">View →</button></td>
+  </tr>`;
+}
+
+function tableWrap(rows) {
+  if (!rows.length) return `<div class="empty"><div class="empty-icon">📭</div><h3>No clients yet</h3><p>Add your first client to get started.</p></div>`;
+  return `<table><thead><tr>
+    <th>Client</th><th>Status</th><th>Plan</th><th>Industry</th><th>n8n</th><th>Added</th><th></th>
+  </tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function renderDashboardTable() {
+  const rows = [...allClients].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(clientRow);
+  document.getElementById('dashboard-table-body').innerHTML = tableWrap(rows);
+}
+
+function renderClientsTable(clients) {
+  const rows = clients.map(clientRow);
+  document.getElementById('clients-table-body').innerHTML = tableWrap(rows);
+}
+
+function filterClients() {
+  const search = document.getElementById('client-search').value.toLowerCase();
+  const status = document.getElementById('status-filter').value;
+  const filtered = allClients.filter(c => {
+    const matchSearch = !search || (c.businessName||'').toLowerCase().includes(search) || (c.email||'').toLowerCase().includes(search);
+    const matchStatus = !status || c.status === status;
+    return matchSearch && matchStatus;
+  });
+  renderClientsTable(filtered);
+}
+
+// DETAIL MODAL
+async function openDetail(clientId) {
+  editingClientId = clientId;
+  const c = allClients.find(x => x.clientId === clientId);
+  if (!c) return;
+
+  document.getElementById('modal-title').textContent = c.businessName;
+  document.getElementById('detail-modal').style.display = 'flex';
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(c.status)}</div></div>
+      <div class="detail-item"><div class="detail-label">Plan</div><div class="detail-value">${planBadge(c.plan)}</div></div>
+      <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value" style="font-size:13px">${c.email||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value" style="font-size:13px">${c.phone||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Contact</div><div class="detail-value" style="font-size:13px">${c.contactName||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Industry</div><div class="detail-value" style="font-size:13px">${c.industry||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Added</div><div class="detail-value" style="font-size:13px">${formatDate(c.createdAt)}</div></div>
+      <div class="detail-item"><div class="detail-label">n8n Configured</div><div class="detail-value" style="font-size:13px">${c.n8nConfigured ? '✅ Yes' : '❌ No'}</div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Edit</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="edit-status">
+            <option value="pending" ${c.status==='pending'?'selected':''}>Pending</option>
+            <option value="active" ${c.status==='active'?'selected':''}>Active</option>
+            <option value="inactive" ${c.status==='inactive'?'selected':''}>Inactive</option>
+            <option value="cancelled" ${c.status==='cancelled'?'selected':''}>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>n8n Configured</label>
+          <select id="edit-n8n">
+            <option value="false" ${!c.n8nConfigured?'selected':''}>No</option>
+            <option value="true" ${c.n8nConfigured?'selected':''}>Yes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="edit-notes">${c.notes||''}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('detail-modal').style.display = 'none';
+  editingClientId = null;
+}
+
+async function saveClientEdit() {
+  if (!editingClientId) return;
+  const updates = {
+    status: document.getElementById('edit-status').value,
+    n8nConfigured: document.getElementById('edit-n8n').value === 'true',
+    notes: document.getElementById('edit-notes').value
+  };
+  try {
+    const res = await fetch(`${API}/clients/${editingClientId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error('Update failed');
+    closeModal();
+    toast('Client updated');
+    loadAll();
+  } catch(e) {
+    toast('Failed to update', 'error');
+  }
+}
+
+// CREATE CLIENT
+async function createClient() {
+  const businessName = document.getElementById('new-businessName').value.trim();
+  const email = document.getElementById('new-email').value.trim();
+  if (!businessName || !email) { toast('Business name and email are required', 'error'); return; }
+
+  const body = {
+    businessName,
+    email,
+    contactName: document.getElementById('new-contactName').value.trim(),
+    phone: document.getElementById('new-phone').value.trim(),
+    plan: document.getElementById('new-plan').value,
+    industry: document.getElementById('new-industry').value.trim(),
+    notes: document.getElementById('new-notes').value.trim()
+  };
+
+  try {
+    const res = await fetch(`${API}/clients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error();
+    toast('Client created!');
+    ['new-businessName','new-contactName','new-email','new-phone','new-industry','new-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('new-plan').value = 'starter';
+    loadAll();
+    showPage('clients');
+  } catch(e) {
+    toast('Failed to create client', 'error');
+  }
+}
+</script>
+</body>
+</html>
