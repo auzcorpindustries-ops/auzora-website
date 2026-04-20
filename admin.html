@@ -753,7 +753,6 @@ const VOICES = [
   { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational', emoji: '💬' },
   { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',      emoji: '🪸' },
   { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',   emoji: '🌿' },
-  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',     emoji: '🎵' },
 ];
 
 let currentPersonaClient = null;
@@ -791,18 +790,47 @@ function renderPersonaForm(c) {
   markClean();
 }
 
+let activeAudio = null;
+
 function renderVoiceGrid(selected) {
   document.getElementById('voice-grid').innerHTML = VOICES.map(v => `
-    <div onclick="selectVoice('${v.id}')" id="voice-card-${v.id}" style="
+    <div id="voice-card-${v.id}" style="
       border:2px solid ${v.id===selected?'var(--accent)':'var(--border)'};
       background:${v.id===selected?'rgba(99,102,241,0.08)':'var(--surface2)'};
-      border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;
-    ">
-      <div style="font-size:20px;margin-bottom:4px;">${v.emoji}</div>
+      border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;position:relative;
+    " onclick="selectVoice('${v.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:18px;">${v.emoji}</span>
+        <button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
+          background:rgba(255,255,255,0.07);border:1px solid var(--border);
+          border-radius:6px;width:26px;height:26px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;font-size:12px;
+          color:var(--text);flex-shrink:0;transition:background 0.15s;
+        ">▶</button>
+      </div>
       <div style="font-size:13px;font-weight:700;">${v.label}</div>
       <div style="font-size:11px;color:var(--muted);">${v.desc}</div>
     </div>
   `).join('');
+}
+
+function playVoice(id) {
+  // Stop anything currently playing
+  if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; }
+  // Reset all play buttons
+  VOICES.forEach(v => {
+    const btn = document.getElementById(`play-btn-${v.id}`);
+    if (btn) btn.textContent = '▶';
+  });
+
+  const btn = document.getElementById(`play-btn-${id}`);
+  const audio = new Audio(`/assets/voice-samples/${id}.mp3`);
+  activeAudio = audio;
+
+  btn.textContent = '⏸';
+  audio.play();
+  audio.onended = () => { btn.textContent = '▶'; activeAudio = null; };
+  audio.onerror = () => { btn.textContent = '▶'; showToast('Could not load sample', 'error'); };
 }
 
 function selectVoice(id) {
