@@ -239,6 +239,9 @@
     <div class="nav-item" onclick="showPage('costs')" id="nav-costs">
       <span class="nav-icon">💰</span> Cost Estimator
     </div>
+    <div class="nav-item" onclick="showPage('persona')" id="nav-persona">
+      <span class="nav-icon">🎙️</span> Voice & Persona
+    </div>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">⏏ Sign out</div>
     </div>
@@ -416,6 +419,106 @@
       </div>
     </div>
 
+    <!-- VOICE & PERSONA PAGE -->
+    <div class="page" id="page-persona">
+      <div class="page-header">
+        <h1>🎙️ Voice & Persona</h1>
+        <p>Configure your Atlas AI phone agent's voice, personality, and knowledge</p>
+      </div>
+
+      <!-- Client selector -->
+      <div class="table-card" style="padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">Atlas AI Client:</span>
+        <select id="persona-client-select" class="filter-select" style="min-width:240px;" onchange="loadPersonaClient()">
+          <option value="">Loading...</option>
+        </select>
+        <span id="persona-save-status" style="font-size:12px;color:var(--green);display:none;">✓ Saved</span>
+      </div>
+
+      <div id="persona-form" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+          <!-- LEFT COLUMN -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <!-- Voice selector -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">AI Voice</div>
+              <div id="voice-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+            </div>
+
+            <!-- Basic info -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">Business Info</div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Business Name</label>
+                <input type="text" id="p-business-name" placeholder="Acme Hair Studio" />
+              </div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Agent Name</label>
+                <input type="text" id="p-agent-name" placeholder="Alex" />
+              </div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Office Hours</label>
+                <input type="text" id="p-office-hours" placeholder="Monday–Friday, 9 AM to 6 PM Central" />
+              </div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Booking URL</label>
+                <input type="text" id="p-booking-url" placeholder="https://calendly.com/yourbusiness" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Phone</label>
+                <input type="text" id="p-escalation-phone" placeholder="+15555550100" />
+              </div>
+            </div>
+
+            <!-- Services -->
+            <div class="table-card" style="padding:24px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Services</div>
+                <button class="btn-sm" style="padding:5px 10px;font-size:11px;" onclick="addService()">+ Add</button>
+              </div>
+              <div id="services-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <!-- System Prompt -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">Agent Instructions</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Override the default AI prompt. Leave blank to use the auto-generated prompt based on your business info.</div>
+              <div class="form-group">
+                <textarea id="p-system-prompt" rows="10" placeholder="You are a friendly receptionist for [business]. Keep responses brief and professional..."></textarea>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;">💡 Leave blank to auto-generate from your business info above</div>
+            </div>
+
+            <!-- FAQs -->
+            <div class="table-card" style="padding:24px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">FAQs</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:3px;">The AI will answer these when callers ask</div>
+                </div>
+                <button class="btn-sm" style="padding:5px 10px;font-size:11px;" onclick="addFaq()">+ Add FAQ</button>
+              </div>
+              <div id="faq-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Save bar -->
+        <div style="margin-top:20px;display:flex;align-items:center;justify-content:flex-end;gap:12px;">
+          <span id="persona-unsaved" style="font-size:12px;color:var(--yellow);display:none;">● Unsaved changes</span>
+          <button class="btn-save" style="padding:12px 28px;font-size:14px;" onclick="savePersona()">💾 Save &amp; Apply</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -471,6 +574,7 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'persona') initPersonaPage();
 }
 
 // TOAST
@@ -636,7 +740,191 @@ async function saveClientEdit() {
 }
 
 // CREATE CLIENT
-// COST ESTIMATOR
+// ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
+const ATLAS_API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+
+const VOICES = [
+  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',        emoji: '🎙️' },
+  { id: 'nova',    label: 'Nova',    desc: 'Warm & friendly',         emoji: '☀️' },
+  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',             emoji: '✨' },
+  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',   emoji: '🎧' },
+  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & authoritative',    emoji: '💎' },
+  { id: 'fable',   label: 'Fable',   desc: 'Expressive & engaging',   emoji: '📖' },
+  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational', emoji: '💬' },
+  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',      emoji: '🪸' },
+  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',   emoji: '🌿' },
+  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',     emoji: '🎵' },
+];
+
+let currentPersonaClient = null;
+
+async function initPersonaPage() {
+  const sel = document.getElementById('persona-client-select');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  const res = await fetch(`${ATLAS_API}/atlas/clients`);
+  const data = await res.json();
+  const clients = data.clients || [];
+  sel.innerHTML = clients.map(c => `<option value="${c.client_id}">${c.business_name} (${c.twilio_number || 'no #'})</option>`).join('');
+  if (clients.length) { sel.value = clients[0].client_id; loadPersonaClient(); }
+}
+
+async function loadPersonaClient() {
+  const id = document.getElementById('persona-client-select').value;
+  if (!id) return;
+  const res = await fetch(`${ATLAS_API}/atlas/clients/${id}`);
+  const data = await res.json();
+  currentPersonaClient = data.client;
+  renderPersonaForm(currentPersonaClient);
+  document.getElementById('persona-form').style.display = 'block';
+}
+
+function renderPersonaForm(c) {
+  document.getElementById('p-business-name').value = c.business_name || '';
+  document.getElementById('p-agent-name').value = c.agent_name || '';
+  document.getElementById('p-office-hours').value = c.office_hours || '';
+  document.getElementById('p-booking-url').value = c.booking_url || '';
+  document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
+  document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
+  renderVoiceGrid(c.voice || 'alloy');
+  renderServices(c.services || []);
+  renderFaqs(c.faqs || []);
+  markClean();
+}
+
+function renderVoiceGrid(selected) {
+  document.getElementById('voice-grid').innerHTML = VOICES.map(v => `
+    <div onclick="selectVoice('${v.id}')" id="voice-card-${v.id}" style="
+      border:2px solid ${v.id===selected?'var(--accent)':'var(--border)'};
+      background:${v.id===selected?'rgba(99,102,241,0.08)':'var(--surface2)'};
+      border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;
+    ">
+      <div style="font-size:20px;margin-bottom:4px;">${v.emoji}</div>
+      <div style="font-size:13px;font-weight:700;">${v.label}</div>
+      <div style="font-size:11px;color:var(--muted);">${v.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectVoice(id) {
+  VOICES.forEach(v => {
+    const card = document.getElementById(`voice-card-${v.id}`);
+    if (!card) return;
+    card.style.border = v.id===id ? '2px solid var(--accent)' : '2px solid var(--border)';
+    card.style.background = v.id===id ? 'rgba(99,102,241,0.08)' : 'var(--surface2)';
+  });
+  markDirty();
+}
+
+function getSelectedVoice() {
+  return VOICES.find(v => {
+    const card = document.getElementById(`voice-card-${v.id}`);
+    return card && card.style.border.includes('var(--accent)');
+  })?.id || 'alloy';
+}
+
+function renderServices(services) {
+  const list = document.getElementById('services-list');
+  list.innerHTML = services.map((s,i) => `
+    <div style="display:flex;gap:8px;align-items:center;" id="svc-row-${i}">
+      <input type="text" value="${s}" oninput="markDirty()"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+      <button onclick="removeService(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">✕</button>
+    </div>
+  `).join('') || '<div style="font-size:13px;color:var(--muted);">No services yet — add some above</div>';
+}
+
+function addService() {
+  const cur = getServices();
+  cur.push('');
+  renderServices(cur);
+  markDirty();
+  const inputs = document.querySelectorAll('#services-list input');
+  if (inputs.length) inputs[inputs.length-1].focus();
+}
+
+function removeService(i) {
+  const cur = getServices();
+  cur.splice(i, 1);
+  renderServices(cur);
+  markDirty();
+}
+
+function getServices() {
+  return Array.from(document.querySelectorAll('#services-list input')).map(i => i.value).filter(Boolean);
+}
+
+function renderFaqs(faqs) {
+  const list = document.getElementById('faq-list');
+  if (!faqs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No FAQs yet — add common questions your callers ask</div>'; return; }
+  list.innerHTML = faqs.map((f,i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;" id="faq-row-${i}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">FAQ ${i+1}</span>
+        <button onclick="removeFaq(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <input type="text" value="${(f.q||'').replace(/"/g,'&quot;')}" placeholder="Question" oninput="markDirty()"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px;" />
+      <textarea placeholder="Answer" rows="2" oninput="markDirty()"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;resize:vertical;">${f.a||''}</textarea>
+    </div>
+  `).join('');
+}
+
+function addFaq() {
+  const cur = getFaqs();
+  cur.push({ q: '', a: '' });
+  renderFaqs(cur);
+  markDirty();
+}
+
+function removeFaq(i) {
+  const cur = getFaqs();
+  cur.splice(i, 1);
+  renderFaqs(cur);
+  markDirty();
+}
+
+function getFaqs() {
+  const rows = document.querySelectorAll('#faq-list [id^="faq-row-"]');
+  return Array.from(rows).map(row => {
+    const inputs = row.querySelectorAll('input, textarea');
+    return { q: inputs[0]?.value || '', a: inputs[1]?.value || '' };
+  }).filter(f => f.q || f.a);
+}
+
+function markDirty() { document.getElementById('persona-unsaved').style.display='inline'; }
+function markClean() { document.getElementById('persona-unsaved').style.display='none'; }
+
+async function savePersona() {
+  if (!currentPersonaClient) return;
+  const btn = document.querySelector('.btn-save');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const payload = {
+    business_name: document.getElementById('p-business-name').value,
+    agent_name: document.getElementById('p-agent-name').value,
+    office_hours: document.getElementById('p-office-hours').value,
+    booking_url: document.getElementById('p-booking-url').value,
+    escalation_phone: document.getElementById('p-escalation-phone').value,
+    system_prompt_override: document.getElementById('p-system-prompt').value || null,
+    voice: getSelectedVoice(),
+    services: getServices(),
+    faqs: getFaqs()
+  };
+  try {
+    const res = await fetch(`${ATLAS_API}/atlas/clients/${currentPersonaClient.client_id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.client) {
+      currentPersonaClient = data.client;
+      markClean();
+      showToast('Changes saved & live on next call ✓', 'success');
+    } else throw new Error('Bad response');
+  } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+  btn.textContent = '💾 Save & Apply'; btn.disabled = false;
+}
+
+// ─── COST ESTIMATOR
 function calcCosts() {
   const calls     = parseFloat(document.getElementById('c-calls').value) || 0;
   const duration  = parseFloat(document.getElementById('c-duration').value) || 0;
