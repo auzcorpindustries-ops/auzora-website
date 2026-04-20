@@ -236,6 +236,9 @@
     <div class="nav-item" onclick="showPage('add')" id="nav-add">
       <span class="nav-icon">➕</span> Add Client
     </div>
+    <div class="nav-item" onclick="showPage('costs')" id="nav-costs">
+      <span class="nav-icon">💰</span> Cost Estimator
+    </div>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">⏏ Sign out</div>
     </div>
@@ -335,6 +338,84 @@
       </div>
     </div>
 
+    <!-- COST ESTIMATOR PAGE -->
+    <div class="page" id="page-costs">
+      <div class="page-header">
+        <h1>Cost Estimator</h1>
+        <p>Calculate Atlas AI costs and margins per client</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;">
+
+        <!-- INPUTS -->
+        <div class="table-card" style="padding:24px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">Client Configuration</div>
+
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Calls per month</label>
+            <input type="number" id="c-calls" value="200" oninput="calcCosts()" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Avg call duration (minutes)</label>
+            <input type="number" id="c-duration" value="3" step="0.5" oninput="calcCosts()" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Your monthly price to client ($)</label>
+            <input type="number" id="c-price" value="300" oninput="calcCosts()" />
+          </div>
+
+          <div style="border-top:1px solid var(--border);margin:18px 0;"></div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Rate Overrides</div>
+
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-group">
+              <label>OpenAI $/min</label>
+              <input type="number" id="r-openai" value="0.09" step="0.01" oninput="calcCosts()" />
+            </div>
+            <div class="form-group">
+              <label>Twilio $/min</label>
+              <input type="number" id="r-twilio" value="0.0085" step="0.001" oninput="calcCosts()" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:14px;">
+            <label>Twilio number $/month</label>
+            <input type="number" id="r-number" value="1.15" step="0.05" oninput="calcCosts()" />
+          </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div class="table-card" style="padding:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Monthly Cost Breakdown</div>
+            <div style="display:flex;flex-direction:column;gap:10px;" id="cost-breakdown"></div>
+          </div>
+
+          <div class="table-card" style="padding:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Margin Analysis</div>
+            <div id="margin-analysis"></div>
+          </div>
+
+          <div class="table-card" style="padding:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">💡 Pricing Recommendation</div>
+            <div id="pricing-rec" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SCALE TABLE -->
+      <div class="table-card" style="margin-top:20px;max-width:860px;">
+        <div class="table-toolbar"><h2>Revenue at Scale</h2><span style="font-size:12px;color:var(--muted);">Based on current inputs</span></div>
+        <table>
+          <thead><tr>
+            <th>Clients</th><th>Monthly Revenue</th><th>Monthly Costs</th><th>Monthly Profit</th><th>Annual Profit</th>
+          </tr></thead>
+          <tbody id="scale-table"></tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -381,7 +462,7 @@ document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.ke
 if (localStorage.getItem('auzora_auth') === '1') {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  setTimeout(loadAll, 0);
+  setTimeout(() => { loadAll(); calcCosts(); }, 0);
 }
 
 // NAVIGATION
@@ -555,6 +636,94 @@ async function saveClientEdit() {
 }
 
 // CREATE CLIENT
+// COST ESTIMATOR
+function calcCosts() {
+  const calls     = parseFloat(document.getElementById('c-calls').value) || 0;
+  const duration  = parseFloat(document.getElementById('c-duration').value) || 0;
+  const price     = parseFloat(document.getElementById('c-price').value) || 0;
+  const rOpenAI   = parseFloat(document.getElementById('r-openai').value) || 0.09;
+  const rTwilio   = parseFloat(document.getElementById('r-twilio').value) || 0.0085;
+  const rNumber   = parseFloat(document.getElementById('r-number').value) || 1.15;
+
+  const totalMins  = calls * duration;
+  const costOpenAI = totalMins * rOpenAI;
+  const costTwilio = totalMins * rTwilio + rNumber;
+  const costTotal  = costOpenAI + costTwilio;
+  const profit     = price - costTotal;
+  const margin     = price > 0 ? (profit / price * 100) : 0;
+  const costPerCall = calls > 0 ? costTotal / calls : 0;
+
+  const fmt = n => '$' + n.toFixed(2);
+  const pct = n => n.toFixed(1) + '%';
+
+  // Cost breakdown
+  document.getElementById('cost-breakdown').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:13px;">
+      <span style="color:var(--muted);">OpenAI Realtime (${totalMins.toFixed(0)} min × ${fmt(rOpenAI)})</span>
+      <span>${fmt(costOpenAI)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;">
+      <span style="color:var(--muted);">Twilio minutes (${totalMins.toFixed(0)} min × ${fmt(rTwilio)})</span>
+      <span>${fmt(totalMins * rTwilio)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;">
+      <span style="color:var(--muted);">Twilio phone number</span>
+      <span>${fmt(rNumber)}</span>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:14px;font-weight:600;">
+      <span>Total Cost</span><span style="color:var(--red);">${fmt(costTotal)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);">
+      <span>Cost per call</span><span>${fmt(costPerCall)}</span>
+    </div>`;
+
+  // Margin
+  const marginColor = margin >= 60 ? 'var(--green)' : margin >= 40 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('margin-analysis').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;">
+      <span style="color:var(--muted);">Client pays you</span><span style="color:var(--green);font-weight:600;">${fmt(price)}/mo</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px;">
+      <span style="color:var(--muted);">Your costs</span><span style="color:var(--red);">${fmt(costTotal)}/mo</span>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:${marginColor};">${fmt(profit)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">profit/month · ${pct(margin)} margin</div>
+    </div>`;
+
+  // Recommendation
+  const breakeven = Math.ceil(costTotal * 1.5);
+  const suggested = Math.ceil(costTotal * 2.5 / 10) * 10;
+  let rec = '';
+  if (margin < 40) {
+    rec = `⚠️ Margin is thin at ${pct(margin)}. Consider raising your price to at least <strong>${fmt(suggested)}/month</strong> for a healthy 60%+ margin.`;
+  } else if (margin < 60) {
+    rec = `👍 Margin is decent at ${pct(margin)}. You could charge up to <strong>${fmt(suggested)}/month</strong> and still be competitive.`;
+  } else {
+    rec = `✅ Strong margin at ${pct(margin)}. At <strong>${fmt(price)}/month</strong> you're well-positioned. Breakeven is just <strong>${fmt(costTotal)}</strong>.`;
+  }
+  rec += `<br><br>Cost per call: <strong>${fmt(costPerCall)}</strong>. If a client has unusually long calls, you may want to add a per-minute overage fee above ${duration} min.`;
+  document.getElementById('pricing-rec').innerHTML = rec;
+
+  // Scale table
+  const counts = [1, 3, 5, 10, 20, 50];
+  const rows = counts.map(n => {
+    const rev = n * price;
+    const cost = n * costTotal;
+    const prof = rev - cost;
+    const annual = prof * 12;
+    const color = prof > 0 ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td style="font-weight:600;">${n}</td>
+      <td style="color:var(--green);">${fmt(rev)}</td>
+      <td style="color:var(--red);">${fmt(cost)}</td>
+      <td style="color:${color};font-weight:600;">${fmt(prof)}</td>
+      <td style="color:${color};font-weight:600;">${fmt(annual)}</td>
+    </tr>`;
+  });
+  document.getElementById('scale-table').innerHTML = rows.join('');
+}
+
 async function createClient() {
   const businessName = document.getElementById('new-businessName').value.trim();
   const email = document.getElementById('new-email').value.trim();
