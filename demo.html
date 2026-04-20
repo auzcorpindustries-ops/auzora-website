@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas AI — Live Demo | Auzora</title>
+<style>
+  :root {
+    --bg: #07090f;
+    --surface: #0e1422;
+    --surface2: #151d2e;
+    --border: #1a2540;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --teal: #2dd4bf;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); line-height: 1.6; }
+
+  /* NAV */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid var(--border); }
+  .nav-logo { font-size: 20px; font-weight: 800; color: var(--accent); text-decoration: none; }
+  .nav-cta { background: var(--accent); color: #fff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; }
+
+  /* HERO */
+  .hero { text-align: center; padding: 80px 24px 60px; max-width: 760px; margin: 0 auto; }
+  .demo-badge { display: inline-block; background: rgba(99,102,241,0.12); color: var(--accent2); border: 1px solid rgba(99,102,241,0.3); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px; }
+  .hero h1 { font-size: 48px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; }
+  .hero h1 span { background: linear-gradient(135deg, #6366f1, #2dd4bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 18px; color: var(--muted); margin-bottom: 40px; max-width: 580px; margin-left: auto; margin-right: auto; }
+
+  /* CALL BOX */
+  .call-box { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(45,212,191,0.08)); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 40px; max-width: 460px; margin: 0 auto 60px; text-align: center; }
+  .call-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 12px; }
+  .call-number { font-size: 38px; font-weight: 800; letter-spacing: 2px; color: #fff; margin-bottom: 8px; }
+  .call-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .call-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 16px; font-weight: 700; transition: background 0.2s; }
+  .call-btn:hover { background: var(--accent2); }
+  .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
+  .live-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-weight: 600; margin-top: 14px; }
+
+  /* WHAT TO TRY */
+  .section { max-width: 900px; margin: 0 auto; padding: 0 24px 60px; }
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 12px; }
+  .section h2 { font-size: 28px; font-weight: 700; margin-bottom: 28px; }
+
+  .try-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 60px; }
+  .try-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; transition: border-color 0.2s; }
+  .try-card:hover { border-color: var(--accent); }
+  .try-icon { font-size: 28px; margin-bottom: 12px; }
+  .try-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .try-script { font-size: 12px; color: var(--muted); background: var(--surface2); border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-style: italic; border-left: 3px solid var(--accent); line-height: 1.5; }
+
+  /* LIVE APPOINTMENTS */
+  .appts-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-width: 900px; margin: 0 auto 60px; }
+  .appts-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .appts-header h2 { font-size: 18px; font-weight: 700; flex: 1; }
+  .appts-header .refresh-badge { font-size: 11px; color: var(--teal); display: flex; align-items: center; gap: 5px; }
+  .appt-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .appt-row:last-child { border-bottom: none; }
+  .appt-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--teal)); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .appt-name { font-size: 14px; font-weight: 600; }
+  .appt-meta { font-size: 12px; color: var(--muted); }
+  .appt-service { font-size: 12px; font-weight: 600; color: var(--accent2); margin-left: auto; text-align: right; }
+  .appt-time { font-size: 11px; color: var(--muted); }
+  .badge-confirmed { background: rgba(34,197,94,0.12); color: var(--green); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+  .empty-appts { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
+  .new-appt { animation: slideIn 0.4s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* HOW IT WORKS */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 60px; }
+  .step { text-align: center; padding: 24px 16px; }
+  .step-num { width: 36px; height: 36px; border-radius: 50%; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: var(--accent2); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .step-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .step-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .step-arrow { display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--border); padding-top: 18px; }
+
+  /* FOOTER */
+  footer { text-align: center; padding: 32px 24px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  footer a { color: var(--accent2); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Auzora</a>
+  <a href="/contact.html" class="nav-cta">Get This For My Business →</a>
+</nav>
+
+<div class="hero">
+  <div class="demo-badge">🎙️ Live Demo</div>
+  <h1>Meet <span>Atlas AI</span> —<br>Your 24/7 AI Phone Agent</h1>
+  <p>Call the number below and talk to Atlas live. Book an appointment, ask questions, and see exactly what your customers will experience.</p>
+</div>
+
+<div style="max-width:460px;margin:0 auto 60px;padding:0 24px;">
+  <div class="call-box">
+    <div class="call-label">Call Atlas AI Now</div>
+    <div class="call-number">+1 (814) 277-5441</div>
+    <div class="call-sub">Spark Wellness Studio demo · available 24/7</div>
+    <a href="tel:+18142775441" class="call-btn">
+      <span>📞</span> Tap to Call
+    </a>
+    <div class="live-tag"><span class="pulse"></span> Live &amp; Active Now</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Try These</div>
+  <h2>What to say when Atlas picks up</h2>
+
+  <div class="try-grid">
+    <div class="try-card">
+      <div class="try-icon">📅</div>
+      <div class="try-title">Book an Appointment</div>
+      <p style="font-size:13px;color:var(--muted);">Atlas will ask for your name, preferred time, and service — then confirm instantly.</p>
+      <div class="try-script">"I'd like to book a massage for next Thursday at 2pm"</div>
+    </div>
+    <div class="try-card">
+      <div class="try-icon">💬</div>
+      <div class="try-title">Ask About Services</div>
+      <p style="font-size:13px;color:var(--muted);">Atlas knows the full menu, pricing, and availability without putting you on hold.</p>
+      <div class="try-script">"What services do you offer and how much do they cost?"</div>
+    </div>
+    <div class="try-card">
+      <div class="try-icon">🕐</div>
+      <div class="try-title">Hours & Location</div>
+      <p style="font-size:13px;color:var(--muted);">Instant answers to the questions that flood every front desk every day.</p>
+      <div class="try-script">"Are you open on Sundays? Where are you located?"</div>
+    </div>
+    <div class="try-card">
+      <div class="try-icon">💆</div>
+      <div class="try-title">Couples Package</div>
+      <p style="font-size:13px;color:var(--muted);">Ask about specific offerings and Atlas gives confident, personalized answers.</p>
+      <div class="try-script">"Do you have any couples packages for a Valentine's Day gift?"</div>
+    </div>
+    <div class="try-card">
+      <div class="try-icon">👋</div>
+      <div class="try-title">Walk-In Policy</div>
+      <p style="font-size:13px;color:var(--muted);">Try any real-world question a customer might ask your front desk.</p>
+      <div class="try-script">"Can I just walk in today or do I need to book ahead?"</div>
+    </div>
+    <div class="try-card">
+      <div class="try-icon">🔁</div>
+      <div class="try-title">Anything Else</div>
+      <p style="font-size:13px;color:var(--muted);">Ask it anything. Atlas handles the unexpected the same way a great receptionist would.</p>
+      <div class="try-script">"Do you offer gift cards? Is there parking nearby?"</div>
+    </div>
+  </div>
+
+  <!-- LIVE APPOINTMENTS -->
+  <div class="appts-section">
+    <div class="appts-header">
+      <h2>📋 Live Appointment Board</h2>
+      <div class="refresh-badge"><span class="pulse" style="background:var(--teal)"></span> Updates in real-time</div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">When you book via the demo call, your appointment appears here instantly. This is the same data your team would see in their calendar.</p>
+    <div id="appt-list"><div class="empty-appts">📭 No appointments yet — be the first to call and book!</div></div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section-label">Under The Hood</div>
+  <h2>How Atlas AI Works</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Customer Calls</div>
+      <div class="step-desc">Your business phone number routes to Atlas instantly — no hold music, no voicemail.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">AI Answers</div>
+      <div class="step-desc">GPT-4o Realtime responds in ~300ms with natural, human-sounding conversation.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Books & Logs</div>
+      <div class="step-desc">Appointments, lead info, and transcripts are captured and stored automatically.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">You Stay Informed</div>
+      <div class="step-desc">Get Slack alerts on every booking and lead — your calendar stays full while you focus on work.</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(45,212,191,0.08));border:1px solid rgba(99,102,241,0.3);border-radius:16px;padding:40px;text-align:center;">
+    <h2 style="font-size:28px;margin-bottom:12px;">Ready to put Atlas to work?</h2>
+    <p style="color:var(--muted);margin-bottom:28px;font-size:15px;">We set it up in under a week. Your business, your voice, your calendar.</p>
+    <a href="/contact.html" style="display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Get Atlas For My Business →</a>
+  </div>
+</div>
+
+<footer>
+  <p>Built by <a href="/">Auzora</a> · Powered by GPT-4o Realtime + Twilio · <a href="/contact.html">Contact us</a></p>
+</footer>
+
+<script>
+const API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+let knownIds = new Set();
+
+function initials(name) {
+  return (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+}
+function fmtDate(dt) {
+  if (!dt) return '';
+  try { return new Date(dt).toLocaleString('en-US', {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } catch { return dt; }
+}
+
+async function loadAppointments() {
+  try {
+    const res = await fetch(`${API}/appointments?client_id=6b6b5758-2cc5-4464-99d0-b74a7b70beaf`);
+    const data = await res.json();
+    const appts = data.appointments || [];
+    if (!appts.length) return;
+
+    const newOnes = appts.filter(a => !knownIds.has(a.appointment_id));
+    if (!newOnes.length && knownIds.size > 0) return; // nothing new
+
+    newOnes.forEach(a => knownIds.add(a.appointment_id));
+
+    const list = document.getElementById('appt-list');
+    const sorted = appts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    list.innerHTML = sorted.map((a, i) => `
+      <div class="appt-row ${newOnes.find(n => n.appointment_id === a.appointment_id) ? 'new-appt' : ''}">
+        <div class="appt-avatar">${initials(a.caller_name)}</div>
+        <div>
+          <div class="appt-name">${a.caller_name}</div>
+          <div class="appt-meta">${a.caller_phone || ''} ${a.caller_email ? '· ' + a.caller_email : ''}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div class="appt-service">${a.service}</div>
+          <div class="appt-time">${fmtDate(a.datetime)} <span class="badge-confirmed">Confirmed</span></div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    console.error('Failed to load appointments:', e);
+  }
+}
+
+loadAppointments();
+setInterval(loadAppointments, 5000);
+</script>
+</body>
+</html>
