@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI & Telephony Policy — Auzora</title>
+<style>
+  :root { --bg:#080c14;--surface:#0f1520;--border:#1e2d45;--accent:#818cf8;--text:#e2e8f0;--muted:#64748b;--yellow:#f59e0b;--red:#ef4444; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8; }
+  nav { display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10; }
+  .nav-logo { font-size:18px;font-weight:800;color:var(--accent);text-decoration:none; }
+  .nav-back { font-size:13px;color:var(--muted);text-decoration:none; }
+  .nav-back:hover { color:var(--text); }
+  .container { max-width:760px;margin:0 auto;padding:60px 24px 80px; }
+  .legal-header { margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--border); }
+  .legal-header h1 { font-size:32px;font-weight:800;margin-bottom:8px; }
+  .legal-header p { color:var(--muted);font-size:14px; }
+  h2 { font-size:18px;font-weight:700;margin:36px 0 12px;color:var(--accent); }
+  p, li { font-size:15px;color:#cbd5e1;margin-bottom:10px; }
+  ul { padding-left:24px;margin-bottom:10px; }
+  li { margin-bottom:6px; }
+  strong { color:var(--text); }
+  .highlight { background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:16px 20px;margin:20px 0; }
+  .warning { background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:16px 20px;margin:20px 0; }
+  .warning strong { color:var(--yellow); }
+  footer { text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted); }
+  footer a { color:var(--accent);text-decoration:none; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">Auzora</a>
+  <a href="/" class="nav-back">← Back to site</a>
+</nav>
+
+<div class="container">
+  <div class="legal-header">
+    <h1>AI & Telephony Policy</h1>
+    <p>Last updated: April 21, 2026 &nbsp;·&nbsp; Applies to all Atlas AI deployments</p>
+  </div>
+
+  <div class="highlight">
+    <strong>What this covers:</strong> How Atlas AI handles calls, what data is processed, what clients must disclose to callers, and how we comply with U.S. telephony laws.
+  </div>
+
+  <h2>1. How Atlas AI Works</h2>
+  <p>Atlas AI is an AI-powered phone agent that answers inbound calls on behalf of businesses. When a caller dials a business's Atlas AI number:</p>
+  <ul>
+    <li>The call is routed through <strong>Twilio's</strong> telephony infrastructure</li>
+    <li>Live audio is streamed in real time to <strong>OpenAI's GPT-4o Realtime API</strong> for processing</li>
+    <li>The AI generates a spoken response and streams it back to the caller</li>
+    <li>If an appointment is booked, the caller's name, phone number, service, and time are saved to our database</li>
+    <li>Audio is <strong>not stored</strong> by Auzora after the call ends</li>
+  </ul>
+
+  <h2>2. AI Disclosure Requirements</h2>
+
+  <div class="warning">
+    <strong>⚠️ Client Responsibility:</strong> You are legally required to disclose to callers that they are speaking with an AI. Failure to do so may violate state and federal law.
+  </div>
+
+  <p>Multiple U.S. states and regulations require disclosure when a caller is speaking with an automated or AI system:</p>
+  <ul>
+    <li><strong>California (AB 302):</strong> Bots must disclose their non-human nature at the start of the call when asked or when the context makes it relevant</li>
+    <li><strong>FTC Regulations:</strong> Deceptive practices including impersonating a human are prohibited</li>
+    <li><strong>TCPA (Telephone Consumer Protection Act):</strong> Regulates automated calls and requires certain disclosures</li>
+  </ul>
+
+  <p><strong>What we recommend:</strong> Configure your AI agent greeting to include language such as:</p>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:12px 0;font-style:italic;font-size:14px;color:#94a3b8;">
+    "Thank you for calling [Business Name]. You're speaking with our AI assistant. How can I help you today?"
+  </div>
+  <p>This is configurable in your client portal under Agent Settings → Custom Greeting.</p>
+
+  <h2>3. TCPA Compliance</h2>
+  <p>The Telephone Consumer Protection Act governs automated calling and messaging. As an Auzora client:</p>
+  <ul>
+    <li>Atlas AI is configured for <strong>inbound calls only</strong> by default — callers are contacting you, not the reverse</li>
+    <li>Inbound AI call handling generally does not trigger TCPA's consent requirements (callers initiate contact)</li>
+    <li>If you use Atlas AI for any outbound calling functionality, you are solely responsible for obtaining proper prior express written consent</li>
+    <li>You must not use Atlas AI to contact numbers on the National Do Not Call Registry without proper authorization</li>
+  </ul>
+
+  <h2>4. Call Recording and Audio Processing</h2>
+  <ul>
+    <li>Atlas AI does <strong>not record or store call audio</strong>. Audio is processed in real time and discarded after each response.</li>
+    <li>Partial transcripts may be generated during the call to facilitate appointment booking. These are stored only when they contain booking information.</li>
+    <li>If you add call recording features in the future, you must comply with all applicable one-party or two-party consent recording laws for your state and the caller's state.</li>
+  </ul>
+
+  <h2>5. Caller Data Handling</h2>
+  <p>Information collected by the AI agent (name, phone, service, appointment time) is:</p>
+  <ul>
+    <li>Stored securely in AWS DynamoDB (us-east-2)</li>
+    <li>Accessible only to the subscribing business via the client portal</li>
+    <li>Synced to connected calendars only when explicitly authorized by the client</li>
+    <li>Never sold or shared with third parties outside of service delivery</li>
+    <li>Retained per the data retention terms in our <a href="/legal/privacy.html" style="color:var(--accent);">Privacy Policy</a></li>
+  </ul>
+
+  <h2>6. AI Limitations and Accuracy</h2>
+  <p>Clients should be aware of the following limitations:</p>
+  <ul>
+    <li>The AI may occasionally misunderstand caller requests, especially with heavy accents, background noise, or unusual phrasing</li>
+    <li>Appointment times mentioned by callers are captured as-stated and may need human review</li>
+    <li>The AI will not handle emergencies — configure your escalation rules to hand off crisis situations to a human immediately</li>
+    <li>The AI operates only on information you provide in its configuration. It will not access external websites or databases on its own.</li>
+  </ul>
+
+  <h2>7. Prohibited Uses</h2>
+  <p>Clients may not use Atlas AI to:</p>
+  <ul>
+    <li>Conduct outbound robocalls or automated telemarketing without proper consent</li>
+    <li>Collect sensitive personal information such as Social Security numbers, full payment card numbers, or medical records</li>
+    <li>Impersonate government agencies, law enforcement, or other specific individuals</li>
+    <li>Engage in fraud, harassment, or deceptive practices</li>
+    <li>Violate any applicable consumer protection law</li>
+  </ul>
+
+  <h2>8. Recommended Disclosures for Your Business</h2>
+  <p>We recommend the following disclosures on your business website and marketing materials:</p>
+  <ul>
+    <li>A notice that your phone line is answered by an AI assistant</li>
+    <li>A privacy notice explaining how caller data is used</li>
+    <li>An option for callers to request a human if needed (configurable via escalation rules)</li>
+  </ul>
+
+  <h2>9. Updates</h2>
+  <p>AI and telephony law is evolving rapidly. We monitor regulatory changes and will update this policy and notify clients when significant changes affect how Atlas AI must operate. It is your responsibility to stay informed of laws applicable to your specific business and jurisdiction.</p>
+
+  <h2>10. Questions</h2>
+  <p>For questions about this policy, contact <a href="mailto:legal@auzora.io" style="color:var(--accent);">legal@auzora.io</a>.</p>
+
+</div>
+
+<footer>
+  © 2026 Auzora &nbsp;·&nbsp;
+  <a href="/legal/terms.html">Terms</a> &nbsp;·&nbsp;
+  <a href="/legal/privacy.html">Privacy</a> &nbsp;·&nbsp;
+  <a href="/legal/ai-policy.html">AI Policy</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Auzora</title>
+<style>
+  :root { --bg:#080c14;--surface:#0f1520;--border:#1e2d45;--accent:#818cf8;--text:#e2e8f0;--muted:#64748b; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8; }
+  nav { display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10; }
+  .nav-logo { font-size:18px;font-weight:800;color:var(--accent);text-decoration:none; }
+  .nav-back { font-size:13px;color:var(--muted);text-decoration:none; }
+  .nav-back:hover { color:var(--text); }
+  .container { max-width:760px;margin:0 auto;padding:60px 24px 80px; }
+  .legal-header { margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--border); }
+  .legal-header h1 { font-size:32px;font-weight:800;margin-bottom:8px; }
+  .legal-header p { color:var(--muted);font-size:14px; }
+  h2 { font-size:18px;font-weight:700;margin:36px 0 12px;color:var(--accent); }
+  p, li { font-size:15px;color:#cbd5e1;margin-bottom:10px; }
+  ul { padding-left:24px;margin-bottom:10px; }
+  li { margin-bottom:6px; }
+  strong { color:var(--text); }
+  .highlight { background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:16px 20px;margin:20px 0; }
+  .provider-table { width:100%;border-collapse:collapse;margin:16px 0; }
+  .provider-table th { font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:10px 16px;text-align:left;border-bottom:1px solid var(--border); }
+  .provider-table td { font-size:13px;padding:12px 16px;border-bottom:1px solid var(--border);color:#cbd5e1; }
+  .provider-table tr:last-child td { border-bottom:none; }
+  footer { text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted); }
+  footer a { color:var(--accent);text-decoration:none; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">Auzora</a>
+  <a href="/" class="nav-back">← Back to site</a>
+</nav>
+
+<div class="container">
+  <div class="legal-header">
+    <h1>Privacy Policy</h1>
+    <p>Last updated: April 21, 2026 &nbsp;·&nbsp; Applies to auzora.io and all Auzora services</p>
+  </div>
+
+  <div class="highlight">
+    <strong>Short version:</strong> We collect only what's needed to run our services. We don't sell your data. Call data from Atlas AI belongs to you. We use trusted third parties (OpenAI, Twilio, AWS) to deliver our services.
+  </div>
+
+  <h2>1. Who We Are</h2>
+  <p>Auzora ("we," "us," or "our") provides AI-powered business automation services, including the Atlas AI phone agent platform. This Privacy Policy explains how we collect, use, and protect information when you use our website at auzora.io and our services.</p>
+  <p>For privacy questions, contact us at <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a>.</p>
+
+  <h2>2. Information We Collect</h2>
+
+  <p><strong>From website visitors:</strong></p>
+  <ul>
+    <li>Contact form submissions (name, email, business name, message)</li>
+    <li>Basic analytics (page views, referral source — no personally identifiable tracking)</li>
+  </ul>
+
+  <p><strong>From clients (businesses using our platform):</strong></p>
+  <ul>
+    <li>Account information: business name, email address, billing information</li>
+    <li>Configuration data: AI agent settings, FAQs, services, office hours</li>
+    <li>Twilio phone number associated with your account</li>
+  </ul>
+
+  <p><strong>From end users (callers speaking with Atlas AI):</strong></p>
+  <ul>
+    <li>Name, phone number, and email (when provided to the AI agent)</li>
+    <li>Appointment details (service requested, preferred date/time, notes)</li>
+    <li>Call audio processed in real-time by OpenAI's Realtime API (not stored by Auzora)</li>
+    <li>AI-generated transcript excerpts used for appointment booking</li>
+  </ul>
+
+  <h2>3. How We Use Information</h2>
+  <ul>
+    <li>To deliver and operate our services</li>
+    <li>To process appointment bookings made through Atlas AI</li>
+    <li>To sync appointment data to connected calendars (Google Calendar, when authorized)</li>
+    <li>To send service-related communications (invoices, alerts, updates)</li>
+    <li>To improve our AI models and service quality (aggregated, non-identifiable data only)</li>
+    <li>To comply with legal obligations</li>
+  </ul>
+  <p>We do <strong>not</strong> use your data or your callers' data for advertising or sell it to third parties.</p>
+
+  <h2>4. Third-Party Service Providers</h2>
+  <p>We use the following trusted providers to deliver our services. Each has their own privacy practices:</p>
+  <table class="provider-table">
+    <thead><tr><th>Provider</th><th>Purpose</th><th>Data Shared</th></tr></thead>
+    <tbody>
+      <tr><td><strong>OpenAI</strong></td><td>AI voice processing (GPT-4o Realtime)</td><td>Real-time call audio; processed per <a href="https://openai.com/privacy" style="color:var(--accent);" target="_blank">OpenAI's Privacy Policy</a></td></tr>
+      <tr><td><strong>Twilio</strong></td><td>Phone number, call routing, audio streaming</td><td>Call metadata; processed per <a href="https://www.twilio.com/legal/privacy" style="color:var(--accent);" target="_blank">Twilio's Privacy Policy</a></td></tr>
+      <tr><td><strong>Amazon Web Services</strong></td><td>Cloud infrastructure, database storage</td><td>All platform data stored in AWS us-east-2 (Ohio)</td></tr>
+      <tr><td><strong>Google</strong></td><td>Calendar integration (when enabled by client)</td><td>Appointment data synced when client connects their Google Calendar</td></tr>
+      <tr><td><strong>Netlify</strong></td><td>Website hosting</td><td>Website traffic analytics</td></tr>
+      <tr><td><strong>Stripe</strong></td><td>Payment processing</td><td>Billing info; Auzora never stores full card numbers</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Data Retention</h2>
+  <ul>
+    <li><strong>Appointment records:</strong> Retained for the duration of your subscription + 12 months</li>
+    <li><strong>Call audio:</strong> Processed in real-time by OpenAI; not stored by Auzora</li>
+    <li><strong>Account data:</strong> Retained until account deletion + 30-day grace period</li>
+    <li><strong>Billing records:</strong> Retained for 7 years as required by law</li>
+  </ul>
+
+  <h2>6. Data Security</h2>
+  <p>We implement industry-standard security measures including:</p>
+  <ul>
+    <li>TLS encryption for all data in transit</li>
+    <li>Encrypted storage on AWS with restricted IAM access controls</li>
+    <li>API authentication tokens for all service-to-service communication</li>
+    <li>No storage of raw call audio by Auzora</li>
+  </ul>
+  <p>No method of electronic transmission is 100% secure. We cannot guarantee absolute security but take reasonable precautions.</p>
+
+  <h2>7. Your Rights</h2>
+  <p>Depending on your location, you may have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> the personal data we hold about you</li>
+    <li><strong>Correct</strong> inaccurate data</li>
+    <li><strong>Delete</strong> your data (subject to legal retention requirements)</li>
+    <li><strong>Export</strong> your data in a machine-readable format</li>
+    <li><strong>Opt out</strong> of non-essential communications</li>
+  </ul>
+  <p>To exercise these rights, contact <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a>. We will respond within 30 days.</p>
+
+  <h2>8. Caller Data (For Auzora Clients)</h2>
+  <p>If you are an Auzora client deploying Atlas AI, you are the data controller for your callers' information. You are responsible for:</p>
+  <ul>
+    <li>Disclosing to callers that they may be speaking with an AI</li>
+    <li>Obtaining any required consent for call recording or data collection</li>
+    <li>Complying with applicable privacy laws (CCPA, GDPR, TCPA, etc.) with respect to your callers</li>
+  </ul>
+  <p>Auzora processes caller data on your behalf as a data processor under your instruction.</p>
+
+  <h2>9. Children's Privacy</h2>
+  <p>Our services are not directed to individuals under the age of 18. We do not knowingly collect personal information from children.</p>
+
+  <h2>10. Changes to This Policy</h2>
+  <p>We may update this policy periodically. Material changes will be announced via email or portal notification. Continued use of our services after changes constitutes acceptance.</p>
+
+  <h2>11. Contact Us</h2>
+  <p>Email: <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a><br>
+  Website: <a href="https://auzora.io" style="color:var(--accent);">auzora.io</a></p>
+
+</div>
+
+<footer>
+  © 2026 Auzora &nbsp;·&nbsp;
+  <a href="/legal/terms.html">Terms</a> &nbsp;·&nbsp;
+  <a href="/legal/privacy.html">Privacy</a> &nbsp;·&nbsp;
+  <a href="/legal/ai-policy.html">AI Policy</a>
+</footer>
+</body>
+</html>
