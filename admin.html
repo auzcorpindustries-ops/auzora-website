@@ -441,7 +441,7 @@
           <!-- LEFT COLUMN -->
           <div style="display:flex;flex-direction:column;gap:20px;">
 
-            <!-- Voice selector -->
+                <!-- Voice selector -->
             <div class="table-card" style="padding:24px;">
               <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">AI Voice</div>
               <div id="voice-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
@@ -481,19 +481,152 @@
               <div id="services-list" style="display:flex;flex-direction:column;gap:8px;"></div>
             </div>
 
+            <!-- Call Behavior -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">⚙️ Call Behavior (OpenAI Realtime)</div>
+
+              <div style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Interruption Sensitivity</label>
+                  <span id="vad-val" style="font-size:12px;color:var(--accent2);font-weight:600;">0.5</span>
+                </div>
+                <input type="range" id="p-vad" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('vad-val').textContent=parseFloat(this.value).toFixed(2);markDirty()"
+                  style="width:100%;accent-color:var(--accent);" />
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>Low (waits for silence)</span><span>High (very responsive)</span></div>
+              </div>
+
+              <div style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Response Pause</label>
+                  <span id="silence-val" style="font-size:12px;color:var(--accent2);font-weight:600;">700ms</span>
+                </div>
+                <input type="range" id="p-silence" min="200" max="2000" step="50" value="700" oninput="document.getElementById('silence-val').textContent=this.value+'ms';markDirty()"
+                  style="width:100%;accent-color:var(--accent);" />
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>200ms (snappy)</span><span>2000ms (patient)</span></div>
+              </div>
+
+              <div style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Response Creativity (Temperature)</label>
+                  <span id="temp-val" style="font-size:12px;color:var(--accent2);font-weight:600;">0.7</span>
+                </div>
+                <input type="range" id="p-temp" min="0.6" max="1.2" step="0.05" value="0.7" oninput="document.getElementById('temp-val').textContent=parseFloat(this.value).toFixed(2);markDirty()"
+                  style="width:100%;accent-color:var(--accent);" />
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>0.6 (consistent)</span><span>1.2 (creative)</span></div>
+              </div>
+
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Max Response Length (tokens)</label>
+                  <span id="tokens-val" style="font-size:12px;color:var(--accent2);font-weight:600;">Unlimited</span>
+                </div>
+                <input type="range" id="p-tokens" min="0" max="500" step="25" value="0" oninput="document.getElementById('tokens-val').textContent=this.value==0?'Unlimited':this.value+' tokens';markDirty()"
+                  style="width:100%;accent-color:var(--accent);" />
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>Unlimited</span><span>500 tokens (brief)</span></div>
+              </div>
+            </div>
+
           </div>
 
           <!-- RIGHT COLUMN -->
           <div style="display:flex;flex-direction:column;gap:20px;">
 
+            <!-- Tone & Style -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">🎭 Tone & Style</div>
+
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Tone</label>
+                <select id="p-tone" onchange="markDirty()">
+                  <option value="friendly">Friendly — warm &amp; approachable</option>
+                  <option value="professional">Professional — polished &amp; business-like</option>
+                  <option value="casual">Casual — relaxed &amp; informal</option>
+                  <option value="empathetic">Empathetic — compassionate &amp; patient</option>
+                  <option value="formal">Formal — precise &amp; structured</option>
+                  <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Speaking Pace</label>
+                <select id="p-pace" onchange="markDirty()">
+                  <option value="normal">Normal — natural pace</option>
+                  <option value="slow">Slow — clear &amp; deliberate</option>
+                  <option value="fast">Fast — concise &amp; snappy</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Language</label>
+                <select id="p-lang" onchange="markDirty()">
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="zh">Mandarin Chinese</option>
+                  <option value="ko">Korean</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hi">Hindi</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Call Script -->
+            <div class="table-card" style="padding:24px;">
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">📞 Call Script</div>
+
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Custom Greeting</label>
+                <input type="text" id="p-greeting" placeholder="Thank you for calling [Business]! How can I help?" oninput="markDirty()" />
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Leave blank to auto-generate</div>
+              </div>
+
+              <div class="form-group" style="margin-bottom:14px;">
+                <label>Escalation Rules</label>
+                <textarea id="p-escalation" rows="3" placeholder="If caller asks for a human, say: 'Let me connect you with our team.' and provide the escalation number." oninput="markDirty()"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Topics to Avoid</label>
+                <div id="avoid-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px;"></div>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="avoid-input" placeholder="e.g. pricing, competitors" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAvoidTag();}" />
+                  <button class="btn-sm" style="padding:8px 12px;font-size:12px;" onclick="addAvoidTag()">Add</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Press Enter or comma to add a topic</div>
+              </div>
+            </div>
+
+            <!-- After Hours -->
+            <div class="table-card" style="padding:24px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">🌙 After-Hours Mode</div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                  <input type="checkbox" id="p-after-hours" onchange="toggleAfterHours();markDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+              <div id="after-hours-body" style="display:none;">
+                <div class="form-group">
+                  <label>After-Hours Message</label>
+                  <textarea id="p-after-hours-msg" rows="3" oninput="markDirty()">Thank you for calling. Our office is currently closed. Please call back during business hours or leave a message and we will get back to you.</textarea>
+                </div>
+              </div>
+              <div id="after-hours-off" style="font-size:13px;color:var(--muted);">When enabled, the AI delivers this message outside office hours instead of the normal greeting.</div>
+            </div>
+
             <!-- System Prompt -->
             <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">Agent Instructions</div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Override the default AI prompt. Leave blank to use the auto-generated prompt based on your business info.</div>
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">🧠 Agent Instructions Override</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Fully replace the auto-generated prompt. Leave blank to use all settings above automatically.</div>
               <div class="form-group">
-                <textarea id="p-system-prompt" rows="10" placeholder="You are a friendly receptionist for [business]. Keep responses brief and professional..."></textarea>
+                <textarea id="p-system-prompt" rows="8" placeholder="You are a friendly receptionist for [business]. Keep responses brief and professional..." oninput="markDirty()"></textarea>
               </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:8px;">💡 Leave blank to auto-generate from your business info above</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;">💡 Leave blank — all Tone, Pace, FAQs, and Escalation settings above will be used automatically</div>
             </div>
 
             <!-- FAQs -->
@@ -501,7 +634,7 @@
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <div>
                   <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">FAQs</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:3px;">The AI will answer these when callers ask</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:3px;">The AI answers these when callers ask</div>
                 </div>
                 <button class="btn-sm" style="padding:5px 10px;font-size:11px;" onclick="addFaq()">+ Add FAQ</button>
               </div>
@@ -778,16 +911,83 @@ async function loadPersonaClient() {
 }
 
 function renderPersonaForm(c) {
+  // Business info
   document.getElementById('p-business-name').value = c.business_name || '';
   document.getElementById('p-agent-name').value = c.agent_name || '';
   document.getElementById('p-office-hours').value = c.office_hours || '';
   document.getElementById('p-booking-url').value = c.booking_url || '';
   document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
+
+  // OpenAI Realtime settings
+  const vad = c.vad_threshold ?? 0.5;
+  const sil = c.silence_duration_ms ?? 700;
+  const tmp = c.temperature ?? 0.7;
+  const tok = c.max_tokens ?? 0;
+  document.getElementById('p-vad').value = vad;
+  document.getElementById('vad-val').textContent = parseFloat(vad).toFixed(2);
+  document.getElementById('p-silence').value = sil;
+  document.getElementById('silence-val').textContent = sil + 'ms';
+  document.getElementById('p-temp').value = tmp;
+  document.getElementById('temp-val').textContent = parseFloat(tmp).toFixed(2);
+  document.getElementById('p-tokens').value = tok;
+  document.getElementById('tokens-val').textContent = tok == 0 ? 'Unlimited' : tok + ' tokens';
+
+  // Tone & style
+  document.getElementById('p-tone').value = c.tone || 'friendly';
+  document.getElementById('p-pace').value = c.speaking_pace || 'normal';
+  document.getElementById('p-lang').value = c.lang || 'en';
+
+  // Call script
+  document.getElementById('p-greeting').value = c.custom_greeting || '';
+  document.getElementById('p-escalation').value = c.escalation_rules || '';
+  renderAvoidTags(c.topics_to_avoid || []);
+
+  // After hours
+  const ahEnabled = c.after_hours_enabled || false;
+  document.getElementById('p-after-hours').checked = ahEnabled;
+  document.getElementById('p-after-hours-msg').value = c.after_hours_message || '';
+  toggleAfterHours();
+
+  // Advanced
   document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
+
   renderVoiceGrid(c.voice || 'alloy');
   renderServices(c.services || []);
   renderFaqs(c.faqs || []);
   markClean();
+}
+
+function toggleAfterHours() {
+  const on = document.getElementById('p-after-hours').checked;
+  document.getElementById('after-hours-body').style.display = on ? 'block' : 'none';
+  document.getElementById('after-hours-off').style.display = on ? 'none' : 'block';
+}
+
+// Topics to avoid tag input
+let avoidTopics = [];
+function renderAvoidTags(topics) {
+  avoidTopics = [...topics];
+  const container = document.getElementById('avoid-tags');
+  container.innerHTML = avoidTopics.map((t,i) => `
+    <span style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:20px;padding:3px 10px;font-size:12px;color:#ef4444;display:flex;align-items:center;gap:6px;">
+      ${t}
+      <span onclick="removeAvoidTag(${i})" style="cursor:pointer;font-size:14px;line-height:1;">×</span>
+    </span>
+  `).join('');
+}
+function addAvoidTag() {
+  const input = document.getElementById('avoid-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val) return;
+  avoidTopics.push(val);
+  renderAvoidTags(avoidTopics);
+  input.value = '';
+  markDirty();
+}
+function removeAvoidTag(i) {
+  avoidTopics.splice(i, 1);
+  renderAvoidTags(avoidTopics);
+  markDirty();
 }
 
 let activeAudio = null;
@@ -928,15 +1128,35 @@ async function savePersona() {
   const btn = document.querySelector('.btn-save');
   btn.textContent = 'Saving...'; btn.disabled = true;
   const payload = {
-    business_name: document.getElementById('p-business-name').value,
-    agent_name: document.getElementById('p-agent-name').value,
-    office_hours: document.getElementById('p-office-hours').value,
-    booking_url: document.getElementById('p-booking-url').value,
+    // Business info
+    business_name:    document.getElementById('p-business-name').value,
+    agent_name:       document.getElementById('p-agent-name').value,
+    office_hours:     document.getElementById('p-office-hours').value,
+    booking_url:      document.getElementById('p-booking-url').value,
     escalation_phone: document.getElementById('p-escalation-phone').value,
-    system_prompt_override: document.getElementById('p-system-prompt').value || null,
+    // Voice
     voice: getSelectedVoice(),
+    // OpenAI Realtime
+    vad_threshold:       parseFloat(document.getElementById('p-vad').value),
+    silence_duration_ms: parseInt(document.getElementById('p-silence').value),
+    temperature:         parseFloat(document.getElementById('p-temp').value),
+    max_tokens:          parseInt(document.getElementById('p-tokens').value),
+    // Tone & style
+    tone:          document.getElementById('p-tone').value,
+    speaking_pace: document.getElementById('p-pace').value,
+    lang:          document.getElementById('p-lang').value,
+    // Call script
+    custom_greeting:  document.getElementById('p-greeting').value,
+    escalation_rules: document.getElementById('p-escalation').value,
+    topics_to_avoid:  avoidTopics,
+    // After hours
+    after_hours_enabled: document.getElementById('p-after-hours').checked,
+    after_hours_message: document.getElementById('p-after-hours-msg').value,
+    // Advanced
+    system_prompt_override: document.getElementById('p-system-prompt').value || null,
+    // Lists
     services: getServices(),
-    faqs: getFaqs()
+    faqs:     getFaqs()
   };
   try {
     const res = await fetch(`${ATLAS_API}/atlas/clients/${currentPersonaClient.client_id}`, {
