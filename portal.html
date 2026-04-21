@@ -199,6 +199,7 @@
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
+    <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
 
   <main class="main">
@@ -414,6 +415,101 @@
       </div>
     </div>
 
+    <!-- INTEGRATIONS -->
+    <div class="page" id="page-integrations">
+      <div class="page-header">
+        <h1>🔗 Integrations</h1>
+        <p>Connect your calendars — appointments booked by your AI agent will appear automatically</p>
+      </div>
+
+      <!-- Google Calendar -->
+      <div class="card" style="max-width:620px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <span style="font-size:32px;">📅</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Google Calendar</div>
+            <div style="font-size:13px;color:var(--muted);">Appointments sync directly to your Google Calendar</div>
+          </div>
+          <div id="gcal-badge" style="margin-left:auto;display:none;">
+            <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;">✓ Connected</span>
+          </div>
+        </div>
+
+        <!-- Steps -->
+        <div id="gcal-setup" style="display:none;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Setup — 2 steps, takes 1 minute</div>
+
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Share your Google Calendar with our service account</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Open Google Calendar → Settings → select your calendar → Share with specific people</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
+                  <span id="sa-email-display">atlas-calendar@auzora.io</span>
+                  <button onclick="copyText('atlas-calendar@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Make changes to events</strong> (Editor)</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Enter your Calendar ID</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">In Google Calendar → Settings → your calendar → Integrate calendar → Calendar ID</div>
+                <input type="text" id="gcal-id-input" placeholder="yourname@gmail.com or xyz@group.calendar.google.com"
+                  style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button onclick="connectGoogleCalendar()" id="gcal-connect-btn"
+              style="background:var(--accent);border:none;border-radius:10px;padding:11px 22px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+              Connect Google Calendar
+            </button>
+            <span id="gcal-status" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <!-- Connected state -->
+        <div id="gcal-connected" style="display:none;">
+          <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px;">✓ Google Calendar connected</div>
+            <div style="font-size:12px;color:var(--muted);">Calendar ID: <span id="gcal-id-display" style="color:var(--text);font-family:monospace;"></span></div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button onclick="showGcalSetup()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;color:var(--muted);font-size:13px;cursor:pointer;">Change Calendar</button>
+            <button onclick="disconnectGoogleCalendar()" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:9px 16px;color:var(--red);font-size:13px;cursor:pointer;">Disconnect</button>
+          </div>
+        </div>
+
+        <!-- Default: show connect button if not set up -->
+        <div id="gcal-cta">
+          <button onclick="showGcalSetup()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:11px 22px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            + Connect Google Calendar
+          </button>
+        </div>
+      </div>
+
+      <!-- Outlook (coming soon) -->
+      <div class="card" style="max-width:620px;opacity:0.6;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-size:32px;">📧</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Outlook / Microsoft 365</div>
+            <div style="font-size:13px;color:var(--muted);">Microsoft calendar integration — coming soon</div>
+          </div>
+          <div style="margin-left:auto;">
+            <span style="background:rgba(100,116,139,0.15);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);font-weight:600;">Coming Soon</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 </div>
 
@@ -488,6 +584,7 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
+  if (name === 'integrations') loadIntegrations();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -745,6 +842,79 @@ function showToast(msg, type='success') {
   t.textContent = (type==='success'?'✓ ':'✗ ') + msg;
   t.className = 'show ' + type;
   setTimeout(() => t.className = '', 3000);
+}
+
+// ── INTEGRATIONS ─────────────────────────────────────────────────────────────
+function loadIntegrations() {
+  const gcalId = portalClient.google_calendar_id;
+  if (gcalId) {
+    document.getElementById('gcal-cta').style.display = 'none';
+    document.getElementById('gcal-setup').style.display = 'none';
+    document.getElementById('gcal-connected').style.display = 'block';
+    document.getElementById('gcal-badge').style.display = 'block';
+    document.getElementById('gcal-id-display').textContent = gcalId;
+  } else {
+    document.getElementById('gcal-cta').style.display = 'block';
+    document.getElementById('gcal-setup').style.display = 'none';
+    document.getElementById('gcal-connected').style.display = 'none';
+    document.getElementById('gcal-badge').style.display = 'none';
+  }
+}
+
+function showGcalSetup() {
+  document.getElementById('gcal-cta').style.display = 'none';
+  document.getElementById('gcal-connected').style.display = 'none';
+  document.getElementById('gcal-setup').style.display = 'block';
+}
+
+async function connectGoogleCalendar() {
+  const calendarId = document.getElementById('gcal-id-input').value.trim();
+  if (!calendarId) { showToast('Please enter your Calendar ID', 'error'); return; }
+
+  const btn = document.getElementById('gcal-connect-btn');
+  const status = document.getElementById('gcal-status');
+  btn.disabled = true; btn.textContent = 'Verifying...';
+  status.textContent = 'Checking calendar access...';
+  status.style.color = 'var(--muted)';
+
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ google_calendar_id: calendarId })
+    });
+    const data = await res.json();
+    if (data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+      loadIntegrations();
+      showToast('Google Calendar connected! Appointments will now sync automatically ✓', 'success');
+    } else throw new Error(data.error || 'Failed to save');
+  } catch(e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+  btn.disabled = false; btn.textContent = 'Connect Google Calendar';
+}
+
+async function disconnectGoogleCalendar() {
+  if (!confirm('Disconnect Google Calendar? Existing appointments will remain, but new bookings will not sync.')) return;
+  const res = await fetch(`${API}/portal/settings`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+    body: JSON.stringify({ google_calendar_id: null })
+  });
+  const data = await res.json();
+  if (data.client) {
+    portalClient = data.client;
+    sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+    loadIntegrations();
+    showToast('Google Calendar disconnected', 'success');
+  }
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard ✓', 'success'));
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
