@@ -876,16 +876,19 @@ async function saveClientEdit() {
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
 const ATLAS_API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
 
+// Realtime API voices (updated April 2026)
+// hasPreview = TTS sample available; false = Realtime-only, no preview
 const VOICES = [
-  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',        emoji: '🎙️' },
-  { id: 'nova',    label: 'Nova',    desc: 'Warm & friendly',         emoji: '☀️' },
-  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',             emoji: '✨' },
-  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',   emoji: '🎧' },
-  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & authoritative',    emoji: '💎' },
-  { id: 'fable',   label: 'Fable',   desc: 'Expressive & engaging',   emoji: '📖' },
-  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational', emoji: '💬' },
-  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',      emoji: '🪸' },
-  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',   emoji: '🌿' },
+  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', hasPreview: true  },
+  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', hasPreview: true  },
+  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', hasPreview: true  },
+  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', hasPreview: true  },
+  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', hasPreview: true  },
+  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', hasPreview: true  },
+  { id: 'ballad',  label: 'Ballad',  desc: 'Warm & melodic',           emoji: '🎵', hasPreview: false },
+  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',      emoji: '📜', hasPreview: false },
+  { id: 'marin',   label: 'Marin',   desc: 'Clear & confident',        emoji: '🌊', hasPreview: false },
+  { id: 'cedar',   label: 'Cedar',   desc: 'Grounded & steady',        emoji: '🌲', hasPreview: false },
 ];
 
 let currentPersonaClient = null;
@@ -1001,12 +1004,16 @@ function renderVoiceGrid(selected) {
     " onclick="selectVoice('${v.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <span style="font-size:18px;">${v.emoji}</span>
-        <button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
-          background:rgba(255,255,255,0.07);border:1px solid var(--border);
-          border-radius:6px;width:26px;height:26px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;font-size:12px;
-          color:var(--text);flex-shrink:0;transition:background 0.15s;
-        ">▶</button>
+        ${v.hasPreview
+          ? `<button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
+              background:rgba(255,255,255,0.07);border:1px solid var(--border);
+              border-radius:6px;width:26px;height:26px;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;font-size:12px;
+              color:var(--text);flex-shrink:0;">▶</button>`
+          : `<span title="No preview — Realtime-only voice" style="
+              font-size:10px;color:var(--muted);border:1px solid var(--border);
+              border-radius:6px;padding:2px 5px;white-space:nowrap;">Live only</span>`
+        }
       </div>
       <div style="font-size:13px;font-weight:700;">${v.label}</div>
       <div style="font-size:11px;color:var(--muted);">${v.desc}</div>
