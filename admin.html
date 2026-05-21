@@ -673,7 +673,7 @@
 <div id="toast"></div>
 
 <script>
-const API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+const API = 'https://atlas.6845165.xyz/admin';
 const ADMIN_PASS = 'auzora2026'; // change this
 let allClients = [];
 let editingClientId = null;
@@ -721,9 +721,10 @@ function toast(msg, type = 'success') {
 // API CALLS
 async function loadAll() {
   try {
-    const res = await fetch(`${API}/clients`);
+    const apiKey = localStorage.getItem('atlas_admin_key') || '';
+    const res = await fetch(`${API}/clients`, { headers: { 'x-api-key': apiKey } });
     const data = await res.json();
-    allClients = data.clients || [];
+    allClients = Array.isArray(data) ? data : (data.clients || []);
     renderStats();
     renderDashboardTable();
     renderClientsTable(allClients);
@@ -874,7 +875,7 @@ async function saveClientEdit() {
 
 // CREATE CLIENT
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
-const ATLAS_API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+const ATLAS_API = 'https://atlas.6845165.xyz/admin';
 
 // Realtime API voices (updated April 2026)
 // hasPreview = TTS sample available; false = Realtime-only, no preview
@@ -896,7 +897,7 @@ let currentPersonaClient = null;
 async function initPersonaPage() {
   const sel = document.getElementById('persona-client-select');
   sel.innerHTML = '<option value="">Loading...</option>';
-  const res = await fetch(`${ATLAS_API}/atlas/clients`);
+  const res = await fetch(`${ATLAS_API}/clients`);
   const data = await res.json();
   const clients = data.clients || [];
   sel.innerHTML = clients.map(c => `<option value="${c.client_id}">${c.business_name} (${c.twilio_number || 'no #'})</option>`).join('');
@@ -906,7 +907,7 @@ async function initPersonaPage() {
 async function loadPersonaClient() {
   const id = document.getElementById('persona-client-select').value;
   if (!id) return;
-  const res = await fetch(`${ATLAS_API}/atlas/clients/${id}`);
+  const res = await fetch(`${ATLAS_API}/clients/${id}`);
   const data = await res.json();
   currentPersonaClient = data.client;
   renderPersonaForm(currentPersonaClient);
@@ -1166,7 +1167,7 @@ async function savePersona() {
     faqs:     getFaqs()
   };
   try {
-    const res = await fetch(`${ATLAS_API}/atlas/clients/${currentPersonaClient.client_id}`, {
+    const res = await fetch(`${ATLAS_API}/clients/${currentPersonaClient.client_id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const data = await res.json();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Client Portal — Atlas AI</title>
+<title>Client Portal — Auzora</title>
 <style>
   :root {
     --bg: #080c14; --surface: #0f1520; --surface2: #151d2e; --border: #1e2d45;
@@ -171,8 +171,9 @@
   <div class="login-box">
     <div class="login-logo">
       <span style="font-size:28px;">🤖</span>
-      <span class="login-logo-text">Atlas AI</span>
+      <span class="login-logo-text">Auzora</span>
     </div>
+    <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by Atlas AI</div>
     <div class="login-sub">Client Portal — sign in to manage your AI agent</div>
     <label>Business Email</label>
     <input type="email" id="login-email" placeholder="you@yourbusiness.com" onkeydown="if(event.key==='Enter')login()" />
@@ -187,7 +188,7 @@
 <!-- APP -->
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">Atlas AI</span>
+    <span class="topbar-logo">Auzora</span>
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
       <div class="agent-status"><div class="pulse"></div> Agent Active</div>
@@ -516,7 +517,7 @@
 <div id="toast"></div>
 
 <script>
-const API = 'https://l366qoycr0.execute-api.us-east-2.amazonaws.com';
+const API = 'https://atlas.6845165.xyz';
 let portalToken = null;
 let portalClient = null;
 let portalAvoidTopics = [];
