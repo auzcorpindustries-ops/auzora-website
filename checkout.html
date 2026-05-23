@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Checkout — Auzora</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0d14;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px; border-bottom: 1px solid #1e2535;
+    background: rgba(10,13,20,0.95); backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
+  .nav-logo span { color: #a78bfa; }
+  .nav-back { font-size: 13px; color: #64748b; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color .2s; }
+  .nav-back:hover { color: #a78bfa; }
+
+  /* Page layout */
+  .page { max-width: 980px; margin: 0 auto; padding: 48px 24px; width: 100%; }
+  .page-header { margin-bottom: 40px; }
+  .page-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #7c3aed; margin-bottom: 10px; }
+  .page-title { font-size: 32px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 8px; }
+  .page-sub { font-size: 15px; color: #64748b; }
+
+  /* Two-col layout */
+  .checkout-grid { display: grid; grid-template-columns: 1fr 400px; gap: 32px; align-items: start; }
+
+  /* Plan card */
+  .plan-card {
+    background: #161b27; border: 1px solid #1e2535;
+    border-radius: 16px; padding: 32px; position: relative; overflow: hidden;
+  }
+  .plan-card.pro { border-color: #7c3aed; }
+  .plan-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #7c3aed, #4f46e5);
+  }
+  .plan-card.starter::before { background: linear-gradient(90deg, #475569, #334155); }
+
+  .plan-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .plan-badge.starter { background: rgba(71,85,105,0.15); border-color: rgba(71,85,105,0.3); color: #94a3b8; }
+
+  .plan-name { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+  .plan-price { font-size: 42px; font-weight: 900; color: #a78bfa; line-height: 1; margin-bottom: 6px; }
+  .plan-price.starter { color: #94a3b8; }
+  .plan-price sup { font-size: 20px; vertical-align: top; margin-top: 8px; }
+  .plan-price sub { font-size: 14px; font-weight: 400; color: #64748b; }
+  .plan-tagline { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+
+  .features-divider { border: none; border-top: 1px solid #1e2535; margin: 24px 0; }
+  .features-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #475569; margin-bottom: 16px; }
+
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .feature-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: #cbd5e1; }
+  .feature-check {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+    background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3);
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+  .feature-check.purple {
+    background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.3); color: #a78bfa;
+  }
+  .feature-add-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #7c3aed; margin: 20px 0 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .feature-add-label::before { content: ''; flex: 1; height: 1px; background: #1e2535; }
+  .feature-add-label::after { content: ''; flex: 1; height: 1px; background: #1e2535; }
+
+  /* Order summary */
+  .order-summary {
+    background: #161b27; border: 1px solid #1e2535;
+    border-radius: 16px; padding: 28px; position: sticky; top: 90px;
+  }
+  .summary-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .summary-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
+  .summary-row .label { color: #64748b; }
+  .summary-row .value { color: #e2e8f0; font-weight: 600; }
+  .summary-divider { border: none; border-top: 1px solid #1e2535; margin: 16px 0; }
+  .summary-total { display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 800; }
+  .summary-total .label { color: #fff; }
+  .summary-total .value { color: #a78bfa; }
+  .summary-note { font-size: 11px; color: #475569; margin-top: 6px; text-align: right; }
+
+  .btn-checkout {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #fff; text-decoration: none; text-align: center;
+    padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700;
+    margin-top: 24px; cursor: pointer; border: none;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.35);
+    transition: opacity .2s, transform .1s;
+  }
+  .btn-checkout:hover { opacity: 0.92; transform: translateY(-1px); }
+  .btn-checkout.starter { background: linear-gradient(135deg, #475569, #334155); box-shadow: 0 4px 24px rgba(71,85,105,0.25); }
+
+  .trust-badges { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .trust-badge { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #475569; }
+  .trust-icon { font-size: 14px; }
+
+  /* What happens next */
+  .next-steps { background: #161b27; border: 1px solid #1e2535; border-radius: 16px; padding: 28px; margin-top: 28px; }
+  .next-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #475569; margin-bottom: 20px; }
+  .step { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa; font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-body .step-title { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 3px; }
+  .step-body .step-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  /* Guarantee */
+  .guarantee {
+    background: rgba(74,222,128,0.04); border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 12px; padding: 20px 24px; margin-top: 28px;
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .guarantee-icon { font-size: 24px; flex-shrink: 0; }
+  .guarantee-title { font-size: 14px; font-weight: 700; color: #4ade80; margin-bottom: 4px; }
+  .guarantee-text { font-size: 12px; color: #64748b; line-height: 1.6; }
+
+  @media (max-width: 720px) {
+    .checkout-grid { grid-template-columns: 1fr; }
+    .order-summary { position: static; }
+    nav { padding: 16px 20px; }
+    .page { padding: 32px 16px; }
+    .plan-price { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Auzora<span>.</span></a>
+  <a href="index.html#pricing" class="nav-back">← Back to plans</a>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-label">🛒 Order Summary</div>
+    <div class="page-title" id="pageTitle">You're one step away</div>
+    <div class="page-sub">Review what's included, then proceed to secure checkout.</div>
+  </div>
+
+  <div class="checkout-grid">
+
+    <!-- Left: Plan details -->
+    <div>
+      <!-- Plan card -->
+      <div class="plan-card" id="planCard">
+        <div class="plan-badge" id="planBadge">⚡ Pro Plan</div>
+        <div class="plan-name" id="planName">Pro</div>
+        <div class="plan-price" id="planPrice"><sup>$</sup>299<sub>/month</sub></div>
+        <div class="plan-tagline" id="planTagline">Everything you need to never miss a call.</div>
+
+        <hr class="features-divider"/>
+        <div class="features-label">What's Included</div>
+
+        <ul class="feature-list" id="featureList">
+          <!-- Injected by JS -->
+        </ul>
+      </div>
+
+      <!-- What happens next -->
+      <div class="next-steps">
+        <div class="next-title">What Happens After You Pay</div>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Complete the onboarding form</div>
+            <div class="step-desc">Tell us about your business — agent name, hours, services, FAQs. Takes about 3 minutes.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Get your access code & portal</div>
+            <div class="step-desc">Your welcome email arrives instantly with your client portal access code.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Your number is provisioned</div>
+            <div class="step-desc">A dedicated AI phone line is automatically assigned and configured for your business.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title" id="goLiveTitle">Go live within 48 hours</div>
+            <div class="step-desc">Your AI agent is answering calls and capturing leads. Manage everything from your portal.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guarantee -->
+      <div class="guarantee">
+        <div class="guarantee-icon">🛡️</div>
+        <div>
+          <div class="guarantee-title">No contracts. Cancel anytime.</div>
+          <div class="guarantee-text">You're billed monthly and can cancel before your next billing cycle with no penalties. If your agent isn't set up within the promised window, we'll extend your first month free.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Order summary -->
+    <div class="order-summary">
+      <div class="summary-title">Order Details</div>
+
+      <div class="summary-row">
+        <span class="label" id="summaryPlanLabel">Auzora Pro</span>
+        <span class="value" id="summaryPrice">$299/mo</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Dedicated AI phone line</span>
+        <span class="value">Included</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Client portal access</span>
+        <span class="value">Included</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Setup fee</span>
+        <span class="value">$0</span>
+      </div>
+
+      <hr class="summary-divider"/>
+
+      <div class="summary-total">
+        <span class="label">Due today</span>
+        <span class="value" id="summaryTotal">$299</span>
+      </div>
+      <div class="summary-note">Then <span id="summaryRecurring">$299</span>/month. Cancel anytime.</div>
+
+      <a href="#" class="btn-checkout" id="checkoutBtn">Proceed to Secure Checkout →</a>
+
+      <div class="trust-badges">
+        <div class="trust-badge"><span class="trust-icon">🔒</span> Secured by Stripe — we never see your card</div>
+        <div class="trust-badge"><span class="trust-icon">📧</span> Setup instructions sent immediately</div>
+        <div class="trust-badge"><span class="trust-icon">📞</span> Dedicated number provisioned automatically</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const PLANS = {
+    starter: {
+      name: 'Starter',
+      price: '$199',
+      priceMonthly: '$199/mo',
+      tagline: 'The essential AI phone agent for your business.',
+      stripeUrl: 'https://buy.stripe.com/bJe5kveAMev093agcM1ZS00',
+      setupWindow: '48 hours',
+      badgeClass: 'starter',
+      cardClass: 'starter',
+      priceClass: 'starter',
+      btnClass: 'starter',
+      baseFeatures: [
+        'Dedicated AI phone line',
+        '24/7 call answering',
+        'Calendar appointment booking',
+        'Custom greeting & FAQs',
+        'Client portal access',
+        'Setup within 48 hours',
+      ],
+      addFeatures: [],
+    },
+    pro: {
+      name: 'Pro',
+      price: '$299',
+      priceMonthly: '$299/mo',
+      tagline: 'Everything you need to never miss a call.',
+      stripeUrl: 'https://buy.stripe.com/14A7sD9gscmS0wE6Cc1ZS01',
+      setupWindow: '24 hours',
+      badgeClass: '',
+      cardClass: 'pro',
+      priceClass: '',
+      btnClass: '',
+      baseFeatures: [
+        'Dedicated AI phone line',
+        '24/7 call answering',
+        'Calendar appointment booking',
+        'Custom greeting & FAQs',
+        'Client portal access',
+      ],
+      addFeatures: [
+        'Up to 10 dedicated AI phone lines',
+        'Lead capture & instant alerts',
+        'Priority support',
+        'Setup within 24 hours',
+      ],
+    },
+  };
+
+  function renderPlan(key) {
+    const plan = PLANS[key] || PLANS.pro;
+
+    // Page header
+    document.getElementById('pageTitle').textContent =
+      `You\'re getting Auzora ${plan.name}`;
+
+    // Plan card
+    const card = document.getElementById('planCard');
+    card.className = `plan-card ${plan.cardClass}`;
+
+    const badge = document.getElementById('planBadge');
+    badge.className = `plan-badge ${plan.badgeClass}`;
+    badge.textContent = key === 'pro' ? '⚡ Pro Plan' : '✦ Starter Plan';
+
+    document.getElementById('planName').textContent = plan.name;
+
+    const priceEl = document.getElementById('planPrice');
+    priceEl.className = `plan-price ${plan.priceClass}`;
+    priceEl.innerHTML = `<sup>$</sup>${plan.price.replace('$','')}<sub>/month</sub>`;
+
+    document.getElementById('planTagline').textContent = plan.tagline;
+
+    // Features
+    const list = document.getElementById('featureList');
+    list.innerHTML = '';
+
+    plan.baseFeatures.forEach(f => {
+      list.innerHTML += `
+        <li class="feature-item">
+          <span class="feature-check">✓</span>
+          <span>${f}</span>
+        </li>`;
+    });
+
+    if (plan.addFeatures.length) {
+      list.innerHTML += `<li><div class="feature-add-label">Pro adds</div></li>`;
+      plan.addFeatures.forEach(f => {
+        list.innerHTML += `
+          <li class="feature-item">
+            <span class="feature-check purple">✦</span>
+            <span>${f}</span>
+          </li>`;
+      });
+    }
+
+    // Go-live step
+    document.getElementById('goLiveTitle').textContent =
+      `Go live within ${plan.setupWindow}`;
+
+    // Summary
+    document.getElementById('summaryPlanLabel').textContent = `Auzora ${plan.name}`;
+    document.getElementById('summaryPrice').textContent = plan.priceMonthly;
+    document.getElementById('summaryTotal').textContent = plan.price;
+    document.getElementById('summaryRecurring').textContent = plan.price;
+
+    // Checkout button
+    const btn = document.getElementById('checkoutBtn');
+    btn.href = plan.stripeUrl;
+    btn.className = `btn-checkout ${plan.btnClass}`;
+  }
+
+  // Read plan from URL param
+  const params = new URLSearchParams(window.location.search);
+  const plan = (params.get('plan') || 'pro').toLowerCase();
+  renderPlan(plan);
+</script>
+
+</body>
+</html>
