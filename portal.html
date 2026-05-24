@@ -522,18 +522,32 @@ let portalToken = null;
 let portalClient = null;
 let portalAvoidTopics = [];
 
-const VOICES = [
-  { id: 'alloy',   label: 'Alloy',   emoji: '🎙️', preview: true  },
-  { id: 'echo',    label: 'Echo',    emoji: '🎧', preview: true  },
-  { id: 'shimmer', label: 'Shimmer', emoji: '✨', preview: true  },
-  { id: 'ash',     label: 'Ash',     emoji: '💬', preview: true  },
-  { id: 'coral',   label: 'Coral',   emoji: '🪸', preview: true  },
-  { id: 'sage',    label: 'Sage',    emoji: '🌿', preview: true  },
-  { id: 'ballad',  label: 'Ballad',  emoji: '🎵', preview: false },
-  { id: 'verse',   label: 'Verse',   emoji: '📜', preview: false },
-  { id: 'marin',   label: 'Marin',   emoji: '🌊', preview: false },
-  { id: 'cedar',   label: 'Cedar',   emoji: '🌲', preview: false },
-];
+let VOICES = []; // Populated from ElevenLabs API
+
+// Gender emoji mapping
+const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
+
+// Fetch ElevenLabs voices
+async function loadVoices() {
+  try {
+    const res = await fetch(`${API}/api/voices`);
+    if (!res.ok) throw new Error('Failed to fetch voices');
+    const data = await res.json();
+    VOICES = data.voices.map(v => ({
+      id: v.voice_id,
+      label: v.name.split(' - ')[0], // First part of name
+      desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
+      emoji: GENDER_EMOJI[v.gender] || '🎙️',
+      gender: v.gender,
+      accent: v.accent,
+      preview_url: v.preview_url
+    }));
+    return VOICES;
+  } catch (e) {
+    console.error('Failed to load voices:', e);
+    return [];
+  }
+}
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 async function login() {
@@ -649,7 +663,7 @@ function formatDT(iso) {
 let settingsDirty = false;
 let activeAudio = null;
 
-function loadSettings() {
+async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
@@ -676,7 +690,9 @@ function loadSettings() {
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
-  renderPortalVoiceGrid(c.voice || 'alloy');
+  // Load ElevenLabs voices then render grid
+  await loadVoices();
+  renderPortalVoiceGrid(c.voice_id || VOICES[0]?.id);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   settingsDirty = false;
@@ -696,15 +712,18 @@ function togglePortalAH() {
 
 // Voice grid
 function renderPortalVoiceGrid(selected) {
+  if (VOICES.length === 0) {
+    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">Loading voices...</div>';
+    return;
+  }
   document.getElementById('portal-voice-grid').innerHTML = VOICES.map(v => `
     <div class="voice-card ${v.id===selected?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
       <div class="voice-card-top">
         <span style="font-size:16px;">${v.emoji}</span>
-        ${v.preview
-          ? `<button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>`
-          : `<span class="live-only">Live only</span>`}
+        <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
       </div>
       <div style="font-size:12px;font-weight:700;">${v.label}</div>
+      ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
     </div>
   `).join('');
 }
@@ -718,14 +737,16 @@ function selectPortalVoice(id) {
 }
 
 function getPortalVoice() {
-  return VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected'))?.id || 'alloy';
+  return VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected'))?.id || VOICES[0]?.id || null;
 }
 
 function playPortalVoice(id) {
   if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; }
   VOICES.forEach(v => { const b = document.getElementById(`ppb-${v.id}`); if(b) b.textContent='▶'; });
   const btn = document.getElementById(`ppb-${id}`);
-  const audio = new Audio(`/assets/voice-samples/${id}.mp3`);
+  const voice = VOICES.find(v => v.id === id);
+  if (!voice || !voice.preview_url) return;
+  const audio = new Audio(voice.preview_url);
   activeAudio = audio;
   btn.textContent = '⏸';
   audio.play();
