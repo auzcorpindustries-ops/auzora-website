@@ -149,6 +149,24 @@
   .btn-save:hover { background: var(--accent2); }
   .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
+  /* Hours builder */
+  .hours-grid { display: grid; gap: 8px; }
+  .hours-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; }
+  .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .hours-day input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+  .hours-day label { cursor: pointer; }
+  .hours-times { display: flex; gap: 8px; align-items: center; }
+  .hours-times input[type="time"] { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; outline: none; }
+  .hours-times input[type="time"]:focus { border-color: var(--accent); }
+  .hours-sep { font-size: 12px; color: var(--muted); }
+
+  /* Service / Specialty tag pills */
+  .s-tags-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
+  .s-tags-wrap:focus-within { border-color: var(--accent); }
+  .s-tag-pill { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent2); display: flex; align-items: center; gap: 5px; }
+  .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+  .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
+
   /* TOAST */
   #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   #toast.show { opacity: 1; }
@@ -284,11 +302,15 @@
             </div>
             <div class="form-group">
               <label>Office Hours</label>
-              <input type="text" id="s-hours" placeholder="Mon–Fri, 9 AM to 5 PM" oninput="setDirty()" />
+              <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group">
               <label>Booking URL</label>
               <input type="text" id="s-booking-url" placeholder="https://calendly.com/..." oninput="setDirty()" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Escalation Phone</label>
+              <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
             </div>
           </div>
 
@@ -396,6 +418,27 @@
               </div>
             </div>
             <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
+          </div>
+
+          <!-- Services & Specialties -->
+          <div class="card">
+            <div class="card-title">🛠️ Services & Specialties</div>
+            <div class="form-group">
+              <label>Services / Products Offered</label>
+              <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
+                <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
+                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Specialties / Highlights</label>
+              <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
+                <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
+                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+            </div>
           </div>
 
           <!-- FAQs -->
@@ -521,6 +564,8 @@ const API = 'https://atlas.6845165.xyz';
 let portalToken = null;
 let portalClient = null;
 let portalAvoidTopics = [];
+let portalServices = [];
+let portalSpecialties = [];
 
 let VOICES = []; // Populated from ElevenLabs API
 
@@ -548,6 +593,119 @@ async function loadVoices() {
     return [];
   }
 }
+
+// ── HOURS GRID ───────────────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DEFAULT_HOURS = {
+  Monday:    { open: true,  from: '09:00', to: '17:00' },
+  Tuesday:   { open: true,  from: '09:00', to: '17:00' },
+  Wednesday: { open: true,  from: '09:00', to: '17:00' },
+  Thursday:  { open: true,  from: '09:00', to: '17:00' },
+  Friday:    { open: true,  from: '09:00', to: '17:00' },
+  Saturday:  { open: false, from: '10:00', to: '15:00' },
+  Sunday:    { open: false, from: '10:00', to: '15:00' },
+};
+
+function parseHoursString(str) {
+  const result = {};
+  DAYS.forEach(d => result[d] = { ...DEFAULT_HOURS[d] });
+  if (!str) return result;
+  const openDays = new Set();
+  str.split(', ').forEach(part => {
+    const spaceIdx = part.indexOf(' ');
+    if (spaceIdx === -1) return;
+    const day = part.slice(0, spaceIdx);
+    const times = part.slice(spaceIdx + 1);
+    const [from, to] = times.split('\u2013'); // en-dash
+    if (DAYS.includes(day) && from && to) {
+      result[day] = { open: true, from: from.trim(), to: to.trim() };
+      openDays.add(day);
+    }
+  });
+  DAYS.forEach(d => { if (!openDays.has(d)) result[d].open = false; });
+  return result;
+}
+
+function buildPortalHoursGrid(hoursStr) {
+  const grid = document.getElementById('s-hours-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const parsed = parseHoursString(hoursStr);
+  DAYS.forEach(day => {
+    const d = parsed[day];
+    const row = document.createElement('div');
+    row.className = 'hours-row';
+    row.innerHTML = `
+      <div class="hours-day">
+        <input type="checkbox" id="s_day_${day}" ${d.open ? 'checked' : ''} onchange="togglePortalDay('${day}');setDirty()">
+        <label for="s_day_${day}">${day.slice(0,3)}</label>
+      </div>
+      <div class="hours-times" id="s_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
+        <input type="time" id="s_from_${day}" value="${d.from}" oninput="setDirty()">
+        <span class="hours-sep">\u2013</span>
+        <input type="time" id="s_to_${day}" value="${d.to}" oninput="setDirty()">
+      </div>`;
+    grid.appendChild(row);
+  });
+}
+
+function togglePortalDay(day) {
+  const open = document.getElementById('s_day_' + day).checked;
+  const times = document.getElementById('s_times_' + day);
+  times.style.opacity = open ? '1' : '0.3';
+  times.style.pointerEvents = open ? '' : 'none';
+}
+
+function buildPortalHoursString() {
+  return DAYS
+    .filter(d => document.getElementById('s_day_' + d)?.checked)
+    .map(d => `${d} ${document.getElementById('s_from_'+d).value}\u2013${document.getElementById('s_to_'+d).value}`)
+    .join(', ');
+}
+
+// ── SERVICE / SPECIALTY TAGS ──────────────────────────────────────────────────
+function renderServiceTags() {
+  const wrap = document.getElementById('s-services-tags');
+  if (!wrap) return;
+  wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
+  const input = document.getElementById('s-services-input');
+  portalServices.forEach((t, i) => {
+    const pill = document.createElement('div');
+    pill.className = 's-tag-pill';
+    pill.innerHTML = `${t}<button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
+    wrap.insertBefore(pill, input);
+  });
+}
+
+function renderSpecialtyTags() {
+  const wrap = document.getElementById('s-specialty-tags');
+  if (!wrap) return;
+  wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
+  const input = document.getElementById('s-specialty-input');
+  portalSpecialties.forEach((t, i) => {
+    const pill = document.createElement('div');
+    pill.className = 's-tag-pill';
+    pill.innerHTML = `${t}<button type="button" onclick="removeSpecialtyTag(${i})">\u00d7</button>`;
+    wrap.insertBefore(pill, input);
+  });
+}
+
+function addServiceTag() {
+  const input = document.getElementById('s-services-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val || portalServices.includes(val)) { input.value = ''; return; }
+  portalServices.push(val); renderServiceTags(); setDirty(); input.value = '';
+}
+
+function addSpecialtyTag() {
+  const input = document.getElementById('s-specialty-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val || portalSpecialties.includes(val)) { input.value = ''; return; }
+  portalSpecialties.push(val); renderSpecialtyTags(); setDirty(); input.value = '';
+}
+
+function removeServiceTag(i) { portalServices.splice(i, 1); renderServiceTags(); setDirty(); }
+function removeSpecialtyTag(i) { portalSpecialties.splice(i, 1); renderSpecialtyTags(); setDirty(); }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 async function login() {
@@ -667,8 +825,9 @@ async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
-  document.getElementById('s-hours').value = c.office_hours || '';
+  buildPortalHoursGrid(c.office_hours || '');
   document.getElementById('s-booking-url').value = c.booking_url || '';
+  document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-tone').value = c.tone || 'friendly';
   document.getElementById('s-pace').value = c.speaking_pace || 'normal';
   document.getElementById('s-lang').value = c.lang || 'en';
@@ -695,6 +854,10 @@ async function loadSettings() {
   renderPortalVoiceGrid(c.voice_id || VOICES[0]?.id);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
+  portalServices = [...(c.service_areas || [])];
+  renderServiceTags();
+  portalSpecialties = [...(c.specialties || [])];
+  renderSpecialtyTags();
   settingsDirty = false;
   document.getElementById('s-unsaved').style.display = 'none';
 }
@@ -822,7 +985,10 @@ async function saveSettings() {
   const payload = {
     business_name:       document.getElementById('s-biz-name').value,
     agent_name:          document.getElementById('s-agent-name').value,
-    office_hours:        document.getElementById('s-hours').value,
+    office_hours:        buildPortalHoursString(),
+    service_areas:       [...portalServices],
+    specialties:         [...portalSpecialties],
+    escalation_phone:    document.getElementById('s-escalation-phone').value,
     booking_url:         document.getElementById('s-booking-url').value,
     voice:               getPortalVoice(),
     tone:                document.getElementById('s-tone').value,
