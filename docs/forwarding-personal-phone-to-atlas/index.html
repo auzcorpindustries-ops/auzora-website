@@ -7,7 +7,15 @@
   <link rel="stylesheet" href="/styles.css" />
   <style>
     .docs-container { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
-    .docs-content { background: var(--bg-card, #12121a); color: var(--text); padding: 2rem; border-radius: 8px; box-shadow: 0 6px 18px rgba(20,24,30,0.06); }
+    .docs-content { background: var(--bg-card, #12121a); color: var(--text); padding: 2.25rem; border-radius: 10px; box-shadow: 0 10px 30px rgba(10,12,16,0.6); font-size:1.05rem; line-height:1.85; max-width:780px; margin:0 auto; }
+    .docs-content h1{font-size:2rem;margin-bottom:0.5rem}
+    .docs-content h2{font-size:1.5rem;margin-top:1.25rem}
+    .docs-content p, .docs-content li{font-size:1.02rem}
+    .docs-content a{color:var(--blue)}
+    /* Light theme override */
+    .docs-theme-light .docs-content{ background: #ffffff; color:#0b0b0b }
+    .docs-theme-light .docs-content code{ background:#f3f4f6 }
+    .docs-theme-light .docs-content pre{ background:#0b1220; color:#e6eef8 }
     .docs-content h1, .docs-content h2, .docs-content h3 { color: var(--text); margin-top:0.4rem }
     .docs-content pre {  background:#0b1220; color:#e6eef8; padding:1rem; border-radius:6px; overflow:auto }
     .docs-content code { background:#f4f6f8; padding:0.2rem 0.4rem; border-radius:4px }
@@ -35,6 +43,7 @@
   </nav>
 
   <main class="docs-container">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;"><button id="docs-theme-toggle" class="btn btn-outline" style="padding:0.4rem 0.6rem;font-size:0.9rem">Toggle light/dark</button></div>
     <div id="docs" class="docs-content">Loading...</div>
   </main>
 
@@ -69,6 +78,16 @@
         const html = marked.parse(md);
         target.innerHTML = DOMPurify.sanitize(html);
       }).catch(err=>{ target.innerHTML = '<p style="color:tomato">Error loading doc: '+err.message+'</p>' });
+    })();
+  </script>
+  <script>
+    (function(){
+      const toggle=document.getElementById('docs-theme-toggle');
+      if(toggle){
+        const stored=localStorage.getItem('docs-theme');
+        if(stored==='light') document.body.classList.add('docs-theme-light');
+        toggle.addEventListener('click',()=>{ const isLight=document.body.classList.toggle('docs-theme-light'); localStorage.setItem('docs-theme', isLight? 'light':'dark'); });
+      }
     })();
   </script>
   <script src="/script.js"></script>
