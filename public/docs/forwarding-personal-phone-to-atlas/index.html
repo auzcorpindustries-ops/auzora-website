@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auzora — AI Phone Agent for Local Business</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="assets/logo.png" alt="Auzora Logo" class="nav-logo" />
+        <span class="nav-brand-text">Auzora</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#services">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="#pricing" class="btn btn-primary nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  
+<!-- PAGE CONTENT (generated) -->
+<section id="docs-page" class="container" style="padding:3rem 1rem;"><h1>How to Use Your Personal Phone with Atlas (Call Forwarding / Failover)</h1>
+<p>Last updated: 2026-06-01</p>
+<p></p>
+<p>Overview</p>
+<p></p>
+<p>If you want callers to ring your personal phone first and have Atlas pick up only when you don't answer, the simplest and most reliable approach is to add a conditional call forwarding rule at the phone or carrier level that forwards the call to your Atlas phone number (the Twilio/Atlas-assigned number) when the call is not answered, busy, or unreachable.</p>
+<p></p>
+<p>This document explains the concept, recommended settings, testing steps, and step-by-step guidance for common phone setups (mobile device settings, major carriers, Google Voice, and typical VoIP/PBX/hosted PBX providers).</p>
+<p></p>
+<p>Prerequisites</p>
+<p></p>
+<ul>
+<li>Your Atlas-assigned phone number (the number we gave you to forward calls to). Replace `+1-555-555-1212` in examples with your actual Atlas number.</li>
+<ul>
+<li>Access to your mobile phone settings and/or your carrier's account portal (MyAT&T, Verizon, T-Mobile, RingCentral admin portal, etc.).</li>
+<ul>
+<li>Permission from the phone account owner to change forwarding rules (if the client does not control the account, work with the account admin).</li>
+</ul>
+<p>How it works (short)</p>
+<p></p>
+<p>1. Caller dials your personal number.</p>
+<p>2. Your phone rings for N seconds (configurable). If you answer, normal call handling proceeds  Atlas is not involved.</p>
+<p>3. If you do not answer within N seconds, the carrier forwards the incoming call to your Atlas number.</p>
+<p>4. Atlas answers the forwarded call and handles it with the client's AI agent.</p>
+<p></p>
+<p>Recommended settings</p>
+<p></p>
+<ul>
+<li>No-answer ring time: 15	60 seconds (3	66 rings). This gives the person a reasonable chance to pick up before failover.</li>
+<ul>
+<li>Forwarding conditions: forward on "no answer" and optionally on "busy" or "unreachable" if you want stronger failover.</li>
+<ul>
+<li>Caller ID: Some carriers forward the original caller CID, some show the forwarded-from number. Verify expected Caller ID with a test call so Atlas receives the caller number if needed.</li>
+<ul>
+<li>Testing: Make several test calls from different numbers to verify the forwarded call reaches Atlas, that the caller ID is preserved (if required), and that the ring time is acceptable.</li>
+</ul>
+<p>Important notes</p>
+<p></p>
+<ul>
+<li>Forwarding is configured and enforced by the carrier or the phone's account settings  Atlas cannot configure forwarding on the customer's behalf.</li>
+<ul>
+<li>If you use a work PBX or hosted PBX (RingCentral, 8x8, Nextiva, etc.), the forwarding rule is usually set in the admin portal under user or call handling rules.</li>
+<ul>
+<li>If you use Google Voice, you can add your Atlas number as a forwarding destination but beware of screening and voicemail settings.</li>
+<ul>
+<li>Always test after making changes.</li>
+</ul>
+<p>Steps by setup</p>
+<p></p>
+<p>A. iPhone (iOS)</p>
+<p>1. Open Settings  Phone  Call Forwarding.</p>
+<p>2. Toggle Call Forwarding ON.</p>
+<p>3. Tap "Forward To" and enter your Atlas number (e.g. +1-555-555-1212).</p>
+<p>4. Note: iOS only supports unconditional forwarding at the device level. To forward only on "no answer," use your carrier account portal or contact your carrier  or use the phone's native carrier conditional forwarding codes if supported.</p>
+<p></p>
+<p>B. Android (stock / common OEMs)</p>
+<p>1. Open Phone app  Settings  Calling accounts (or Calls)  Additional settings  Call forwarding.</p>
+<p>2. Select the appropriate SIM or account.</p>
+<p>3. Set "Forward when unanswered" (or "Forward on no answer") and enter your Atlas number.</p>
+<p>4. Choose timeout/ring time if available (some phones let you set seconds before forwarding).</p>
+<p></p>
+<p>C. AT&T (US)</p>
+<p>1. Use MyAT&T (web or app) or dial customer service if needed.</p>
+<p>2. In MyAT&T: Manage devices  choose the line  Call forwarding settings  Add forwarding for "No answer" and enter your Atlas number.</p>
+<p>3. Alternatively, contact AT&T support and request conditional forwarding on "no answer" to your Atlas number with a 20-second ring time.</p>
+<p>4. Test: Call your number, do not answer, verify Atlas answers.</p>
+<p></p>
+<p>D. Verizon (US)</p>
+<p>1. Use My Verizon  Devices  Your phone  Call forwarding (or Call Forwarding & Calls) settings.</p>
+<p>2. Add a rule to forward on "No Answer" to your Atlas number and set timeout/rings (if available).</p>
+<p>3. Alternatively, call Verizon support for assistance.</p>
+<p></p>
+<p>E. T</p>
+<p>Mobile (US)</p>
+<p>1. Use the T</p>
+<p>Mobile app or account.T</p>
+<p>Mobile.com  Profile & device settings  Call forwarding.</p>
+<p>2. Set forwarding for "No answer" to your Atlas number and configure ring time if available.</p>
+<p></p>
+<p>F. Google Voice</p>
+<p>1. Open voice.google.com or the Google Voice app  Settings  Linked numbers.</p>
+<p>2. Add your Atlas number as a forwarding destination if you want calls forwarded to Atlas. Be aware Google Voice sometimes screens calls before forwarding.</p>
+<p>3. Configure call handling rules in Google Voice to control when forwarding happens (depends on account features). Test to ensure correct behavior.</p>
+<p></p>
+<p>G. Google Fi</p>
+<p>1. Google Fi uses conditional forwarding controlled in the Fi app or web portal.</p>
+<p>2. Open the Google Fi app  Account  Settings  Call forwarding / Calls  configure forwarding for no-answer to Atlas.</p>
+<p>3. Contact Fi support if the option is not visible.</p>
+<p></p>
+<p>H. VoIP / Hosted PBX / Business Phone Systems (RingCentral, Nextiva, 8x8, Vonage, Ooma, Grasshopper, etc.)</p>
+<p>1. Login to the admin portal.</p>
+<p>2. Go to Users / Extensions  select the user or DID you want to edit.</p>
+<p>3. Find Call Handling, Call Routing, or Forwarding rules.</p>
+<p>4. Add a rule: If User Does Not Answer (No Answer)  Forward to number  Enter Atlas number.</p>
+<p>5. Set timeout (rings/seconds) to 15</p>
+<p>30s and enable Busy/Unavailable forwarding if desired.</p>
+<p>6. Save and test.</p>
+<p></p>
+<p>I. Twilio (if the client controls an existing Twilio number)</p>
+<p>If the customer already uses Twilio and wants to failover to Atlas, they can add logic in their Twilio webhook or Studio Flow to forward on no-answer.</p>
+<p></p>
+<p>1. Option A  Twilio Console (Phone Numbers)</p>
+<ul>
+<li>Console  Phone Numbers  Active Numbers  choose the number.</li>
+<ul>
+<li>Configure Voice & Fax: set Webhook for incoming call to your application endpoint that implements the failover logic.</li>
+<ul>
+<li>Implement your app so that if the call is unanswered or rings X seconds, it dials the Atlas number (or returns TwiML <Dial><Number>+1-555-555-1212</Number></Dial>).</li>
+</ul>
+<p>2. Option B  Twilio Studio</p>
+<ul>
+<li>Create or edit a Studio Flow for the number.</li>
+<ul>
+<li>Add a Split or Redirect widget after the initial dial attempt that checks for CallStatus == 'no-answer' or handles the <Dial> timeout, then connect to a new <Dial> to the Atlas number.</li>
+<ul>
+<li>Twilio debugging logs show if forwarding happened and why.</li>
+</ul>
+<p>J. Generic SIP/PBX (Asterisk, FreePBX, 3CX, FusionPBX)</p>
+<p>1. Open the extension settings for the user.</p>
+<p>2. Locate Followme / Call Forwarding / Ring Strategy settings.</p>
+<p>3. Configure a conditional forward on no-answer to the Atlas number and set ring time.</p>
+<p>4. Reload the dialplan and test.</p>
+<p></p>
+<p>Testing checklist</p>
+<p></p>
+<p>1. Verify you know the Atlas number to forward to.</p>
+<p>2. Configure forwarding for "No answer" (15</p>
+<p>30s) to the Atlas number.</p>
+<p>3. From another phone, call your personal number and let it ring without answering.</p>
+<p>4. Confirm Atlas picks up and treats the call as expected (call recording, lead capture, caller ID passed through).</p>
+<p>5. Check call logs in the Atlas portal (or admin) to verify the call record appears and shows the original caller number (if required).</p>
+<p>6. Repeat with different carrier networks (cell, landline) to verify behavior in edge cases.</p>
+<p></p>
+<p>Troubleshooting</p>
+<p></p>
+<ul>
+<li>Atlas never receives the forwarded call: verify the forwarding number is exactly the Atlas number (E.164 format +country code), check that conditional forwarding is active, and call your number while watching carrier settings. If the carrier shows an active forward but the call doesn't arrive, contact the carrier.</li>
+<ul>
+<li>Caller ID lost or changed: Many carriers preserve the original caller ID; some show the forwarded-from number. If call routing relies on original caller ID (e.g., whitelist), test and note what arrives at Atlas.</li>
+<ul>
+<li>Forwarding loops: Do not forward the Atlas number back to the personal number. That can create an infinite loop. Always forward only personal  Atlas.</li>
+<ul>
+<li>VoIP PBX routing priority: If the PBX has ring groups or simultaneous ring policies, ensure the</li>
+</ul>
+<p>no-answer</p>
+<p> condition is the one that triggers the forward. Some systems attempt voicemail or hunt groups first  set the timeout appropriately.</p>
+<p></p>
+<p>Support text for clients to send to their carrier/admin</p>
+<p></p>
+<p>"Hello  I need to add a conditional call forward so calls to my personal number will forward to +1-555-555-1212 only if I don't answer. Please add a 'forward on no answer' rule with a ring timeout of about 20 seconds. Can you confirm how caller ID is forwarded and whether the setting will forward when my phone is out of service?"</p>
+<p></p>
+<p>What Atlas needs from you (to help)</p>
+<p></p>
+<ul>
+<li>Confirm your Atlas-assigned phone number (we'll provide it).</li>
+<ul>
+<li>Preferred no-answer timeout (recommended 20 seconds).</li>
+<ul>
+<li>Whether you want Atlas to pick up on busy/unreachable as well as no-answer.</li>
+</ul>
+<p>Want us to help?</p>
+<p></p>
+<p>We cannot change your carrier settings for you, but we can:</p>
+<ul>
+<li>Provide the Atlas number and exact E.164 format to paste into your carrier or PBX admin portal.</li>
+<ul>
+<li>Provide a short step-by-step or support text to share with your carrier or PBX admin.</li>
+<ul>
+<li>Test call-handling once you've made the change  give us a test number to call from and we'll verify it arrives at Atlas.</li>
+</ul>
+<p>If you'd like, we can add a short "Forwarding to Atlas" checklist to your onboarding packet to streamline setup for new clients.</p>
+<p></p>
+<p>---</p>
+<p></p>
+<p>Last updated: 2026-06-01  Contact support@auzora.io for help.</p></section>
+
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <a href="#" class="footer-brand">
+          <img src="assets/logo.png" alt="Auzora" class="footer-logo" />
+          <span>Auzora</span>
+        </a>
+        <p class="footer-copy">© 2026 Auzora. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#services">How It Works</a>
+          <a href="#about">About</a>
+          <a href="/contact.html">Contact</a>
+          <a href="/legal/terms.html">Terms</a>
+          <a href="/legal/privacy.html">Privacy</a>
+          <a href="/legal/ai-policy.html">AI Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
