@@ -43,7 +43,6 @@
   </nav>
 
   <main class="docs-container">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;"><button id="docs-theme-toggle" class="btn btn-outline" style="padding:0.4rem 0.6rem;font-size:0.9rem">Toggle light/dark</button></div>
     <div id="docs" class="docs-content">Loading...</div>
   </main>
 
@@ -78,16 +77,6 @@
         const html = marked.parse(md);
         target.innerHTML = DOMPurify.sanitize(html);
       }).catch(err=>{ target.innerHTML = '<p style="color:tomato">Error loading doc: '+err.message+'</p>' });
-    })();
-  </script>
-  <script>
-    (function(){
-      const toggle=document.getElementById('docs-theme-toggle');
-      if(toggle){
-        const stored=localStorage.getItem('docs-theme');
-        if(stored==='light') document.body.classList.add('docs-theme-light');
-        toggle.addEventListener('click',()=>{ const isLight=document.body.classList.toggle('docs-theme-light'); localStorage.setItem('docs-theme', isLight? 'light':'dark'); });
-      }
     })();
   </script>
   <script src="/script.js"></script>
