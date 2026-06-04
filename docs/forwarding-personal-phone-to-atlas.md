@@ -1,128 +1,127 @@
 ---
-title: Forwarding your personal phone to Atlas (call failover)
-last_updated: 2026-06-01
+title: Forward your personal phone to Atlas
+last_updated: 2026-06-04
 ---
 
-# Forwarding your personal phone to Atlas (call failover)
+# Forward your personal phone to Atlas
 
-TL;DR
+## TL;DR
 
-1. Let your personal phone ring first. If you don’t answer, forward the call to your Atlas number.
-2. Use conditional forwarding for “no answer” (and optionally “busy”/“unreachable”).
-3. Test from multiple numbers and confirm Caller ID and ring time.
+1. Let your personal phone ring first.
+2. If you do not answer, forward the call to your Atlas number.
+3. Use **conditional forwarding** for **No answer**.
+4. Test it from at least 3 different numbers.
 
-## Prerequisites
+## What you need
 
-- Your Atlas (Twilio) phone number in E.164 format (e.g. +1 312 555 0123).
-- Access to your phone’s carrier portal or phone settings to add conditional forwarding.
-- (Optional) Admin access to your PBX or Twilio console if you control those systems.
-
-## How it works (simple)
-
-1. Caller dials your personal number.
-2. Phone rings for N seconds (you answer if available).
-3. If no answer → carrier forwards call to Atlas number.
-4. Atlas handles the call (IVR/AI/voicemail) and logs the lead.
+- Your Atlas phone number in **E.164** format, like `+131****0123`
+- Access to your phone settings or carrier portal
+- Admin access if you use a PBX / VoIP system
 
 ## Recommended settings
 
-- Ring time (no-answer): 15–30 seconds (≈3–6 rings). Long enough for you to pick up, short enough to avoid poor caller experience.
-- Forwarding conditions: at minimum “No Answer.” Add “Busy” and “Unreachable” only if you want more aggressive failover.
-- Caller ID: forward the original caller when possible (test this — carriers differ).
-- Always use E.164 format for forwarded numbers: +[country][number], e.g. +13125550123.
+| Setting | Recommended |
+|---|---|
+| Ring time before forwarding | 15–30 seconds |
+| Forward to | Your Atlas number |
+| Conditions | No answer first; Busy / Unreachable optional |
+| Test | 3 calls from different numbers |
 
-## Quick checklist (one‑minute setup)
+## How it works
 
-1. Find your Atlas number (E.164).
-2. In your phone/carrier portal: add conditional forward for “No Answer” → enter Atlas number.
-3. Set ring time to ~15–30s.
-4. Make 3 test calls from different phones and confirm Atlas answers and caller ID.
+1. Someone calls your personal number.
+2. Your phone rings normally.
+3. If you do not answer in time, the call forwards to Atlas.
+4. Atlas answers and handles the call.
 
-## Setup by platform (short guides)
+## Quick setup checklist
 
-### iPhone (iOS)
+1. Find your Atlas number.
+2. Add a **No answer** forward rule.
+3. Set ring time to about 20 seconds.
+4. Make 3 test calls.
+5. Confirm Atlas answers and logs the call.
 
-- iOS device-level forwarding is only unconditional. To forward on “No Answer” use your carrier’s conditional forwarding codes or carrier portal.
-- If your carrier supports GSM conditional codes, use them (or contact carrier).
+## Setup by device or provider
 
+### 1) iPhone
 
-![iPhone Call Forwarding](/assets/images/iphone-call-forwarding.svg){: .screenshot }
+- iPhone only supports **unconditional** forwarding in the phone settings.
+- For **No answer** forwarding, use your carrier portal or carrier support.
 
-### Android
+![iPhone call forwarding screenshot](/assets/images/iphone-call-forwarding.svg)
 
-- Settings → Calls → Call forwarding → No answer → enter Atlas number.
-- If not visible, use carrier portal or GSM USSD codes.
+### 2) Android
 
-### AT&T (US)
+- Open **Phone** → **Settings** → **Call forwarding**.
+- Choose **Forward when unanswered** or **Forward on no answer**.
+- Enter your Atlas number.
 
-1. Sign in to MyAT&T → Manage devices → Call forwarding.
-2. Add forwarding rule: Condition = No answer → Target = +[Atlas].
-3. Save and test.
+### 3) AT&T
 
+1. Open **MyAT&T**.
+2. Go to the line you want to edit.
+3. Open **Call forwarding settings**.
+4. Add a **No answer** rule and enter your Atlas number.
 
-![AT&T Call Forwarding](/assets/images/att-call-forwarding.svg){: .screenshot }
+![AT&T call forwarding screenshot](/assets/images/att-call-forwarding.svg)
 
-### Verizon (US)
+### 4) Verizon
 
-1. My Verizon → Devices → Call forwarding settings.
-2. Add or edit “No answer” forwarding → set Atlas number → test.
+1. Open **My Verizon**.
+2. Go to **Devices** → your phone.
+3. Open **Call forwarding**.
+4. Add **No Answer** forwarding to your Atlas number.
 
-### T-Mobile (US)
+### 5) Google Voice / Google Fi
 
-1. Account portal → voice settings → call forwarding.
-2. Configure No Answer forward → set ring timeout → enter Atlas number.
+- Add your Atlas number as a forwarding destination.
+- Check screening and voicemail settings.
+- Test carefully before relying on it.
 
-### Google Voice / Google Fi
+### 6) VoIP / PBX / business phone systems
 
-- Google Voice: add Atlas as a forwarding destination or use carrier-level forwarding. Test Caller ID behavior.
-- Google Fi: use Fi app or web console → call forwarding settings → add Atlas for No Answer.
+Use the admin portal and look for:
 
-### Hosted PBX / VoIP (RingCentral, Nextiva, 8x8, etc.)
+- **Call Handling**
+- **Call Routing**
+- **No answer forwarding**
+- **Ring strategy**
 
-- Add a routing rule: If user does not answer (after N seconds) → Forward to number → enter Atlas number.
-- Check hunt group / voicemail priorities so the “No Answer” condition triggers the forward.
+Set the destination to your Atlas number and save.
 
+![PBX / FreePBX call forwarding screenshot](/assets/images/freepbx-call-forwarding.svg)
 
-![FreePBX Dialplan Example](/assets/images/freepbx-call-forwarding.svg){: .screenshot }
+### 7) Twilio
 
-### Twilio (if you control a Twilio number)
+If you already use Twilio:
 
-- Option A (Studio/Flow): Add a Wait/Timeout and on timeout <Dial> to Atlas.
-- Option B (Webhook): Implement logic in your voice webhook to call Atlas on no-answer.
-- Keep track of caller CID; Twilio can pass original Caller ID.
+1. Open the phone number.
+2. Point the voice webhook or Studio flow to your app.
+3. Forward to Atlas after no-answer / timeout.
 
-### SIP/PBX (Asterisk, FreePBX, 3CX)
+## Test checklist
 
-- Set dial timeout and on NOANSWER route to Atlas (+E.164).
-- Avoid loops: never forward Atlas back to personal number.
-
-## Testing checklist
-
-1. Call your personal number from at least two different numbers.
-2. Let it ring until it forwards; confirm Atlas answers.
-3. Verify caller ID that arrives at Atlas (is it the original caller or forwarded-from number?).
-4. Verify ring time and caller experience (voicemail, IVR).
-5. Test “busy” and “unreachable” if enabled.
-6. Confirm logs/lead capture in Atlas for each test.
+1. Call from your own phone.
+2. Call from a second cell phone.
+3. Call from a landline if possible.
+4. Let it ring until forwarding kicks in.
+5. Confirm:
+   - Atlas answers
+   - Caller ID looks right
+   - The call is logged
 
 ## Troubleshooting
 
-- Atlas never receives the call:
-  - Confirm forwarding number is exactly the Atlas number (E.164).
-  - Confirm conditional forward rule is active.
-  - Check carrier portal or contact carrier support.
-- Caller ID changed:
-  - Some carriers replace original CID with the forwarding number. If your workflows depend on original CID, test and document which carriers preserve it.
-- Forwarding loops:
-  - Never forward the Atlas number back to your personal number. That causes a loop.
-- PBX not forwarding:
-  - Verify the PBX timeout/hunt group order — voicemail or other rules may intercept the call before failover.
+- **Atlas never rings** → verify the Atlas number is correct.
+- **It forwards too fast** → increase the ring time.
+- **Caller ID changes** → some carriers rewrite caller ID.
+- **Looping calls** → make sure you are forwarding only from personal → Atlas.
 
-## Snippets
+## Need help?
 
-- E.164 example: +1 312 555 0123 → +13125550123
-- TwiML (if hosting MP3): `<Response><Play>https://your-server.example.com/media/answer.mp3</Play></Response>`
+Send this to your carrier or admin:
 
----
+> Please add a conditional forward so calls to my personal number go to `+131****0123` only if I do not answer. Please use a ring timeout of about 20 seconds.
 
-_Last updated: 2026-06-01 — Contact support@auzora.io for help._
+If you want, we can also help test the setup once you make the change.
