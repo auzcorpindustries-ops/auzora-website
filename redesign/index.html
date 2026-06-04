@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auzora — Atlas AI redesign preview</title>
+  <meta name="description" content="A redesign preview for Auzora's Atlas AI website — a cleaner, more corporate landing page for businesses that miss calls." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #08090a;
+      --panel: rgba(255, 255, 255, 0.03);
+      --panel-2: rgba(255, 255, 255, 0.05);
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.14);
+      --text: #f7f8f8;
+      --text-dim: #9ca3af;
+      --text-muted: #737b88;
+      --accent: #7170ff;
+      --accent-2: #5e6ad2;
+      --ok: #10b981;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1000px 600px at 15% 8%, rgba(94, 106, 210, 0.22), transparent 58%),
+        radial-gradient(900px 520px at 82% 12%, rgba(236, 72, 153, 0.15), transparent 52%),
+        radial-gradient(900px 540px at 50% 110%, rgba(19, 19, 30, 0.9), transparent 54%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, input, textarea { font: inherit; }
+
+    .shell {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: rgba(8, 9, 10, 0.65);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .topbar-inner {
+      width: min(var(--max), calc(100% - 32px));
+      height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .brand img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .brand-name {
+      font-size: 1.05rem;
+      background: linear-gradient(135deg, #c4c7ff, #8c8cff 35%, #f39ac3 72%, #ffb166);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      color: var(--text-dim);
+      font-size: 0.94rem;
+      padding: 10px 12px;
+      border-radius: 999px;
+      transition: 160ms ease;
+    }
+
+    .nav a:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, #5e6ad2, #7170ff 55%, #8f7bff 100%);
+      color: white;
+      box-shadow: 0 16px 30px rgba(94, 106, 210, 0.28);
+    }
+    .btn-primary:hover { box-shadow: 0 20px 40px rgba(94, 106, 210, 0.34); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.03);
+      border-color: var(--line);
+      color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.045); }
+
+    .hero {
+      padding: 42px 0 24px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 28px;
+      align-items: center;
+      padding: 36px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background:
+        radial-gradient(600px 220px at 15% 0%, rgba(94,106,210,0.25), transparent 52%),
+        radial-gradient(420px 220px at 92% 18%, rgba(236,72,153,0.14), transparent 50%);
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .hero-copy, .hero-panel { position: relative; z-index: 1; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.025);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 6px rgba(16,185,129,0.08);
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: clamp(3.25rem, 6vw, 5.35rem);
+      line-height: 0.98;
+      letter-spacing: -0.07em;
+      max-width: 11ch;
+      margin-bottom: 18px;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #f7f8f8, #dfe1ff 25%, #8c8cff 60%, #ffb166 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subhead {
+      max-width: 60ch;
+      color: var(--text-dim);
+      font-size: 1.07rem;
+      line-height: 1.68;
+      margin-bottom: 26px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.02);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .chip svg { width: 15px; height: 15px; color: #a6adff; }
+
+    .hero-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .preview-card,
+    .feature-card,
+    .step-card,
+    .pricing-card,
+    .form-card,
+    .metric-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.03);
+      box-shadow: 0 20px 42px rgba(0,0,0,0.26);
+    }
+
+    .preview-card {
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -30px -90px auto;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(94,106,210,0.20), transparent 68%);
+      pointer-events: none;
+    }
+
+    .preview-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 8px rgba(16,185,129,0.08);
+    }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bubble {
+      display: grid;
+      gap: 6px;
+      padding: 14px 15px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      line-height: 1.52;
+    }
+
+    .bubble strong { color: var(--text); }
+
+    .bubble.out {
+      background: linear-gradient(180deg, rgba(94,106,210,0.15), rgba(255,255,255,0.03));
+      border-color: rgba(94,106,210,0.35);
+      color: #dbe0ff;
+      margin-left: 28px;
+    }
+
+    .bubble.final {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 15px;
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.26);
+      color: #dff8ef;
+    }
+
+    .mini-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .mini {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .mini-label {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .mini-value {
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+
+    .section {
+      padding: 34px 0 0;
+    }
+
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-kicker {
+      color: #b8bdf7;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.77rem;
+      font-weight: 700;
+    }
+
+    .section-title {
+      font-size: clamp(1.65rem, 2.2vw, 2.6rem);
+      line-height: 1.04;
+      letter-spacing: -0.05em;
+      max-width: 14ch;
+    }
+
+    .section-copy {
+      max-width: 60ch;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    .grid-3, .grid-2, .grid-4 {
+      display: grid;
+      gap: 14px;
+    }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .feature-card, .step-card, .metric-card, .pricing-card, .form-card {
+      padding: 18px;
+    }
+
+    .feature-card h3, .step-card h3, .pricing-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+      letter-spacing: -0.03em;
+    }
+
+    .feature-card p, .step-card p, .pricing-card p, .metric-card p {
+      color: var(--text-dim);
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(94,106,210,0.18), rgba(255,255,255,0.025));
+      border: 1px solid rgba(145, 151, 255, 0.24);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: #d9dcff;
+    }
+
+    .icon svg { width: 18px; height: 18px; }
+
+    .stat-band {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card {
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .step-num {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #dfe2ff;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      font-size: 1.1rem;
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(180deg, rgba(94,106,210,0.12), rgba(255,255,255,0.03));
+      border-color: rgba(145, 151, 255, 0.28);
+    }
+
+    .price {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 10px 0 14px;
+    }
+    .price strong {
+      font-size: 2rem;
+      letter-spacing: -0.06em;
+    }
+    .price span { color: var(--text-dim); }
+
+    .bullets {
+      display: grid;
+      gap: 9px;
+      margin: 14px 0 18px;
+      padding: 0;
+      list-style: none;
+    }
+    .bullets li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--text-dim);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+    .bullets svg { flex: 0 0 auto; margin-top: 2px; color: #a7afff; }
+
+    .form-card {
+      display: grid;
+      gap: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      color: #c4c8d6;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%;
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 13px 14px;
+      outline: none;
+      transition: 160ms ease;
+    }
+
+    input::placeholder, textarea::placeholder { color: #6f7784; }
+    input:focus, textarea:focus {
+      border-color: rgba(145,151,255,0.45);
+      box-shadow: 0 0 0 4px rgba(94,106,210,0.14);
+    }
+
+    textarea { min-height: 120px; resize: vertical; }
+
+    .fineprint {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .footer {
+      padding: 34px 0 60px;
+      color: var(--text-muted);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: 700ms ease;
+    }
+    .fade-in.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      h1 { max-width: 12ch; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .topbar-inner { height: auto; padding: 14px 0; align-items: flex-start; flex-direction: column; }
+      .nav { justify-content: flex-start; }
+      .hero { padding-top: 20px; }
+      .hero-grid { padding: 22px; }
+      h1 { font-size: clamp(2.8rem, 10vw, 4.25rem); }
+      .grid-3, .grid-2, .grid-4, .stat-band, .form-grid { grid-template-columns: 1fr; }
+      .step-card { grid-template-columns: 1fr; }
+      .step-num { width: 48px; height: 48px; border-radius: 16px; }
+      .mini-stack { grid-template-columns: 1fr; }
+      .footer-inner { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="Auzora home">
+        <img src="/assets/logo.png" alt="Auzora" />
+        <span class="brand-name">Auzora</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#problem">Why</a>
+        <a href="#features">Features</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#contact">Contact</a>
+        <a class="btn btn-primary" href="#contact">Book a demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero shell">
+      <div class="hero-grid">
+        <div class="hero-copy fade-in">
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Redesign preview route · same repo, launch later</div>
+          <h1>
+            Atlas AI answers the calls your team misses.
+          </h1>
+          <p class="subhead">
+            Auzora helps service businesses capture every inbound call with a 24/7 AI receptionist that sounds natural, qualifies leads, and books appointments without adding front-desk overhead.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#contact">Book a demo</a>
+            <a class="btn btn-ghost" href="#workflow">See the workflow</a>
+          </div>
+          <div class="hero-points" aria-label="Key benefits">
+            <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>24/7 coverage</span>
+            <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Natural-sounding calls</span>
+            <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Books appointments</span>
+            <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Captures lead details</span>
+          </div>
+        </div>
+
+        <div class="hero-panel fade-in">
+          <div class="preview-card">
+            <div class="preview-top">
+              <div class="status"><span class="pulse"></span> Live call handling</div>
+              <div>Atlas AI • 1:1 handoff</div>
+            </div>
+            <div class="flow">
+              <div class="bubble">
+                <strong>Incoming call</strong>
+                <span>“Hi, do you have any openings tomorrow?”</span>
+              </div>
+              <div class="bubble out">
+                <strong>Atlas AI</strong>
+                <span>“Yes — I can help with that. What time works best?”</span>
+              </div>
+              <div class="bubble">
+                <strong>Captured</strong>
+                <span>Name, reason for call, preferred time, and contact details — then routed to your calendar.</span>
+              </div>
+              <div class="bubble final">
+                <div>
+                  <strong>Booked</strong><br />
+                  <span>Tomorrow · 10:00 AM</span>
+                </div>
+                <span class="btn btn-ghost" style="height:36px;padding:0 12px;">Sent to calendar</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mini-stack">
+            <div class="mini">
+              <div class="mini-label">Answer time</div>
+              <div class="mini-value">Under 2 seconds</div>
+            </div>
+            <div class="mini">
+              <div class="mini-label">Best for</div>
+              <div class="mini-value">Service businesses</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="problem" class="section shell fade-in">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Why it matters</div>
+          <h2 class="section-title">Missed calls become missed revenue.</h2>
+        </div>
+        <p class="section-copy">The redesign is built to explain the business value fast: answer every call, route the right leads, and keep your team focused on the work that pays.</p>
+      </div>
+
+      <div class="stat-band">
+        <div class="metric-card">
+          <div class="metric-value">24/7</div>
+          <p>Atlas keeps answering when the office is closed or the team is busy.</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">Natural</div>
+          <p>Clear, human-like conversations instead of robotic phone-tree flows.</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">Booked</div>
+          <p>Lead capture and scheduling happen in the same call, not a later follow-up.</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">Simple</div>
+          <p>Connect your number, set the rules, and let Atlas handle the rest.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section shell fade-in">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">What Atlas does</div>
+          <h2 class="section-title">A focused feature set for real operators.</h2>
+        </div>
+        <p class="section-copy">No fake dashboards. No fluff. Just the core things a busy business needs when the phone rings.</p>
+      </div>
+
+      <div class="grid-3">
+        <article class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.8 19.8 0 0 1 1.62 3.44 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l.95-.95a2 2 0 0 1 2.11-.45c.9.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <h3>Answer every call</h3>
+          <p>Atlas picks up fast, handles common questions, and keeps the caller engaged until the right next step is clear.</p>
+        </article>
+        <article class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h10M7 12h10M7 17h7"/><path d="M5 4h14v16H5z"/></svg></div>
+          <h3>Qualify leads</h3>
+          <p>Capture contact details, reason for the call, and urgency so your team gets a cleaner, higher-value follow-up list.</p>
+        </article>
+        <article class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v4M17 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg></div>
+          <h3>Book appointments</h3>
+          <p>Route high-intent callers directly into your calendar so the lead is captured before they move on to someone else.</p>
+        </article>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <article class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M2 12h20"/></svg></div>
+          <h3>Custom business context</h3>
+          <p>Use your greeting, service list, hours, and escalation rules so Atlas speaks with the right context from the first call.</p>
+        </article>
+        <article class="feature-card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></div>
+          <h3>Call summaries and follow-up</h3>
+          <p>Every call can end with a clear summary so the owner or front desk can pick up exactly where Atlas left off.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="workflow" class="section shell fade-in">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">How it works</div>
+          <h2 class="section-title">Simple enough to explain in one line.</h2>
+        </div>
+        <p class="section-copy">The route is intentionally separate for now: preview the redesign, tune the copy, then swap it in at launch.</p>
+      </div>
+
+      <div class="timeline">
+        <article class="step-card">
+          <div class="step-num">01</div>
+          <div>
+            <h3>Connect your number</h3>
+            <p>Forward or route inbound calls to Atlas so it can answer first, or pick up after your existing line rings out.</p>
+          </div>
+        </article>
+        <article class="step-card">
+          <div class="step-num">02</div>
+          <div>
+            <h3>Set the rules</h3>
+            <p>Choose what Atlas should answer, what it should collect, and when it should hand off to a person.</p>
+          </div>
+        </article>
+        <article class="step-card">
+          <div class="step-num">03</div>
+          <div>
+            <h3>Capture the call</h3>
+            <p>The caller gets help immediately, your team gets a clean summary, and the lead is no longer lost to voicemail.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="industries" class="section shell fade-in">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Designed for</div>
+          <h2 class="section-title">Businesses that rely on the phone.</h2>
+        </div>
+        <p class="section-copy">Real estate, legal, medical, home services, agencies, and any team that needs to stop losing opportunities after hours.</p>
+      </div>
+
+      <div class="grid-4">
+        <div class="feature-card"><h3>Real estate</h3><p>Capture buyer and seller interest while agents are in the field.</p></div>
+        <div class="feature-card"><h3>Law firms</h3><p>Screen inquiries, gather details, and book consults.</p></div>
+        <div class="feature-card"><h3>Medical & dental</h3><p>Handle appointment requests and common questions.</p></div>
+        <div class="feature-card"><h3>Home services</h3><p>Answer quotes, estimate requests, and urgent calls.</p></div>
+      </div>
+    </section>
+
+    <section id="pricing" class="section shell fade-in">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Pricing teaser</div>
+          <h2 class="section-title">Keep pricing flexible until launch.</h2>
+        </div>
+        <p class="section-copy">For the redesign route, this can stay soft. The goal is to show the shape of the offer without locking the final commercial packaging too early.</p>
+      </div>
+
+      <div class="grid-2">
+        <article class="pricing-card">
+          <h3>Starter</h3>
+          <div class="price"><strong>From $199</strong><span>/ month</span></div>
+          <p>Ideal for single-location businesses that want Atlas to answer calls and book appointments.</p>
+          <ul class="bullets">
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>24/7 AI answering</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Lead capture + summaries</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Calendar booking</li>
+          </ul>
+          <a class="btn btn-ghost" href="#contact">Talk about setup</a>
+        </article>
+        <article class="pricing-card featured">
+          <h3>Launch package</h3>
+          <div class="price"><strong>Custom</strong><span>implementation</span></div>
+          <p>Best for teams that want routing, workflows, and voice tuning handled with a guided rollout.</p>
+          <ul class="bullets">
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Number routing and failover rules</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Business-specific prompts</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Launch support and tuning</li>
+          </ul>
+          <a class="btn btn-primary" href="#contact">Book a demo</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="contact" class="section shell fade-in" style="padding-bottom:28px;">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Contact</div>
+          <h2 class="section-title">Preview form for the launch route.</h2>
+        </div>
+        <p class="section-copy">This keeps the redesign self-contained while we wire the final submission path into n8n later.</p>
+      </div>
+
+      <div class="form-card">
+        <form id="demoForm" action="/api/contact" method="post">
+          <div class="form-grid">
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" placeholder="Auzi Howard" required />
+            </div>
+            <div class="field">
+              <label for="business">Business</label>
+              <input id="business" name="business" type="text" placeholder="Auzora" required />
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" placeholder="(555) 555-0123" />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="auzi@example.com" required />
+            </div>
+            <div class="field full">
+              <label for="notes">What do you want Atlas to do?</label>
+              <textarea id="notes" name="notes" placeholder="Answer calls, qualify leads, book appointments, route after-hours calls..."></textarea>
+            </div>
+          </div>
+          <div class="hero-actions" style="margin-top:14px;margin-bottom:0;">
+            <button class="btn btn-primary" type="submit">Send preview request</button>
+            <span class="fineprint">Preview only — the production version can hook into n8n or another intake flow.</span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <footer class="footer shell">
+      <div class="footer-inner">
+        <div>© 2026 Auzora IT Services. Atlas AI website redesign preview.</div>
+        <div class="footer-links">
+          <a href="#problem">Why</a>
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('is-visible');
+      });
+    }, { threshold: 0.14 });
+
+    document.querySelectorAll('.fade-in').forEach((el) => io.observe(el));
+
+    const form = document.getElementById('demoForm');
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const button = form.querySelector('button[type="submit"]');
+      const original = button.textContent;
+      button.textContent = 'Preview saved';
+      button.disabled = true;
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = original;
+      }, 1600);
+    });
+  </script>
+</body>
+</html>
