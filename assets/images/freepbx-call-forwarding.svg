@@ -1,14 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-  <rect width="100%" height="100%" fill="#f3f4f6" />
-  <text x="60" y="80" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="#0b1226">FreePBX / Asterisk  Dialplan: No-Answer Forward</text>
-  <rect x="60" y="120" width="1080" height="520" rx="14" fill="#ffffff" stroke="#e6e9ef" />
-  <g font-size="18" fill="#111827">
-    <text x="100" y="200">Context: In your Extension settings or IVR route, set timeout and fallback route.</text>
-    <text x="100" y="240">Example dialplan:</text>
-    <rect x="100" y="260" width="980" height="160" rx="8" fill="#0f1724" />
-    <text x="120" y="300" font-family="monospace" font-size="16" fill="#e6eef8">exten => 123,1,Dial(SIP/123,20)</text>
-    <text x="120" y="330" font-family="monospace" font-size="16" fill="#e6eef8">exten => 123,n,GotoIf($[${DIALSTATUS}=NOANSWER]?forward,1)</text>
-    <text x="120" y="360" font-family="monospace" font-size="16" fill="#e6eef8">exten => forward,1,Dial(SIP/+13125550123@outbound,30)</text>
-  </g>
-  <text x="60" y="700" font-size="18" fill="#374151">Caption: PBX: set Dial timeout and route 'NOANSWER' to Atlas number (+13125550123)</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="FreePBX no-answer forward example">
+  <rect width="1200" height="800" fill="#f3f4f6"/>
+  <text x="60" y="78" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="#0b1226">FreePBX / Asterisk</text>
+  <rect x="60" y="120" width="1080" height="520" rx="14" fill="#ffffff" stroke="#e6e9ef"/>
+  <text x="100" y="200" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#111827">Set the extension timeout, then route NOANSWER to the Atlas number.</text>
+  <text x="100" y="240" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#111827">Example dialplan:</text>
+  <rect x="100" y="260" width="980" height="160" rx="8" fill="#0f1724"/>
+  <text x="120" y="300" font-family="monospace" font-size="16" fill="#e6eef8">exten =&gt; 123,1,Dial(SIP/123,20)</text>
+  <text x="120" y="330" font-family="monospace" font-size="16" fill="#e6eef8">exten =&gt; 123,n,GotoIf($[${DIALSTATUS}=NOANSWER]?forward,1)</text>
+  <text x="120" y="360" font-family="monospace" font-size="16" fill="#e6eef8">exten =&gt; forward,1,Dial(SIP/+13125550123@outbound,30)</text>
+  <text x="60" y="700" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#374151">Caption: route NOANSWER to Atlas after the initial ring timeout</text>
 </svg>

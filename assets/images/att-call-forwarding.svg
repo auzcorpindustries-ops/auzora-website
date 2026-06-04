@@ -1,15 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-  <rect width="100%" height="100%" fill="#ffffff" />
-  <text x="60" y="80" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="#0b1226">AT&T 01: Call Forwarding (MyAT&T)</text>
-  <rect x="60" y="120" width="1080" height="520" rx="14" fill="#f8fafc" stroke="#e6eef8" />
-  <text x="100" y="200" font-size="22" fill="#111827">MyAT&T 7 Manage devices 7 Call forwarding settings</text>
-  <g>
-    <text x="100" y="280" font-size="20" fill="#111827">No Answer forwarding</text>
-    <rect x="100" y="300" width="760" height="56" rx="8" fill="#ffffff" stroke="#dfe7f6" />
-    <text x="120" y="336" font-size="18" fill="#0b1226">Forward to</text>
-    <text x="360" y="338" font-size="18" fill="#0b1226">+1 312 555 0123</text>
-    <rect x="880" y="300" width="200" height="56" rx="8" fill="#0b5cff" />
-    <text x="930" y="336" font-size="18" fill="#ffffff">Save</text>
-  </g>
-  <text x="60" y="700" font-size="18" fill="#374151">Caption: AT&T MyAT&T — add 'No Answer' forward to Atlas number</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="AT&T call forwarding example">
+  <rect width="1200" height="800" fill="#ffffff"/>
+  <text x="60" y="78" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="#0b1226">AT&amp;T Call Forwarding</text>
+  <rect x="60" y="120" width="1080" height="520" rx="14" fill="#f8fafc" stroke="#e6eef8"/>
+  <text x="100" y="200" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#111827">MyAT&amp;T → Manage devices → Call forwarding settings</text>
+  <text x="100" y="280" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#111827">No answer forwarding</text>
+  <rect x="100" y="300" width="760" height="56" rx="8" fill="#ffffff" stroke="#dfe7f6"/>
+  <text x="120" y="336" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#0b1226">Forward to</text>
+  <text x="360" y="338" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#0b1226">+1 312 555 0123</text>
+  <rect x="880" y="300" width="200" height="56" rx="8" fill="#0b5cff"/>
+  <text x="930" y="336" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#ffffff">Save</text>
+  <text x="60" y="700" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#374151">Caption: add a No Answer rule that points to the Atlas number</text>
 </svg>

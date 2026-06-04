@@ -17,12 +17,10 @@ Last updated: 2026-06-04
 
 ## Good default settings
 
-| Setting | Recommendation |
-|---|---|
-| Ring time before forwarding | 15–30 seconds |
-| Forward to | Your Atlas number |
-| Conditions | No answer first; Busy / Unreachable optional |
-| Test | 3 calls from different numbers |
+- **Ring time before forwarding:** 15–30 seconds
+- **Forward to:** Your Atlas number
+- **Conditions:** No answer first; Busy / Unreachable optional
+- **Test:** 3 calls from different numbers
 
 ## How it works
 
