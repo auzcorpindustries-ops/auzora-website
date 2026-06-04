@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Auzora">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="40%" stop-color="#7C3AED"/>
+      <stop offset="75%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0A0A0F"/>
+  <path d="M32 12 49 50h-6.6l-3.5-7.8H25.1L21.6 50H15l17-38Zm0 13.2-4.6 10.1h9.2L32 25.2Z" fill="url(#g)"/>
+</svg>
