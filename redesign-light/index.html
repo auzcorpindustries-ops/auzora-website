@@ -516,17 +516,17 @@
     .step h3 { font-size: 1.05rem; margin-bottom: 10px; letter-spacing: -0.03em; }
     .step p { color: var(--muted); font-size: 0.96rem; }
 
-    .pricing-wrap { display: grid; grid-template-columns: 1fr 0.95fr; gap: 16px; }
-    .price-spot {
+    .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .pricing-card {
+      position: relative;
       border-radius: 28px;
       padding: 30px;
-      background: linear-gradient(135deg, rgba(59,130,246,0.10), rgba(139,92,246,0.08), rgba(236,72,153,0.06)), rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.90);
       border: 1px solid rgba(16,24,38,0.08);
       box-shadow: var(--shadow);
       overflow: hidden;
-      position: relative;
     }
-    .price-spot::after {
+    .pricing-card::after {
       content: "";
       position: absolute;
       inset: auto -60px -80px auto;
@@ -536,16 +536,10 @@
       background: radial-gradient(circle, rgba(236,72,153,0.12), transparent 62%);
       pointer-events: none;
     }
-    .price-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
+    .pricing-card.featured {
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.06), rgba(236,72,153,0.04)), rgba(255,255,255,0.90);
     }
-    .price-title h3 { font-size: 1.35rem; letter-spacing: -0.04em; }
-    .price-note { color: var(--muted); font-size: 0.94rem; max-width: 48ch; margin-bottom: 22px; }
-    .price-badge {
+    .pricing-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -556,17 +550,52 @@
       color: #415065;
       font-size: 0.84rem;
       white-space: nowrap;
+      margin-bottom: 16px;
     }
-    .price-list { display: grid; gap: 10px; margin: 22px 0 0; padding: 0; list-style: none; }
-    .price-list li { display: flex; gap: 10px; color: var(--muted); font-size: 0.95rem; }
-    .price-list li::before { content: "✓"; color: #15803d; font-weight: 700; }
-    .price-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 20px;
+    .pricing-tier {
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+      margin-bottom: 14px;
     }
-    .price-actions .btn { flex: 1 1 220px; }
+    .pricing-amount {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .pricing-monthly {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 8px;
+      color: var(--text);
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+    .pricing-monthly strong {
+      font-size: 3.35rem;
+      line-height: 0.92;
+      letter-spacing: -0.08em;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .pricing-monthly span {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    .pricing-setup {
+      color: var(--muted);
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+    }
+    .pricing-desc { color: var(--muted); font-size: 0.95rem; max-width: 48ch; margin-bottom: 22px; }
+    .pricing-features { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .pricing-features li { display: flex; gap: 10px; color: var(--muted); font-size: 0.95rem; }
+    .pricing-features li::before { content: "✓"; color: #15803d; font-weight: 700; }
+    .pricing-btn { width: 100%; margin-top: 22px; }
+    .pricing-note { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
 
     .faq { display: grid; gap: 12px; }
     .faq-item {
@@ -634,7 +663,7 @@
     .footer strong { color: #2b3446; font-weight: 600; }
 
     @media (max-width: 1080px) {
-      .hero-grid, .pricing-wrap, .contact { grid-template-columns: 1fr; }
+      .hero-grid, .pricing-grid, .contact { grid-template-columns: 1fr; }
       .card-grid.four, .card-grid.three, .workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .section-head { align-items: start; flex-direction: column; }
       .hero h1 { max-width: 12ch; }
@@ -837,42 +866,51 @@
     <section class="section shell" id="pricing">
       <div class="section-head">
         <div>
-          <div class="section-kicker">Pricing teaser</div>
-          <h2>Simple launch pricing, kept intentionally light here.</h2>
+          <div class="section-kicker">Pricing</div>
+          <h2>Simple pricing. No surprises.</h2>
         </div>
-        <p class="section-lead">The brief asks for a teaser, not a full pricing table. This keeps the preview aligned with the launch-stage story.</p>
+        <p class="section-lead">One-time setup covers configuration, voice tuning, and go-live. Monthly fee covers your dedicated AI line, hosting, and support. No contracts — cancel anytime.</p>
       </div>
 
-      <div class="pricing-wrap">
-        <article class="price-spot">
-          <div class="price-title">
-            <h3>Contact for launch pricing</h3>
-            <span class="price-badge">Preview only</span>
+      <div class="pricing-grid">
+        <article class="pricing-card">
+          <div class="pricing-tier">Starter</div>
+          <div class="pricing-amount">
+            <div class="pricing-monthly"><strong>$199</strong><span>/ month</span></div>
+            <div class="pricing-setup">$300 setup</div>
           </div>
-          <p class="price-note">Pricing is intentionally light here. The goal is to show the product and start the conversation.</p>
-          <div class="price-actions" aria-label="Checkout options">
-            <a class="btn btn-primary" href="/checkout.html?plan=starter">Starter checkout</a>
-            <a class="btn btn-secondary" href="/checkout.html?plan=pro">Pro checkout</a>
-          </div>
-          <ul class="price-list">
-            <li>Demo-first sales flow</li>
-            <li>Business-specific setup</li>
-            <li>Easy path to launch</li>
+          <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
+          <ul class="pricing-features">
+            <li>Dedicated AI phone line</li>
+            <li>24/7 call answering</li>
+            <li>Calendar appointment booking</li>
+            <li>Custom greeting & FAQs</li>
+            <li>Client portal access</li>
+            <li>Setup within 48 hours</li>
           </ul>
+          <a href="/checkout.html?plan=starter" class="btn btn-secondary pricing-btn">Get Started →</a>
         </article>
 
-        <article class="panel">
-          <div class="mini-label">Included in every plan</div>
-          <h3>What the customer expects to get</h3>
-          <p>Everything is framed around reliability, speed, and a polished front desk experience.</p>
-          <ul class="price-list">
-            <li>24/7 call handling</li>
-            <li>Lead qualification</li>
-            <li>Booking or handoff logic</li>
-            <li>Premium branded experience</li>
+        <article class="pricing-card featured">
+          <div class="pricing-badge">Coming Soon</div>
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-amount">
+            <div class="pricing-monthly"><strong>$299</strong><span>/ month</span></div>
+            <div class="pricing-setup">$500 setup</div>
+          </div>
+          <p class="pricing-desc">For businesses that want more lines, deeper insights, and hands-on monthly optimization.</p>
+          <ul class="pricing-features">
+            <li>Everything in Starter</li>
+            <li>Up to 10 dedicated AI phone lines</li>
+            <li>Lead capture & instant alerts</li>
+            <li>Priority support</li>
+            <li>Setup within 24 hours</li>
           </ul>
+          <a href="#" class="btn btn-primary pricing-btn" style="background:#334155;box-shadow:none;cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
         </article>
       </div>
+
+      <p class="pricing-note">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. No contracts — cancel anytime. Questions? <a href="#contact" class="gradient-link">Talk to us first.</a></p>
     </section>
 
     <section class="section shell" id="faq">
