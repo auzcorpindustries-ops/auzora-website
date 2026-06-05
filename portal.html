@@ -114,7 +114,8 @@
   .form-group textarea { resize: vertical; min-height: 80px; }
 
   /* VOICE GRID */
-  .voice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .voice-column { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   .voice-card {
     border: 2px solid var(--border); background: #ffffff;
     border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.15s;
@@ -569,9 +570,6 @@ let portalSpecialties = [];
 
 let VOICES = []; // Populated from ElevenLabs API
 
-// Gender emoji mapping
-const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
-
 // Fetch ElevenLabs voices
 async function loadVoices() {
   try {
@@ -584,7 +582,6 @@ async function loadVoices() {
         id: v.voice_id,
         label: v.name.split(' - ')[0], // First part of name
         desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
-        emoji: GENDER_EMOJI[v.gender] || '🎙️',
         gender: v.gender,
         accent: v.accent,
         preview_url: v.preview_url
@@ -882,16 +879,21 @@ function renderPortalVoiceGrid(selected) {
     return;
   }
   const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
-  document.getElementById('portal-voice-grid').innerHTML = VOICES.map(v => `
-    <div class="voice-card ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
-      <div class="voice-card-top">
-        <span style="font-size:16px;">${v.emoji}</span>
-        <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
-      </div>
-      <div style="font-size:12px;font-weight:700;">${v.label}</div>
-      ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
-    </div>
-  `).join('');
+  const maleVoices = VOICES.filter(v => v.gender === 'male' || v.gender === 'unknown' || !v.gender);
+  const femaleVoices = VOICES.filter(v => v.gender === 'female');
+  const renderColumn = voices => `
+    <div class="voice-column">
+      ${voices.map(v => `
+        <div class="voice-card ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
+          <div class="voice-card-top">
+            <div style="font-size:12px;font-weight:700;">${v.label}</div>
+            <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
+          </div>
+          ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(maleVoices)}${renderColumn(femaleVoices)}`;
 }
 
 function selectPortalVoice(id) {
