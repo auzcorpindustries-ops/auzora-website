@@ -570,6 +570,23 @@ let portalSpecialties = [];
 
 let VOICES = []; // Populated from ElevenLabs API
 const VOICE_COLLECTION = 'Auzora';
+const VOICE_ALLOWLIST = new Set([
+  'Jordan',
+  'Adalina',
+  'Angie',
+  'Josh',
+  'Carly',
+  'Justin',
+  'Stephen',
+  'Veda Sky',
+  'Liz',
+  'Eryn',
+  'Tiffany',
+]);
+
+function getVoiceTitle(name) {
+  return (name || '').split(/\s[-–]\s/)[0].trim();
+}
 
 // Fetch Auzora collection voices from ElevenLabs
 async function loadVoices() {
@@ -581,12 +598,13 @@ async function loadVoices() {
       .filter(v => v.category !== 'premade')
       .map(v => ({
         id: v.voice_id,
-        label: v.name.split(' - ')[0], // First part of name
-        desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
+        label: getVoiceTitle(v.name),
+        desc: v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
         gender: v.gender,
         accent: v.accent,
         preview_url: v.preview_url
-      }));
+      }))
+      .filter(v => VOICE_ALLOWLIST.has(v.label));
     return VOICES;
   } catch (e) {
     console.error('Failed to load voices:', e);
