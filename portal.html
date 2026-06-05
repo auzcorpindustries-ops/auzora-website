@@ -607,6 +607,10 @@ async function loadVoices() {
       }))
       .filter(v => VOICE_ALLOWLIST.has(v.label));
     await Promise.all(VOICES.map(async v => {
+      if (v.label === 'Jordan') {
+        v.play_url = '/assets/audio/jordan-preview.mp3';
+        return;
+      }
       if (!v.preview_url || !String(v.preview_url).includes('api.us.elevenlabs.io')) return;
       try {
         const previewRes = await fetch(v.preview_url);
