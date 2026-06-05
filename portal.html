@@ -569,11 +569,12 @@ let portalServices = [];
 let portalSpecialties = [];
 
 let VOICES = []; // Populated from ElevenLabs API
+const VOICE_COLLECTION = 'Auzora';
 
-// Fetch ElevenLabs voices
+// Fetch Auzora collection voices from ElevenLabs
 async function loadVoices() {
   try {
-    const res = await fetch(`${API}/api/voices`);
+    const res = await fetch(`${API}/api/voices?collection=${encodeURIComponent(VOICE_COLLECTION)}`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
     VOICES = (data.voices || [])
