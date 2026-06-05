@@ -6,23 +6,23 @@
 <title>Auzora Admin</title>
 <style>
   :root {
-    --bg: #0b0e18;
-    --surface: #111827;
-    --surface2: #1a2236;
-    --border: #1e293b;
-    --accent: #6366f1;
-    --accent-hover: #818cf8;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: rgba(16,24,38,0.08);
+    --accent: #3b82f6;
+    --accent-hover: #7c3aed;
     --green: #22c55e;
     --yellow: #f59e0b;
     --red: #ef4444;
     --blue: #38bdf8;
-    --purple: #a78bfa;
-    --text: #e2e8f0;
-    --muted: #64748b;
+    --purple: #7c3aed;
+    --text: #101826;
+    --muted: #5f687a;
     --font: 'Segoe UI', system-ui, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+  body { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: var(--text); font-family: var(--font); min-height: 100vh; }
 
   /* AUTH SCREEN */
   #auth-screen {
@@ -30,7 +30,7 @@
     min-height: 100vh; padding: 24px;
   }
   .auth-box {
-    background: var(--surface); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.90); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06);
     border-radius: 16px; padding: 40px; width: 100%; max-width: 380px; text-align: center;
   }
   .auth-logo { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 6px; }
@@ -53,7 +53,7 @@
   #app { display: none; }
   .sidebar {
     position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
-    background: var(--surface); border-right: 1px solid var(--border);
+    background: rgba(255,255,255,0.88); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; padding: 24px 0;
   }
   .sidebar-logo {
@@ -67,8 +67,8 @@
     font-size: 13px; color: var(--muted); cursor: pointer; border-radius: 0;
     transition: all 0.15s; border-left: 3px solid transparent;
   }
-  .nav-item:hover { color: var(--text); background: var(--surface2); }
-  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(99,102,241,0.08); }
+  .nav-item:hover { color: var(--text); background: rgba(16,24,38,0.03); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(59,130,246,0.08); }
   .nav-icon { font-size: 16px; }
   .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
   .logout-btn { font-size: 12px; color: var(--muted); cursor: pointer; }
@@ -85,7 +85,7 @@
   /* STATS */
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.90); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06);
     border-radius: 12px; padding: 20px;
   }
   .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
@@ -94,7 +94,7 @@
 
   /* TABLE */
   .table-card {
-    background: var(--surface); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.90); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06);
     border-radius: 12px; overflow: hidden;
   }
   .table-toolbar {
@@ -117,7 +117,7 @@
        padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
   td { padding: 14px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr:hover td { background: rgba(16,24,38,0.02); }
   .client-name { font-weight: 600; }
   .client-email { font-size: 12px; color: var(--muted); }
 
@@ -149,7 +149,7 @@
     z-index: 100; padding: 24px;
   }
   .modal {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    background: rgba(255,255,255,0.90); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06); border-radius: 16px;
     width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
   }
   .modal-header {
@@ -164,7 +164,7 @@
   .form-row.single { grid-template-columns: 1fr; }
   .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
   .form-group input, .form-group select, .form-group textarea {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    width: 100%; background: #ffffff; border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; outline: none;
     font-family: var(--font);
   }
@@ -187,7 +187,7 @@
 
   /* DETAIL SECTIONS */
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .detail-item { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .detail-item { background: #f8fafc; border-radius: 8px; padding: 12px 14px; }
   .detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
   .detail-value { font-size: 14px; font-weight: 500; margin-top: 4px; }
 
@@ -198,7 +198,7 @@
 
   /* TOAST */
   #toast {
-    position: fixed; bottom: 24px; right: 24px; background: var(--surface2);
+    position: fixed; bottom: 24px; right: 24px; background: rgba(255,255,255,0.94);
     border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px;
     font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s;
     pointer-events: none;
