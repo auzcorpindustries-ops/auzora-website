@@ -592,17 +592,16 @@ let portalServices = [];
 let portalSpecialties = [];
 
 let VOICES = [
-  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', hasPreview: true,  preview_url: '/assets/voice-samples/alloy.mp3' },
-  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', hasPreview: true,  preview_url: '/assets/voice-samples/echo.mp3' },
-  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', hasPreview: true,  preview_url: '/assets/voice-samples/shimmer.mp3' },
-  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', hasPreview: true,  preview_url: '/assets/voice-samples/ash.mp3' },
-  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', hasPreview: true,  preview_url: '/assets/voice-samples/coral.mp3' },
-  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', hasPreview: true,  preview_url: '/assets/voice-samples/sage.mp3' },
-  { id: 'ballad',  label: 'Ballad',  desc: 'Warm & melodic',           emoji: '🎵', hasPreview: false, preview_url: null },
-  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',      emoji: '📜', hasPreview: false, preview_url: null },
-  { id: 'marin',   label: 'Marin',   desc: 'Clear & confident',        emoji: '🌊', hasPreview: false, preview_url: null },
-  { id: 'cedar',   label: 'Cedar',   desc: 'Grounded & steady',        emoji: '🌲', hasPreview: false, preview_url: null },
-].map(v => ({ ...v, group: v.hasPreview ? 'left' : 'right', play_url: v.preview_url }));
+  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', group: 'left',  preview_url: '/assets/voice-samples/alloy.mp3' },
+  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', group: 'left',  preview_url: '/assets/voice-samples/echo.mp3' },
+  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', group: 'left',  preview_url: '/assets/voice-samples/shimmer.mp3' },
+  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', group: 'left',  preview_url: '/assets/voice-samples/ash.mp3' },
+  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', group: 'left',  preview_url: '/assets/voice-samples/coral.mp3' },
+  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', group: 'right', preview_url: '/assets/voice-samples/sage.mp3' },
+  { id: 'nova',    label: 'Nova',    desc: 'Polished & warm',          emoji: '✨', group: 'right', preview_url: '/assets/voice-samples/nova.mp3' },
+  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & steady',            emoji: '⬛', group: 'right', preview_url: '/assets/voice-samples/onyx.mp3' },
+  { id: 'fable',   label: 'Fable',   desc: 'Expressive & natural',     emoji: '📖', group: 'right', preview_url: '/assets/voice-samples/fable.mp3' },
+].map(v => ({ ...v, play_url: v.preview_url }));
 
 async function loadVoices() {
   return VOICES;

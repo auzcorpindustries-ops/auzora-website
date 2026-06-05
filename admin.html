@@ -877,8 +877,8 @@ async function saveClientEdit() {
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
 const ATLAS_API = 'https://atlas.6845165.xyz/admin';
 
-// Realtime API voices (updated April 2026)
-// hasPreview = TTS sample available; false = Realtime-only, no preview
+// Realtime API voices (supported OpenAI Realtime voice enums)
+// hasPreview = TTS sample available
 const VOICES = [
   { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', hasPreview: true  },
   { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', hasPreview: true  },
@@ -886,10 +886,9 @@ const VOICES = [
   { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', hasPreview: true  },
   { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', hasPreview: true  },
   { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', hasPreview: true  },
-  { id: 'ballad',  label: 'Ballad',  desc: 'Warm & melodic',           emoji: '🎵', hasPreview: false },
-  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',      emoji: '📜', hasPreview: false },
-  { id: 'marin',   label: 'Marin',   desc: 'Clear & confident',        emoji: '🌊', hasPreview: false },
-  { id: 'cedar',   label: 'Cedar',   desc: 'Grounded & steady',        emoji: '🌲', hasPreview: false },
+  { id: 'nova',    label: 'Nova',    desc: 'Polished & warm',          emoji: '✨', hasPreview: true  },
+  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & steady',            emoji: '⬛', hasPreview: true  },
+  { id: 'fable',   label: 'Fable',   desc: 'Expressive & natural',     emoji: '📖', hasPreview: true  },
 ];
 
 let currentPersonaClient = null;
