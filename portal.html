@@ -479,7 +479,7 @@
 
       <div class="save-bar">
         <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
-        <button class="btn-save" id="s-save-btn" onclick="saveSettings()">💾 Save & Apply</button>
+        <button class="btn-save" id="s-save-btn" onclick="saveSettings()" disabled>💾 Save & Apply</button>
       </div>
     </div>
 
@@ -875,6 +875,7 @@ function formatDT(iso) {
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 let settingsDirty = false;
 let activeAudio = null;
+let currentPortalVoiceId = null;
 
 async function loadSettings() {
   const c = portalClient;
@@ -906,7 +907,7 @@ async function loadSettings() {
 
   // Load ElevenLabs voices then render grid
   await loadVoices();
-  renderPortalVoiceGrid(c.voice_id || c.voice || VOICES[0]?.id);
+  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice));
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
@@ -915,10 +916,13 @@ async function loadSettings() {
   renderSpecialtyTags();
   settingsDirty = false;
   document.getElementById('s-unsaved').style.display = 'none';
+  document.getElementById('s-save-btn').disabled = true;
 }
 
 function setDirty() {
   settingsDirty = true;
+  const btn = document.getElementById('s-save-btn');
+  if (btn) btn.disabled = false;
   document.getElementById('s-unsaved').style.display = 'inline';
 }
 
@@ -928,13 +932,34 @@ function togglePortalAH() {
   document.getElementById('s-ah-off').style.display = on ? 'none' : 'block';
 }
 
-// Voice grid
+function normalizeVoiceKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s*[-–].*$/, '');
+}
+
+function resolvePortalVoiceId(...candidates) {
+  const flat = candidates.flat().filter(Boolean);
+  for (const candidate of flat) {
+    const exact = VOICES.find(v => v.id === candidate || v.label === candidate || v.label === String(candidate).split(/\s[-–]\s/)[0]?.trim());
+    if (exact) return exact.id;
+  }
+  for (const candidate of flat) {
+    const norm = normalizeVoiceKey(candidate);
+    const match = VOICES.find(v => normalizeVoiceKey(v.id) === norm || normalizeVoiceKey(v.label) === norm || normalizeVoiceKey(v.desc) === norm);
+    if (match) return match.id;
+  }
+  return VOICES[0]?.id || null;
+}
+
+function getSelectedPortalVoice() {
+  return VOICES.find(v => v.id === currentPortalVoiceId) || VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected')) || VOICES[0] || null;
+}
 function renderPortalVoiceGrid(selected) {
   if (VOICES.length === 0) {
     document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No library voices available.</div>';
     return;
   }
   const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  currentPortalVoiceId = activeVoiceId;
   const femaleVoices = VOICES.filter(v => v.gender === 'female');
   const maleVoices = VOICES.filter(v => v.gender === 'male' || v.gender === 'unknown' || !v.gender);
   const renderColumn = (voices, tone) => `
@@ -953,6 +978,7 @@ function renderPortalVoiceGrid(selected) {
 }
 
 function selectPortalVoice(id) {
+  currentPortalVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
     if (!card) return;
@@ -964,7 +990,7 @@ function selectPortalVoice(id) {
 }
 
 function getPortalVoice() {
-  return VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected'))?.id || VOICES[0]?.id || null;
+  return currentPortalVoiceId || getSelectedPortalVoice()?.id || null;
 }
 
 function playPortalVoice(id) {
@@ -1046,6 +1072,7 @@ async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
   btn.textContent = 'Saving...'; btn.disabled = true;
 
+  const voiceMeta = getSelectedPortalVoice();
   const payload = {
     business_name:       document.getElementById('s-biz-name').value,
     agent_name:          document.getElementById('s-agent-name').value,
@@ -1054,8 +1081,12 @@ async function saveSettings() {
     specialties:         [...portalSpecialties],
     escalation_phone:    document.getElementById('s-escalation-phone').value,
     booking_url:         document.getElementById('s-booking-url').value,
-    voice_id:            getPortalVoice(),
-    voice:               getPortalVoice(),
+    voice_id:            voiceMeta?.id,
+    voice:               voiceMeta?.id,
+    voice_name:          voiceMeta?.label,
+    voice_label:         voiceMeta?.label,
+    selected_voice:      voiceMeta?.id,
+    agent_voice:         voiceMeta?.id,
     tone:                document.getElementById('s-tone').value,
     speaking_pace:       document.getElementById('s-pace').value,
     lang:                document.getElementById('s-lang').value,
@@ -1082,6 +1113,7 @@ async function saveSettings() {
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
       settingsDirty = false;
       document.getElementById('s-unsaved').style.display = 'none';
+      document.getElementById('s-save-btn').disabled = true;
       showToast('Settings saved — live on next call ✓', 'success');
     } else throw new Error(data.error || 'Save failed');
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
