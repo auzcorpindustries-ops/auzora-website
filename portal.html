@@ -906,7 +906,7 @@ async function loadSettings() {
 
   // Load ElevenLabs voices then render grid
   await loadVoices();
-  renderPortalVoiceGrid(c.voice_id || VOICES[0]?.id);
+  renderPortalVoiceGrid(c.voice_id || c.voice || VOICES[0]?.id);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
@@ -955,7 +955,10 @@ function renderPortalVoiceGrid(selected) {
 function selectPortalVoice(id) {
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
-    if (card) card.className = `voice-card ${v.id===id?'selected':''}`;
+    if (!card) return;
+    const tone = v.gender === 'female' ? 'left' : 'right';
+    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
+    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
   });
   setDirty();
 }
@@ -1051,6 +1054,7 @@ async function saveSettings() {
     specialties:         [...portalSpecialties],
     escalation_phone:    document.getElementById('s-escalation-phone').value,
     booking_url:         document.getElementById('s-booking-url').value,
+    voice_id:            getPortalVoice(),
     voice:               getPortalVoice(),
     tone:                document.getElementById('s-tone').value,
     speaking_pace:       document.getElementById('s-pace').value,
