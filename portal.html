@@ -591,64 +591,22 @@ let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
 
-let VOICES = []; // Populated from ElevenLabs API
-const VOICE_COLLECTION = 'Auzora';
-const VOICE_ALLOWLIST = new Set([
-  'Jordan',
-  'Adalina',
-  'Angie',
-  'Josh',
-  'Justin',
-  'Stephen',
-  'Liz',
-  'Eryn',
-  'Tiffany',
-]);
+let VOICES = [
+  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', hasPreview: true,  preview_url: '/assets/voice-samples/alloy.mp3' },
+  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', hasPreview: true,  preview_url: '/assets/voice-samples/echo.mp3' },
+  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', hasPreview: true,  preview_url: '/assets/voice-samples/shimmer.mp3' },
+  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', hasPreview: true,  preview_url: '/assets/voice-samples/ash.mp3' },
+  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', hasPreview: true,  preview_url: '/assets/voice-samples/coral.mp3' },
+  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', hasPreview: true,  preview_url: '/assets/voice-samples/sage.mp3' },
+  { id: 'ballad',  label: 'Ballad',  desc: 'Warm & melodic',           emoji: '🎵', hasPreview: false, preview_url: null },
+  { id: 'verse',   label: 'Verse',   desc: 'Versatile & natural',      emoji: '📜', hasPreview: false, preview_url: null },
+  { id: 'marin',   label: 'Marin',   desc: 'Clear & confident',        emoji: '🌊', hasPreview: false, preview_url: null },
+  { id: 'cedar',   label: 'Cedar',   desc: 'Grounded & steady',        emoji: '🌲', hasPreview: false, preview_url: null },
+].map(v => ({ ...v, group: v.hasPreview ? 'left' : 'right', play_url: v.preview_url }));
 
-function getVoiceTitle(name) {
-  return (name || '').split(/\s[-–]\s/)[0].trim();
-}
-
-// Fetch Auzora collection voices from ElevenLabs
 async function loadVoices() {
-  try {
-    const res = await fetch(`${API}/api/voices?collection=${encodeURIComponent(VOICE_COLLECTION)}`);
-    if (!res.ok) throw new Error('Failed to fetch voices');
-    const data = await res.json();
-    VOICES = (data.voices || [])
-      .filter(v => v.category !== 'premade')
-      .map(v => ({
-        id: v.voice_id,
-        label: getVoiceTitle(v.name),
-        desc: v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
-        gender: v.gender,
-        accent: v.accent,
-        preview_url: v.preview_url,
-        play_url: v.preview_url
-      }))
-      .filter(v => VOICE_ALLOWLIST.has(v.label));
-    await Promise.all(VOICES.map(async v => {
-      if (v.label === 'Jordan') {
-        v.play_url = '/assets/audio/jordan-preview.mp3';
-        return;
-      }
-      if (!v.preview_url || !String(v.preview_url).includes('api.us.elevenlabs.io')) return;
-      try {
-        const previewRes = await fetch(v.preview_url);
-        if (!previewRes.ok) return;
-        const blob = await previewRes.blob();
-        v.play_url = URL.createObjectURL(blob);
-      } catch (e) {
-        console.warn('Failed to prepare preview for', v.label, e);
-      }
-    }));
-    return VOICES;
-  } catch (e) {
-    console.error('Failed to load voices:', e);
-    return [];
-  }
+  return VOICES;
 }
-
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DEFAULT_HOURS = {
@@ -905,7 +863,7 @@ async function loadSettings() {
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
-  // Load ElevenLabs voices then render grid
+  // Load OpenAI Realtime voices then render grid
   await loadVoices();
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice));
   renderPortalAvoidTags(c.topics_to_avoid || []);
@@ -960,8 +918,8 @@ function renderPortalVoiceGrid(selected) {
   }
   const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
   currentPortalVoiceId = activeVoiceId;
-  const femaleVoices = VOICES.filter(v => v.gender === 'female');
-  const maleVoices = VOICES.filter(v => v.gender === 'male' || v.gender === 'unknown' || !v.gender);
+  const leftVoices = VOICES.filter(v => v.group === 'left');
+  const rightVoices = VOICES.filter(v => v.group === 'right');
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
       ${voices.map(v => `
@@ -974,7 +932,7 @@ function renderPortalVoiceGrid(selected) {
         </div>
       `).join('')}
     </div>`;
-  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(femaleVoices, 'left')}${renderColumn(maleVoices, 'right')}`;
+  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
 }
 
 function selectPortalVoice(id) {
@@ -982,7 +940,7 @@ function selectPortalVoice(id) {
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
     if (!card) return;
-    const tone = v.gender === 'female' ? 'left' : 'right';
+    const tone = v.group === 'left' ? 'left' : 'right';
     card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
     card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
   });
