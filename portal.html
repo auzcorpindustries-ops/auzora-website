@@ -578,15 +578,17 @@ async function loadVoices() {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
-    VOICES = data.voices.map(v => ({
-      id: v.voice_id,
-      label: v.name.split(' - ')[0], // First part of name
-      desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
-      emoji: GENDER_EMOJI[v.gender] || '🎙️',
-      gender: v.gender,
-      accent: v.accent,
-      preview_url: v.preview_url
-    }));
+    VOICES = (data.voices || [])
+      .filter(v => v.category !== 'premade')
+      .map(v => ({
+        id: v.voice_id,
+        label: v.name.split(' - ')[0], // First part of name
+        desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
+        emoji: GENDER_EMOJI[v.gender] || '🎙️',
+        gender: v.gender,
+        accent: v.accent,
+        preview_url: v.preview_url
+      }));
     return VOICES;
   } catch (e) {
     console.error('Failed to load voices:', e);
@@ -876,11 +878,12 @@ function togglePortalAH() {
 // Voice grid
 function renderPortalVoiceGrid(selected) {
   if (VOICES.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">Loading voices...</div>';
+    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No library voices available.</div>';
     return;
   }
+  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
   document.getElementById('portal-voice-grid').innerHTML = VOICES.map(v => `
-    <div class="voice-card ${v.id===selected?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
+    <div class="voice-card ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
       <div class="voice-card-top">
         <span style="font-size:16px;">${v.emoji}</span>
         <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
