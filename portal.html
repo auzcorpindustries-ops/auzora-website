@@ -602,9 +602,21 @@ async function loadVoices() {
         desc: v.name && v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
         gender: v.gender,
         accent: v.accent,
-        preview_url: v.preview_url
+        preview_url: v.preview_url,
+        play_url: v.preview_url
       }))
       .filter(v => VOICE_ALLOWLIST.has(v.label));
+    await Promise.all(VOICES.map(async v => {
+      if (!v.preview_url || !String(v.preview_url).includes('api.us.elevenlabs.io')) return;
+      try {
+        const previewRes = await fetch(v.preview_url);
+        if (!previewRes.ok) return;
+        const blob = await previewRes.blob();
+        v.play_url = URL.createObjectURL(blob);
+      } catch (e) {
+        console.warn('Failed to prepare preview for', v.label, e);
+      }
+    }));
     return VOICES;
   } catch (e) {
     console.error('Failed to load voices:', e);
@@ -932,8 +944,8 @@ function playPortalVoice(id) {
   VOICES.forEach(v => { const b = document.getElementById(`ppb-${v.id}`); if(b) b.textContent='▶'; });
   const btn = document.getElementById(`ppb-${id}`);
   const voice = VOICES.find(v => v.id === id);
-  if (!voice || !voice.preview_url) return;
-  const audio = new Audio(voice.preview_url);
+  if (!voice || !voice.play_url) return;
+  const audio = new Audio(voice.play_url);
   activeAudio = audio;
   btn.textContent = '⏸';
   audio.play();
