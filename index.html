@@ -3,353 +3,1019 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auzora — AI Phone Agent for Local Business</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Auzora — Atlas AI Preview (Light)</title>
+  <meta name="description" content="A light-background redesign preview for Auzora's Atlas AI website." />
+  <meta name="theme-color" content="#f8f4ec" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-2: #f8fafc;
+      --panel: rgba(255,255,255,0.78);
+      --panel-strong: rgba(255,255,255,0.92);
+      --line: rgba(18,24,38,0.08);
+      --line-strong: rgba(18,24,38,0.14);
+      --text: #101826;
+      --muted: #5f687a;
+      --muted-2: #7b8495;
+      --shadow: 0 20px 60px rgba(24, 33, 47, 0.08);
+      --radius-xl: 30px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --max: 1180px;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --orange: #f97316;
+      --red: #ef4444;
+      --accent: linear-gradient(135deg, var(--blue) 0%, var(--purple) 30%, var(--pink) 55%, var(--orange) 80%, var(--red) 100%);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(109, 94, 252, .08), transparent 30%),
+        radial-gradient(circle at 85% 15%, rgba(14, 165, 233, .08), transparent 28%),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20vh -10vw auto auto;
+      width: 520px;
+      height: 520px;
+      border-radius: 999px;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(15,23,42,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.26), transparent 80%);
+      opacity: .25;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, input, textarea { font: inherit; }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: rgba(255,255,255,0.78);
+      border-bottom: 1px solid rgba(16,24,38,0.06);
+    }
+
+    .topbar-inner {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .brand img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(24,33,47,0.12);
+    }
+
+    .brand-copy { display: grid; gap: 2px; }
+    .brand-name {
+      font-size: 1.02rem;
+      line-height: 1;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .brand-sub {
+      color: var(--muted-2);
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      color: var(--muted);
+      font-size: 0.93rem;
+      padding: 10px 13px;
+      border-radius: 999px;
+      transition: 180ms ease;
+    }
+    .nav a:hover { color: var(--text); background: rgba(16,24,38,0.04); }
+
+    .preview-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(16,24,38,0.08);
+      background: rgba(255,255,255,0.76);
+      color: var(--muted);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue), var(--pink));
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.10);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      transition: 180ms ease;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: #fff; background: var(--accent); box-shadow: 0 16px 38px rgba(139,92,246,0.18); }
+    .btn-secondary { color: var(--text); border-color: rgba(16,24,38,0.12); background: rgba(255,255,255,0.56); }
+
+    .hero {
+      padding: 78px 0 28px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 32px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(16,24,38,0.08);
+      background: rgba(255,255,255,0.78);
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow strong { color: var(--text); }
+    h1, h2, h3, p { margin: 0; }
+
+    .hero h1 {
+      font-size: clamp(3rem, 5.6vw, 5.9rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+      max-width: 11ch;
+    }
+
+    .hero h1 .gradient {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-copy {
+      margin-top: 22px;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(16,24,38,0.08);
+      background: rgba(255,255,255,0.78);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.10);
+    }
+
+    .hero-card {
+      position: relative;
+      border-radius: 34px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.94));
+      border: 1px solid rgba(16,24,38,0.08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 33px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.86), transparent 32%);
+      pointer-events: none;
+    }
+
+    .card-top, .card-bottom { position: relative; z-index: 1; }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 8px 18px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .status .live {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #34d399;
+      box-shadow: 0 0 0 5px rgba(52,211,153,0.12);
+    }
+
+    .signal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(16,24,38,0.04);
+      color: #384052;
+      border: 1px solid rgba(16,24,38,0.08);
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .call-stack { display: grid; gap: 12px; padding: 2px 4px 8px; }
+
+    .bubble {
+      max-width: 86%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(16,24,38,0.08);
+      font-size: 0.96rem;
+    }
+
+    .bubble.ai {
+      background: rgba(255,255,255,0.94);
+      color: #202938;
+      border-top-left-radius: 8px;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(236,72,153,0.14));
+      color: #172033;
+      border-top-right-radius: 8px;
+      border-color: rgba(16,24,38,0.10);
+    }
+
+    .bubble.note {
+      background: rgba(16,24,38,0.03);
+      color: var(--muted);
+      max-width: 100%;
+      border-style: dashed;
+    }
+
+    .pulse-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 4px 12px 2px;
+    }
+    .pulse-row span {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue), var(--pink));
+      opacity: 0.55;
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+    .pulse-row span:nth-child(2) { animation-delay: 0.12s; }
+    .pulse-row span:nth-child(3) { animation-delay: 0.24s; }
+    @keyframes pulse { 0%,100% { transform: translateY(0); opacity: 0.45; } 50% { transform: translateY(-4px); opacity: 1; } }
+
+    .hero-foot { display: grid; gap: 12px; margin-top: 18px; }
+    .foot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+    .metric {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(16,24,38,0.08);
+    }
+    .metric strong {
+      display: block;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .metric span { color: var(--muted); font-size: 0.88rem; }
+
+    .section { padding: 88px 0 0; position: relative; z-index: 1; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 26px;
+    }
+    .section-kicker {
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.76rem;
+      margin-bottom: 12px;
+    }
+    .section h2 {
+      font-size: clamp(2rem, 3.2vw, 3.2rem);
+      line-height: 1;
+      letter-spacing: -0.06em;
+      max-width: 12ch;
+    }
+    .section-lead { max-width: 48ch; color: var(--muted); font-size: 1.03rem; }
+
+    .card-grid { display: grid; gap: 16px; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .panel {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      border: 1px solid rgba(16,24,38,0.08);
+      box-shadow: 0 16px 40px rgba(24, 33, 47, 0.05);
+    }
+    .panel h3 { font-size: 1.04rem; margin-bottom: 10px; letter-spacing: -0.03em; }
+    .panel p { color: var(--muted); font-size: 0.95rem; }
+
+    .mini-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: #3a465c;
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .mini-label::before {
+      content: "";
+      width: 26px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--blue), var(--pink));
+    }
+
+    .feature {
+      position: relative;
+      overflow: hidden;
+      min-height: 210px;
+    }
+    .feature::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -50px auto;
+      width: 140px;
+      height: 140px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 65%);
+      pointer-events: none;
+    }
+    .feature .tag {
+      display: inline-flex;
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(16,24,38,0.08);
+      background: rgba(255,255,255,0.68);
+      color: #3c475d;
+      font-size: 0.82rem;
+    }
+    .feature ul {
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .feature li {
+      color: var(--muted);
+      font-size: 0.94rem;
+      display: flex;
+      gap: 10px;
+    }
+    .feature li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 7px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.08);
+    }
+
+    .workflow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .step {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(16,24,38,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .step-num {
+      display: inline-flex;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(139,92,246,0.16);
+    }
+    .step h3 { font-size: 1.05rem; margin-bottom: 10px; letter-spacing: -0.03em; }
+    .step p { color: var(--muted); font-size: 0.96rem; }
+
+    .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .pricing-card {
+      position: relative;
+      border-radius: 28px;
+      padding: 30px;
+      background: rgba(255,255,255,0.90);
+      border: 1px solid rgba(16,24,38,0.08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .pricing-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(236,72,153,0.12), transparent 62%);
+      pointer-events: none;
+    }
+    .pricing-card.featured {
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.06), rgba(236,72,153,0.04)), rgba(255,255,255,0.90);
+    }
+    .pricing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(16,24,38,0.08);
+      color: #415065;
+      font-size: 0.84rem;
+      white-space: nowrap;
+      margin-bottom: 16px;
+    }
+    .pricing-tier {
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .pricing-amount {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .pricing-monthly {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 8px;
+      color: var(--text);
+      font-size: 1.15rem;
+      font-weight: 600;
+      padding-right: 0.14em;
+      overflow: visible;
+    }
+    .pricing-monthly strong {
+      display: inline-block;
+      font-size: 3.35rem;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      padding-bottom: 0.04em;
+      padding-right: 0.06em;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .pricing-monthly span {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    .pricing-setup {
+      color: var(--muted);
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+    }
+    .pricing-desc { color: var(--muted); font-size: 0.95rem; max-width: 48ch; margin-bottom: 22px; }
+    .pricing-features { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .pricing-features li { display: flex; gap: 10px; color: var(--muted); font-size: 0.95rem; }
+    .pricing-features li::before { content: "✓"; color: #15803d; font-weight: 700; }
+    .pricing-btn { width: 100%; margin-top: 22px; }
+    .pricing-note { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+
+    .faq { display: grid; gap: 12px; }
+    .faq-item {
+      padding: 20px 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(16,24,38,0.08);
+    }
+    .faq-item h3 { font-size: 1rem; margin-bottom: 8px; letter-spacing: -0.03em; }
+    .faq-item p { color: var(--muted); font-size: 0.95rem; }
+
+    .contact { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .form { display: grid; gap: 14px; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .field { display: grid; gap: 8px; }
+    .field label { color: #2b3446; font-size: 0.9rem; font-weight: 500; }
+    .field input, .field textarea {
+      width: 100%;
+      border: 1px solid rgba(16,24,38,0.10);
+      background: rgba(255,255,255,0.94);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 15px;
+      outline: none;
+      transition: 180ms ease;
+    }
+    .field input:focus, .field textarea:focus {
+      border-color: rgba(139,92,246,0.34);
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.10);
+    }
+    .field textarea { min-height: 140px; resize: vertical; }
+
+    .contact-aside { display: grid; gap: 14px; }
+    .contact-lines { display: grid; gap: 12px; margin-top: 18px; }
+    .line-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .line-item span {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      flex: 0 0 auto;
+      margin-top: 1px;
+      background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(236,72,153,0.8));
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.08);
+    }
+
+    .footer {
+      padding: 68px 0 32px;
+      color: var(--muted-2);
+      font-size: 0.92rem;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(16,24,38,0.08);
+    }
+    .footer strong { color: #2b3446; font-weight: 600; }
+
+    @media (max-width: 1080px) {
+      .hero-grid, .pricing-grid, .contact { grid-template-columns: 1fr; }
+      .card-grid.four, .card-grid.three, .workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-head { align-items: start; flex-direction: column; }
+      .hero h1 { max-width: 12ch; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar-inner { flex-wrap: wrap; padding: 10px 0 14px; }
+      .nav { width: 100%; justify-content: flex-start; }
+      .hero { padding-top: 48px; }
+      .hero h1 { font-size: clamp(2.55rem, 13vw, 4.4rem); }
+      .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid { grid-template-columns: 1fr; }
+      .bubble { max-width: 92%; }
+      .section { padding-top: 72px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
-
-  <!-- NAV -->
-  <nav id="navbar">
-    <div class="nav-inner">
-      <a href="#" class="nav-brand">
-        <img src="assets/logo.png" alt="Auzora Logo" class="nav-logo" />
-        <span class="nav-brand-text">Auzora</span>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="Auzora home">
+        <img src="/logo.png" alt="Auzora logo" />
+        <span class="brand-copy">
+          <span class="brand-name">Auzora</span>
+          <span class="brand-sub">Atlas AI preview</span>
+        </span>
       </a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-        <span></span><span></span><span></span>
-      </button>
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#services">How It Works</a></li>
-        <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-      <a href="#pricing" class="btn btn-primary nav-cta">Get Started</a>
-    </div>
-  </nav>
 
-  <!-- HERO -->
-  <section id="hero">
-    <div class="hero-mesh" aria-hidden="true">
-      <div class="mesh-orb orb-1"></div>
-      <div class="mesh-orb orb-2"></div>
-      <div class="mesh-orb orb-3"></div>
-      <div class="mesh-orb orb-4"></div>
-    </div>
-    <div class="hero-content animate-on-scroll">
-      <div class="hero-badge">Powered by Atlas AI</div>
-      <h1 class="hero-headline">
-        Never miss a call.<br />
-        Never lose a <span class="gradient-text">lead.</span>
-      </h1>
-      <p class="hero-sub">
-        Auzora gives your business a 24/7 AI phone agent that answers every call,
-        books appointments, and qualifies leads — so you never lose a customer to voicemail again.
-      </p>
-      <div class="hero-actions">
-        <a href="demo.html" class="btn btn-primary btn-lg">Try the Live Demo</a>
-        <a href="#services" class="btn btn-outline btn-lg">See How It Works</a>
-      </div>
-    </div>
-    <div class="hero-visual animate-on-scroll delay-200">
-      <div class="phone-card">
-        <div class="phone-card-header">
-          <span class="status-dot"></span>
-          <span class="status-text">Auzora AI • Live</span>
-        </div>
-        <div class="phone-card-body">
-          <div class="chat-line ai">Hello! Thanks for calling. How can I help you today?</div>
-          <div class="chat-line user">I'd like to book an appointment.</div>
-          <div class="chat-line ai">Of course! I have availability tomorrow at 10 AM or 2 PM — which works for you?</div>
-          <div class="chat-line typing"><span></span><span></span><span></span></div>
-        </div>
-        <div class="phone-card-footer">
-          <span class="powered-by">Powered by Atlas AI · GPT-4o Realtime</span>
-        </div>
-      </div>
-    </div>
-  </section>
+      <nav class="nav" aria-label="Primary">
+        <a href="#why">Why it matters</a>
+        <a href="#features">Atlas AI</a>
+        <a href="#workflow">How it works</a>
+        <a href="#contact">Contact</a>
+      </nav>
 
-  <!-- HOW IT WORKS / FEATURES -->
-  <section id="services">
-    <div class="container">
-      <div class="section-label animate-on-scroll">What You Get</div>
-      <h2 class="section-title animate-on-scroll">Your AI receptionist.<br /><span class="gradient-text">Live in one week.</span></h2>
-      <p class="section-sub animate-on-scroll">Auzora handles your inbound calls end-to-end — answering, booking, qualifying, and alerting you — without you lifting a finger.</p>
+      <div class="preview-pill"><span class="dot"></span> Separate preview route until launch</div>
+    </div>
+  </header>
 
-      <div class="service-card animate-on-scroll delay-100">
-        <div class="service-card-inner">
-          <div class="service-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.44 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
+  <main id="top">
+    <section class="hero shell">
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow"><strong>Light preview</strong> with an editorial feel</div>
+          <h1>Never miss a call again.</h1>
+          <h1><span class="gradient">Atlas AI</span> answers for you.</h1>
+          <p class="hero-copy">
+            Auzora gives local businesses a calmer, cleaner AI phone experience that picks up every inbound call,
+            sounds natural, qualifies the lead, and books the next step — day or night.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#contact">Book a demo</a>
+            <a class="btn btn-secondary" href="#features">Explore the preview</a>
           </div>
-          <div class="service-body">
-            <div class="service-tag">Powered by Atlas AI</div>
-            <h3 class="service-title">AI Phone Agent</h3>
-            <p class="service-desc">
-              A 24/7 AI agent that picks up every call in under 2 seconds — with the warmth of a real receptionist. It knows your business, handles your FAQs, books appointments directly into your calendar, and sends you an instant alert when a new lead calls.
-            </p>
-            <ul class="service-features">
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Answers every call instantly, 24/7
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Books appointments to Google Calendar or Outlook
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Qualifies leads and captures contact info
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Instant alerts when a new lead calls
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Custom voice, greeting, and business info
-              </li>
-              <li>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Powered by GPT-4o Realtime API
-              </li>
-            </ul>
+
+          <div class="hero-points" aria-label="Product highlights">
+            <span class="chip">24/7 availability</span>
+            <span class="chip">Lead qualification</span>
+            <span class="chip">Appointment booking</span>
+            <span class="chip">Human-sounding voice</span>
           </div>
-          <div class="service-cta">
-            <a href="demo.html" class="btn btn-primary">Try the Live Demo</a>
+        </div>
+
+        <div class="hero-card" aria-label="Atlas AI call preview">
+          <div class="card-top">
+            <div class="status"><span class="live"></span> Atlas AI live call preview</div>
+            <div class="signal">GPT-4o Realtime · low-latency voice</div>
+          </div>
+
+          <div class="call-stack">
+            <div class="bubble ai">Hello, thanks for calling Auzora. How can I help today?</div>
+            <div class="bubble user">I need to book an appointment for next week.</div>
+            <div class="bubble ai">Absolutely — I can help with that. What time of day works best?</div>
+            <div class="bubble note">Atlas captures the caller’s intent, confirms the next step, and keeps the conversation moving.</div>
+            <div class="pulse-row" aria-hidden="true"><span></span><span></span><span></span></div>
+          </div>
+
+          <div class="hero-foot">
+            <div class="foot-grid">
+              <div class="metric">
+                <strong>Always on</strong>
+                <span>Answer calls after hours, on weekends, and when your team is busy.</span>
+              </div>
+              <div class="metric">
+                <strong>Built to convert</strong>
+                <span>Capture names, intent, and booking details without sounding robotic.</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="stats-row animate-on-scroll delay-200">
-        <div class="stat-item">
-          <div class="stat-number gradient-text">24/7</div>
-          <div class="stat-label">Always On</div>
+    <section class="section shell" id="why">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Why it matters</div>
+          <h2>Missed calls cost real revenue.</h2>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-number gradient-text">&lt;2s</div>
-          <div class="stat-label">Pickup Time</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-number gradient-text">100%</div>
-          <div class="stat-label">Calls Answered</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-number gradient-text">1 week</div>
-          <div class="stat-label">To Go Live</div>
-        </div>
+        <p class="section-lead">If a customer reaches voicemail, they often move on. This preview keeps the message clear: every call is a chance to win the lead.</p>
       </div>
-    </div>
-  </section>
 
-  <!-- INDUSTRIES -->
-  <section id="industries" style="padding: 4rem 0;">
-    <div class="container">
-      <div class="section-label animate-on-scroll">Who It's For</div>
-      <h2 class="section-title animate-on-scroll">Works for any<br /><span class="gradient-text">service business.</span></h2>
-      <p class="section-sub animate-on-scroll">If your business receives phone calls, Auzora can answer them.</p>
-      <div class="automation-grid animate-on-scroll" style="margin-top: 2.5rem;">
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">💇</div>
-          <h3 class="auto-card-title">Salons & Spas</h3>
-          <p class="auto-card-desc">Book appointments, answer questions about services and pricing, handle after-hours calls without missing a client.</p>
-        </div>
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">🏠</div>
-          <h3 class="auto-card-title">Real Estate</h3>
-          <p class="auto-card-desc">Qualify inbound buyer and seller leads, schedule showings, and capture every inquiry — even when you're at a closing.</p>
-        </div>
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">⚖️</div>
-          <h3 class="auto-card-title">Law Firms</h3>
-          <p class="auto-card-desc">Screen new client inquiries, collect case details, and book consultations — without tying up your staff.</p>
-        </div>
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">🏥</div>
-          <h3 class="auto-card-title">Medical & Dental</h3>
-          <p class="auto-card-desc">Handle appointment requests, insurance questions, and after-hours calls with a HIPAA-conscious AI agent.</p>
-        </div>
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">🔧</div>
-          <h3 class="auto-card-title">Contractors</h3>
-          <p class="auto-card-desc">Capture every lead while you're on a job site. Book estimates and answer service questions automatically.</p>
-        </div>
-        <div class="auto-card glass-card">
-          <div class="auto-card-icon">💼</div>
-          <h3 class="auto-card-title">Consultants</h3>
-          <p class="auto-card-desc">Never miss a discovery call. Auzora qualifies leads and books them directly into your calendar.</p>
-        </div>
+      <div class="card-grid three">
+        <article class="panel feature">
+          <div class="tag">Lost opportunities</div>
+          <h3>Voicemail creates drop-off</h3>
+          <p>When no one answers, callers often move on. Atlas keeps the conversation alive on the first try.</p>
+        </article>
+        <article class="panel feature">
+          <div class="tag">Slow follow-up</div>
+          <h3>Speed matters more than ever</h3>
+          <p>Fast response wins more business. Atlas handles the first touch so your team can focus on closing.</p>
+        </article>
+        <article class="panel feature">
+          <div class="tag">After-hours coverage</div>
+          <h3>Coverage beyond business hours</h3>
+          <p>Even after hours, the phone still rings. Atlas gives your business a voice when the front desk is empty.</p>
+        </article>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- PRICING -->
-  <section id="pricing">
-    <div class="container">
-      <div class="section-label animate-on-scroll">Pricing</div>
-      <h2 class="section-title animate-on-scroll">Simple pricing.<br /><span class="gradient-text">No surprises.</span></h2>
-      <p class="section-sub animate-on-scroll">One-time setup covers configuration, voice tuning, and go-live. Monthly fee covers your dedicated AI line, hosting, and support. No contracts — cancel anytime.</p>
+    <section class="section shell" id="features">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Atlas AI</div>
+          <h2>Premium voice automation for real businesses.</h2>
+        </div>
+        <p class="section-lead">The page keeps the product story simple: answer, qualify, and book. No fake dashboard noise, no clutter, no unnecessary motion.</p>
+      </div>
 
-      <div class="pricing-grid animate-on-scroll" style="max-width: 800px; margin: 0 auto; grid-template-columns: 1fr 1fr;">
+      <div class="card-grid four">
+        <article class="panel feature">
+          <div class="mini-label">Answer every call</div>
+          <h3>Natural conversation flow</h3>
+          <p>Atlas responds quickly and keeps the caller engaged with a calm, human tone.</p>
+          <ul>
+            <li>Live voice response</li>
+            <li>Warm handoff when needed</li>
+          </ul>
+        </article>
+        <article class="panel feature">
+          <div class="mini-label">Qualify leads</div>
+          <h3>Capture the details that matter</h3>
+          <p>Atlas asks the right questions and turns a cold call into a structured lead.</p>
+          <ul>
+            <li>Name and contact info</li>
+            <li>Service needs</li>
+          </ul>
+        </article>
+        <article class="panel feature">
+          <div class="mini-label">Book appointments</div>
+          <h3>Move the caller to the next step</h3>
+          <p>Use the call to book a visit, schedule a consult, or route the caller to your team.</p>
+          <ul>
+            <li>Calendar-friendly handoff</li>
+            <li>Clear next-step summary</li>
+          </ul>
+        </article>
+        <article class="panel feature">
+          <div class="mini-label">Control and visibility</div>
+          <h3>Built for owners and operators</h3>
+          <p>Keep the experience premium on the front end while maintaining control behind the scenes.</p>
+          <ul>
+            <li>Simple onboarding</li>
+            <li>Business-specific prompts</li>
+          </ul>
+        </article>
+      </div>
+    </section>
 
-        <!-- Starter -->
-        <div class="pricing-card glass-card">
+    <section class="section shell" id="workflow">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">How it works</div>
+          <h2>Three steps from missed calls to booked leads.</h2>
+        </div>
+        <p class="section-lead">The visual direction stays restrained, but the message is concrete. Atlas is easy to understand in one glance.</p>
+      </div>
+
+      <div class="workflow">
+        <article class="step">
+          <div class="step-num">1</div>
+          <h3>Connect your number</h3>
+          <p>Point Atlas at the business line so calls go to the AI receptionist first.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">2</div>
+          <h3>Set your rules</h3>
+          <p>Customize the script, service area, booking logic, and what should happen when the caller needs help.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">3</div>
+          <h3>Let it handle the call</h3>
+          <p>Atlas answers, qualifies, and books. Your team gets the lead summary instead of a voicemail.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section shell" id="pricing">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Pricing</div>
+          <h2>Simple pricing. No surprises.</h2>
+        </div>
+        <p class="section-lead">One-time setup covers configuration, voice tuning, and go-live. Monthly fee covers your dedicated AI line, hosting, and support. No contracts — cancel anytime.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <article class="pricing-card">
           <div class="pricing-tier">Starter</div>
           <div class="pricing-amount">
-            <span class="pricing-setup">$300</span>
-            <span class="pricing-setup-label">setup</span>
+            <div class="pricing-monthly"><strong>$199</strong><span>/ month</span></div>
+            <div class="pricing-setup">$300 setup</div>
           </div>
-          <div class="pricing-monthly">then <strong>$199</strong> / month</div>
           <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="pricing-features">
-            <li><span class="check">✓</span> Dedicated AI phone line</li>
-            <li><span class="check">✓</span> 24/7 call answering</li>
-            <li><span class="check">✓</span> Calendar appointment booking</li>
-            <li><span class="check">✓</span> Custom greeting & FAQs</li>
-            <li><span class="check">✓</span> Client portal access</li>
-            <li><span class="check">✓</span> Setup within 48 hours</li>
+            <li>Dedicated AI phone line</li>
+            <li>24/7 call answering</li>
+            <li>Calendar appointment booking</li>
+            <li>Custom greeting & FAQs</li>
+            <li>Client portal access</li>
+            <li>Setup within 48 hours</li>
           </ul>
-          <a href="checkout.html?plan=starter" class="btn btn-outline btn-full pricing-btn">Get Started →</a>
-        </div>
+          <a href="/checkout.html?plan=starter" class="btn btn-secondary pricing-btn">Get Started →</a>
+        </article>
 
-        <!-- Pro -->
-        <div class="pricing-card glass-card pricing-popular" style="opacity:0.5;pointer-events:none;position:relative;">
-          <div class="pricing-badge" style="background:#334155;color:#94a3b8;">Coming Soon</div>
+        <article class="pricing-card featured">
+          <div class="pricing-badge">Coming Soon</div>
           <div class="pricing-tier">Pro</div>
           <div class="pricing-amount">
-            <span class="pricing-setup">$500</span>
-            <span class="pricing-setup-label">setup</span>
+            <div class="pricing-monthly"><strong>$299</strong><span>/ month</span></div>
+            <div class="pricing-setup">$500 setup</div>
           </div>
-          <div class="pricing-monthly">then <strong>$299</strong> / month</div>
           <p class="pricing-desc">For businesses that want more lines, deeper insights, and hands-on monthly optimization.</p>
           <ul class="pricing-features">
-            <li><span class="check">✓</span> Everything in Starter</li>
-            <li><span class="check">✓</span> Up to 10 dedicated AI phone lines</li>
-            <li><span class="check">✓</span> Lead capture & instant alerts</li>
-            <li><span class="check">✓</span> Priority support</li>
-            <li><span class="check">✓</span> Setup within 24 hours</li>
+            <li>Everything in Starter</li>
+            <li>Up to 10 dedicated AI phone lines</li>
+            <li>Lead capture & instant alerts</li>
+            <li>Priority support</li>
+            <li>Setup within 24 hours</li>
           </ul>
-          <a href="#" class="btn btn-primary btn-full pricing-btn" style="background:#334155;box-shadow:none;cursor:not-allowed;">Coming Soon</a>
-        </div>
-
+          <a href="#" class="btn btn-primary pricing-btn" style="background:#334155;box-shadow:none;cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
+        </article>
       </div>
 
-      <p class="pricing-note animate-on-scroll">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. No contracts — cancel anytime. Questions? <a href="#contact" class="gradient-link">Talk to us first.</a></p>
-    </div>
-  </section>
+      <p class="pricing-note">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. No contracts — cancel anytime. Questions? <a href="#contact" class="gradient-link">Talk to us first.</a></p>
+    </section>
 
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="container">
-      <div class="about-inner animate-on-scroll">
-        <div class="about-text">
-          <div class="section-label">About Us</div>
-          <h2 class="section-title">Built to help you<br /><span class="gradient-text">never miss a customer.</span></h2>
-          <p class="about-para">
-            Auzora was built with one goal: make sure local businesses never lose a customer to a missed call again. We built Atlas AI — an AI phone agent that sounds natural, responds instantly, and works around the clock.
-          </p>
-          <p class="about-para">
-            Most small businesses miss more than half their inbound calls. That's not a staffing problem — it's a revenue problem. Auzora fixes it in one week, with no hardware, no app, and no tech skills required on your end.
-          </p>
-          <a href="#contact" class="btn btn-outline" style="margin-top: 1.5rem;">Get in Touch</a>
+    <section class="section shell" id="faq">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">FAQ</div>
+          <h2>Answers to the obvious questions.</h2>
         </div>
-        <div class="about-graphic">
-          <div class="about-card glass-card">
-            <div class="about-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.44 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            </div>
-            <div class="about-card-content">
-              <strong>Zero Missed Calls</strong>
-              <span>Every call answered, every time</span>
-            </div>
-          </div>
-          <div class="about-card glass-card">
-            <div class="about-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <div class="about-card-content">
-              <strong>Secure by Design</strong>
-              <span>Your data stays yours</span>
-            </div>
-          </div>
-          <div class="about-card glass-card">
-            <div class="about-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-            </div>
-            <div class="about-card-content">
-              <strong>Live in One Week</strong>
-              <span>No hardware or apps needed</span>
-            </div>
-          </div>
-        </div>
+        <p class="section-lead">This section keeps the preview practical and reduces friction for the next conversation.</p>
       </div>
-    </div>
-  </section>
 
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="container">
-      <div class="contact-inner">
-        <div class="contact-text animate-on-scroll">
-          <div class="section-label">Get Started</div>
-          <h2 class="section-title">Ready to never miss<br /><span class="gradient-text">a call again?</span></h2>
-          <p class="contact-sub">
-            Tell us about your business and we'll be in touch within one business day. Or reach us directly at
-            <a href="mailto:hello@auzora.io" class="gradient-link">hello@auzora.io</a>
-          </p>
-          <p style="margin-top:1.5rem; color: var(--text-dim); font-size:0.95rem;">
-            📞 Try the live demo first: call <strong style="color:var(--text);">(814) 277-5441</strong>
-          </p>
-        </div>
-        <form class="contact-form glass-card animate-on-scroll delay-100" id="contactForm" novalidate>
-          <div class="form-group">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="Your full name" required />
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="you@company.com" required />
-          </div>
-          <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="5" placeholder="Tell us about your business — what industry you're in, how many calls you receive, and what you're trying to solve..." required></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
-            <span class="btn-text">Send Message</span>
-            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-          <div class="form-success" id="formSuccess" aria-live="polite"></div>
-        </form>
+      <div class="faq">
+        <article class="faq-item">
+          <h3>Is this replacing the live homepage right away?</h3>
+          <p>No. This is a separate preview route for review until launch approval.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Can Atlas sound natural?</h3>
+          <p>Yes. The brief calls for a premium, human-feeling experience — not a robotic phone tree.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Who is this for?</h3>
+          <p>Any small or medium business that depends on calls and wants fewer missed leads.</p>
+        </article>
+        <article class="faq-item">
+          <h3>What happens after the demo request?</h3>
+          <p>The contact form is a placeholder for the launch workflow and can later be wired to the n8n intake flow.</p>
+        </article>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- FOOTER -->
-  <footer id="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <a href="#" class="footer-brand">
-          <img src="assets/logo.png" alt="Auzora" class="footer-logo" />
-          <span>Auzora</span>
-        </a>
-        <p class="footer-copy">© 2026 Auzora. All rights reserved.</p>
-        <div class="footer-links">
-          <a href="#services">How It Works</a>
-          <a href="#about">About</a>
-          <a href="/contact.html">Contact</a>
-          <a href="/legal/terms.html">Terms</a>
-          <a href="/legal/privacy.html">Privacy</a>
-          <a href="/legal/ai-policy.html">AI Policy</a>
+    <section class="section shell" id="contact">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Contact</div>
+          <h2>Start the conversation.</h2>
         </div>
+        <p class="section-lead">The form is simple on purpose: enough detail to capture interest without feeling heavy.</p>
       </div>
+
+      <div class="contact">
+        <article class="panel">
+          <form class="form" action="/api/leads" method="post">
+            <div class="field-grid">
+              <div class="field">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" placeholder="Auzi Howard" required />
+              </div>
+              <div class="field">
+                <label for="business">Business</label>
+                <input id="business" name="business" type="text" placeholder="Auzora IT Services" required />
+              </div>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="phone">Phone</label>
+                <input id="phone" name="phone" type="tel" placeholder="(555) 123-4567" />
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" placeholder="you@company.com" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="notes">What do you want Atlas AI to handle?</label>
+              <textarea id="notes" name="notes" placeholder="Tell us about your calls, booking flow, and the kind of experience you'd like customers to have."></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Request a demo</button>
+          </form>
+        </article>
+
+        <aside class="contact-aside">
+          <article class="panel">
+            <div class="mini-label">What happens next</div>
+            <h3>Clean handoff, no clutter</h3>
+            <div class="contact-lines">
+              <div class="line-item"><span></span><p>The message stays premium and direct.</p></div>
+              <div class="line-item"><span></span><p>Everything points back to Atlas AI.</p></div>
+              <div class="line-item"><span></span><p>The page remains on a preview route until launch.</p></div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="mini-label">Footer note</div>
+            <p>© <span id="year"></span> Auzora IT Services. Atlas AI is the product shown on this redesign preview.</p>
+          </article>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer shell">
+    <div class="footer-inner">
+      <div><strong>Auzora</strong> — premium AI phone automation for businesses that cannot afford missed calls.</div>
+      <div>Preview route: <strong>/redesign-light/</strong></div>
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
