@@ -230,7 +230,7 @@
 <!-- APP -->
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">Auzora</span>
+    <span class="topbar-logo"><img src="/assets/logo.svg" alt="Auzora" style="width:22px;height:22px;object-fit:contain;display:block;">Auzora</span>
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
       <div class="agent-status"><div class="pulse"></div> Agent Active</div>
@@ -593,11 +593,12 @@ let portalSpecialties = [];
 
 const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
 const VOICE_ALLOWLIST = [
-  'Jordan', 'Adalina', 'Angie', 'Josh', 'Carly',
-  'Justin', 'Stephen', 'Veda Sky', 'Liz', 'Eryn', 'Tiffany'
+  'Jordan', 'Adalina', 'Angie', 'Josh',
+  'Justin', 'Stephen', 'Liz', 'Eryn', 'Tiffany'
 ];
 
 let VOICES = [];
+const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 function buildVoiceDesc(v) {
   const bits = [];
@@ -615,8 +616,9 @@ async function loadVoices() {
   VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map((v, idx) => ({
     id: v.voice_id,
     label: v.name,
+    gender: v.gender || 'unknown',
     desc: buildVoiceDesc(v),
-    group: idx < 5 ? 'left' : 'right',
+    group: (v.gender === 'female' ? 'left' : 'right'),
     preview_url: v.preview_url,
     play_url: v.preview_url
   }));
@@ -880,7 +882,7 @@ async function loadSettings() {
 
   // Load ElevenLabs voices then render grid
   await loadVoices();
-  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice));
+  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
@@ -933,12 +935,12 @@ function renderPortalVoiceGrid(selected) {
   }
   const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
   currentPortalVoiceId = activeVoiceId;
-  const leftVoices = VOICES.filter(v => v.group === 'left');
-  const rightVoices = VOICES.filter(v => v.group === 'right');
+  const leftVoices = VOICES.filter(v => v.gender === 'female');
+  const rightVoices = VOICES.filter(v => v.gender === 'male');
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
       ${voices.map(v => `
-        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent)' : 'var(--accent2)'};">
+        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
           <div class="voice-card-top">
             <div class="voice-name ${tone}">${v.label}</div>
             <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>

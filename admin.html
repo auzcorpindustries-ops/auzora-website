@@ -879,9 +879,10 @@ const ATLAS_API = 'https://atlas.6845165.xyz/admin';
 
 const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
 const VOICE_ALLOWLIST = [
-  'Jordan', 'Adalina', 'Angie', 'Josh', 'Carly',
-  'Justin', 'Stephen', 'Veda Sky', 'Liz', 'Eryn', 'Tiffany'
+  'Jordan', 'Adalina', 'Angie', 'Josh',
+  'Justin', 'Stephen', 'Liz', 'Eryn', 'Tiffany'
 ];
+const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 let VOICES = [];
 let currentVoiceId = null;
@@ -903,6 +904,7 @@ async function loadVoices() {
   VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map(v => ({
     id: v.voice_id,
     label: v.name,
+    gender: v.gender || 'unknown',
     desc: buildVoiceDesc(v),
     hasPreview: !!v.preview_url,
     preview_url: v.preview_url
@@ -972,7 +974,7 @@ function renderPersonaForm(c) {
   // Advanced
   document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
 
-  renderVoiceGrid(c.voice || VOICES[0]?.id || null);
+  renderVoiceGrid(c.voice || DEFAULT_VOICE_ID || VOICES[0]?.id || null);
   renderServices(c.services || []);
   renderFaqs(c.faqs || []);
   markClean();
@@ -1019,15 +1021,16 @@ function renderVoiceGrid(selected) {
     return;
   }
 
-  currentVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id || null;
+  currentVoiceId = VOICES.some(v => v.id === selected) ? selected : (VOICES.find(v => v.id === DEFAULT_VOICE_ID)?.id || VOICES[0]?.id || null);
 
   document.getElementById('voice-grid').innerHTML = VOICES.map(v => `
     <div id="voice-card-${v.id}" style="
-      border:2px solid ${v.id===currentVoiceId?'var(--accent)':'var(--border)'};
-      background:${v.id===currentVoiceId?'rgba(99,102,241,0.08)':'var(--surface2)'};
+      border:2px solid ${v.id===currentVoiceId?(v.gender==='female' ? 'var(--accent2)' : 'var(--accent)'):'var(--border)'};
+      background:${v.id===currentVoiceId?(v.gender==='female' ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)'):'var(--surface2)'};
       border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;position:relative;
     " onclick="selectVoice('${v.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:700;color:${v.gender==='female' ? 'var(--accent2)' : 'var(--accent)'};">${v.gender==='female' ? 'Female' : 'Male'}</span>
         ${v.hasPreview
           ? `<button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
               background:rgba(255,255,255,0.07);border:1px solid var(--border);
@@ -1070,8 +1073,8 @@ function selectVoice(id) {
   VOICES.forEach(v => {
     const card = document.getElementById(`voice-card-${v.id}`);
     if (!card) return;
-    card.style.border = v.id===id ? '2px solid var(--accent)' : '2px solid var(--border)';
-    card.style.background = v.id===id ? 'rgba(99,102,241,0.08)' : 'var(--surface2)';
+    card.style.border = v.id===id ? (v.gender==='female' ? '2px solid var(--accent2)' : '2px solid var(--accent)') : '2px solid var(--border)';
+    card.style.background = v.id===id ? (v.gender==='female' ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)') : 'var(--surface2)';
   });
   markDirty();
 }
@@ -1079,8 +1082,8 @@ function selectVoice(id) {
 function getSelectedVoice() {
   return currentVoiceId || VOICES.find(v => {
     const card = document.getElementById(`voice-card-${v.id}`);
-    return card && card.style.border.includes('var(--accent)');
-  })?.id || VOICES[0]?.id || null;
+    return card && (card.style.border.includes('var(--accent)') || card.style.border.includes('var(--accent2)'));
+  })?.id || VOICES.find(v => v.id === DEFAULT_VOICE_ID)?.id || VOICES[0]?.id || null;
 }
 
 function renderServices(services) {
