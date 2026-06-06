@@ -877,21 +877,38 @@ async function saveClientEdit() {
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
 const ATLAS_API = 'https://atlas.6845165.xyz/admin';
 
-// Realtime API voices (supported OpenAI Realtime voice enums)
-// hasPreview = TTS sample available
-const VOICES = [
-  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', hasPreview: true  },
-  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', hasPreview: true  },
-  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', hasPreview: true  },
-  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', hasPreview: true  },
-  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', hasPreview: true  },
-  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', hasPreview: true  },
-  { id: 'nova',    label: 'Nova',    desc: 'Polished & warm',          emoji: '✨', hasPreview: true  },
-  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & steady',            emoji: '⬛', hasPreview: true  },
-  { id: 'fable',   label: 'Fable',   desc: 'Expressive & natural',     emoji: '📖', hasPreview: true  },
+const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
+const VOICE_ALLOWLIST = [
+  'Jordan', 'Adalina', 'Angie', 'Josh', 'Carly',
+  'Justin', 'Stephen', 'Veda Sky', 'Liz', 'Eryn', 'Tiffany'
 ];
 
+let VOICES = [];
+let currentVoiceId = null;
 let currentPersonaClient = null;
+
+function buildVoiceDesc(v) {
+  const bits = [];
+  if (v.gender && v.gender !== 'unknown') bits.push(v.gender);
+  if (v.accent && v.accent !== 'unknown') bits.push(v.accent);
+  if (v.use_case && v.use_case !== 'general') bits.push(v.use_case);
+  return bits.join(' · ') || 'Library voice';
+}
+
+async function loadVoices() {
+  if (VOICES.length) return VOICES;
+  const res = await fetch(VOICES_API);
+  const data = await res.json();
+  const all = Array.isArray(data.voices) ? data.voices : [];
+  VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map(v => ({
+    id: v.voice_id,
+    label: v.name,
+    desc: buildVoiceDesc(v),
+    hasPreview: !!v.preview_url,
+    preview_url: v.preview_url
+  }));
+  return VOICES;
+}
 
 async function initPersonaPage() {
   const sel = document.getElementById('persona-client-select');
@@ -909,6 +926,7 @@ async function loadPersonaClient() {
   const res = await fetch(`${ATLAS_API}/clients/${id}`);
   const data = await res.json();
   currentPersonaClient = data.client;
+  await loadVoices();
   renderPersonaForm(currentPersonaClient);
   document.getElementById('persona-form').style.display = 'block';
 }
@@ -921,7 +939,7 @@ function renderPersonaForm(c) {
   document.getElementById('p-booking-url').value = c.booking_url || '';
   document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
 
-  // OpenAI Realtime settings
+  // Voice + realtime settings
   const vad = c.vad_threshold ?? 0.5;
   const sil = c.silence_duration_ms ?? 700;
   const tmp = c.temperature ?? 0.7;
@@ -954,7 +972,7 @@ function renderPersonaForm(c) {
   // Advanced
   document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
 
-  renderVoiceGrid(c.voice || 'alloy');
+  renderVoiceGrid(c.voice || VOICES[0]?.id || null);
   renderServices(c.services || []);
   renderFaqs(c.faqs || []);
   markClean();
@@ -996,21 +1014,27 @@ function removeAvoidTag(i) {
 let activeAudio = null;
 
 function renderVoiceGrid(selected) {
+  if (!VOICES.length) {
+    document.getElementById('voice-grid').innerHTML = '<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">No ElevenLabs voices found.</div>';
+    return;
+  }
+
+  currentVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id || null;
+
   document.getElementById('voice-grid').innerHTML = VOICES.map(v => `
     <div id="voice-card-${v.id}" style="
-      border:2px solid ${v.id===selected?'var(--accent)':'var(--border)'};
-      background:${v.id===selected?'rgba(99,102,241,0.08)':'var(--surface2)'};
+      border:2px solid ${v.id===currentVoiceId?'var(--accent)':'var(--border)'};
+      background:${v.id===currentVoiceId?'rgba(99,102,241,0.08)':'var(--surface2)'};
       border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;position:relative;
     " onclick="selectVoice('${v.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <span style="font-size:18px;">${v.emoji}</span>
         ${v.hasPreview
           ? `<button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
               background:rgba(255,255,255,0.07);border:1px solid var(--border);
               border-radius:6px;width:26px;height:26px;cursor:pointer;
               display:flex;align-items:center;justify-content:center;font-size:12px;
               color:var(--text);flex-shrink:0;">▶</button>`
-          : `<span title="No preview — Realtime-only voice" style="
+          : `<span title="No preview — voice is available live" style="
               font-size:10px;color:var(--muted);border:1px solid var(--border);
               border-radius:6px;padding:2px 5px;white-space:nowrap;">Live only</span>`
         }
@@ -1031,7 +1055,8 @@ function playVoice(id) {
   });
 
   const btn = document.getElementById(`play-btn-${id}`);
-  const audio = new Audio(`/assets/voice-samples/${id}.mp3`);
+  const voice = VOICES.find(v => v.id === id);
+  const audio = new Audio(voice?.preview_url || `/assets/voice-samples/${id}.mp3`);
   activeAudio = audio;
 
   btn.textContent = '⏸';
@@ -1041,6 +1066,7 @@ function playVoice(id) {
 }
 
 function selectVoice(id) {
+  currentVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`voice-card-${v.id}`);
     if (!card) return;
@@ -1051,10 +1077,10 @@ function selectVoice(id) {
 }
 
 function getSelectedVoice() {
-  return VOICES.find(v => {
+  return currentVoiceId || VOICES.find(v => {
     const card = document.getElementById(`voice-card-${v.id}`);
     return card && card.style.border.includes('var(--accent)');
-  })?.id || 'alloy';
+  })?.id || VOICES[0]?.id || null;
 }
 
 function renderServices(services) {

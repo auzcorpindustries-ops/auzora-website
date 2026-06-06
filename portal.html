@@ -591,19 +591,35 @@ let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
 
-let VOICES = [
-  { id: 'alloy',   label: 'Alloy',   desc: 'Neutral & clear',         emoji: '🎙️', group: 'left',  preview_url: '/assets/voice-samples/alloy.mp3' },
-  { id: 'echo',    label: 'Echo',    desc: 'Smooth & professional',    emoji: '🎧', group: 'left',  preview_url: '/assets/voice-samples/echo.mp3' },
-  { id: 'shimmer', label: 'Shimmer', desc: 'Soft & calm',              emoji: '✨', group: 'left',  preview_url: '/assets/voice-samples/shimmer.mp3' },
-  { id: 'ash',     label: 'Ash',     desc: 'Casual & conversational',  emoji: '💬', group: 'left',  preview_url: '/assets/voice-samples/ash.mp3' },
-  { id: 'coral',   label: 'Coral',   desc: 'Bright & energetic',       emoji: '🪸', group: 'left',  preview_url: '/assets/voice-samples/coral.mp3' },
-  { id: 'sage',    label: 'Sage',    desc: 'Measured & thoughtful',    emoji: '🌿', group: 'right', preview_url: '/assets/voice-samples/sage.mp3' },
-  { id: 'nova',    label: 'Nova',    desc: 'Polished & warm',          emoji: '✨', group: 'right', preview_url: '/assets/voice-samples/nova.mp3' },
-  { id: 'onyx',    label: 'Onyx',    desc: 'Deep & steady',            emoji: '⬛', group: 'right', preview_url: '/assets/voice-samples/onyx.mp3' },
-  { id: 'fable',   label: 'Fable',   desc: 'Expressive & natural',     emoji: '📖', group: 'right', preview_url: '/assets/voice-samples/fable.mp3' },
-].map(v => ({ ...v, play_url: v.preview_url }));
+const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
+const VOICE_ALLOWLIST = [
+  'Jordan', 'Adalina', 'Angie', 'Josh', 'Carly',
+  'Justin', 'Stephen', 'Veda Sky', 'Liz', 'Eryn', 'Tiffany'
+];
+
+let VOICES = [];
+
+function buildVoiceDesc(v) {
+  const bits = [];
+  if (v.gender && v.gender !== 'unknown') bits.push(v.gender);
+  if (v.accent && v.accent !== 'unknown') bits.push(v.accent);
+  if (v.use_case && v.use_case !== 'general') bits.push(v.use_case);
+  return bits.join(' · ') || 'Library voice';
+}
 
 async function loadVoices() {
+  if (VOICES.length) return VOICES;
+  const res = await fetch(VOICES_API);
+  const data = await res.json();
+  const all = Array.isArray(data.voices) ? data.voices : [];
+  VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map((v, idx) => ({
+    id: v.voice_id,
+    label: v.name,
+    desc: buildVoiceDesc(v),
+    group: idx < 5 ? 'left' : 'right',
+    preview_url: v.preview_url,
+    play_url: v.preview_url
+  }));
   return VOICES;
 }
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -862,7 +878,7 @@ async function loadSettings() {
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
-  // Load OpenAI Realtime voices then render grid
+  // Load ElevenLabs voices then render grid
   await loadVoices();
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice));
   renderPortalAvoidTags(c.topics_to_avoid || []);
