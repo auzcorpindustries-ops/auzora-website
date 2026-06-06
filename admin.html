@@ -460,7 +460,18 @@
               </div>
               <div class="form-group" style="margin-bottom:14px;">
                 <label>Office Hours</label>
+                <div style="display:flex;gap:14px;align-items:center;margin:6px 0 10px;font-size:13px;">
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="radio" name="p-hours-mode" id="p-hours-custom" value="custom" onchange="toggleAdminHoursMode('custom')" checked />
+                    <span>Set office hours</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="radio" name="p-hours-mode" id="p-hours-247" value="247" onchange="toggleAdminHoursMode('247')" />
+                    <span>24/7</span>
+                  </label>
+                </div>
                 <input type="text" id="p-office-hours" placeholder="Monday–Friday, 9 AM to 6 PM Central" />
+                <div id="p-office-hours-note" style="font-size:12px;color:var(--muted);margin-top:6px;">When 24/7 is selected, office hours are disabled.</div>
               </div>
               <div class="form-group" style="margin-bottom:14px;">
                 <label>Booking URL</label>
@@ -885,8 +896,8 @@ const VOICE_ALLOWLIST = [
 const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 let VOICES = [];
-let currentVoiceId = null;
 let currentPersonaClient = null;
+let adminHoursMode = 'custom';
 
 function buildVoiceDesc(v) {
   const bits = [];
@@ -937,9 +948,14 @@ function renderPersonaForm(c) {
   // Business info
   document.getElementById('p-business-name').value = c.business_name || '';
   document.getElementById('p-agent-name').value = c.agent_name || '';
-  document.getElementById('p-office-hours').value = c.office_hours || '';
+  document.getElementById('p-office-hours').value = c.office_hours === '24/7' ? '' : (c.office_hours || '');
   document.getElementById('p-booking-url').value = c.booking_url || '';
   document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
+
+  adminHoursMode = c.office_hours === '24/7' ? '247' : 'custom';
+  document.getElementById('p-hours-custom').checked = adminHoursMode === 'custom';
+  document.getElementById('p-hours-247').checked = adminHoursMode === '247';
+  toggleAdminHoursMode(adminHoursMode, true);
 
   // Voice + realtime settings
   const vad = c.vad_threshold ?? 0.5;
@@ -984,6 +1000,19 @@ function toggleAfterHours() {
   const on = document.getElementById('p-after-hours').checked;
   document.getElementById('after-hours-body').style.display = on ? 'block' : 'none';
   document.getElementById('after-hours-off').style.display = on ? 'none' : 'block';
+}
+
+function toggleAdminHoursMode(mode, quiet = false) {
+  adminHoursMode = mode;
+  const input = document.getElementById('p-office-hours');
+  const note = document.getElementById('p-office-hours-note');
+  if (input) {
+    const disabled = mode === '247';
+    input.disabled = disabled;
+    input.style.opacity = disabled ? '0.45' : '1';
+  }
+  if (note) note.style.display = mode === '247' ? 'block' : 'none';
+  if (!quiet) markDirty();
 }
 
 // Topics to avoid tag input
@@ -1167,7 +1196,7 @@ async function savePersona() {
     // Business info
     business_name:    document.getElementById('p-business-name').value,
     agent_name:       document.getElementById('p-agent-name').value,
-    office_hours:     document.getElementById('p-office-hours').value,
+    office_hours:     adminHoursMode === '247' ? '24/7' : document.getElementById('p-office-hours').value,
     booking_url:      document.getElementById('p-booking-url').value,
     escalation_phone: document.getElementById('p-escalation-phone').value,
     // Voice

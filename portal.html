@@ -349,7 +349,18 @@
             </div>
             <div class="form-group">
               <label>Office Hours</label>
+              <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
+                  <span>Set office hours</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
+                  <span>24/7</span>
+                </label>
+              </div>
               <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
+              <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
             </div>
             <div class="form-group">
               <label>Booking URL</label>
@@ -358,26 +369,6 @@
             <div class="form-group" style="margin-bottom:0;">
               <label>Escalation Phone</label>
               <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-            </div>
-          </div>
-
-          <!-- Call Behavior -->
-          <div class="card">
-            <div class="card-title">⚙️ Call Behavior</div>
-            <div class="slider-row">
-              <div class="slider-label"><span>Interruption Sensitivity</span><span id="sv-vad">0.50</span></div>
-              <input type="range" id="s-vad" min="0" max="1" step="0.05" oninput="document.getElementById('sv-vad').textContent=parseFloat(this.value).toFixed(2);setDirty()" />
-              <div class="slider-hints"><span>Low</span><span>High</span></div>
-            </div>
-            <div class="slider-row">
-              <div class="slider-label"><span>Response Pause</span><span id="sv-sil">700ms</span></div>
-              <input type="range" id="s-sil" min="200" max="2000" step="50" oninput="document.getElementById('sv-sil').textContent=this.value+'ms';setDirty()" />
-              <div class="slider-hints"><span>200ms (fast)</span><span>2000ms (patient)</span></div>
-            </div>
-            <div class="slider-row" style="margin-bottom:0;">
-              <div class="slider-label"><span>Response Creativity</span><span id="sv-temp">0.70</span></div>
-              <input type="range" id="s-temp" min="0.6" max="1.2" step="0.05" oninput="document.getElementById('sv-temp').textContent=parseFloat(this.value).toFixed(2);setDirty()" />
-              <div class="slider-hints"><span>Consistent</span><span>Creative</span></div>
             </div>
           </div>
 
@@ -683,7 +674,8 @@ function buildPortalHoursGrid(hoursStr) {
   const grid = document.getElementById('s-hours-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  const parsed = parseHoursString(hoursStr);
+  portalHoursMode = hoursStr === '24/7' ? '247' : 'custom';
+  const parsed = parseHoursString(portalHoursMode === '247' ? '' : hoursStr);
   DAYS.forEach(day => {
     const d = parsed[day];
     const row = document.createElement('div');
@@ -695,11 +687,29 @@ function buildPortalHoursGrid(hoursStr) {
       </div>
       <div class="hours-times" id="s_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
         <input type="time" id="s_from_${day}" value="${d.from}" oninput="setDirty()">
-        <span class="hours-sep">\u2013</span>
+        <span class="hours-sep">–</span>
         <input type="time" id="s_to_${day}" value="${d.to}" oninput="setDirty()">
       </div>`;
     grid.appendChild(row);
   });
+  togglePortalHoursMode(portalHoursMode, true);
+}
+
+function togglePortalHoursMode(mode, quiet = false) {
+  portalHoursMode = mode;
+  const grid = document.getElementById('s-hours-grid');
+  const note = document.getElementById('s-hours-note');
+  const custom = document.getElementById('s-hours-custom');
+  const all247 = document.getElementById('s-hours-247');
+  if (custom) custom.checked = mode === 'custom';
+  if (all247) all247.checked = mode === '247';
+  if (grid) {
+    const disabled = mode === '247';
+    grid.style.opacity = disabled ? '0.45' : '1';
+    grid.style.pointerEvents = disabled ? 'none' : '';
+  }
+  if (note) note.style.display = mode === '247' ? 'block' : 'none';
+  if (!quiet) setDirty();
 }
 
 function togglePortalDay(day) {
@@ -710,9 +720,10 @@ function togglePortalDay(day) {
 }
 
 function buildPortalHoursString() {
+  if (portalHoursMode === '247') return '24/7';
   return DAYS
     .filter(d => document.getElementById('s_day_' + d)?.checked)
-    .map(d => `${d} ${document.getElementById('s_from_'+d).value}\u2013${document.getElementById('s_to_'+d).value}`)
+    .map(d => `${d} ${document.getElementById('s_from_'+d).value}–${document.getElementById('s_to_'+d).value}`)
     .join(', ');
 }
 
@@ -890,6 +901,7 @@ function formatDT(iso) {
 let settingsDirty = false;
 let activeAudio = null;
 let currentPortalVoiceId = null;
+let portalHoursMode = 'custom';
 
 async function loadSettings() {
   const c = portalClient;
@@ -903,16 +915,6 @@ async function loadSettings() {
   document.getElementById('s-lang').value = c.lang || 'en';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
   document.getElementById('s-escalation').value = c.escalation_rules || '';
-
-  const vad = c.vad_threshold ?? 0.5;
-  const sil = c.silence_duration_ms ?? 700;
-  const tmp = c.temperature ?? 0.7;
-  document.getElementById('s-vad').value = vad;
-  document.getElementById('sv-vad').textContent = parseFloat(vad).toFixed(2);
-  document.getElementById('s-sil').value = sil;
-  document.getElementById('sv-sil').textContent = sil + 'ms';
-  document.getElementById('s-temp').value = tmp;
-  document.getElementById('sv-temp').textContent = parseFloat(tmp).toFixed(2);
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -1107,9 +1109,6 @@ async function saveSettings() {
     custom_greeting:     document.getElementById('s-greeting').value,
     escalation_rules:    document.getElementById('s-escalation').value,
     topics_to_avoid:     portalAvoidTopics,
-    vad_threshold:       parseFloat(document.getElementById('s-vad').value),
-    silence_duration_ms: parseInt(document.getElementById('s-sil').value),
-    temperature:         parseFloat(document.getElementById('s-temp').value),
     after_hours_enabled: document.getElementById('s-ah').checked,
     after_hours_message: document.getElementById('s-ah-msg').value,
     faqs:                getPortalFaqs()
