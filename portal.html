@@ -50,7 +50,15 @@
     background: rgba(255,255,255,0.82); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
     display: flex; align-items: center; padding: 0 24px; gap: 16px;
   }
-  .topbar-logo { font-size: 16px; font-weight: 800; color: var(--accent); }
+  .menu-btn {
+    display: none; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 10px;
+    border: 1px solid var(--border); background: rgba(255,255,255,0.92);
+    color: var(--text); font-size: 16px; cursor: pointer;
+  }
+  .menu-btn:hover { background: rgba(16,24,38,0.04); }
+  .topbar-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--accent); }
+  .topbar-logo img { width: 22px; height: 22px; object-fit: contain; display: block; }
   .topbar-biz { font-size: 13px; color: var(--muted); }
   .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
   .agent-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 4px 12px; }
@@ -59,10 +67,14 @@
   .logout-btn { font-size: 12px; color: var(--muted); cursor: pointer; background: none; border: none; }
   .logout-btn:hover { color: var(--red); }
 
+  .sidebar-overlay {
+    position: fixed; inset: 56px 0 0 0; background: rgba(16,24,38,0.28);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 105;
+  }
   .sidebar {
     position: fixed; left: 0; top: 56px; bottom: 0; width: 200px;
     background: rgba(255,255,255,0.88); border-right: 1px solid var(--border);
-    padding: 16px 0; display: flex; flex-direction: column;
+    padding: 16px 0; display: flex; flex-direction: column; z-index: 110;
   }
   .nav-item {
     display: flex; align-items: center; gap: 10px; padding: 10px 20px;
@@ -198,7 +210,15 @@
   #toast.error { border-color: var(--red); color: var(--red); }
 
   @media (max-width: 768px) {
-    .sidebar { display: none; }
+    .menu-btn { display: inline-flex; }
+    .topbar { padding: 0 12px; gap: 10px; }
+    .topbar-biz { display: none; }
+    .sidebar {
+      width: 260px; transform: translateX(-102%); transition: transform 0.22s ease;
+      box-shadow: 18px 0 40px rgba(24,33,47,0.12);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
     .main { margin-left: 0; padding: 72px 16px 16px; }
     .stats-grid { grid-template-columns: 1fr; }
     .settings-grid { grid-template-columns: 1fr; }
@@ -212,7 +232,7 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <span style="font-size:28px;">🤖</span>
+      <img src="/logo.png" alt="Auzora" style="width:28px;height:28px;object-fit:contain;display:block;">
       <span class="login-logo-text">Auzora</span>
     </div>
     <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by Atlas AI</div>
@@ -230,7 +250,8 @@
 <!-- APP -->
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo"><img src="/assets/logo.svg" alt="Auzora" style="width:22px;height:22px;object-fit:contain;display:block;">Auzora</span>
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+    <span class="topbar-logo"><img src="/logo.png" alt="Auzora">Auzora</span>
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
       <div class="agent-status"><div class="pulse"></div> Agent Active</div>
@@ -244,6 +265,8 @@
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <main class="main">
 
@@ -777,7 +800,22 @@ function launchApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('topbar-biz').textContent = portalClient.business_name;
   document.getElementById('dash-title').textContent = `Welcome, ${portalClient.business_name}`;
+  closeSidebar();
   loadDashboard();
+}
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const open = sidebar.classList.toggle('open');
+  overlay.classList.toggle('open', open);
+}
+
+function closeSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
 }
 
 function showPage(name) {
@@ -785,6 +823,7 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
+  closeSidebar();
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
   if (name === 'integrations') loadIntegrations();
