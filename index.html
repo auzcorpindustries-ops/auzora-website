@@ -340,11 +340,11 @@
     }
     .voice-tile-copy p {
       color: var(--muted);
-      font-size: 0.84rem;
-      line-height: 1.1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.78rem;
+      line-height: 1.28;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
       margin: 0;
     }
     .voice-tile-actions {
@@ -358,15 +358,19 @@
       width: 100%;
     }
     .voice-play {
-      border: 1px solid rgba(16,24,38,0.12);
-      background: rgba(255,255,255,0.82);
-      color: var(--text);
-      box-shadow: none;
+      background: linear-gradient(135deg, #5e6ad2, #7170ff 55%, #8f7bff 100%);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 16px 30px rgba(94, 106, 210, 0.28);
+    }
+    .voice-play:hover {
+      box-shadow: 0 20px 40px rgba(94, 106, 210, 0.34);
     }
     .voice-play.is-playing {
-      background: rgba(59,130,246,0.08);
-      border-color: rgba(59,130,246,0.28);
-      color: #14386d;
+      background: linear-gradient(135deg, #5460c8, #6772f5 55%, #7f6eff 100%);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 20px 40px rgba(84, 96, 200, 0.34);
     }
     .card-top, .card-bottom { position: relative; z-index: 1; }
     .card-top {
@@ -1137,7 +1141,7 @@
         text: "Hi, I'm Tiffany. I keep the conversation warm and make it easy to schedule a visit.",
       },
       jordan: {
-        src: 'https://api.us.elevenlabs.io/v1/voices/bxPMdBTxMI0LMo67TDEK/previews/audio?payload=eyJ2b2...AwfQ%3D%3D',
+        src: '/assets/audio/jordan-preview.mp3',
         text: "Hi, I'm Jordan. I stay polished, professional, and ready to help after hours too.",
       },
     };
