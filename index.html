@@ -288,48 +288,75 @@
       display: grid;
       gap: 16px;
     }
-    .voice-spotlight {
+    .voice-ensemble {
       display: grid;
       gap: 18px;
       position: relative;
       z-index: 1;
     }
-    .voice-portrait {
+    .voice-ensemble-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .voice-tile {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+    .voice-tile::after {
+      content: "";
+      position: absolute;
+      inset: auto -22px -28px auto;
+      width: 110px;
+      height: 110px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(139,92,246,0.10), transparent 65%);
+      pointer-events: none;
+    }
+    .voice-tile-img {
       width: 100%;
       aspect-ratio: 1;
       object-fit: cover;
-      border-radius: 28px;
+      border-radius: 24px;
       border: 1px solid rgba(16,24,38,0.08);
-      box-shadow: 0 28px 60px rgba(24, 33, 47, 0.12);
+      box-shadow: 0 18px 40px rgba(24, 33, 47, 0.10);
       background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08));
+      position: relative;
+      z-index: 1;
     }
-    .voice-meta {
+    .voice-tile-copy {
       display: grid;
-      gap: 8px;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
     }
-    .voice-name-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .voice-title {
-      font-size: 1.6rem;
-      letter-spacing: -0.05em;
+    .voice-tile-copy h3 {
+      font-size: 1.05rem;
+      letter-spacing: -0.03em;
       margin: 0;
     }
-    .voice-copy {
+    .voice-tile-copy p {
       color: var(--muted);
-      font-size: 0.98rem;
-      max-width: 44ch;
+      font-size: 0.9rem;
+      margin: 0;
     }
-    .voice-actions {
+    .voice-tile-actions {
       display: flex;
+      gap: 10px;
       flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+    }
+    .voice-tile-actions .btn {
+      width: 100%;
+    }
+    .voice-voice-note {
+      font-size: 0.9rem;
+      color: var(--muted-2);
+      margin-top: -2px;
     }
     .voice-play {
       border: 1px solid rgba(16,24,38,0.12);
@@ -341,67 +368,6 @@
       background: rgba(59,130,246,0.08);
       border-color: rgba(59,130,246,0.28);
       color: #14386d;
-    }
-    .voice-note {
-      font-size: 0.9rem;
-      color: var(--muted-2);
-    }
-    .voice-gallery {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-    .voice-mini {
-      position: relative;
-      overflow: hidden;
-      padding: 20px;
-    }
-    .voice-mini::after {
-      content: "";
-      position: absolute;
-      inset: auto -28px -34px auto;
-      width: 120px;
-      height: 120px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 65%);
-      pointer-events: none;
-    }
-    .voice-mini-top {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      position: relative;
-      z-index: 1;
-    }
-    .voice-mini-img {
-      width: 86px;
-      height: 86px;
-      border-radius: 22px;
-      object-fit: cover;
-      border: 1px solid rgba(16,24,38,0.08);
-      box-shadow: 0 16px 36px rgba(24, 33, 47, 0.10);
-      flex-shrink: 0;
-    }
-    .voice-mini-copy {
-      display: grid;
-      gap: 6px;
-      min-width: 0;
-      position: relative;
-      z-index: 1;
-    }
-    .voice-mini-copy h3 { font-size: 1.02rem; margin: 0; letter-spacing: -0.03em; }
-    .voice-mini-copy p { color: var(--muted); font-size: 0.9rem; }
-    .voice-mini-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-      position: relative;
-      z-index: 1;
-    }
-    .voice-mini-actions .btn {
-      padding: 10px 14px;
-      font-size: 0.92rem;
     }
     .card-top, .card-bottom { position: relative; z-index: 1; }
     .card-top {
@@ -798,7 +764,7 @@
       .nav { width: 100%; justify-content: flex-start; }
       .hero { padding-top: 48px; }
       .hero h1 { font-size: clamp(2.55rem, 13vw, 4.4rem); }
-      .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid, .voice-gallery { grid-template-columns: 1fr; }
+      .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid, .voice-gallery, .voice-ensemble-grid { grid-template-columns: 1fr; }
       .bubble { max-width: 92%; }
       .section { padding-top: 72px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
@@ -850,98 +816,63 @@
           </div>
         </div>
 
-        <div class="hero-card voice-showcase" aria-label="Liz voice preview">
+        <div class="hero-card voice-showcase voice-ensemble" aria-label="Voice previews">
           <div class="card-top">
-            <div class="status"><span class="live"></span> Liz — default voice</div>
-            <div class="signal">Voice preview</div>
+            <div class="status"><span class="live"></span> Voice lineup</div>
+            <div class="signal">Equal-size previews</div>
           </div>
 
-          <div class="voice-spotlight">
-            <img class="voice-portrait" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
-            <div class="voice-meta">
-              <div class="voice-name-row">
-                <div>
-                  <div class="mini-label" style="margin-bottom:8px;">Default voice</div>
-                  <h3 class="voice-title">Liz</h3>
-                </div>
+          <div class="voice-ensemble-grid">
+            <article class="panel voice-tile" aria-label="Liz voice preview">
+              <img class="voice-tile-img" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
+              <div class="voice-tile-copy">
+                <div class="mini-label" style="margin-bottom:0;">Default voice</div>
+                <h3>Liz</h3>
+                <p>Calm, polished, and ready to schedule.</p>
               </div>
-              <p class="voice-copy">Our default voice for live calls — polished, calm, and ready to schedule the next appointment.</p>
-              <div class="voice-actions">
+              <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="liz">▶ Play voice</button>
-                <a class="btn btn-primary" href="#contact">Call Liz Now to Schedule an Appointment</a>
               </div>
-              <div class="voice-note">Tap play to hear the Liz preview before you call.</div>
-            </div>
-          </div>
+            </article>
 
-          <div class="hero-foot">
-            <div class="foot-grid">
-              <div class="metric">
-                <strong>Built for scheduling</strong>
-                <span>Liz is the default voice we use to make the first impression feel human.</span>
+            <article class="panel voice-tile" aria-label="Josh voice preview">
+              <img class="voice-tile-img" src="/assets/avatars/josh.png" alt="Josh avatar" loading="eager" />
+              <div class="voice-tile-copy">
+                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+                <h3>Josh</h3>
+                <p>Clear, calm, and dependable.</p>
               </div>
-              <div class="metric">
-                <strong>Personalized voices</strong>
-                <span>Use the avatars below to compare the other tones at a glance.</span>
+              <div class="voice-tile-actions">
+                <button class="btn voice-play" type="button" data-voice="josh">▶ Play voice</button>
               </div>
-            </div>
+            </article>
+
+            <article class="panel voice-tile" aria-label="Tiffany voice preview">
+              <img class="voice-tile-img" src="/assets/avatars/tiffany.png" alt="Tiffany avatar" loading="eager" />
+              <div class="voice-tile-copy">
+                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+                <h3>Tiffany</h3>
+                <p>Warm, polished, and welcoming.</p>
+              </div>
+              <div class="voice-tile-actions">
+                <button class="btn voice-play" type="button" data-voice="tiffany">▶ Play voice</button>
+              </div>
+            </article>
+
+            <article class="panel voice-tile" aria-label="Jordan voice preview">
+              <img class="voice-tile-img" src="/assets/avatars/jordan.png" alt="Jordan avatar" loading="eager" />
+              <div class="voice-tile-copy">
+                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+                <h3>Jordan</h3>
+                <p>Confident, steady, and after-hours ready.</p>
+              </div>
+              <div class="voice-tile-actions">
+                <button class="btn voice-play" type="button" data-voice="jordan">▶ Play voice</button>
+              </div>
+            </article>
           </div>
         </div>
 
-      </div>
-    </section>
-
-    <section class="section shell" id="voices">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">Voice previews</div>
-          <h2>Three more voices, kept small and simple.</h2>
-        </div>
-        <p class="section-lead">No full demo here — just a quick way to hear the other avatars and choose the tone that fits the business best.</p>
-      </div>
-
-      <div class="voice-gallery">
-        <article class="panel voice-mini" aria-label="Josh voice preview">
-          <div class="voice-mini-top">
-            <img class="voice-mini-img" src="/assets/avatars/josh.png" alt="Josh avatar" loading="lazy" />
-            <div class="voice-mini-copy">
-              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
-              <h3>Josh</h3>
-              <p>Clear, calm, and dependable.</p>
-            </div>
-          </div>
-          <div class="voice-mini-actions">
-            <button class="btn voice-play" type="button" data-voice="josh">▶ Play Josh</button>
-          </div>
-        </article>
-
-        <article class="panel voice-mini" aria-label="Tiffany voice preview">
-          <div class="voice-mini-top">
-            <img class="voice-mini-img" src="/assets/avatars/tiffany.png" alt="Tiffany avatar" loading="lazy" />
-            <div class="voice-mini-copy">
-              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
-              <h3>Tiffany</h3>
-              <p>Warm, polished, and welcoming.</p>
-            </div>
-          </div>
-          <div class="voice-mini-actions">
-            <button class="btn voice-play" type="button" data-voice="tiffany">▶ Play Tiffany</button>
-          </div>
-        </article>
-
-        <article class="panel voice-mini" aria-label="Jordan voice preview">
-          <div class="voice-mini-top">
-            <img class="voice-mini-img" src="/assets/avatars/jordan.png" alt="Jordan avatar" loading="lazy" />
-            <div class="voice-mini-copy">
-              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
-              <h3>Jordan</h3>
-              <p>Confident, steady, and after-hours ready.</p>
-            </div>
-          </div>
-          <div class="voice-mini-actions">
-            <button class="btn voice-play" type="button" data-voice="jordan">▶ Play Jordan</button>
-          </div>
-        </article>
       </div>
     </section>
 
