@@ -1177,7 +1177,7 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    async function playVoice(name, btn) {
+    function playVoice(name, btn) {
       const demo = VOICE_DEMOS[name];
       if (!demo) return;
 
@@ -1199,12 +1199,13 @@
         speakFallback(demo.text);
       };
 
-      try {
-        await audio.play();
-      } catch (err) {
-        stopCurrentVoice(false);
-        setVoiceButtonState(btn, false);
-        speakFallback(demo.text);
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          stopCurrentVoice(false);
+          setVoiceButtonState(btn, false);
+          speakFallback(demo.text);
+        });
       }
     }
 
