@@ -284,6 +284,125 @@
       pointer-events: none;
     }
 
+    .voice-showcase {
+      display: grid;
+      gap: 16px;
+    }
+    .voice-spotlight {
+      display: grid;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    .voice-portrait {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 28px;
+      border: 1px solid rgba(16,24,38,0.08);
+      box-shadow: 0 28px 60px rgba(24, 33, 47, 0.12);
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(236,72,153,0.08));
+    }
+    .voice-meta {
+      display: grid;
+      gap: 8px;
+    }
+    .voice-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .voice-title {
+      font-size: 1.6rem;
+      letter-spacing: -0.05em;
+      margin: 0;
+    }
+    .voice-copy {
+      color: var(--muted);
+      font-size: 0.98rem;
+      max-width: 44ch;
+    }
+    .voice-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .voice-play {
+      border: 1px solid rgba(16,24,38,0.12);
+      background: rgba(255,255,255,0.82);
+      color: var(--text);
+      box-shadow: none;
+    }
+    .voice-play.is-playing {
+      background: rgba(59,130,246,0.08);
+      border-color: rgba(59,130,246,0.28);
+      color: #14386d;
+    }
+    .voice-note {
+      font-size: 0.9rem;
+      color: var(--muted-2);
+    }
+    .voice-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .voice-mini {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+    }
+    .voice-mini::after {
+      content: "";
+      position: absolute;
+      inset: auto -28px -34px auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 65%);
+      pointer-events: none;
+    }
+    .voice-mini-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .voice-mini-img {
+      width: 86px;
+      height: 86px;
+      border-radius: 22px;
+      object-fit: cover;
+      border: 1px solid rgba(16,24,38,0.08);
+      box-shadow: 0 16px 36px rgba(24, 33, 47, 0.10);
+      flex-shrink: 0;
+    }
+    .voice-mini-copy {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .voice-mini-copy h3 { font-size: 1.02rem; margin: 0; letter-spacing: -0.03em; }
+    .voice-mini-copy p { color: var(--muted); font-size: 0.9rem; }
+    .voice-mini-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .voice-mini-actions .btn {
+      padding: 10px 14px;
+      font-size: 0.92rem;
+    }
     .card-top, .card-bottom { position: relative; z-index: 1; }
     .card-top {
       display: flex;
@@ -679,7 +798,7 @@
       .nav { width: 100%; justify-content: flex-start; }
       .hero { padding-top: 48px; }
       .hero h1 { font-size: clamp(2.55rem, 13vw, 4.4rem); }
-      .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid { grid-template-columns: 1fr; }
+      .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid, .voice-gallery { grid-template-columns: 1fr; }
       .bubble { max-width: 92%; }
       .section { padding-top: 72px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
@@ -731,33 +850,98 @@
           </div>
         </div>
 
-        <div class="hero-card" aria-label="Atlas AI call">
+        <div class="hero-card voice-showcase" aria-label="Liz voice preview">
           <div class="card-top">
-            <div class="status"><span class="live"></span> Atlas AI live call</div>
-            <div class="signal">GPT-4o Realtime · low-latency voice</div>
+            <div class="status"><span class="live"></span> Liz — default voice</div>
+            <div class="signal">Voice preview</div>
           </div>
 
-          <div class="call-stack">
-            <div class="bubble ai">Hello, thanks for calling Auzora. How can I help today?</div>
-            <div class="bubble user">I need to book an appointment for next week.</div>
-            <div class="bubble ai">Absolutely — I can help with that. What time of day works best?</div>
-            <div class="bubble note">Atlas captures the caller’s intent, confirms the next step, and keeps the conversation moving.</div>
-            <div class="pulse-row" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="voice-spotlight">
+            <img class="voice-portrait" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
+            <div class="voice-meta">
+              <div class="voice-name-row">
+                <div>
+                  <div class="mini-label" style="margin-bottom:8px;">Default voice</div>
+                  <h3 class="voice-title">Liz</h3>
+                </div>
+              </div>
+              <p class="voice-copy">Our default voice for live calls — polished, calm, and ready to schedule the next appointment.</p>
+              <div class="voice-actions">
+                <button class="btn voice-play" type="button" data-voice="liz">▶ Play voice</button>
+                <a class="btn btn-primary" href="#contact">Call Liz Now to Schedule an Appointment</a>
+              </div>
+              <div class="voice-note">Tap play to hear the Liz preview before you call.</div>
+            </div>
           </div>
 
           <div class="hero-foot">
             <div class="foot-grid">
               <div class="metric">
-                <strong>Always on</strong>
-                <span>Answer calls after hours, on weekends, and when your team is busy.</span>
+                <strong>Built for scheduling</strong>
+                <span>Liz is the default voice we use to make the first impression feel human.</span>
               </div>
               <div class="metric">
-                <strong>Built to convert</strong>
-                <span>Capture names, intent, and booking details without sounding robotic.</span>
+                <strong>Personalized voices</strong>
+                <span>Use the avatars below to compare the other tones at a glance.</span>
               </div>
             </div>
           </div>
         </div>
+
+      </div>
+    </section>
+
+    <section class="section shell" id="voices">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Voice previews</div>
+          <h2>Three more voices, kept small and simple.</h2>
+        </div>
+        <p class="section-lead">No full demo here — just a quick way to hear the other avatars and choose the tone that fits the business best.</p>
+      </div>
+
+      <div class="voice-gallery">
+        <article class="panel voice-mini" aria-label="Josh voice preview">
+          <div class="voice-mini-top">
+            <img class="voice-mini-img" src="/assets/avatars/josh.png" alt="Josh avatar" loading="lazy" />
+            <div class="voice-mini-copy">
+              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+              <h3>Josh</h3>
+              <p>Clear, calm, and dependable.</p>
+            </div>
+          </div>
+          <div class="voice-mini-actions">
+            <button class="btn voice-play" type="button" data-voice="josh">▶ Play Josh</button>
+          </div>
+        </article>
+
+        <article class="panel voice-mini" aria-label="Tiffany voice preview">
+          <div class="voice-mini-top">
+            <img class="voice-mini-img" src="/assets/avatars/tiffany.png" alt="Tiffany avatar" loading="lazy" />
+            <div class="voice-mini-copy">
+              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+              <h3>Tiffany</h3>
+              <p>Warm, polished, and welcoming.</p>
+            </div>
+          </div>
+          <div class="voice-mini-actions">
+            <button class="btn voice-play" type="button" data-voice="tiffany">▶ Play Tiffany</button>
+          </div>
+        </article>
+
+        <article class="panel voice-mini" aria-label="Jordan voice preview">
+          <div class="voice-mini-top">
+            <img class="voice-mini-img" src="/assets/avatars/jordan.png" alt="Jordan avatar" loading="lazy" />
+            <div class="voice-mini-copy">
+              <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
+              <h3>Jordan</h3>
+              <p>Confident, steady, and after-hours ready.</p>
+            </div>
+          </div>
+          <div class="voice-mini-actions">
+            <button class="btn voice-play" type="button" data-voice="jordan">▶ Play Jordan</button>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -1013,6 +1197,89 @@
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    const VOICE_DEMOS = {
+      liz: {
+        src: '/assets/audio/voices/liz.m4a',
+        text: "Hi, I'm Liz. I can answer calls, qualify leads, and book appointments.",
+      },
+      josh: {
+        src: '/assets/audio/voices/josh.m4a',
+        text: "Hi, I'm Josh. I sound calm, clear, and ready to help book your next appointment.",
+      },
+      tiffany: {
+        src: '/assets/audio/voices/tiffany.m4a',
+        text: "Hi, I'm Tiffany. I keep the conversation warm and make it easy to schedule a visit.",
+      },
+      jordan: {
+        src: '/assets/audio/voices/jordan.m4a',
+        text: "Hi, I'm Jordan. I stay polished, professional, and ready to help after hours too.",
+      },
+    };
+
+    let currentVoiceAudio = null;
+    let currentVoiceButton = null;
+
+    function setVoiceButtonState(btn, playing) {
+      if (!btn) return;
+      btn.classList.toggle('is-playing', playing);
+      btn.textContent = playing ? '❚❚ Pause voice' : '▶ Play voice';
+    }
+
+    function stopCurrentVoice(resetButton = true) {
+      if (currentVoiceAudio) {
+        currentVoiceAudio.pause();
+        currentVoiceAudio.currentTime = 0;
+        currentVoiceAudio = null;
+      }
+      if (resetButton && currentVoiceButton) {
+        setVoiceButtonState(currentVoiceButton, false);
+      }
+      currentVoiceButton = null;
+    }
+
+    function speakFallback(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.02;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    async function playVoice(name, btn) {
+      const demo = VOICE_DEMOS[name];
+      if (!demo) return;
+
+      if (currentVoiceAudio && currentVoiceButton === btn && !currentVoiceAudio.paused) {
+        stopCurrentVoice();
+        return;
+      }
+
+      stopCurrentVoice(false);
+      const audio = new Audio(demo.src);
+      currentVoiceAudio = audio;
+      currentVoiceButton = btn;
+      setVoiceButtonState(btn, true);
+      audio.onended = () => stopCurrentVoice();
+      audio.onerror = () => {
+        stopCurrentVoice(false);
+        setVoiceButtonState(btn, false);
+        speakFallback(demo.text);
+      };
+
+      try {
+        await audio.play();
+      } catch (err) {
+        stopCurrentVoice(false);
+        setVoiceButtonState(btn, false);
+        speakFallback(demo.text);
+      }
+    }
+
+    document.querySelectorAll('.voice-play[data-voice]').forEach(btn => {
+      btn.addEventListener('click', () => playVoice(btn.dataset.voice, btn));
+    });
   </script>
 </body>
 </html>
