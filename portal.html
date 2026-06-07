@@ -151,10 +151,18 @@
   .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
   .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
   .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
-  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
+  .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .voice-name { font-size: 12px; font-weight: 700; }
   .voice-name.left { color: var(--accent); }
   .voice-name.right { color: var(--accent2); }
+  .voice-badge {
+    display: inline-flex; align-items: center; white-space: nowrap;
+    padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
+    letter-spacing: .4px; text-transform: uppercase; color: #5b21b6;
+    background: rgba(255,255,255,0.96); border: 1px solid rgba(124,58,237,0.26);
+    box-shadow: 0 1px 2px rgba(16,24,38,0.05);
+  }
   .play-btn {
     background: rgba(16,24,38,0.03); border: 1px solid var(--border);
     border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
@@ -610,6 +618,7 @@ const VOICE_ALLOWLIST = [
 
 let VOICES = [];
 const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
+const DEFAULT_VOICE_LABEL = 'Liz';
 
 function buildVoiceDesc(v) {
   const bits = [];
@@ -630,6 +639,7 @@ async function loadVoices() {
     gender: v.gender || 'unknown',
     desc: buildVoiceDesc(v),
     group: (v.gender === 'female' ? 'left' : 'right'),
+    isDefault: (v.voice_id === DEFAULT_VOICE_ID || (v.name || '').toLowerCase().includes(DEFAULT_VOICE_LABEL.toLowerCase())),
     preview_url: v.preview_url,
     play_url: v.preview_url
   }));
@@ -978,7 +988,10 @@ function renderPortalVoiceGrid(selected) {
       ${voices.map(v => `
         <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
           <div class="voice-card-top">
-            <div class="voice-name ${tone}">${v.label}</div>
+            <div class="voice-name-wrap">
+              <div class="voice-name ${tone}">${v.label}</div>
+              ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+            </div>
             <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
           </div>
           ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
