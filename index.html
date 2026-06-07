@@ -816,11 +816,6 @@
         </div>
 
         <div class="hero-card voice-showcase voice-ensemble" aria-label="Voice previews">
-          <div class="card-top">
-            <div class="status"><span class="live"></span> Voice lineup</div>
-            <div class="signal">Equal-size previews</div>
-          </div>
-
           <div class="voice-ensemble-grid">
             <article class="panel voice-tile" aria-label="Liz voice preview">
               <img class="voice-tile-img" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
@@ -831,7 +826,7 @@
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="liz">▶ Play voice</button>
               </div>
-              <audio data-voice-audio="liz" preload="auto" src="/assets/audio/voices/liz.m4a" hidden></audio>
+              <audio data-voice-audio="liz" preload="auto" src="https://storage.googleapis.com/eleven-public-prod/database/workspace/af050efbdab9479ca29e5d48c00bd675/voices/uMM5TEnpKKgD758knVJO/O0FyWnfz0UI6X55jzQhm.mp3" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Josh voice preview">
@@ -843,7 +838,7 @@
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="josh">▶ Play voice</button>
               </div>
-              <audio data-voice-audio="josh" preload="auto" src="/assets/audio/voices/josh.m4a" hidden></audio>
+              <audio data-voice-audio="josh" preload="auto" src="https://storage.googleapis.com/eleven-public-prod/database/workspace/110a0b43b87c4dc3a74adc986d39917c/voices/ZoiZ8fuDWInAcwPXaVeq/9EwzECjtvTDxjoH3F7fg.mp3" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Tiffany voice preview">
@@ -855,7 +850,7 @@
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="tiffany">▶ Play voice</button>
               </div>
-              <audio data-voice-audio="tiffany" preload="auto" src="/assets/audio/voices/tiffany.m4a" hidden></audio>
+              <audio data-voice-audio="tiffany" preload="auto" src="https://storage.googleapis.com/eleven-public-prod/database/workspace/1da06ea679a54975ad96a2221fe6530d/voices/6aDn1KB0hjpdcocrUkmq/rpx5WDhu18UBjesNKE8S.mp3" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Jordan voice preview">
@@ -867,7 +862,7 @@
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="jordan">▶ Play voice</button>
               </div>
-              <audio data-voice-audio="jordan" preload="auto" src="/assets/audio/voices/jordan.m4a" hidden></audio>
+              <audio data-voice-audio="jordan" preload="auto" src="https://api.us.elevenlabs.io/v1/voices/bxPMdBTxMI0LMo67TDEK/previews/audio?payload=eyJ2b2...AwfQ%3D%3D" hidden></audio>
             </article>
           </div>
         </div>
@@ -1130,19 +1125,19 @@
 
     const VOICE_DEMOS = {
       liz: {
-        src: '/assets/audio/voices/liz.m4a',
+        src: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/af050efbdab9479ca29e5d48c00bd675/voices/uMM5TEnpKKgD758knVJO/O0FyWnfz0UI6X55jzQhm.mp3',
         text: "Hi, I'm Liz. I can answer calls, qualify leads, and book appointments.",
       },
       josh: {
-        src: '/assets/audio/voices/josh.m4a',
+        src: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/110a0b43b87c4dc3a74adc986d39917c/voices/ZoiZ8fuDWInAcwPXaVeq/9EwzECjtvTDxjoH3F7fg.mp3',
         text: "Hi, I'm Josh. I sound calm, clear, and ready to help book your next appointment.",
       },
       tiffany: {
-        src: '/assets/audio/voices/tiffany.m4a',
+        src: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/1da06ea679a54975ad96a2221fe6530d/voices/6aDn1KB0hjpdcocrUkmq/rpx5WDhu18UBjesNKE8S.mp3',
         text: "Hi, I'm Tiffany. I keep the conversation warm and make it easy to schedule a visit.",
       },
       jordan: {
-        src: '/assets/audio/voices/jordan.m4a',
+        src: 'https://api.us.elevenlabs.io/v1/voices/bxPMdBTxMI0LMo67TDEK/previews/audio?payload=eyJ2b2...AwfQ%3D%3D',
         text: "Hi, I'm Jordan. I stay polished, professional, and ready to help after hours too.",
       },
     };
@@ -1194,17 +1189,17 @@
       audio.currentTime = 0;
       audio.onended = () => stopCurrentVoice();
       audio.onerror = () => {
+        console.warn('Voice preview failed to load', name, audio.src);
         stopCurrentVoice(false);
         setVoiceButtonState(btn, false);
-        speakFallback(demo.text);
       };
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
+          console.warn('Voice preview failed to play', name, audio.src);
           stopCurrentVoice(false);
           setVoiceButtonState(btn, false);
-          speakFallback(demo.text);
         });
       }
     }
