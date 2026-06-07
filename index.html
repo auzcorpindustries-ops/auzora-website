@@ -340,7 +340,11 @@
     }
     .voice-tile-copy p {
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.84rem;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin: 0;
     }
     .voice-tile-actions {
@@ -352,11 +356,6 @@
     }
     .voice-tile-actions .btn {
       width: 100%;
-    }
-    .voice-voice-note {
-      font-size: 0.9rem;
-      color: var(--muted-2);
-      margin-top: -2px;
     }
     .voice-play {
       border: 1px solid rgba(16,24,38,0.12);
@@ -826,49 +825,49 @@
             <article class="panel voice-tile" aria-label="Liz voice preview">
               <img class="voice-tile-img" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
               <div class="voice-tile-copy">
-                <div class="mini-label" style="margin-bottom:0;">Default voice</div>
                 <h3>Liz</h3>
                 <p>Calm, polished, and ready to schedule.</p>
               </div>
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="liz">▶ Play voice</button>
               </div>
+              <audio data-voice-audio="liz" preload="auto" src="/assets/audio/voices/liz.m4a" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Josh voice preview">
               <img class="voice-tile-img" src="/assets/avatars/josh.png" alt="Josh avatar" loading="eager" />
               <div class="voice-tile-copy">
-                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
                 <h3>Josh</h3>
                 <p>Clear, calm, and dependable.</p>
               </div>
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="josh">▶ Play voice</button>
               </div>
+              <audio data-voice-audio="josh" preload="auto" src="/assets/audio/voices/josh.m4a" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Tiffany voice preview">
               <img class="voice-tile-img" src="/assets/avatars/tiffany.png" alt="Tiffany avatar" loading="eager" />
               <div class="voice-tile-copy">
-                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
                 <h3>Tiffany</h3>
                 <p>Warm, polished, and welcoming.</p>
               </div>
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="tiffany">▶ Play voice</button>
               </div>
+              <audio data-voice-audio="tiffany" preload="auto" src="/assets/audio/voices/tiffany.m4a" hidden></audio>
             </article>
 
             <article class="panel voice-tile" aria-label="Jordan voice preview">
               <img class="voice-tile-img" src="/assets/avatars/jordan.png" alt="Jordan avatar" loading="eager" />
               <div class="voice-tile-copy">
-                <div class="mini-label" style="margin-bottom:0;">Voice preview</div>
                 <h3>Jordan</h3>
                 <p>Confident, steady, and after-hours ready.</p>
               </div>
               <div class="voice-tile-actions">
                 <button class="btn voice-play" type="button" data-voice="jordan">▶ Play voice</button>
               </div>
+              <audio data-voice-audio="jordan" preload="auto" src="/assets/audio/voices/jordan.m4a" hidden></audio>
             </article>
           </div>
         </div>
@@ -1188,10 +1187,11 @@
       }
 
       stopCurrentVoice(false);
-      const audio = new Audio(demo.src);
+      const audio = document.querySelector(`audio[data-voice-audio="${name}"]`) || new Audio(demo.src);
       currentVoiceAudio = audio;
       currentVoiceButton = btn;
       setVoiceButtonState(btn, true);
+      audio.currentTime = 0;
       audio.onended = () => stopCurrentVoice();
       audio.onerror = () => {
         stopCurrentVoice(false);
