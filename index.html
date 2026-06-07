@@ -1148,11 +1148,28 @@
 
     let currentVoiceAudio = null;
     let currentVoiceButton = null;
+    const voiceObjectUrls = new Map();
 
     function setVoiceButtonState(btn, playing) {
       if (!btn) return;
       btn.classList.toggle('is-playing', playing);
       btn.textContent = playing ? '❚❚ Pause voice' : '▶ Play voice';
+    }
+
+    async function ensureBlobVoiceSource(name, audio, demo) {
+      if (name !== 'jordan') return audio;
+      const cachedUrl = voiceObjectUrls.get(name);
+      if (cachedUrl) {
+        if (audio.src !== cachedUrl) audio.src = cachedUrl;
+        return audio;
+      }
+      const response = await fetch(demo.src, { cache: 'force-cache' });
+      if (!response.ok) throw new Error(`Failed to fetch voice preview for ${name}`);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      voiceObjectUrls.set(name, objectUrl);
+      audio.src = objectUrl;
+      return audio;
     }
 
     function stopCurrentVoice(resetButton = true) {
@@ -1176,7 +1193,7 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    function playVoice(name, btn) {
+    async function playVoice(name, btn) {
       const demo = VOICE_DEMOS[name];
       if (!demo) return;
 
@@ -1197,6 +1214,15 @@
         stopCurrentVoice(false);
         setVoiceButtonState(btn, false);
       };
+
+      try {
+        await ensureBlobVoiceSource(name, audio, demo);
+      } catch (err) {
+        console.warn('Voice preview source prep failed', name, err);
+        stopCurrentVoice(false);
+        setVoiceButtonState(btn, false);
+        return;
+      }
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
