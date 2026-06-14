@@ -889,11 +889,7 @@ async function saveClientEdit() {
 const ATLAS_API = 'https://atlas.6845165.xyz/admin';
 
 const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
-const VOICE_ALLOWLIST = [
-  'Jordan', 'Adalina', 'Angie', 'Josh',
-  'Justin', 'Stephen', 'Liz', 'Eryn', 'Tiffany'
-];
-const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
+let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 let VOICES = [];
 let currentPersonaClient = null;
@@ -901,10 +897,10 @@ let adminHoursMode = 'custom';
 
 function buildVoiceDesc(v) {
   const bits = [];
+  if (v.description) bits.push(v.description);
   if (v.gender && v.gender !== 'unknown') bits.push(v.gender);
-  if (v.accent && v.accent !== 'unknown') bits.push(v.accent);
-  if (v.use_case && v.use_case !== 'general') bits.push(v.use_case);
-  return bits.join(' · ') || 'Library voice';
+  if (v.group && v.group !== 'unknown') bits.push(v.group);
+  return bits.join(' · ') || 'Approved voice';
 }
 
 async function loadVoices() {
@@ -912,14 +908,19 @@ async function loadVoices() {
   const res = await fetch(VOICES_API);
   const data = await res.json();
   const all = Array.isArray(data.voices) ? data.voices : [];
-  VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map(v => ({
-    id: v.voice_id,
-    label: v.name,
-    gender: v.gender || 'unknown',
-    desc: buildVoiceDesc(v),
-    hasPreview: !!v.preview_url,
-    preview_url: v.preview_url
-  }));
+  DEFAULT_VOICE_ID = data.default_voice_id || DEFAULT_VOICE_ID;
+  VOICES = all
+    .filter(v => v && v.active !== false)
+    .map(v => ({
+      id: v.id,
+      label: v.label || v.voice_name || v.name || 'Voice',
+      gender: v.gender || 'unknown',
+      desc: buildVoiceDesc(v),
+      group: v.group || (v.gender === 'female' ? 'left' : 'right'),
+      isDefault: !!v.is_default || v.id === data.default_voice_id,
+      hasPreview: !!v.preview_url,
+      preview_url: v.preview_url
+    }));
   return VOICES;
 }
 
@@ -990,7 +991,7 @@ function renderPersonaForm(c) {
   // Advanced
   document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
 
-  renderVoiceGrid(c.voice || DEFAULT_VOICE_ID || VOICES[0]?.id || null);
+  renderVoiceGrid(c.voice_id || c.voice || c.voice_name || c.voice_label || c.selected_voice || c.agent_voice || DEFAULT_VOICE_ID || VOICES[0]?.id || null);
   renderServices(c.services || []);
   renderFaqs(c.faqs || []);
   markClean();
@@ -1046,7 +1047,7 @@ let activeAudio = null;
 
 function renderVoiceGrid(selected) {
   if (!VOICES.length) {
-    document.getElementById('voice-grid').innerHTML = '<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">No ElevenLabs voices found.</div>';
+    document.getElementById('voice-grid').innerHTML = '<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">No approved voices found.</div>';
     return;
   }
 
@@ -1060,6 +1061,7 @@ function renderVoiceGrid(selected) {
     " onclick="selectVoice('${v.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <span style="font-size:12px;font-weight:700;color:${v.gender==='female' ? 'var(--accent2)' : 'var(--accent)'};">${v.gender==='female' ? 'Female' : 'Male'}</span>
+        ${v.isDefault ? '<span style="font-size:10px;font-weight:700;color:#5b21b6;background:rgba(255,255,255,0.96);border:1px solid rgba(124,58,237,0.26);border-radius:999px;padding:2px 7px;white-space:nowrap;">Default voice</span>' : ''}
         ${v.hasPreview
           ? `<button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
               background:rgba(255,255,255,0.07);border:1px solid var(--border);
