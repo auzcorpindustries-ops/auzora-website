@@ -611,21 +611,16 @@ let portalServices = [];
 let portalSpecialties = [];
 
 const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
-const VOICE_ALLOWLIST = [
-  'Jordan', 'Adalina', 'Angie', 'Josh',
-  'Justin', 'Stephen', 'Liz', 'Eryn', 'Tiffany'
-];
 
 let VOICES = [];
-const DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
-const DEFAULT_VOICE_LABEL = 'Liz';
+let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 function buildVoiceDesc(v) {
   const bits = [];
+  if (v.description) bits.push(v.description);
   if (v.gender && v.gender !== 'unknown') bits.push(v.gender);
-  if (v.accent && v.accent !== 'unknown') bits.push(v.accent);
-  if (v.use_case && v.use_case !== 'general') bits.push(v.use_case);
-  return bits.join(' · ') || 'Library voice';
+  if (v.group && v.group !== 'unknown') bits.push(v.group);
+  return bits.join(' · ') || 'Approved voice';
 }
 
 async function loadVoices() {
@@ -633,16 +628,19 @@ async function loadVoices() {
   const res = await fetch(VOICES_API);
   const data = await res.json();
   const all = Array.isArray(data.voices) ? data.voices : [];
-  VOICES = VOICE_ALLOWLIST.map(key => all.find(v => v.name && v.name.toLowerCase().includes(key.toLowerCase()))).filter(Boolean).map((v, idx) => ({
-    id: v.voice_id,
-    label: v.name,
-    gender: v.gender || 'unknown',
-    desc: buildVoiceDesc(v),
-    group: (v.gender === 'female' ? 'left' : 'right'),
-    isDefault: (v.voice_id === DEFAULT_VOICE_ID || (v.name || '').toLowerCase().includes(DEFAULT_VOICE_LABEL.toLowerCase())),
-    preview_url: v.preview_url,
-    play_url: v.preview_url
-  }));
+  DEFAULT_VOICE_ID = data.default_voice_id || DEFAULT_VOICE_ID;
+  VOICES = all
+    .filter(v => v && v.active !== false)
+    .map(v => ({
+      id: v.id,
+      label: v.label || v.voice_name || v.name || 'Voice',
+      gender: v.gender || 'unknown',
+      desc: buildVoiceDesc(v),
+      group: v.group || (v.gender === 'female' ? 'left' : 'right'),
+      isDefault: !!v.is_default || v.id === data.default_voice_id,
+      preview_url: v.preview_url,
+      play_url: v.preview_url
+    }));
   return VOICES;
 }
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -926,7 +924,7 @@ async function loadSettings() {
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
-  // Load ElevenLabs voices then render grid
+  // Load approved voices then render grid
   await loadVoices();
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
@@ -976,7 +974,7 @@ function getSelectedPortalVoice() {
 }
 function renderPortalVoiceGrid(selected) {
   if (VOICES.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No library voices available.</div>';
+    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
     return;
   }
   const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;

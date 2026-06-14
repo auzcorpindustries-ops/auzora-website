@@ -338,6 +338,27 @@
       letter-spacing: -0.03em;
       margin: 0;
     }
+    .voice-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-direction: column;
+    }
+    .voice-default-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,58,237,0.28);
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.14));
+      color: #5b21b6;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1;
+      white-space: nowrap;
+    }
     .voice-tile-copy p {
       color: var(--muted);
       font-size: 0.78rem;
@@ -824,7 +845,10 @@
             <article class="panel voice-tile" aria-label="Liz voice preview">
               <img class="voice-tile-img" src="/assets/avatars/liz.png" alt="Liz avatar" loading="eager" />
               <div class="voice-tile-copy">
-                <h3>Liz</h3>
+                <div class="voice-title">
+                  <h3>Liz</h3>
+                  <span class="voice-default-badge">Default voice</span>
+                </div>
                 <p>Calm, polished, and ready to schedule.</p>
               </div>
               <div class="voice-tile-actions">
