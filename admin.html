@@ -929,7 +929,10 @@ async function initPersonaPage() {
   const res = await fetch(`${ATLAS_API}/clients`);
   const data = await res.json();
   const clients = Array.isArray(data) ? data : (data.clients || []);
-  sel.innerHTML = clients.map(c => `<option value="${c.client_id}">${c.business_name} (${c.twilio_number || 'no #'})</option>`).join('');
+  sel.innerHTML = clients.map(c => {
+    const name = c.business_name || c.businessName || c.name || 'Client';
+    return `<option value="${c.client_id}">${name} (${c.twilio_number || 'no #'})</option>`;
+  }).join('');
   if (clients.length) { sel.value = clients[0].client_id; loadPersonaClient(); }
 }
 
