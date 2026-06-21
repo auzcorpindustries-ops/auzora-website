@@ -886,8 +886,12 @@ async function saveClientEdit() {
 
 // CREATE CLIENT
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
-const ATLAS_API = 'https://atlas.6845165.xyz/admin';
+// Use the same base + API key as the rest of the admin portal so requests are authorized.
+const ATLAS_API = API;
 const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
+function adminAuthHeaders(extra = {}) {
+  return Object.assign({ 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }, extra);
+}
 let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 let VOICES = [];
@@ -926,25 +930,46 @@ async function loadVoices() {
 async function initPersonaPage() {
   const sel = document.getElementById('persona-client-select');
   sel.innerHTML = '<option value="">Loading...</option>';
-  const res = await fetch(`${ATLAS_API}/clients`);
-  const data = await res.json();
-  const clients = Array.isArray(data) ? data : (data.clients || []);
-  sel.innerHTML = clients.map(c => {
-    const name = c.business_name || c.businessName || c.name || 'Client';
-    return `<option value="${c.client_id}">${name} (${c.twilio_number || 'no #'})</option>`;
-  }).join('');
-  if (clients.length) { sel.value = clients[0].client_id; loadPersonaClient(); }
+  try {
+    const res = await fetch(`${ATLAS_API}/clients`, { headers: adminAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const clients = Array.isArray(data) ? data : (data.clients || []);
+    if (!clients.length) {
+      sel.innerHTML = '<option value="">No clients found</option>';
+      return;
+    }
+    sel.innerHTML = clients.map(c => {
+      const name = c.business_name || c.businessName || c.name || 'Client';
+      return `<option value="${c.client_id}">${name} (${c.twilio_number || 'no #'})</option>`;
+    }).join('');
+    sel.value = clients[0].client_id;
+    loadPersonaClient();
+  } catch (e) {
+    sel.innerHTML = '<option value="">Failed to load</option>';
+    toast('Failed to load clients: ' + e.message, 'error');
+  }
 }
 
 async function loadPersonaClient() {
   const id = document.getElementById('persona-client-select').value;
   if (!id) return;
-  const res = await fetch(`${ATLAS_API}/clients/${id}`);
-  const data = await res.json();
-  currentPersonaClient = data.client;
-  await loadVoices();
-  renderPersonaForm(currentPersonaClient);
-  document.getElementById('persona-form').style.display = 'block';
+  try {
+    const res = await fetch(`${ATLAS_API}/clients/${id}`, { headers: adminAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // Accept either { client: {...} } or the client object directly.
+    currentPersonaClient = data.client || data;
+    if (!currentPersonaClient || !currentPersonaClient.client_id) {
+      throw new Error('Bad response shape');
+    }
+    await loadVoices();
+    renderPersonaForm(currentPersonaClient);
+    document.getElementById('persona-form').style.display = 'block';
+  } catch (e) {
+    document.getElementById('persona-form').style.display = 'none';
+    toast('Failed to load client: ' + e.message, 'error');
+  }
 }
 
 function renderPersonaForm(c) {
@@ -1098,7 +1123,7 @@ function playVoice(id) {
   btn.textContent = '⏸';
   audio.play();
   audio.onended = () => { btn.textContent = '▶'; activeAudio = null; };
-  audio.onerror = () => { btn.textContent = '▶'; showToast('Could not load sample', 'error'); };
+  audio.onerror = () => { btn.textContent = '▶'; toast('Could not load sample', 'error'); };
 }
 
 function selectVoice(id) {
@@ -1229,15 +1254,19 @@ async function savePersona() {
   };
   try {
     const res = await fetch(`${ATLAS_API}/clients/${currentPersonaClient.client_id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      method: 'PATCH',
+      headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload)
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data.client) {
-      currentPersonaClient = data.client;
+    const updated = data.client || data;
+    if (updated && updated.client_id) {
+      currentPersonaClient = updated;
       markClean();
-      showToast('Changes saved & live on next call ✓', 'success');
+      toast('Changes saved & live on next call', 'success');
     } else throw new Error('Bad response');
-  } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
   btn.textContent = '💾 Save & Apply'; btn.disabled = false;
 }
 
