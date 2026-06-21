@@ -208,6 +208,97 @@
   #toast.error { border-color: var(--red); color: var(--red); }
 
   .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* ── VOICE & PERSONA (mirrors portal Agent Settings) ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* VOICE GRID */
+  .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .voice-column {
+    display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: 12px; border-radius: 16px; border: 1px solid transparent;
+  }
+  .voice-column.left {
+    background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-color: rgba(59,130,246,0.14);
+  }
+  .voice-column.right {
+    background: linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(124,58,237,0.03) 100%);
+    border-color: rgba(124,58,237,0.14);
+  }
+  .voice-card {
+    position: relative; overflow: hidden;
+    border: 1.5px solid var(--border); background: var(--surface2);
+    border-radius: 12px; padding: 12px 12px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .voice-card::before {
+    content: ''; position: absolute; inset: 0 auto auto 0; width: 100%; height: 3px;
+    background: var(--voice-accent, var(--accent)); opacity: 0.9;
+  }
+  .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
+  .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
+  .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
+  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
+  .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .voice-name { font-size: 12px; font-weight: 700; }
+  .voice-name.left { color: var(--accent); }
+  .voice-name.right { color: var(--accent-hover); }
+  .voice-badge {
+    display: inline-flex; align-items: center; white-space: nowrap;
+    padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
+    letter-spacing: .4px; text-transform: uppercase; color: #5b21b6;
+    background: rgba(255,255,255,0.96); border: 1px solid rgba(124,58,237,0.26);
+    box-shadow: 0 1px 2px rgba(16,24,38,0.05);
+  }
+  .play-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text);
+  }
+  .play-btn.left { color: var(--accent); }
+  .play-btn.right { color: var(--accent-hover); }
+  .voice-tone-left { }
+  .voice-tone-right { }
+
+  /* SLIDER */
+  .slider-row { margin-bottom: 20px; }
+  .slider-label { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .slider-label span:first-child { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .slider-label span:last-child { font-size: 12px; color: var(--accent); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .slider-hints { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* TAGS (avoid topics) */
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 28px; }
+  .tag { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--red); display: flex; align-items: center; gap: 6px; }
+  .tag-x { cursor: pointer; font-size: 14px; }
+
+  /* SERVICE / SPECIALTY TAG PILLS */
+  .s-tags-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
+  .s-tags-wrap:focus-within { border-color: var(--accent); }
+  .s-tag-pill { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent); display: flex; align-items: center; gap: 5px; }
+  .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+  .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
+
+  /* SAVE BAR */
+  .save-bar { display: flex; align-items: center; gap: 12px; margin-top: 20px; justify-content: flex-end; }
+  .unsaved { font-size: 12px; color: var(--yellow); display: none; }
+
+  /* HOURS GRID */
+  .hours-grid { display: grid; gap: 8px; }
+  .hours-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; }
+  .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .hours-day input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+  .hours-day label { cursor: pointer; }
+  .hours-times { display: flex; gap: 8px; align-items: center; }
+  .hours-times input[type="time"] { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; outline: none; }
+  .hours-times input[type="time"]:focus { border-color: var(--accent); }
+  .hours-sep { font-size: 12px; color: var(--muted); }
+
+  /* PERSONA CARD (reuse table-card styling) */
+  .persona-card { background: rgba(255,255,255,0.90); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06); border-radius: 12px; padding: 24px; }
+  .persona-card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -436,104 +527,92 @@
       </div>
 
       <div id="persona-form" style="display:none;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <div class="settings-grid">
 
           <!-- LEFT COLUMN -->
           <div style="display:flex;flex-direction:column;gap:20px;">
 
-                <!-- Voice selector -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">AI Voice</div>
-              <div id="voice-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+            <!-- Voice -->
+            <div class="persona-card">
+              <div class="persona-card-title">🎙️ Voice</div>
+              <div class="voice-grid" id="admin-voice-grid"></div>
             </div>
 
-            <!-- Basic info -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">Business Info</div>
-              <div class="form-group" style="margin-bottom:14px;">
+            <!-- Business Info -->
+            <div class="persona-card">
+              <div class="persona-card-title">🏢 Business Info</div>
+              <div class="form-group">
                 <label>Business Name</label>
-                <input type="text" id="p-business-name" placeholder="Acme Hair Studio" />
-              </div>
-              <div class="form-group" style="margin-bottom:14px;">
-                <label>Agent Name</label>
-                <input type="text" id="p-agent-name" placeholder="Alex" />
-              </div>
-              <div class="form-group" style="margin-bottom:14px;">
-                <label>Office Hours</label>
-                <div style="display:flex;gap:14px;align-items:center;margin:6px 0 10px;font-size:13px;">
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                    <input type="radio" name="p-hours-mode" id="p-hours-custom" value="custom" onchange="toggleAdminHoursMode('custom')" checked />
-                    <span>Set office hours</span>
-                  </label>
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                    <input type="radio" name="p-hours-mode" id="p-hours-247" value="247" onchange="toggleAdminHoursMode('247')" />
-                    <span>24/7</span>
-                  </label>
-                </div>
-                <input type="text" id="p-office-hours" placeholder="Monday–Friday, 9 AM to 6 PM Central" />
-                <div id="p-office-hours-note" style="font-size:12px;color:var(--muted);margin-top:6px;">When 24/7 is selected, office hours are disabled.</div>
-              </div>
-              <div class="form-group" style="margin-bottom:14px;">
-                <label>Booking URL</label>
-                <input type="text" id="p-booking-url" placeholder="https://calendly.com/yourbusiness" />
+                <input type="text" id="p-business-name" oninput="markDirty()" />
               </div>
               <div class="form-group">
+                <label>Agent Name</label>
+                <input type="text" id="p-agent-name" oninput="markDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Office Hours</label>
+                <div class="hours-row" style="margin:6px 0 8px;">
+                  <div class="hours-day">
+                    <input type="checkbox" id="p-hours-247" onchange="toggleAdminHoursMode(this.checked ? '247' : 'custom');markDirty()" />
+                    <label for="p-hours-247">Open 24/7</label>
+                  </div>
+                  <div></div>
+                </div>
+                <div class="hours-grid" id="p-hours-grid" style="margin-top:6px;"></div>
+                <div id="p-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
+              </div>
+              <div class="form-group">
+                <label>Booking URL</label>
+                <input type="text" id="p-booking-url" placeholder="https://calendly.com/..." oninput="markDirty()" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
                 <label>Escalation Phone</label>
-                <input type="text" id="p-escalation-phone" placeholder="+15555550100" />
+                <input type="text" id="p-escalation-phone" placeholder="(555) 000-0000" oninput="markDirty()" />
               </div>
             </div>
 
-            <!-- Services -->
-            <div class="table-card" style="padding:24px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Services</div>
-                <button class="btn-sm" style="padding:5px 10px;font-size:11px;" onclick="addService()">+ Add</button>
-              </div>
-              <div id="services-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-            </div>
+            <!-- Call Behavior (Admin-only) -->
+            <div class="persona-card">
+              <div class="persona-card-title">⚙️ Call Behavior (OpenAI Realtime)</div>
 
-            <!-- Call Behavior -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">⚙️ Call Behavior (OpenAI Realtime)</div>
-
-              <div style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Interruption Sensitivity</label>
-                  <span id="vad-val" style="font-size:12px;color:var(--accent2);font-weight:600;">0.5</span>
+              <div class="slider-row">
+                <div class="slider-label">
+                  <span>Interruption Sensitivity</span>
+                  <span id="vad-val">0.5</span>
                 </div>
-                <input type="range" id="p-vad" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('vad-val').textContent=parseFloat(this.value).toFixed(2);markDirty()"
-                  style="width:100%;accent-color:var(--accent);" />
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>Low (waits for silence)</span><span>High (very responsive)</span></div>
+                <input type="range" id="p-vad" min="0" max="1" step="0.05" value="0.5"
+                  oninput="document.getElementById('vad-val').textContent=parseFloat(this.value).toFixed(2);markDirty()" />
+                <div class="slider-hints"><span>Low (waits for silence)</span><span>High (very responsive)</span></div>
               </div>
 
-              <div style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Response Pause</label>
-                  <span id="silence-val" style="font-size:12px;color:var(--accent2);font-weight:600;">700ms</span>
+              <div class="slider-row">
+                <div class="slider-label">
+                  <span>Response Pause</span>
+                  <span id="silence-val">700ms</span>
                 </div>
-                <input type="range" id="p-silence" min="200" max="2000" step="50" value="700" oninput="document.getElementById('silence-val').textContent=this.value+'ms';markDirty()"
-                  style="width:100%;accent-color:var(--accent);" />
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>200ms (snappy)</span><span>2000ms (patient)</span></div>
+                <input type="range" id="p-silence" min="200" max="2000" step="50" value="700"
+                  oninput="document.getElementById('silence-val').textContent=this.value+'ms';markDirty()" />
+                <div class="slider-hints"><span>200ms (snappy)</span><span>2000ms (patient)</span></div>
               </div>
 
-              <div style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Response Creativity (Temperature)</label>
-                  <span id="temp-val" style="font-size:12px;color:var(--accent2);font-weight:600;">0.7</span>
+              <div class="slider-row">
+                <div class="slider-label">
+                  <span>Response Creativity (Temperature)</span>
+                  <span id="temp-val">0.7</span>
                 </div>
-                <input type="range" id="p-temp" min="0.6" max="1.2" step="0.05" value="0.7" oninput="document.getElementById('temp-val').textContent=parseFloat(this.value).toFixed(2);markDirty()"
-                  style="width:100%;accent-color:var(--accent);" />
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>0.6 (consistent)</span><span>1.2 (creative)</span></div>
+                <input type="range" id="p-temp" min="0.6" max="1.2" step="0.05" value="0.7"
+                  oninput="document.getElementById('temp-val').textContent=parseFloat(this.value).toFixed(2);markDirty()" />
+                <div class="slider-hints"><span>0.6 (consistent)</span><span>1.2 (creative)</span></div>
               </div>
 
-              <div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Max Response Length (tokens)</label>
-                  <span id="tokens-val" style="font-size:12px;color:var(--accent2);font-weight:600;">Unlimited</span>
+              <div class="slider-row" style="margin-bottom:0;">
+                <div class="slider-label">
+                  <span>Max Response Length (tokens)</span>
+                  <span id="tokens-val">Unlimited</span>
                 </div>
-                <input type="range" id="p-tokens" min="0" max="500" step="25" value="0" oninput="document.getElementById('tokens-val').textContent=this.value==0?'Unlimited':this.value+' tokens';markDirty()"
-                  style="width:100%;accent-color:var(--accent);" />
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;"><span>Unlimited</span><span>500 tokens (brief)</span></div>
+                <input type="range" id="p-tokens" min="0" max="500" step="25" value="0"
+                  oninput="document.getElementById('tokens-val').textContent=this.value==0?'Unlimited':this.value+' tokens';markDirty()" />
+                <div class="slider-hints"><span>Unlimited</span><span>500 tokens (brief)</span></div>
               </div>
             </div>
 
@@ -543,10 +622,9 @@
           <div style="display:flex;flex-direction:column;gap:20px;">
 
             <!-- Tone & Style -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">🎭 Tone & Style</div>
-
-              <div class="form-group" style="margin-bottom:14px;">
+            <div class="persona-card">
+              <div class="persona-card-title">🎭 Tone &amp; Style</div>
+              <div class="form-group">
                 <label>Tone</label>
                 <select id="p-tone" onchange="markDirty()">
                   <option value="friendly">Friendly — warm &amp; approachable</option>
@@ -557,17 +635,15 @@
                   <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
                 </select>
               </div>
-
-              <div class="form-group" style="margin-bottom:14px;">
+              <div class="form-group">
                 <label>Speaking Pace</label>
                 <select id="p-pace" onchange="markDirty()">
-                  <option value="normal">Normal — natural pace</option>
+                  <option value="normal">Normal</option>
                   <option value="slow">Slow — clear &amp; deliberate</option>
                   <option value="fast">Fast — concise &amp; snappy</option>
                 </select>
               </div>
-
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom:0;">
                 <label>Language</label>
                 <select id="p-lang" onchange="markDirty()">
                   <option value="en">English</option>
@@ -586,79 +662,93 @@
             </div>
 
             <!-- Call Script -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">📞 Call Script</div>
-
-              <div class="form-group" style="margin-bottom:14px;">
-                <label>Custom Greeting</label>
-                <input type="text" id="p-greeting" placeholder="Thank you for calling [Business]! How can I help?" oninput="markDirty()" />
-                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Leave blank to auto-generate</div>
-              </div>
-
-              <div class="form-group" style="margin-bottom:14px;">
-                <label>Escalation Rules</label>
-                <textarea id="p-escalation" rows="3" placeholder="If caller asks for a human, say: 'Let me connect you with our team.' and provide the escalation number." oninput="markDirty()"></textarea>
-              </div>
-
+            <div class="persona-card">
+              <div class="persona-card-title">📞 Call Script</div>
               <div class="form-group">
+                <label>Custom Greeting</label>
+                <input type="text" id="p-greeting" placeholder="Leave blank to auto-generate" oninput="markDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Rules</label>
+                <textarea id="p-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="markDirty()"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
                 <label>Topics to Avoid</label>
-                <div id="avoid-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px;"></div>
+                <div class="tags-wrap" id="p-avoid-tags"></div>
                 <div style="display:flex;gap:8px;">
-                  <input type="text" id="avoid-input" placeholder="e.g. pricing, competitors" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
-                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAvoidTag();}" />
-                  <button class="btn-sm" style="padding:8px 12px;font-size:12px;" onclick="addAvoidTag()">Add</button>
+                  <input type="text" id="p-avoid-input" placeholder="Add topic, press Enter"
+                    style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAdminAvoidTag();}" />
+                  <button onclick="addAdminAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
                 </div>
-                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Press Enter or comma to add a topic</div>
               </div>
             </div>
 
             <!-- After Hours -->
-            <div class="table-card" style="padding:24px;">
+            <div class="persona-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">🌙 After-Hours Mode</div>
+                <div class="persona-card-title" style="margin:0;">🌙 After-Hours Mode</div>
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                  <input type="checkbox" id="p-after-hours" onchange="toggleAfterHours();markDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  <input type="checkbox" id="p-after-hours" onchange="toggleAdminAH();markDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
                   Enable
                 </label>
               </div>
-              <div id="after-hours-body" style="display:none;">
-                <div class="form-group">
+              <div id="p-ah-body" style="display:none;">
+                <div class="form-group" style="margin-bottom:0;">
                   <label>After-Hours Message</label>
-                  <textarea id="p-after-hours-msg" rows="3" oninput="markDirty()">Thank you for calling. Our office is currently closed. Please call back during business hours or leave a message and we will get back to you.</textarea>
+                  <textarea id="p-after-hours-msg" rows="3" oninput="markDirty()"></textarea>
                 </div>
               </div>
-              <div id="after-hours-off" style="font-size:13px;color:var(--muted);">When enabled, the AI delivers this message outside office hours instead of the normal greeting.</div>
+              <div id="p-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
             </div>
 
-            <!-- System Prompt -->
-            <div class="table-card" style="padding:24px;">
-              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">🧠 Agent Instructions Override</div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Fully replace the auto-generated prompt. Leave blank to use all settings above automatically.</div>
+            <!-- Services & Specialties -->
+            <div class="persona-card">
+              <div class="persona-card-title">🛠️ Services &amp; Specialties</div>
               <div class="form-group">
+                <label>Services / Products Offered</label>
+                <div class="s-tags-wrap" id="p-services-tags" onclick="document.getElementById('p-services-input').focus()">
+                  <input class="s-tags-input" id="p-services-input" placeholder="Type a service and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAdminServiceTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. "Pool Cleaning", "Equipment Repair"</div>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Specialties / Highlights</label>
+                <div class="s-tags-wrap" id="p-specialty-tags" onclick="document.getElementById('p-specialty-input').focus()">
+                  <input class="s-tags-input" id="p-specialty-input" placeholder="Type a specialty and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addAdminSpecialtyTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. "Free consultations", "Same-day service"</div>
+              </div>
+            </div>
+
+            <!-- Agent Instructions Override (Admin-only) -->
+            <div class="persona-card">
+              <div class="persona-card-title">🧠 Agent Instructions Override</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Fully replace the auto-generated prompt. Leave blank to use all settings above automatically.</div>
+              <div class="form-group" style="margin-bottom:0;">
                 <textarea id="p-system-prompt" rows="8" placeholder="You are a friendly receptionist for [business]. Keep responses brief and professional..." oninput="markDirty()"></textarea>
               </div>
               <div style="font-size:11px;color:var(--muted);margin-top:8px;">💡 Leave blank — all Tone, Pace, FAQs, and Escalation settings above will be used automatically</div>
             </div>
 
             <!-- FAQs -->
-            <div class="table-card" style="padding:24px;">
+            <div class="persona-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <div>
-                  <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">FAQs</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:3px;">The AI answers these when callers ask</div>
-                </div>
-                <button class="btn-sm" style="padding:5px 10px;font-size:11px;" onclick="addFaq()">+ Add FAQ</button>
+                <div class="persona-card-title" style="margin:0;">❓ FAQs</div>
+                <button onclick="addAdminFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
               </div>
-              <div id="faq-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+              <div id="p-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
             </div>
 
           </div>
         </div>
 
         <!-- Save bar -->
-        <div style="margin-top:20px;display:flex;align-items:center;justify-content:flex-end;gap:12px;">
-          <span id="persona-unsaved" style="font-size:12px;color:var(--yellow);display:none;">● Unsaved changes</span>
-          <button class="btn-save" style="padding:12px 28px;font-size:14px;" onclick="savePersona()">💾 Save &amp; Apply</button>
+        <div class="save-bar">
+          <span class="unsaved" id="persona-unsaved">● Unsaved changes</span>
+          <button class="btn-save" onclick="savePersona()">💾 Save &amp; Apply</button>
         </div>
       </div>
     </div>
@@ -896,7 +986,14 @@ let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
 
 let VOICES = [];
 let currentPersonaClient = null;
+
+// Module-level state vars
+let adminServices = [];
+let adminSpecialties = [];
+let adminAvoidTopics = [];
 let adminHoursMode = 'custom';
+let currentAdminVoiceId = null;
+let activeAdminAudio = null;
 
 function buildVoiceDesc(v) {
   const bits = [];
@@ -922,11 +1019,285 @@ async function loadVoices() {
       group: v.group || (v.gender === 'female' ? 'left' : 'right'),
       isDefault: !!v.is_default || v.id === data.default_voice_id,
       hasPreview: !!v.preview_url,
-      preview_url: v.preview_url
+      preview_url: v.preview_url,
+      play_url: v.preview_url
     }));
   return VOICES;
 }
 
+// ── HOURS GRID ────────────────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DEFAULT_HOURS = {
+  Monday:    { open: true,  from: '09:00', to: '17:00' },
+  Tuesday:   { open: true,  from: '09:00', to: '17:00' },
+  Wednesday: { open: true,  from: '09:00', to: '17:00' },
+  Thursday:  { open: true,  from: '09:00', to: '17:00' },
+  Friday:    { open: true,  from: '09:00', to: '17:00' },
+  Saturday:  { open: false, from: '10:00', to: '15:00' },
+  Sunday:    { open: false, from: '10:00', to: '15:00' },
+};
+
+function parseHoursString(str) {
+  const result = {};
+  DAYS.forEach(d => result[d] = { ...DEFAULT_HOURS[d] });
+  if (!str) return result;
+  const openDays = new Set();
+  str.split(', ').forEach(part => {
+    const spaceIdx = part.indexOf(' ');
+    if (spaceIdx === -1) return;
+    const day = part.slice(0, spaceIdx);
+    const times = part.slice(spaceIdx + 1);
+    const [from, to] = times.split('\u2013'); // en-dash
+    if (DAYS.includes(day) && from && to) {
+      result[day] = { open: true, from: from.trim(), to: to.trim() };
+      openDays.add(day);
+    }
+  });
+  DAYS.forEach(d => { if (!openDays.has(d)) result[d].open = false; });
+  return result;
+}
+
+function buildAdminHoursGrid(hoursStr) {
+  const grid = document.getElementById('p-hours-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  adminHoursMode = hoursStr === '24/7' ? '247' : 'custom';
+  const parsed = parseHoursString(adminHoursMode === '247' ? '' : hoursStr);
+  DAYS.forEach(day => {
+    const d = parsed[day];
+    const row = document.createElement('div');
+    row.className = 'hours-row';
+    row.innerHTML = `
+      <div class="hours-day">
+        <input type="checkbox" id="p_day_${day}" ${d.open ? 'checked' : ''} onchange="toggleAdminDay('${day}');markDirty()">
+        <label for="p_day_${day}">${day.slice(0,3)}</label>
+      </div>
+      <div class="hours-times" id="p_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
+        <input type="time" id="p_from_${day}" value="${d.from}" oninput="markDirty()">
+        <span class="hours-sep">–</span>
+        <input type="time" id="p_to_${day}" value="${d.to}" oninput="markDirty()">
+      </div>`;
+    grid.appendChild(row);
+  });
+  toggleAdminHoursMode(adminHoursMode, true);
+}
+
+function toggleAdminHoursMode(mode, quiet = false) {
+  adminHoursMode = mode;
+  const grid = document.getElementById('p-hours-grid');
+  const note = document.getElementById('p-hours-note');
+  const all247 = document.getElementById('p-hours-247');
+  if (all247) all247.checked = mode === '247';
+  if (grid) {
+    const disabled = mode === '247';
+    grid.style.opacity = disabled ? '0.45' : '1';
+    grid.style.pointerEvents = disabled ? 'none' : '';
+  }
+  if (note) note.style.display = mode === '247' ? 'block' : 'none';
+  if (!quiet) markDirty();
+}
+
+function toggleAdminDay(day) {
+  const open = document.getElementById('p_day_' + day).checked;
+  const times = document.getElementById('p_times_' + day);
+  times.style.opacity = open ? '1' : '0.3';
+  times.style.pointerEvents = open ? '' : 'none';
+}
+
+function buildAdminHoursString() {
+  if (adminHoursMode === '247') return '24/7';
+  return DAYS
+    .filter(d => document.getElementById('p_day_' + d)?.checked)
+    .map(d => `${d} ${document.getElementById('p_from_'+d).value}–${document.getElementById('p_to_'+d).value}`)
+    .join(', ');
+}
+
+// ── SERVICE / SPECIALTY TAGS ──────────────────────────────────────────────────
+function renderAdminServiceTags() {
+  const wrap = document.getElementById('p-services-tags');
+  if (!wrap) return;
+  wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
+  const input = document.getElementById('p-services-input');
+  adminServices.forEach((t, i) => {
+    const pill = document.createElement('div');
+    pill.className = 's-tag-pill';
+    pill.innerHTML = `${t}<button type="button" onclick="removeAdminServiceTag(${i})">\u00d7</button>`;
+    wrap.insertBefore(pill, input);
+  });
+}
+
+function renderAdminSpecialtyTags() {
+  const wrap = document.getElementById('p-specialty-tags');
+  if (!wrap) return;
+  wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
+  const input = document.getElementById('p-specialty-input');
+  adminSpecialties.forEach((t, i) => {
+    const pill = document.createElement('div');
+    pill.className = 's-tag-pill';
+    pill.innerHTML = `${t}<button type="button" onclick="removeAdminSpecialtyTag(${i})">\u00d7</button>`;
+    wrap.insertBefore(pill, input);
+  });
+}
+
+function addAdminServiceTag() {
+  const input = document.getElementById('p-services-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val || adminServices.includes(val)) { input.value = ''; return; }
+  adminServices.push(val); renderAdminServiceTags(); markDirty(); input.value = '';
+}
+
+function addAdminSpecialtyTag() {
+  const input = document.getElementById('p-specialty-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val || adminSpecialties.includes(val)) { input.value = ''; return; }
+  adminSpecialties.push(val); renderAdminSpecialtyTags(); markDirty(); input.value = '';
+}
+
+function removeAdminServiceTag(i) { adminServices.splice(i, 1); renderAdminServiceTags(); markDirty(); }
+function removeAdminSpecialtyTag(i) { adminSpecialties.splice(i, 1); renderAdminSpecialtyTags(); markDirty(); }
+
+function getAdminServices() { return [...adminServices]; }
+function getAdminSpecialties() { return [...adminSpecialties]; }
+
+// ── VOICE GRID ────────────────────────────────────────────────────────────────
+function normalizeAdminVoiceKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s*[-–].*$/, '');
+}
+
+function resolveAdminVoiceId(...candidates) {
+  const flat = candidates.flat().filter(Boolean);
+  for (const candidate of flat) {
+    const exact = VOICES.find(v => v.id === candidate || v.label === candidate || v.label === String(candidate).split(/\s[-–]\s/)[0]?.trim());
+    if (exact) return exact.id;
+  }
+  for (const candidate of flat) {
+    const norm = normalizeAdminVoiceKey(candidate);
+    const match = VOICES.find(v => normalizeAdminVoiceKey(v.id) === norm || normalizeAdminVoiceKey(v.label) === norm);
+    if (match) return match.id;
+  }
+  return VOICES[0]?.id || null;
+}
+
+function renderAdminVoiceGrid(selected) {
+  const container = document.getElementById('admin-voice-grid');
+  if (!container) return;
+  if (!VOICES.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
+    return;
+  }
+  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  currentAdminVoiceId = activeVoiceId;
+  const leftVoices = VOICES.filter(v => v.gender === 'female');
+  const rightVoices = VOICES.filter(v => v.gender === 'male');
+  const renderColumn = (voices, tone) => `
+    <div class="voice-column ${tone}">
+      ${voices.map(v => `
+        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="avc-${v.id}" onclick="selectAdminVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent)' : 'var(--accent-hover)'};">
+          <div class="voice-card-top">
+            <div class="voice-name-wrap">
+              <div class="voice-name ${tone}">${v.label}</div>
+              ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+            </div>
+            ${v.hasPreview
+              ? `<button class="play-btn ${tone}" id="apb-${v.id}" onclick="event.stopPropagation();playAdminVoice('${v.id}')">▶</button>`
+              : `<span style="font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:2px 4px;white-space:nowrap;">Live only</span>`
+            }
+          </div>
+          ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  container.innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
+}
+
+function selectAdminVoice(id) {
+  currentAdminVoiceId = id;
+  VOICES.forEach(v => {
+    const card = document.getElementById(`avc-${v.id}`);
+    if (!card) return;
+    const tone = v.gender === 'female' ? 'left' : 'right';
+    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
+    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent-hover)');
+  });
+  markDirty();
+}
+
+function playAdminVoice(id) {
+  if (activeAdminAudio) { activeAdminAudio.pause(); activeAdminAudio.currentTime = 0; }
+  VOICES.forEach(v => { const b = document.getElementById(`apb-${v.id}`); if(b) b.textContent='▶'; });
+  const btn = document.getElementById(`apb-${id}`);
+  const voice = VOICES.find(v => v.id === id);
+  if (!voice || !voice.play_url) return;
+  const audio = new Audio(voice.play_url);
+  activeAdminAudio = audio;
+  if (btn) btn.textContent = '⏸';
+  audio.play();
+  audio.onended = () => { if(btn) btn.textContent = '▶'; activeAdminAudio = null; };
+  audio.onerror = () => { if(btn) btn.textContent = '▶'; toast('Could not load sample', 'error'); };
+}
+
+// ── AVOID TAGS ────────────────────────────────────────────────────────────────
+function renderAdminAvoidTags(topics) {
+  adminAvoidTopics = [...topics];
+  document.getElementById('p-avoid-tags').innerHTML = adminAvoidTopics.map((t,i) => `
+    <span class="tag">${t}<span class="tag-x" onclick="removeAdminAvoidTag(${i})">×</span></span>
+  `).join('');
+}
+function addAdminAvoidTag() {
+  const input = document.getElementById('p-avoid-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if (!val) return;
+  adminAvoidTopics.push(val);
+  renderAdminAvoidTags(adminAvoidTopics);
+  input.value = '';
+  markDirty();
+}
+function removeAdminAvoidTag(i) {
+  adminAvoidTopics.splice(i, 1);
+  renderAdminAvoidTags(adminAvoidTopics);
+  markDirty();
+}
+
+// ── FAQs ──────────────────────────────────────────────────────────────────────
+function renderAdminFaqs(faqs) {
+  const list = document.getElementById('p-faq-list');
+  if (!faqs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No FAQs yet — add common questions your callers ask</div>'; return; }
+  list.innerHTML = faqs.map((f,i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;" id="p-faq-${i}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">FAQ ${i+1}</span>
+        <button onclick="removeAdminFaq(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <input type="text" value="${(f.q||'').replace(/"/g,'&quot;')}" placeholder="Question" oninput="markDirty()"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px;" />
+      <textarea placeholder="Answer" rows="2" oninput="markDirty()"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;resize:vertical;">${f.a||''}</textarea>
+    </div>
+  `).join('');
+}
+
+function addAdminFaq() {
+  const cur = getAdminFaqs();
+  cur.push({ q: '', a: '' });
+  renderAdminFaqs(cur);
+  markDirty();
+}
+
+function removeAdminFaq(i) {
+  const cur = getAdminFaqs();
+  cur.splice(i, 1);
+  renderAdminFaqs(cur);
+  markDirty();
+}
+
+function getAdminFaqs() {
+  return Array.from(document.querySelectorAll('#p-faq-list [id^="p-faq-"]')).map(row => {
+    const inputs = row.querySelectorAll('input, textarea');
+    return { q: inputs[0]?.value || '', a: inputs[1]?.value || '' };
+  }).filter(f => f.q || f.a);
+}
+
+// ── PAGE INIT / LOAD ──────────────────────────────────────────────────────────
 async function initPersonaPage() {
   const sel = document.getElementById('persona-client-select');
   sel.innerHTML = '<option value="">Loading...</option>';
@@ -972,18 +1343,21 @@ async function loadPersonaClient() {
   }
 }
 
+function toggleAdminAH() {
+  const on = document.getElementById('p-after-hours').checked;
+  document.getElementById('p-ah-body').style.display = on ? 'block' : 'none';
+  document.getElementById('p-ah-off').style.display = on ? 'none' : 'block';
+}
+
 function renderPersonaForm(c) {
   // Business info
   document.getElementById('p-business-name').value = c.business_name || '';
   document.getElementById('p-agent-name').value = c.agent_name || '';
-  document.getElementById('p-office-hours').value = c.office_hours === '24/7' ? '' : (c.office_hours || '');
   document.getElementById('p-booking-url').value = c.booking_url || '';
   document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
 
-  adminHoursMode = c.office_hours === '24/7' ? '247' : 'custom';
-  document.getElementById('p-hours-custom').checked = adminHoursMode === 'custom';
-  document.getElementById('p-hours-247').checked = adminHoursMode === '247';
-  toggleAdminHoursMode(adminHoursMode, true);
+  // Office hours grid
+  buildAdminHoursGrid(c.office_hours || '');
 
   // Voice + realtime settings
   const vad = c.vad_threshold ?? 0.5;
@@ -1007,211 +1381,31 @@ function renderPersonaForm(c) {
   // Call script
   document.getElementById('p-greeting').value = c.custom_greeting || '';
   document.getElementById('p-escalation').value = c.escalation_rules || '';
-  renderAvoidTags(c.topics_to_avoid || []);
+  renderAdminAvoidTags(c.topics_to_avoid || []);
 
   // After hours
   const ahEnabled = c.after_hours_enabled || false;
   document.getElementById('p-after-hours').checked = ahEnabled;
   document.getElementById('p-after-hours-msg').value = c.after_hours_message || '';
-  toggleAfterHours();
+  toggleAdminAH();
 
   // Advanced
   document.getElementById('p-system-prompt').value = c.system_prompt_override || '';
 
-  renderVoiceGrid(c.voice_id || c.voice || c.voice_name || c.voice_label || c.selected_voice || c.agent_voice || DEFAULT_VOICE_ID || VOICES[0]?.id || null);
-  renderServices(c.services || []);
-  renderFaqs(c.faqs || []);
+  // Voice grid
+  const voiceId = resolveAdminVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID;
+  renderAdminVoiceGrid(voiceId);
+
+  // Services & specialties
+  adminServices = [...(c.service_areas || c.services || [])];
+  renderAdminServiceTags();
+  adminSpecialties = [...(c.specialties || [])];
+  renderAdminSpecialtyTags();
+
+  // FAQs
+  renderAdminFaqs(c.faqs || []);
+
   markClean();
-}
-
-function toggleAfterHours() {
-  const on = document.getElementById('p-after-hours').checked;
-  document.getElementById('after-hours-body').style.display = on ? 'block' : 'none';
-  document.getElementById('after-hours-off').style.display = on ? 'none' : 'block';
-}
-
-function toggleAdminHoursMode(mode, quiet = false) {
-  adminHoursMode = mode;
-  const input = document.getElementById('p-office-hours');
-  const note = document.getElementById('p-office-hours-note');
-  if (input) {
-    const disabled = mode === '247';
-    input.disabled = disabled;
-    input.style.opacity = disabled ? '0.45' : '1';
-  }
-  if (note) note.style.display = mode === '247' ? 'block' : 'none';
-  if (!quiet) markDirty();
-}
-
-// Topics to avoid tag input
-let avoidTopics = [];
-function renderAvoidTags(topics) {
-  avoidTopics = [...topics];
-  const container = document.getElementById('avoid-tags');
-  container.innerHTML = avoidTopics.map((t,i) => `
-    <span style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:20px;padding:3px 10px;font-size:12px;color:#ef4444;display:flex;align-items:center;gap:6px;">
-      ${t}
-      <span onclick="removeAvoidTag(${i})" style="cursor:pointer;font-size:14px;line-height:1;">×</span>
-    </span>
-  `).join('');
-}
-function addAvoidTag() {
-  const input = document.getElementById('avoid-input');
-  const val = input.value.trim().replace(/,$/, '');
-  if (!val) return;
-  avoidTopics.push(val);
-  renderAvoidTags(avoidTopics);
-  input.value = '';
-  markDirty();
-}
-function removeAvoidTag(i) {
-  avoidTopics.splice(i, 1);
-  renderAvoidTags(avoidTopics);
-  markDirty();
-}
-
-let activeAudio = null;
-
-function renderVoiceGrid(selected) {
-  if (!VOICES.length) {
-    document.getElementById('voice-grid').innerHTML = '<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">No approved voices found.</div>';
-    return;
-  }
-
-  currentVoiceId = VOICES.some(v => v.id === selected) ? selected : (VOICES.find(v => v.id === DEFAULT_VOICE_ID)?.id || VOICES[0]?.id || null);
-
-  document.getElementById('voice-grid').innerHTML = VOICES.map(v => `
-    <div id="voice-card-${v.id}" style="
-      border:2px solid ${v.id===currentVoiceId?(v.gender==='female' ? 'var(--accent2)' : 'var(--accent)'):'var(--border)'};
-      background:${v.id===currentVoiceId?(v.gender==='female' ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)'):'var(--surface2)'};
-      border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;position:relative;
-    " onclick="selectVoice('${v.id}')">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <span style="font-size:12px;font-weight:700;color:${v.gender==='female' ? 'var(--accent2)' : 'var(--accent)'};">${v.gender==='female' ? 'Female' : 'Male'}</span>
-        ${v.isDefault ? '<span style="font-size:10px;font-weight:700;color:#5b21b6;background:rgba(255,255,255,0.96);border:1px solid rgba(124,58,237,0.26);border-radius:999px;padding:2px 7px;white-space:nowrap;">Default voice</span>' : ''}
-        ${v.hasPreview
-          ? `<button id="play-btn-${v.id}" onclick="event.stopPropagation();playVoice('${v.id}')" title="Preview voice" style="
-              background:rgba(255,255,255,0.07);border:1px solid var(--border);
-              border-radius:6px;width:26px;height:26px;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;font-size:12px;
-              color:var(--text);flex-shrink:0;">▶</button>`
-          : `<span title="No preview — voice is available live" style="
-              font-size:10px;color:var(--muted);border:1px solid var(--border);
-              border-radius:6px;padding:2px 5px;white-space:nowrap;">Live only</span>`
-        }
-      </div>
-      <div style="font-size:13px;font-weight:700;">${v.label}</div>
-      <div style="font-size:11px;color:var(--muted);">${v.desc}</div>
-    </div>
-  `).join('');
-}
-
-function playVoice(id) {
-  // Stop anything currently playing
-  if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; }
-  // Reset all play buttons
-  VOICES.forEach(v => {
-    const btn = document.getElementById(`play-btn-${v.id}`);
-    if (btn) btn.textContent = '▶';
-  });
-
-  const btn = document.getElementById(`play-btn-${id}`);
-  const voice = VOICES.find(v => v.id === id);
-  const audio = new Audio(voice?.preview_url || `/assets/voice-samples/${id}.mp3`);
-  activeAudio = audio;
-
-  btn.textContent = '⏸';
-  audio.play();
-  audio.onended = () => { btn.textContent = '▶'; activeAudio = null; };
-  audio.onerror = () => { btn.textContent = '▶'; toast('Could not load sample', 'error'); };
-}
-
-function selectVoice(id) {
-  currentVoiceId = id;
-  VOICES.forEach(v => {
-    const card = document.getElementById(`voice-card-${v.id}`);
-    if (!card) return;
-    card.style.border = v.id===id ? (v.gender==='female' ? '2px solid var(--accent2)' : '2px solid var(--accent)') : '2px solid var(--border)';
-    card.style.background = v.id===id ? (v.gender==='female' ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)') : 'var(--surface2)';
-  });
-  markDirty();
-}
-
-function getSelectedVoice() {
-  return currentVoiceId || VOICES.find(v => {
-    const card = document.getElementById(`voice-card-${v.id}`);
-    return card && (card.style.border.includes('var(--accent)') || card.style.border.includes('var(--accent2)'));
-  })?.id || VOICES.find(v => v.id === DEFAULT_VOICE_ID)?.id || VOICES[0]?.id || null;
-}
-
-function renderServices(services) {
-  const list = document.getElementById('services-list');
-  list.innerHTML = services.map((s,i) => `
-    <div style="display:flex;gap:8px;align-items:center;" id="svc-row-${i}">
-      <input type="text" value="${s}" oninput="markDirty()"
-        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
-      <button onclick="removeService(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">✕</button>
-    </div>
-  `).join('') || '<div style="font-size:13px;color:var(--muted);">No services yet — add some above</div>';
-}
-
-function addService() {
-  const cur = getServices();
-  cur.push('');
-  renderServices(cur);
-  markDirty();
-  const inputs = document.querySelectorAll('#services-list input');
-  if (inputs.length) inputs[inputs.length-1].focus();
-}
-
-function removeService(i) {
-  const cur = getServices();
-  cur.splice(i, 1);
-  renderServices(cur);
-  markDirty();
-}
-
-function getServices() {
-  return Array.from(document.querySelectorAll('#services-list input')).map(i => i.value).filter(Boolean);
-}
-
-function renderFaqs(faqs) {
-  const list = document.getElementById('faq-list');
-  if (!faqs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No FAQs yet — add common questions your callers ask</div>'; return; }
-  list.innerHTML = faqs.map((f,i) => `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;" id="faq-row-${i}">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">FAQ ${i+1}</span>
-        <button onclick="removeFaq(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
-      </div>
-      <input type="text" value="${(f.q||'').replace(/"/g,'&quot;')}" placeholder="Question" oninput="markDirty()"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px;" />
-      <textarea placeholder="Answer" rows="2" oninput="markDirty()"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;resize:vertical;">${f.a||''}</textarea>
-    </div>
-  `).join('');
-}
-
-function addFaq() {
-  const cur = getFaqs();
-  cur.push({ q: '', a: '' });
-  renderFaqs(cur);
-  markDirty();
-}
-
-function removeFaq(i) {
-  const cur = getFaqs();
-  cur.splice(i, 1);
-  renderFaqs(cur);
-  markDirty();
-}
-
-function getFaqs() {
-  const rows = document.querySelectorAll('#faq-list [id^="faq-row-"]');
-  return Array.from(rows).map(row => {
-    const inputs = row.querySelectorAll('input, textarea');
-    return { q: inputs[0]?.value || '', a: inputs[1]?.value || '' };
-  }).filter(f => f.q || f.a);
 }
 
 function markDirty() { document.getElementById('persona-unsaved').style.display='inline'; }
@@ -1219,18 +1413,29 @@ function markClean() { document.getElementById('persona-unsaved').style.display=
 
 async function savePersona() {
   if (!currentPersonaClient) return;
-  const btn = document.querySelector('.btn-save');
+  const btn = document.querySelector('#persona-form .btn-save');
   btn.textContent = 'Saving...'; btn.disabled = true;
+
+  const voiceMeta = VOICES.find(v => v.id === currentAdminVoiceId) || VOICES[0] || null;
   const payload = {
     // Business info
     business_name:    document.getElementById('p-business-name').value,
     agent_name:       document.getElementById('p-agent-name').value,
-    office_hours:     adminHoursMode === '247' ? '24/7' : document.getElementById('p-office-hours').value,
+    office_hours:     buildAdminHoursString(),
     booking_url:      document.getElementById('p-booking-url').value,
     escalation_phone: document.getElementById('p-escalation-phone').value,
-    // Voice
-    voice: getSelectedVoice(),
-    // OpenAI Realtime
+    // Services & specialties
+    service_areas:    getAdminServices(),
+    services:         getAdminServices(),
+    specialties:      getAdminSpecialties(),
+    // Voice (all field aliases)
+    voice_id:         voiceMeta?.id,
+    voice:            voiceMeta?.id,
+    voice_name:       voiceMeta?.label,
+    voice_label:      voiceMeta?.label,
+    selected_voice:   voiceMeta?.id,
+    agent_voice:      voiceMeta?.id,
+    // OpenAI Realtime (admin-only)
     vad_threshold:       parseFloat(document.getElementById('p-vad').value),
     silence_duration_ms: parseInt(document.getElementById('p-silence').value),
     temperature:         parseFloat(document.getElementById('p-temp').value),
@@ -1242,15 +1447,14 @@ async function savePersona() {
     // Call script
     custom_greeting:  document.getElementById('p-greeting').value,
     escalation_rules: document.getElementById('p-escalation').value,
-    topics_to_avoid:  avoidTopics,
+    topics_to_avoid:  adminAvoidTopics,
     // After hours
     after_hours_enabled: document.getElementById('p-after-hours').checked,
     after_hours_message: document.getElementById('p-after-hours-msg').value,
-    // Advanced
+    // Advanced (admin-only)
     system_prompt_override: document.getElementById('p-system-prompt').value || null,
-    // Lists
-    services: getServices(),
-    faqs:     getFaqs()
+    // FAQs
+    faqs: getAdminFaqs()
   };
   try {
     const res = await fetch(`${ATLAS_API}/clients/${currentPersonaClient.client_id}`, {
