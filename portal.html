@@ -34,11 +34,11 @@
     background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 70%);
   }
   .login-box {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
     padding: 40px; width: 100%; max-width: 400px;
   }
   .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .login-logo-text { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .login-logo-text { font-size: 22px; font-weight: 800; color: var(--accent2); }
   .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
   .login-box label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; margin-top: 16px; }
   .login-box input {
@@ -64,15 +64,7 @@
     background: var(--surface); border-bottom: 1px solid var(--border);
     display: flex; align-items: center; padding: 0 24px; gap: 16px;
   }
-  .menu-btn {
-    display: none; align-items: center; justify-content: center;
-    width: 36px; height: 36px; border-radius: 10px;
-    border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text); font-size: 16px; cursor: pointer;
-  }
-  .menu-btn:hover { background: var(--border); }
-  .topbar-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--accent); }
-  .topbar-logo img { width: 22px; height: 22px; object-fit: contain; display: block; }
+  .topbar-logo { font-size: 16px; font-weight: 800; color: var(--accent2); }
   .topbar-biz { font-size: 13px; color: var(--muted); }
   .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
   .agent-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 4px 12px; }
@@ -81,14 +73,10 @@
   .logout-btn { font-size: 12px; color: var(--muted); cursor: pointer; background: none; border: none; }
   .logout-btn:hover { color: var(--red); }
 
-  .sidebar-overlay {
-    position: fixed; inset: 56px 0 0 0; background: rgba(16,24,38,0.28);
-    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 105;
-  }
   .sidebar {
     position: fixed; left: 0; top: 56px; bottom: 0; width: 200px;
     background: var(--surface); border-right: 1px solid var(--border);
-    padding: 16px 0; display: flex; flex-direction: column; z-index: 110;
+    padding: 16px 0; display: flex; flex-direction: column;
   }
   .nav-item {
     display: flex; align-items: center; gap: 10px; padding: 10px 20px;
@@ -96,7 +84,7 @@
     transition: all 0.15s;
   }
   .nav-item:hover { color: var(--text); background: var(--surface2); }
-  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(99,102,241,0.1); }
+  .nav-item.active { color: var(--accent2); border-left-color: var(--accent); background: rgba(99,102,241,0.08); }
   .nav-icon { font-size: 15px; }
   .main { margin-left: 200px; padding: 88px 28px 28px; min-height: 100vh; }
   .page { display: none; }
@@ -116,13 +104,13 @@
 
   /* ── TABLE ── */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
   .table-header h2 { font-size: 14px; font-weight: 600; }
   table { width: 100%; border-collapse: collapse; }
   th { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
   td { padding: 14px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.03); }
+  tr:hover td { background: rgba(255,255,255,0.015); }
   .badge-confirmed { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .badge-pending   { background: rgba(245,158,11,0.1); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
@@ -140,51 +128,19 @@
   .form-group textarea { resize: vertical; min-height: 80px; }
 
   /* VOICE GRID */
-  .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-  .voice-column {
-    display: flex; flex-direction: column; gap: 10px; min-width: 0;
-    padding: 12px; border-radius: 16px; border: 1px solid transparent;
-  }
-  .voice-column.left {
-    background: rgba(99,102,241,0.06);
-    border-color: rgba(99,102,241,0.15);
-  }
-  .voice-column.right {
-    background: rgba(129,140,248,0.06);
-    border-color: rgba(129,140,248,0.15);
-  }
+  .voice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .voice-card {
-    position: relative; overflow: hidden;
-    border: 1.5px solid var(--border); background: var(--surface2);
-    border-radius: 12px; padding: 12px 12px 10px; cursor: pointer; transition: all 0.15s;
+    border: 2px solid var(--border); background: var(--surface2);
+    border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.15s;
   }
-  .voice-card::before {
-    content: ''; position: absolute; inset: 0 auto auto 0; width: 100%; height: 3px;
-    background: var(--voice-accent, var(--accent)); opacity: 0.9;
-  }
-  .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
-  .voice-card.selected.voice-tone-left { background: rgba(99,102,241,0.1); }
-  .voice-card.selected.voice-tone-right { background: rgba(129,140,248,0.12); }
-  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
-  .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .voice-name { font-size: 12px; font-weight: 700; }
-  .voice-name.left { color: var(--accent); }
-  .voice-name.right { color: var(--accent2); }
-  .voice-badge {
-    display: inline-flex; align-items: center; white-space: nowrap;
-    padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
-    letter-spacing: .4px; text-transform: uppercase; color: #5b21b6;
-    background: var(--surface); border: 1px solid rgba(99,102,241,0.35);
-    
-  }
+  .voice-card.selected { border-color: var(--accent); background: rgba(99,102,241,0.08); }
+  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .play-btn {
-    background: var(--surface); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.07); border: 1px solid var(--border);
     border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; color: var(--text);
   }
-  .play-btn.left { color: var(--accent); }
-  .play-btn.right { color: var(--accent2); }
   .live-only { font-size: 9px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; white-space: nowrap; }
 
   /* SLIDER */
@@ -226,21 +182,13 @@
   .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
 
   /* TOAST */
-  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   #toast.show { opacity: 1; }
   #toast.success { border-color: var(--green); color: var(--green); }
   #toast.error { border-color: var(--red); color: var(--red); }
 
   @media (max-width: 768px) {
-    .menu-btn { display: inline-flex; }
-    .topbar { padding: 0 12px; gap: 10px; }
-    .topbar-biz { display: none; }
-    .sidebar {
-      width: 260px; transform: translateX(-102%); transition: transform 0.22s ease;
-      box-shadow: 18px 0 40px rgba(24,33,47,0.12);
-    }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+    .sidebar { display: none; }
     .main { margin-left: 0; padding: 72px 16px 16px; }
     .stats-grid { grid-template-columns: 1fr; }
     .settings-grid { grid-template-columns: 1fr; }
@@ -254,7 +202,7 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <img src="/logo.png" alt="Auzora" style="width:28px;height:28px;object-fit:contain;display:block;">
+      <span style="font-size:28px;">🤖</span>
       <span class="login-logo-text">Auzora</span>
     </div>
     <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by Atlas AI</div>
@@ -272,8 +220,7 @@
 <!-- APP -->
 <div id="app">
   <header class="topbar">
-    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
-    <span class="topbar-logo"><img src="/logo.png" alt="Auzora">Auzora</span>
+    <span class="topbar-logo">Auzora</span>
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
       <div class="agent-status"><div class="pulse"></div> Agent Active</div>
@@ -288,8 +235,6 @@
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
-
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <main class="main">
 
@@ -361,11 +306,210 @@
 
           <!-- Business Info -->
           <div class="card">
-            <div class
+            <div class="card-title">🏢 Business Info</div>
+            <div class="form-group">
+              <label>Business Name</label>
+              <input type="text" id="s-biz-name" oninput="setDirty()" />
+            </div>
+            <div class="form-group">
+              <label>Agent Name</label>
+              <input type="text" id="s-agent-name" oninput="setDirty()" />
+            </div>
+            <div class="form-group">
+              <label>Office Hours</label>
+              <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
+                  <span>Set office hours</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
+                  <span>24/7</span>
+                </label>
+              </div>
+              <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
+              <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
+            </div>
+            <div class="form-group">
+              <label>Booking URL</label>
+              <input type="text" id="s-booking-url" placeholder="https://calendly.com/..." oninput="setDirty()" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Escalation Phone</label>
+              <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
+            </div>
+          </div>
 
-... [OUTPUT TRUNCATED - 11881 chars omitted out of 61881 total] ...
+        </div>
 
-1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
+        <!-- RIGHT -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Tone & Style -->
+          <div class="card">
+            <div class="card-title">🎭 Tone & Style</div>
+            <div class="form-group">
+              <label>Tone</label>
+              <select id="s-tone" onchange="setDirty()">
+                <option value="friendly">Friendly — warm &amp; approachable</option>
+                <option value="professional">Professional — polished &amp; business-like</option>
+                <option value="casual">Casual — relaxed &amp; informal</option>
+                <option value="empathetic">Empathetic — compassionate &amp; patient</option>
+                <option value="formal">Formal — precise &amp; structured</option>
+                <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Speaking Pace</label>
+              <select id="s-pace" onchange="setDirty()">
+                <option value="normal">Normal</option>
+                <option value="slow">Slow — clear &amp; deliberate</option>
+                <option value="fast">Fast — concise &amp; snappy</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Language</label>
+              <select id="s-lang" onchange="setDirty()">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="pt">Portuguese</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+                <option value="ja">Japanese</option>
+                <option value="zh">Mandarin Chinese</option>
+                <option value="ko">Korean</option>
+                <option value="ar">Arabic</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Call Script -->
+          <div class="card">
+            <div class="card-title">📞 Call Script</div>
+            <div class="form-group">
+              <label>Custom Greeting</label>
+              <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
+            </div>
+            <div class="form-group">
+              <label>Escalation Rules</label>
+              <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Topics to Avoid</label>
+              <div class="tags-wrap" id="s-avoid-tags"></div>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
+                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
+                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
+                <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- After Hours -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title" style="margin:0;">🌙 After-Hours Mode</div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" id="s-ah" onchange="togglePortalAH();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                Enable
+              </label>
+            </div>
+            <div id="s-ah-body" style="display:none;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label>After-Hours Message</label>
+                <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
+              </div>
+            </div>
+            <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
+          </div>
+
+          <!-- Services & Specialties -->
+          <div class="card">
+            <div class="card-title">🛠️ Services & Specialties</div>
+            <div class="form-group">
+              <label>Services / Products Offered</label>
+              <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
+                <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
+                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Specialties / Highlights</label>
+              <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
+                <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
+                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+            </div>
+          </div>
+
+          <!-- FAQs -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title" style="margin:0;">❓ FAQs</div>
+              <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+            </div>
+            <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
+        <button class="btn-save" id="s-save-btn" onclick="saveSettings()">💾 Save & Apply</button>
+      </div>
+    </div>
+
+    <!-- INTEGRATIONS -->
+    <div class="page" id="page-integrations">
+      <div class="page-header">
+        <h1>🔗 Integrations</h1>
+        <p>Connect your calendars — appointments booked by your AI agent will appear automatically</p>
+      </div>
+
+      <!-- Google Calendar -->
+      <div class="card" style="max-width:620px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <span style="font-size:32px;">📅</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Google Calendar</div>
+            <div style="font-size:13px;color:var(--muted);">Appointments sync directly to your Google Calendar</div>
+          </div>
+          <div id="gcal-badge" style="margin-left:auto;display:none;">
+            <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;">✓ Connected</span>
+          </div>
+        </div>
+
+        <!-- Steps -->
+        <div id="gcal-setup" style="display:none;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Setup — 2 steps, takes 1 minute</div>
+
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Share your Google Calendar with our service account</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Open Google Calendar → Settings → select your calendar → Share with specific people</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
+                  <span id="sa-email-display">atlas-calendar@auzora.io</span>
+                  <button onclick="copyText('atlas-calendar@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Make changes to events</strong> (Editor)</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Enter your Calendar ID</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">In Google Calendar → Settings → your calendar → Integrate calendar → Calendar ID</div>
+                <input type="text" id="gcal-id-input" placeholder="yourname@gmail.com or xyz@group.calendar.google.com"
+                  style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
               </div>
             </div>
           </div>
@@ -400,17 +544,49 @@
         </div>
       </div>
 
-      <!-- Outlook (coming soon) -->
-      <div class="card" style="max-width:620px;opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <span style="font-size:32px;">📧</span>
+      <!-- Outlook (coming soon) -->\n      <div class=\"card\" style=\"max-width:620px;opacity:0.6;\">
+        <div style=\"display:flex;align-items:center;gap:14px;\">
+          <span style=\"font-size:32px;\">📧</span>
           <div>
-            <div style="font-size:16px;font-weight:700;">Outlook / Microsoft 365</div>
-            <div style="font-size:13px;color:var(--muted);">Microsoft calendar integration — coming soon</div>
+            <div style=\"font-size:16px;font-weight:700;\">Outlook / Microsoft 365</div>
+            <div style=\"font-size:13px;color:var(--muted);\">Microsoft calendar integration — coming soon</div>
           </div>
-          <div style="margin-left:auto;">
-            <span style="background:rgba(100,116,139,0.15);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);font-weight:600;">Coming Soon</span>
+          <div style=\"margin-left:auto;\">
+            <span style=\"background:rgba(100,116,139,0.15);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);font-weight:600;\">Coming Soon</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Lead Webhook -->
+      <div class="card" style="max-width:620px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <span style="font-size:32px;">🔗</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Lead Webhook</div>
+            <div style="font-size:13px;color:var(--muted);">Send captured leads to your CRM, Zapier, Make, n8n, or any webhook URL</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+          When your AI agent captures a lead, we'll POST the lead data as JSON to this URL instantly.
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
+          { "client_id": "…", "client_name": "…", "phone": "…", "intent": "…", "captured_at": "…" }
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Webhook URL</label>
+          <input type="url" id="i-webhook-url" placeholder="https://hooks.zapier.com/hooks/catch/..." oninput="setDirty()"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;" />
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="saveWebhookUrl()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            💾 Save Webhook
+          </button>
+          <button onclick="testWebhook()"
+            style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--muted2);font-size:13px;font-weight:600;cursor:pointer;">
+            🧪 Send Test Payload
+          </button>
+          <span id="webhook-status" style="font-size:12px;color:var(--muted);"></span>
         </div>
       </div>
 
@@ -429,39 +605,32 @@ let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
 
-const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
+let VOICES = []; // Populated from ElevenLabs API
 
-let VOICES = [];
-let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
+// Gender emoji mapping
+const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
 
-function buildVoiceDesc(v) {
-  const bits = [];
-  if (v.description) bits.push(v.description);
-  if (v.gender && v.gender !== 'unknown') bits.push(v.gender);
-  if (v.group && v.group !== 'unknown') bits.push(v.group);
-  return bits.join(' · ') || 'Approved voice';
-}
-
+// Fetch ElevenLabs voices
 async function loadVoices() {
-  if (VOICES.length) return VOICES;
-  const res = await fetch(VOICES_API);
-  const data = await res.json();
-  const all = Array.isArray(data.voices) ? data.voices : [];
-  DEFAULT_VOICE_ID = data.default_voice_id || DEFAULT_VOICE_ID;
-  VOICES = all
-    .filter(v => v && v.active !== false)
-    .map(v => ({
+  try {
+    const res = await fetch(`${API}/api/voices`);
+    if (!res.ok) throw new Error('Failed to fetch voices');
+    const data = await res.json();
+    VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
+      desc: v.description || '',
+      emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      desc: buildVoiceDesc(v),
-      group: v.group || (v.gender === 'female' ? 'left' : 'right'),
-      isDefault: !!v.is_default || v.id === data.default_voice_id,
-      preview_url: v.preview_url,
-      play_url: v.preview_url
+      preview_url: v.preview_url
     }));
-  return VOICES;
+    return VOICES;
+  } catch (e) {
+    console.error('Failed to load voices:', e);
+    return [];
+  }
 }
+
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DEFAULT_HOURS = {
@@ -523,7 +692,9 @@ function togglePortalHoursMode(mode, quiet = false) {
   portalHoursMode = mode;
   const grid = document.getElementById('s-hours-grid');
   const note = document.getElementById('s-hours-note');
+  const custom = document.getElementById('s-hours-custom');
   const all247 = document.getElementById('s-hours-247');
+  if (custom) custom.checked = mode === 'custom';
   if (all247) all247.checked = mode === '247';
   if (grid) {
     const disabled = mode === '247';
@@ -633,22 +804,7 @@ function launchApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('topbar-biz').textContent = portalClient.business_name;
   document.getElementById('dash-title').textContent = `Welcome, ${portalClient.business_name}`;
-  closeSidebar();
   loadDashboard();
-}
-
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  const open = sidebar.classList.toggle('open');
-  overlay.classList.toggle('open', open);
-}
-
-function closeSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  sidebar.classList.remove('open');
-  overlay.classList.remove('open');
 }
 
 function showPage(name) {
@@ -656,7 +812,6 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
-  closeSidebar();
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
   if (name === 'integrations') loadIntegrations();
@@ -722,8 +877,6 @@ function formatDT(iso) {
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 let settingsDirty = false;
 let activeAudio = null;
-let currentPortalVoiceId = null;
-let portalHoursMode = 'custom';
 
 async function loadSettings() {
   const c = portalClient;
@@ -733,19 +886,15 @@ async function loadSettings() {
   document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-tone').value = c.tone || 'friendly';
-  document.getElementById('s-pace').value = c.speaking_pace || 'normal';
-  document.getElementById('s-lang').value = c.lang || 'en';
-  document.getElementById('s-greeting').value = c.custom_greeting || '';
-  document.getElementById('s-escalation').value = c.escalation_rules || '';
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
-  // Load approved voices then render grid
+  // Load ElevenLabs voices then render grid
   await loadVoices();
-  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
+  renderPortalVoiceGrid(c.voice_id || VOICES[0]?.id);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
@@ -754,13 +903,10 @@ async function loadSettings() {
   renderSpecialtyTags();
   settingsDirty = false;
   document.getElementById('s-unsaved').style.display = 'none';
-  document.getElementById('s-save-btn').disabled = true;
 }
 
 function setDirty() {
   settingsDirty = true;
-  const btn = document.getElementById('s-save-btn');
-  if (btn) btn.disabled = false;
   document.getElementById('s-unsaved').style.display = 'inline';
 }
 
@@ -770,68 +916,34 @@ function togglePortalAH() {
   document.getElementById('s-ah-off').style.display = on ? 'none' : 'block';
 }
 
-function normalizeVoiceKey(value) {
-  return String(value || '').trim().toLowerCase().replace(/\s*[-–].*$/, '');
-}
-
-function resolvePortalVoiceId(...candidates) {
-  const flat = candidates.flat().filter(Boolean);
-  for (const candidate of flat) {
-    const exact = VOICES.find(v => v.id === candidate || v.label === candidate || v.label === String(candidate).split(/\s[-–]\s/)[0]?.trim());
-    if (exact) return exact.id;
-  }
-  for (const candidate of flat) {
-    const norm = normalizeVoiceKey(candidate);
-    const match = VOICES.find(v => normalizeVoiceKey(v.id) === norm || normalizeVoiceKey(v.label) === norm || normalizeVoiceKey(v.desc) === norm);
-    if (match) return match.id;
-  }
-  return VOICES[0]?.id || null;
-}
-
-function getSelectedPortalVoice() {
-  return VOICES.find(v => v.id === currentPortalVoiceId) || VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected')) || VOICES[0] || null;
-}
+// Voice grid
 function renderPortalVoiceGrid(selected) {
   if (VOICES.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
+    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">Loading voices...</div>';
     return;
   }
-  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
-  currentPortalVoiceId = activeVoiceId;
-  const leftVoices = VOICES.filter(v => v.gender === 'female');
-  const rightVoices = VOICES.filter(v => v.gender === 'male');
-  const renderColumn = (voices, tone) => `
-    <div class="voice-column ${tone}">
-      ${voices.map(v => `
-        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
-          <div class="voice-card-top">
-            <div class="voice-name-wrap">
-              <div class="voice-name ${tone}">${v.label}</div>
-              ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
-            </div>
-            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
-          </div>
-          ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>`;
-  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
+  document.getElementById('portal-voice-grid').innerHTML = VOICES.map(v => `
+    <div class="voice-card ${v.id===selected?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
+      <div class="voice-card-top">
+        <span style="font-size:16px;">${v.emoji}</span>
+        <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;">${v.label}</div>
+      ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
+    </div>
+  `).join('');
 }
 
 function selectPortalVoice(id) {
-  currentPortalVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
-    if (!card) return;
-    const tone = v.group === 'left' ? 'left' : 'right';
-    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
-    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
+    if (card) card.className = `voice-card ${v.id===id?'selected':''}`;
   });
   setDirty();
 }
 
 function getPortalVoice() {
-  return currentPortalVoiceId || getSelectedPortalVoice()?.id || null;
+  return VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected'))?.id || VOICES[0]?.id || null;
 }
 
 function playPortalVoice(id) {
@@ -839,8 +951,8 @@ function playPortalVoice(id) {
   VOICES.forEach(v => { const b = document.getElementById(`ppb-${v.id}`); if(b) b.textContent='▶'; });
   const btn = document.getElementById(`ppb-${id}`);
   const voice = VOICES.find(v => v.id === id);
-  if (!voice || !voice.play_url) return;
-  const audio = new Audio(voice.play_url);
+  if (!voice || !voice.preview_url) return;
+  const audio = new Audio(voice.preview_url);
   activeAudio = audio;
   btn.textContent = '⏸';
   audio.play();
@@ -913,7 +1025,6 @@ async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
   btn.textContent = 'Saving...'; btn.disabled = true;
 
-  const voiceMeta = getSelectedPortalVoice();
   const payload = {
     business_name:       document.getElementById('s-biz-name').value,
     agent_name:          document.getElementById('s-agent-name').value,
@@ -922,12 +1033,7 @@ async function saveSettings() {
     specialties:         [...portalSpecialties],
     escalation_phone:    document.getElementById('s-escalation-phone').value,
     booking_url:         document.getElementById('s-booking-url').value,
-    voice_id:            voiceMeta?.id,
-    voice:               voiceMeta?.id,
-    voice_name:          voiceMeta?.label,
-    voice_label:         voiceMeta?.label,
-    selected_voice:      voiceMeta?.id,
-    agent_voice:         voiceMeta?.id,
+    voice:               getPortalVoice(),
     tone:                document.getElementById('s-tone').value,
     speaking_pace:       document.getElementById('s-pace').value,
     lang:                document.getElementById('s-lang').value,
@@ -951,7 +1057,6 @@ async function saveSettings() {
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
       settingsDirty = false;
       document.getElementById('s-unsaved').style.display = 'none';
-      document.getElementById('s-save-btn').disabled = true;
       showToast('Settings saved — live on next call ✓', 'success');
     } else throw new Error(data.error || 'Save failed');
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
@@ -969,6 +1074,9 @@ function showToast(msg, type='success') {
 
 // ── INTEGRATIONS ─────────────────────────────────────────────────────────────
 function loadIntegrations() {
+  // Webhook URL
+  document.getElementById('i-webhook-url').value = portalClient.webhook_url || '';
+
   const gcalId = portalClient.google_calendar_id;
   if (gcalId) {
     document.getElementById('gcal-cta').style.display = 'none';
@@ -1041,6 +1149,66 @@ function copyText(text) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+const savedToken  = sessionStorage.getItem('atlas_token');
+const savedClient = sessionStorage.getItem('atlas_client');
+if (savedToken && savedClient) {
+  portalToken  = savedToken;
+  portalClient = JSON.parse(savedClient);
+  launchApp();
+}
+
+// ── LEAD WEBHOOK ─────────────────────────────────────────────────────────────
+async function saveWebhookUrl() {
+  const url = document.getElementById('i-webhook-url').value.trim();
+  const status = document.getElementById('webhook-status');
+  status.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ webhook_url: url })
+    });
+    const data = await res.json();
+    if (data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+      status.textContent = url ? '✓ Saved' : '✓ Cleared';
+      status.style.color = 'var(--green)';
+      showToast(url ? 'Webhook URL saved — leads will be delivered here ✓' : 'Webhook URL cleared', 'success');
+    } else throw new Error(data.error || 'Save failed');
+  } catch(e) {
+    status.textContent = '✗ Failed';
+    status.style.color = '#f87171';
+    showToast('Save failed: ' + e.message, 'error');
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+async function testWebhook() {
+  const url = document.getElementById('i-webhook-url').value.trim();
+  const status = document.getElementById('webhook-status');
+  if (!url) { showToast('Enter a webhook URL first', 'error'); return; }
+  status.textContent = 'Sending test…';
+  try {
+    const res = await fetch(`${API}/portal/webhook/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ webhook_url: url })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      status.textContent = '✓ Test sent';
+      status.style.color = 'var(--green)';
+      showToast('Test payload delivered ✓', 'success');
+    } else throw new Error(data.error || 'Test failed');
+  } catch(e) {
+    status.textContent = '✗ Failed';
+    status.style.color = '#f87171';
+    showToast('Test failed: ' + e.message, 'error');
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   const isLight = theme === 'light';
@@ -1049,22 +1217,11 @@ function applyTheme(theme) {
   if (btn) btn.textContent = isLight ? '🌑 Dark' : '☀️ Light';
   localStorage.setItem('atlas_theme', theme);
 }
-
 function toggleTheme() {
   const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
   applyTheme(current === 'light' ? 'dark' : 'light');
 }
-
-// Apply saved theme on load (default: dark)
 applyTheme(localStorage.getItem('atlas_theme') || 'dark');
-
-const savedToken  = sessionStorage.getItem('atlas_token');
-const savedClient = sessionStorage.getItem('atlas_client');
-if (savedToken && savedClient) {
-  portalToken  = savedToken;
-  portalClient = JSON.parse(savedClient);
-  launchApp();
-}
 </script>
 </body>
 </html>
