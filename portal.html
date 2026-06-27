@@ -128,19 +128,51 @@
   .form-group textarea { resize: vertical; min-height: 80px; }
 
   /* VOICE GRID */
-  .voice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .voice-card {
-    border: 2px solid var(--border); background: var(--surface2);
-    border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.15s;
+  .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .voice-column {
+    display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: 12px; border-radius: 16px; border: 1px solid transparent;
   }
-  .voice-card.selected { border-color: var(--accent); background: rgba(99,102,241,0.08); }
-  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .voice-column.left {
+    background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-color: rgba(59,130,246,0.14);
+  }
+  .voice-column.right {
+    background: linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(124,58,237,0.03) 100%);
+    border-color: rgba(124,58,237,0.14);
+  }
+  .voice-card {
+    position: relative; overflow: hidden;
+    border: 1.5px solid var(--border); background: rgba(255,255,255,0.94);
+    border-radius: 12px; padding: 12px 12px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .voice-card::before {
+    content: ''; position: absolute; inset: 0 auto auto 0; width: 100%; height: 3px;
+    background: var(--voice-accent, var(--accent)); opacity: 0.9;
+  }
+  .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
+  .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
+  .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
+  .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
+  .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .voice-name { font-size: 12px; font-weight: 700; }
+  .voice-name.left { color: var(--accent); }
+  .voice-name.right { color: var(--accent2); }
+  .voice-badge {
+    display: inline-flex; align-items: center; white-space: nowrap;
+    padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
+    letter-spacing: .4px; text-transform: uppercase; color: #5b21b6;
+    background: rgba(255,255,255,0.96); border: 1px solid rgba(124,58,237,0.26);
+    box-shadow: 0 1px 2px rgba(16,24,38,0.05);
+  }
   .play-btn {
-    background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+    background: rgba(16,24,38,0.03); border: 1px solid var(--border);
     border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; color: var(--text);
   }
+  .play-btn.left { color: var(--accent); }
+  .play-btn.right { color: var(--accent2); }
   .live-only { font-size: 9px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; white-space: nowrap; }
 
   /* SLIDER */
@@ -894,7 +926,7 @@ async function loadSettings() {
 
   // Load ElevenLabs voices then render grid
   await loadVoices();
-  renderPortalVoiceGrid(c.voice_id || VOICES[0]?.id);
+  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
@@ -917,27 +949,69 @@ function togglePortalAH() {
 }
 
 // Voice grid
+let currentPortalVoiceId = null;
+
+function normalizeVoiceKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s*[-–].*$/, '');
+}
+
+function resolvePortalVoiceId(...candidates) {
+  const flat = candidates.flat().filter(Boolean);
+  for (const candidate of flat) {
+    const exact = VOICES.find(v => v.id === candidate || v.label === candidate || v.label === String(candidate).split(/\s[-–]\s/)[0]?.trim());
+    if (exact) return exact.id;
+  }
+  for (const candidate of flat) {
+    const norm = normalizeVoiceKey(candidate);
+    const match = VOICES.find(v => normalizeVoiceKey(v.id) === norm || normalizeVoiceKey(v.label) === norm || normalizeVoiceKey(v.desc) === norm);
+    if (match) return match.id;
+  }
+  return VOICES[0]?.id || null;
+}
+
+function getSelectedPortalVoice() {
+  return VOICES.find(v => v.id === currentPortalVoiceId) || VOICES.find(v => document.getElementById(`pvc-${v.id}`)?.classList.contains('selected')) || VOICES[0] || null;
+}
+
+function getPortalVoice() {
+  return currentPortalVoiceId || getSelectedPortalVoice()?.id || null;
+}
+
 function renderPortalVoiceGrid(selected) {
   if (VOICES.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">Loading voices...</div>';
+    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
     return;
   }
-  document.getElementById('portal-voice-grid').innerHTML = VOICES.map(v => `
-    <div class="voice-card ${v.id===selected?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')">
-      <div class="voice-card-top">
-        <span style="font-size:16px;">${v.emoji}</span>
-        <button class="play-btn" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
-      </div>
-      <div style="font-size:12px;font-weight:700;">${v.label}</div>
-      ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
-    </div>
-  `).join('');
+  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  currentPortalVoiceId = activeVoiceId;
+  const leftVoices = VOICES.filter(v => v.gender === 'female');
+  const rightVoices = VOICES.filter(v => v.gender === 'male');
+  const renderColumn = (voices, tone) => `
+    <div class="voice-column ${tone}">
+      ${voices.map(v => `
+        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
+          <div class="voice-card-top">
+            <div class="voice-name-wrap">
+              <div class="voice-name ${tone}">${v.label}</div>
+              ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+            </div>
+            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
+          </div>
+          ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
 }
 
 function selectPortalVoice(id) {
+  currentPortalVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
-    if (card) card.className = `voice-card ${v.id===id?'selected':''}`;
+    if (!card) return;
+    const tone = v.gender === 'female' ? 'left' : 'right';
+    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
+    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
   });
   setDirty();
 }
