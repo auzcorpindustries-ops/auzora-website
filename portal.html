@@ -617,12 +617,11 @@ async function loadVoices() {
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
     VOICES = data.voices.map(v => ({
-      id: v.voice_id,
-      label: v.name.split(' - ')[0], // First part of name
-      desc: v.name.includes(' - ') ? v.name.split(' - ')[1] : '',
+      id: v.id,
+      label: v.label || v.voice_name || v.name || 'Voice',
+      desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
-      gender: v.gender,
-      accent: v.accent,
+      gender: v.gender || 'unknown',
       preview_url: v.preview_url
     }));
     return VOICES;
