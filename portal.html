@@ -648,13 +648,17 @@ async function loadVoices() {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
+    const defaultVoiceId = data.default_voice_id || DEFAULT_VOICE_ID;
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      preview_url: v.preview_url
+      group: v.group || (v.gender === 'female' ? 'left' : 'right'),
+      isDefault: !!v.is_default || v.id === defaultVoiceId,
+      preview_url: v.preview_url,
+      play_url: v.preview_url
     }));
     return VOICES;
   } catch (e) {
