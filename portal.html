@@ -6,13 +6,27 @@
 <title>Client Portal — Auzora</title>
 <style>
   :root {
-    --bg: #ffffff; --surface: #ffffff; --surface2: #f8fafc; --border: rgba(16,24,38,0.08);
-    --accent: #3b82f6; --accent2: #7c3aed; --green: #22c55e; --yellow: #f59e0b;
-    --red: #ef4444; --blue: #38bdf8; --purple: #7c3aed;
-    --text: #101826; --muted: #5f687a; --font: 'Segoe UI', system-ui, sans-serif;
+    --bg: #080c14; --surface: #0f1520; --surface2: #151d2e; --border: #1e2d45;
+    --accent: #6366f1; --accent2: #818cf8; --green: #22c55e; --yellow: #f59e0b;
+    --red: #ef4444; --blue: #38bdf8; --purple: #a78bfa;
+    --text: #e2e8f0; --muted: #64748b; --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  :root.light {
+    --bg: #f0f2f8; --surface: #ffffff; --surface2: #f4f6fb; --border: #dde2ee;
+    --accent: #6366f1; --accent2: #4f46e5; --green: #16a34a; --yellow: #d97706;
+    --red: #dc2626; --blue: #0284c7; --purple: #7c3aed;
+    --text: #0f172a; --muted: #64748b;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: var(--text); font-family: var(--font); min-height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; transition: background 0.2s, color 0.2s; }
+
+  /* ── DARK MODE TOGGLE ── */
+  .theme-toggle {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--muted);
+    display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--accent); }
 
   /* ── LOGIN ── */
   #login-screen {
@@ -263,6 +277,7 @@
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
       <div class="agent-status"><div class="pulse"></div> Agent Active</div>
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☀️ Light</button>
       <button class="logout-btn" onclick="logout()">Sign out</button>
     </div>
   </header>
@@ -1222,6 +1237,23 @@ function copyText(text) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+// ── THEME TOGGLE ─────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  const isLight = theme === 'light';
+  document.documentElement.classList.toggle('light', isLight);
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isLight ? '🌑 Dark' : '☀️ Light';
+  localStorage.setItem('atlas_theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+
+// Apply saved theme on load (default: dark)
+applyTheme(localStorage.getItem('atlas_theme') || 'dark');
+
 const savedToken  = sessionStorage.getItem('atlas_token');
 const savedClient = sessionStorage.getItem('atlas_client');
 if (savedToken && savedClient) {
