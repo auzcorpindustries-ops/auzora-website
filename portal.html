@@ -31,10 +31,10 @@
   /* ── LOGIN ── */
   #login-screen {
     min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
-    background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 70%);
   }
   .login-box {
-    background: rgba(255,255,255,0.90); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 16px 40px rgba(24,33,47,0.06);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 16px 40px rgba(0,0,0,0.12);
     padding: 40px; width: 100%; max-width: 400px;
   }
   .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
@@ -61,16 +61,16 @@
   #app { display: none; }
   .topbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 56px;
-    background: rgba(255,255,255,0.82); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
+    background: var(--surface); border-bottom: 1px solid var(--border);
     display: flex; align-items: center; padding: 0 24px; gap: 16px;
   }
   .menu-btn {
     display: none; align-items: center; justify-content: center;
     width: 36px; height: 36px; border-radius: 10px;
-    border: 1px solid var(--border); background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border); background: var(--surface2);
     color: var(--text); font-size: 16px; cursor: pointer;
   }
-  .menu-btn:hover { background: rgba(16,24,38,0.04); }
+  .menu-btn:hover { background: var(--border); }
   .topbar-logo { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--accent); }
   .topbar-logo img { width: 22px; height: 22px; object-fit: contain; display: block; }
   .topbar-biz { font-size: 13px; color: var(--muted); }
@@ -87,7 +87,7 @@
   }
   .sidebar {
     position: fixed; left: 0; top: 56px; bottom: 0; width: 200px;
-    background: rgba(255,255,255,0.88); border-right: 1px solid var(--border);
+    background: var(--surface); border-right: 1px solid var(--border);
     padding: 16px 0; display: flex; flex-direction: column; z-index: 110;
   }
   .nav-item {
@@ -95,8 +95,8 @@
     font-size: 13px; color: var(--muted); cursor: pointer; border-left: 3px solid transparent;
     transition: all 0.15s;
   }
-  .nav-item:hover { color: var(--text); background: rgba(16,24,38,0.03); }
-  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(59,130,246,0.08); }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(99,102,241,0.1); }
   .nav-icon { font-size: 15px; }
   .main { margin-left: 200px; padding: 88px 28px 28px; min-height: 100vh; }
   .page { display: none; }
@@ -106,23 +106,23 @@
   .page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* ── CARDS ── */
-  .card { background: rgba(255,255,255,0.90); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: 0 16px 40px rgba(24,33,47,0.04); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
   .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 16px; }
   .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: rgba(255,255,255,0.90); border: 1px solid var(--border); border-radius: 14px; padding: 20px; box-shadow: 0 16px 40px rgba(24,33,47,0.04); }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
   .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
   .stat-value { font-size: 36px; font-weight: 800; margin: 6px 0 2px; }
   .stat-sub { font-size: 11px; color: var(--muted); }
 
   /* ── TABLE ── */
-  .table-wrap { background: rgba(255,255,255,0.90); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 16px 40px rgba(24,33,47,0.04); }
-  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: rgba(248,250,252,0.7); }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
   .table-header h2 { font-size: 14px; font-weight: 600; }
   table { width: 100%; border-collapse: collapse; }
   th { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
   td { padding: 14px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(16,24,38,0.02); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
   .badge-confirmed { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .badge-pending   { background: rgba(245,158,11,0.1); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
@@ -132,7 +132,7 @@
   .form-group { margin-bottom: 14px; }
   .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
   .form-group input, .form-group select, .form-group textarea {
-    width: 100%; background: #ffffff; border: 1px solid var(--border);
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px;
     outline: none; font-family: var(--font);
   }
@@ -146,16 +146,16 @@
     padding: 12px; border-radius: 16px; border: 1px solid transparent;
   }
   .voice-column.left {
-    background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
-    border-color: rgba(59,130,246,0.14);
+    background: rgba(99,102,241,0.06);
+    border-color: rgba(99,102,241,0.15);
   }
   .voice-column.right {
-    background: linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(124,58,237,0.03) 100%);
-    border-color: rgba(124,58,237,0.14);
+    background: rgba(129,140,248,0.06);
+    border-color: rgba(129,140,248,0.15);
   }
   .voice-card {
     position: relative; overflow: hidden;
-    border: 1.5px solid var(--border); background: rgba(255,255,255,0.94);
+    border: 1.5px solid var(--border); background: var(--surface2);
     border-radius: 12px; padding: 12px 12px 10px; cursor: pointer; transition: all 0.15s;
   }
   .voice-card::before {
@@ -163,8 +163,8 @@
     background: var(--voice-accent, var(--accent)); opacity: 0.9;
   }
   .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
-  .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
-  .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
+  .voice-card.selected.voice-tone-left { background: rgba(99,102,241,0.1); }
+  .voice-card.selected.voice-tone-right { background: rgba(129,140,248,0.12); }
   .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
   .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .voice-name { font-size: 12px; font-weight: 700; }
@@ -174,11 +174,11 @@
     display: inline-flex; align-items: center; white-space: nowrap;
     padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
     letter-spacing: .4px; text-transform: uppercase; color: #5b21b6;
-    background: rgba(255,255,255,0.96); border: 1px solid rgba(124,58,237,0.26);
-    box-shadow: 0 1px 2px rgba(16,24,38,0.05);
+    background: var(--surface); border: 1px solid rgba(99,102,241,0.35);
+    
   }
   .play-btn {
-    background: rgba(16,24,38,0.03); border: 1px solid var(--border);
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; color: var(--text);
@@ -219,14 +219,14 @@
   .hours-sep { font-size: 12px; color: var(--muted); }
 
   /* Service / Specialty tag pills */
-  .s-tags-wrap { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
+  .s-tags-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
   .s-tags-wrap:focus-within { border-color: var(--accent); }
   .s-tag-pill { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent2); display: flex; align-items: center; gap: 5px; }
   .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
   .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
 
   /* TOAST */
-  #toast { position: fixed; bottom: 24px; right: 24px; background: rgba(255,255,255,0.94); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   #toast.show { opacity: 1; }
   #toast.success { border-color: var(--green); color: var(--green); }
   #toast.error { border-color: var(--red); color: var(--red); }
@@ -361,207 +361,11 @@
 
           <!-- Business Info -->
           <div class="card">
-            <div class="card-title">🏢 Business Info</div>
-            <div class="form-group">
-              <label>Business Name</label>
-              <input type="text" id="s-biz-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Agent Name</label>
-              <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Office Hours</label>
-              <div class="hours-row" style="margin:6px 0 8px;">
-                <div class="hours-day">
-                  <input type="checkbox" id="s-hours-247" onchange="togglePortalHoursMode(this.checked ? '247' : 'custom');setDirty()" />
-                  <label for="s-hours-247">Open 24/7</label>
-                </div>
-                <div></div>
-              </div>
-              <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
-              <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
-            </div>
-            <div class="form-group">
-              <label>Booking URL</label>
-              <input type="text" id="s-booking-url" placeholder="https://calendly.com/..." oninput="setDirty()" />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Escalation Phone</label>
-              <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-            </div>
-          </div>
+            <div class
 
-        </div>
+... [OUTPUT TRUNCATED - 11881 chars omitted out of 61881 total] ...
 
-        <!-- RIGHT -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <!-- Tone & Style -->
-          <div class="card">
-            <div class="card-title">🎭 Tone & Style</div>
-            <div class="form-group">
-              <label>Tone</label>
-              <select id="s-tone" onchange="setDirty()">
-                <option value="friendly">Friendly — warm &amp; approachable</option>
-                <option value="professional">Professional — polished &amp; business-like</option>
-                <option value="casual">Casual — relaxed &amp; informal</option>
-                <option value="empathetic">Empathetic — compassionate &amp; patient</option>
-                <option value="formal">Formal — precise &amp; structured</option>
-                <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Speaking Pace</label>
-              <select id="s-pace" onchange="setDirty()">
-                <option value="normal">Normal</option>
-                <option value="slow">Slow — clear &amp; deliberate</option>
-                <option value="fast">Fast — concise &amp; snappy</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Language</label>
-              <select id="s-lang" onchange="setDirty()">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="pt">Portuguese</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="ja">Japanese</option>
-                <option value="zh">Mandarin Chinese</option>
-                <option value="ko">Korean</option>
-                <option value="ar">Arabic</option>
-                <option value="hi">Hindi</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Call Script -->
-          <div class="card">
-            <div class="card-title">📞 Call Script</div>
-            <div class="form-group">
-              <label>Custom Greeting</label>
-              <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Escalation Rules</label>
-              <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Topics to Avoid</label>
-              <div class="tags-wrap" id="s-avoid-tags"></div>
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
-                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
-                <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- After Hours -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;">🌙 After-Hours Mode</div>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                <input type="checkbox" id="s-ah" onchange="togglePortalAH();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                Enable
-              </label>
-            </div>
-            <div id="s-ah-body" style="display:none;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label>After-Hours Message</label>
-                <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
-              </div>
-            </div>
-            <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
-          </div>
-
-          <!-- Services & Specialties -->
-          <div class="card">
-            <div class="card-title">🛠️ Services & Specialties</div>
-            <div class="form-group">
-              <label>Services / Products Offered</label>
-              <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
-                <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Specialties / Highlights</label>
-              <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
-                <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
-            </div>
-          </div>
-
-          <!-- FAQs -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;">❓ FAQs</div>
-              <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
-            </div>
-            <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="save-bar">
-        <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
-        <button class="btn-save" id="s-save-btn" onclick="saveSettings()" disabled>💾 Save & Apply</button>
-      </div>
-    </div>
-
-    <!-- INTEGRATIONS -->
-    <div class="page" id="page-integrations">
-      <div class="page-header">
-        <h1>🔗 Integrations</h1>
-        <p>Connect your calendars — appointments booked by your AI agent will appear automatically</p>
-      </div>
-
-      <!-- Google Calendar -->
-      <div class="card" style="max-width:620px;margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
-          <span style="font-size:32px;">📅</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;">Google Calendar</div>
-            <div style="font-size:13px;color:var(--muted);">Appointments sync directly to your Google Calendar</div>
-          </div>
-          <div id="gcal-badge" style="margin-left:auto;display:none;">
-            <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;">✓ Connected</span>
-          </div>
-        </div>
-
-        <!-- Steps -->
-        <div id="gcal-setup" style="display:none;">
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Setup — 2 steps, takes 1 minute</div>
-
-            <div style="display:flex;gap:12px;margin-bottom:14px;">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
-              <div>
-                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Share your Google Calendar with our service account</div>
-                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Open Google Calendar → Settings → select your calendar → Share with specific people</div>
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
-                  <span id="sa-email-display">atlas-calendar@auzora.io</span>
-                  <button onclick="copyText('atlas-calendar@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
-                </div>
-                <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Make changes to events</strong> (Editor)</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:12px;">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Enter your Calendar ID</div>
-                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">In Google Calendar → Settings → your calendar → Integrate calendar → Calendar ID</div>
-                <input type="text" id="gcal-id-input" placeholder="yourname@gmail.com or xyz@group.calendar.google.com"
-                  style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
+1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
               </div>
             </div>
           </div>
