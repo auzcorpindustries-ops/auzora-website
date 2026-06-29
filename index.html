@@ -870,6 +870,79 @@
       .footer-inner { flex-direction: column; align-items: flex-start; }
       .footer-legal { flex-wrap: wrap; gap: 14px; }
     }
+  /* ── CRM INTEGRATION CAROUSEL ── */
+    .crm-section { padding: 88px 0 0; position: relative; z-index: 1; }
+    .crm-section .section-head { margin-bottom: 40px; }
+    .crm-track-wrap {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+    .crm-track-wrap::before,
+    .crm-track-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 120px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .crm-track-wrap::before {
+      left: 0;
+      background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+    }
+    .crm-track-wrap::after {
+      right: 0;
+      background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+    }
+    .crm-track {
+      display: flex;
+      gap: 0;
+      width: max-content;
+      animation: crm-scroll 40s linear infinite;
+    }
+    .crm-track:hover { animation-play-state: paused; }
+    @keyframes crm-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .crm-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 40px;
+      height: 72px;
+      white-space: nowrap;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      user-select: none;
+      flex-shrink: 0;
+      opacity: 0.75;
+      transition: opacity 0.2s;
+    }
+    .crm-logo:hover { opacity: 1; }
+    /* Brand-specific typography */
+    .crm-salesforce { font-family: 'Arial', sans-serif; color: #00A1E0; font-weight: 900; }
+    .crm-hubspot    { font-family: 'Georgia', serif; color: #FF7A59; font-weight: 800; font-style: italic; }
+    .crm-zoho       { font-family: 'Arial', sans-serif; color: #E42527; font-weight: 900; letter-spacing: -0.03em; }
+    .crm-pipedrive  { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #1A1F36; font-weight: 800; }
+    .crm-monday     { font-family: 'Arial', sans-serif; color: #F62B54; font-weight: 900; letter-spacing: -0.04em; }
+    .crm-gohighlevel { font-family: 'Arial Black', sans-serif; color: #0066FF; font-weight: 900; letter-spacing: -0.02em; }
+    .crm-activecampaign { font-family: 'Arial', sans-serif; color: #356AE6; font-weight: 800; }
+    .crm-keap      { font-family: 'Georgia', serif; color: #00A650; font-weight: 700; }
+    .crm-freshsales { font-family: 'Arial', sans-serif; color: #25C16F; font-weight: 800; letter-spacing: -0.02em; }
+    .crm-copper    { font-family: 'Arial', sans-serif; color: #D7603A; font-weight: 800; }
+    .crm-close     { font-family: 'Arial Black', sans-serif; color: #5B2B8B; font-weight: 900; }
+    .crm-nutshell  { font-family: 'Arial', sans-serif; color: #29B5E8; font-weight: 800; }
+    .crm-streak    { font-family: 'Arial', sans-serif; color: #BF4FE0; font-weight: 800; }
+    .crm-notion    { font-family: 'Georgia', serif; color: #191919; font-weight: 700; letter-spacing: -0.03em; }
+    .crm-airtable  { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #2D7FF9; font-weight: 800; }
+    .crm-clickup   { font-family: 'Arial', sans-serif; color: #7B68EE; font-weight: 900; letter-spacing: -0.03em; }
+    .crm-jobber    { font-family: 'Arial', sans-serif; color: #00A651; font-weight: 800; }
+    .crm-servicetitan { font-family: 'Arial Black', sans-serif; color: #FF6B35; font-weight: 900; letter-spacing: -0.02em; }
+    .crm-fieldpulse { font-family: 'Arial', sans-serif; color: #2563EB; font-weight: 800; }
+    .crm-housecall { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #00B5B8; font-weight: 800; }
   </style>
 </head>
 <body>
@@ -1009,6 +1082,64 @@
           <h3>Coverage beyond business hours</h3>
           <p>Even after hours, the phone still rings. Auzora gives your business a voice when the front desk is empty.</p>
         </article>
+      </div>
+    </section>
+
+    <!-- CRM INTEGRATION -->
+    <section class="crm-section shell" id="integrations">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Integrations</div>
+          <h2>Works with your CRM.</h2>
+        </div>
+        <p class="section-lead">Auzora integrates with hundreds of CRM tools, allowing your AI receptionist to seamlessly follow up on leads within your existing systems.</p>
+      </div>
+
+      <div class="crm-track-wrap">
+        <div class="crm-track" aria-hidden="true">
+          <!-- Set 1 -->
+          <span class="crm-logo crm-salesforce">Salesforce</span>
+          <span class="crm-logo crm-hubspot">HubSpot</span>
+          <span class="crm-logo crm-zoho">Zoho CRM</span>
+          <span class="crm-logo crm-pipedrive">Pipedrive</span>
+          <span class="crm-logo crm-monday">monday.com</span>
+          <span class="crm-logo crm-gohighlevel">GoHighLevel</span>
+          <span class="crm-logo crm-activecampaign">ActiveCampaign</span>
+          <span class="crm-logo crm-keap">Keap</span>
+          <span class="crm-logo crm-freshsales">Freshsales</span>
+          <span class="crm-logo crm-copper">Copper</span>
+          <span class="crm-logo crm-close">Close</span>
+          <span class="crm-logo crm-nutshell">Nutshell</span>
+          <span class="crm-logo crm-streak">Streak</span>
+          <span class="crm-logo crm-notion">Notion</span>
+          <span class="crm-logo crm-airtable">Airtable</span>
+          <span class="crm-logo crm-clickup">ClickUp</span>
+          <span class="crm-logo crm-jobber">Jobber</span>
+          <span class="crm-logo crm-servicetitan">ServiceTitan</span>
+          <span class="crm-logo crm-fieldpulse">FieldPulse</span>
+          <span class="crm-logo crm-housecall">Housecall Pro</span>
+          <!-- Set 2 (duplicate for seamless loop) -->
+          <span class="crm-logo crm-salesforce">Salesforce</span>
+          <span class="crm-logo crm-hubspot">HubSpot</span>
+          <span class="crm-logo crm-zoho">Zoho CRM</span>
+          <span class="crm-logo crm-pipedrive">Pipedrive</span>
+          <span class="crm-logo crm-monday">monday.com</span>
+          <span class="crm-logo crm-gohighlevel">GoHighLevel</span>
+          <span class="crm-logo crm-activecampaign">ActiveCampaign</span>
+          <span class="crm-logo crm-keap">Keap</span>
+          <span class="crm-logo crm-freshsales">Freshsales</span>
+          <span class="crm-logo crm-copper">Copper</span>
+          <span class="crm-logo crm-close">Close</span>
+          <span class="crm-logo crm-nutshell">Nutshell</span>
+          <span class="crm-logo crm-streak">Streak</span>
+          <span class="crm-logo crm-notion">Notion</span>
+          <span class="crm-logo crm-airtable">Airtable</span>
+          <span class="crm-logo crm-clickup">ClickUp</span>
+          <span class="crm-logo crm-jobber">Jobber</span>
+          <span class="crm-logo crm-servicetitan">ServiceTitan</span>
+          <span class="crm-logo crm-fieldpulse">FieldPulse</span>
+          <span class="crm-logo crm-housecall">Housecall Pro</span>
+        </div>
       </div>
     </section>
 
