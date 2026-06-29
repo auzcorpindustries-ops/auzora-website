@@ -773,8 +773,20 @@
       gap: 16px;
       padding-top: 18px;
       border-top: 1px solid rgba(16,24,38,0.08);
+      flex-wrap: wrap;
     }
     .footer strong { color: #2b3446; font-weight: 600; }
+    .footer-legal {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer-legal a {
+      color: var(--muted-2);
+      font-size: 0.88rem;
+      transition: color 180ms ease;
+    }
+    .footer-legal a:hover { color: var(--text); }
 
     @media (max-width: 1080px) {
       .hero-grid, .pricing-grid, .contact { grid-template-columns: 1fr; }
@@ -792,6 +804,7 @@
       .bubble { max-width: 92%; }
       .section { padding-top: 72px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
+      .footer-legal { flex-wrap: wrap; gap: 14px; }
     }
   </style>
 </head>
@@ -1145,6 +1158,11 @@
   <footer class="footer shell">
     <div class="footer-inner">
       <div><strong>Auzora</strong> — premium AI phone automation for businesses that cannot afford missed calls.</div>
+      <nav class="footer-legal" aria-label="Legal">
+        <a href="/legal/privacy.html">Privacy Policy</a>
+        <a href="/legal/terms.html">Terms of Service</a>
+        <a href="/legal/ai-policy.html">AI Policy</a>
+      </nav>
     </div>
   </footer>
 
