@@ -265,6 +265,58 @@
       box-shadow: 0 0 0 4px rgba(139,92,246,0.10);
     }
 
+    /* ── HERO CALL NOW ── */
+    .hero-call-now {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      padding: 14px 20px;
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.80);
+      border: 1.5px solid rgba(139,92,246,0.22);
+      box-shadow: 0 4px 20px rgba(139,92,246,0.10), 0 1px 4px rgba(0,0,0,0.04);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      backdrop-filter: blur(8px);
+      transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+    }
+    .hero-call-now:hover {
+      border-color: rgba(139,92,246,0.45);
+      box-shadow: 0 8px 32px rgba(139,92,246,0.18), 0 2px 8px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+    .hero-call-now__icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 1px 3px rgba(139,92,246,0.3));
+    }
+    .hero-call-now__text {
+      color: var(--muted);
+    }
+    .hero-call-now__text strong {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 1px;
+    }
+    .hero-call-now__arrow {
+      font-size: 1.1rem;
+      color: var(--purple);
+      flex-shrink: 0;
+      margin-left: auto;
+      padding-left: 4px;
+    }
+    @media (max-width: 640px) {
+      .hero-call-now { width: 100%; }
+    }
+
     .hero-card {
       position: relative;
       border-radius: 34px;
@@ -851,6 +903,15 @@
             <span class="chip">Appointment booking</span>
             <span class="chip">Human-sounding voice</span>
           </div>
+
+          <a class="hero-call-now" href="tel:+18176188518" aria-label="Call Auzora demo line">
+            <span class="hero-call-now__icon">📞</span>
+            <span class="hero-call-now__text">
+              Hear the voice, ask a question, book a demo —
+              <strong>(817) 618-8518</strong>
+            </span>
+            <span class="hero-call-now__arrow">→</span>
+          </a>
         </div>
 
         <div class="hero-card voice-showcase voice-ensemble" aria-label="Voice previews">
