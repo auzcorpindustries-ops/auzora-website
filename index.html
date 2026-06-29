@@ -301,18 +301,27 @@
     }
     .hero-call-now__text {
       color: var(--muted);
-      font-size: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
       flex: 1;
+      white-space: nowrap;
     }
     .hero-call-now__text strong {
       display: block;
-      font-size: 1.25rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .hero-call-now__number {
+      display: block;
+      font-size: 2.19rem !important;
       font-weight: 700;
       background: var(--accent);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       margin-top: 2px;
+      color: unset !important;
     }
     .hero-call-now__arrow {
       font-size: 1.25rem;
@@ -910,8 +919,8 @@
           <a class="hero-call-now" href="tel:+18176188518" aria-label="Call Auzora demo line">
             <span class="hero-call-now__icon">📞</span>
             <span class="hero-call-now__text">
-              Hear the voice, ask a question, book a demo —
-              <strong>(817) 618-8518</strong>
+              <strong>Hear the voice, ask a question, book a demo.</strong>
+              <strong class="hero-call-now__number">(817) 618-8518</strong>
             </span>
             <span class="hero-call-now__arrow">→</span>
           </a>
