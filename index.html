@@ -267,54 +267,57 @@
 
     /* ── HERO CALL NOW ── */
     .hero-call-now {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       margin-top: 24px;
-      padding: 14px 20px;
+      padding: 18px 24px;
       border-radius: var(--radius-lg);
-      background: rgba(255,255,255,0.80);
-      border: 1.5px solid rgba(139,92,246,0.22);
-      box-shadow: 0 4px 20px rgba(139,92,246,0.10), 0 1px 4px rgba(0,0,0,0.04);
+      background: rgba(255,255,255,0.85);
+      /* gradient border via background-clip trick */
+      border: 2px solid transparent;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
+        linear-gradient(135deg, var(--blue) 0%, var(--purple) 30%, var(--pink) 55%, var(--orange) 80%, var(--red) 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      box-shadow: 0 4px 24px rgba(139,92,246,0.12), 0 1px 4px rgba(0,0,0,0.04);
       color: var(--text);
       text-decoration: none;
-      font-size: 0.92rem;
+      font-size: 1.05rem;
       line-height: 1.4;
       backdrop-filter: blur(8px);
-      transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+      transition: box-shadow 0.2s, transform 0.15s;
+      width: 100%;
     }
     .hero-call-now:hover {
-      border-color: rgba(139,92,246,0.45);
-      box-shadow: 0 8px 32px rgba(139,92,246,0.18), 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 10px 36px rgba(139,92,246,0.22), 0 2px 8px rgba(0,0,0,0.06);
       transform: translateY(-1px);
     }
     .hero-call-now__icon {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       flex-shrink: 0;
       filter: drop-shadow(0 1px 3px rgba(139,92,246,0.3));
     }
     .hero-call-now__text {
       color: var(--muted);
+      font-size: 1rem;
+      flex: 1;
     }
     .hero-call-now__text strong {
       display: block;
-      font-size: 1.05rem;
+      font-size: 1.25rem;
       font-weight: 700;
       background: var(--accent);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-top: 1px;
+      margin-top: 2px;
     }
     .hero-call-now__arrow {
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       color: var(--purple);
       flex-shrink: 0;
-      margin-left: auto;
-      padding-left: 4px;
-    }
-    @media (max-width: 640px) {
-      .hero-call-now { width: 100%; }
     }
 
     .hero-card {
