@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auzora — Atlas AI</title>
-  <meta name="description" content="Auzora's Atlas AI website." />
+  <title>Auzora</title>
+  <meta name="description" content="Auzora — AI-powered phone answering for real businesses." />
   <meta name="theme-color" content="#f8f4ec" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -773,8 +773,20 @@
       gap: 16px;
       padding-top: 18px;
       border-top: 1px solid rgba(16,24,38,0.08);
+      flex-wrap: wrap;
     }
     .footer strong { color: #2b3446; font-weight: 600; }
+    .footer-legal {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer-legal a {
+      color: var(--muted-2);
+      font-size: 0.88rem;
+      transition: color 180ms ease;
+    }
+    .footer-legal a:hover { color: var(--text); }
 
     @media (max-width: 1080px) {
       .hero-grid, .pricing-grid, .contact { grid-template-columns: 1fr; }
@@ -792,6 +804,7 @@
       .bubble { max-width: 92%; }
       .section { padding-top: 72px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
+      .footer-legal { flex-wrap: wrap; gap: 14px; }
     }
   </style>
 </head>
@@ -808,7 +821,7 @@
 
       <nav class="nav" aria-label="Primary">
         <a href="#why">Why it matters</a>
-        <a href="#features">Atlas AI</a>
+        <a href="#features">Auzora</a>
         <a href="#workflow">How it works</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -821,7 +834,7 @@
       <div class="hero-grid">
         <div>
           <h1>Never miss a call again.</h1>
-          <h1><span class="gradient">Atlas AI</span> answers for you.</h1>
+          <h1><span class="gradient">Auzora</span> answers for you.</h1>
           <p class="hero-copy">
             Auzora gives local businesses a calmer, cleaner AI phone experience that picks up every inbound call,
             sounds natural, qualifies the lead, and books the next step — day or night.
@@ -911,17 +924,17 @@
         <article class="panel feature">
           <div class="tag">Lost opportunities</div>
           <h3>Voicemail creates drop-off</h3>
-          <p>When no one answers, callers often move on. Atlas keeps the conversation alive on the first try.</p>
+          <p>When no one answers, callers often move on. Auzora keeps the conversation alive on the first try.</p>
         </article>
         <article class="panel feature">
           <div class="tag">Slow follow-up</div>
           <h3>Speed matters more than ever</h3>
-          <p>Fast response wins more business. Atlas handles the first touch so your team can focus on closing.</p>
+          <p>Fast response wins more business. Auzora handles the first touch so your team can focus on closing.</p>
         </article>
         <article class="panel feature">
           <div class="tag">After-hours coverage</div>
           <h3>Coverage beyond business hours</h3>
-          <p>Even after hours, the phone still rings. Atlas gives your business a voice when the front desk is empty.</p>
+          <p>Even after hours, the phone still rings. Auzora gives your business a voice when the front desk is empty.</p>
         </article>
       </div>
     </section>
@@ -929,7 +942,7 @@
     <section class="section shell" id="features">
       <div class="section-head">
         <div>
-          <div class="section-kicker">Atlas AI</div>
+          <div class="section-kicker">Auzora</div>
           <h2>Premium voice automation for real businesses.</h2>
         </div>
         <p class="section-lead">The page keeps the product story simple: answer, qualify, and book. No fake dashboard noise, no clutter, no unnecessary motion.</p>
@@ -939,7 +952,7 @@
         <article class="panel feature">
           <div class="mini-label">Answer every call</div>
           <h3>Natural conversation flow</h3>
-          <p>Atlas responds quickly and keeps the caller engaged with a calm, human tone.</p>
+          <p>Auzora responds quickly and keeps the caller engaged with a calm, human tone.</p>
           <ul>
             <li>Live voice response</li>
             <li>Warm handoff when needed</li>
@@ -948,7 +961,7 @@
         <article class="panel feature">
           <div class="mini-label">Qualify leads</div>
           <h3>Capture the details that matter</h3>
-          <p>Atlas asks the right questions and turns a cold call into a structured lead.</p>
+          <p>Auzora asks the right questions and turns a cold call into a structured lead.</p>
           <ul>
             <li>Name and contact info</li>
             <li>Service needs</li>
@@ -981,14 +994,14 @@
           <div class="section-kicker">How it works</div>
           <h2>Three steps from missed calls to booked leads.</h2>
         </div>
-        <p class="section-lead">The visual direction stays restrained, but the message is concrete. Atlas is easy to understand in one glance.</p>
+        <p class="section-lead">The visual direction stays restrained, but the message is concrete. Auzora is easy to understand in one glance.</p>
       </div>
 
       <div class="workflow">
         <article class="step">
           <div class="step-num">1</div>
           <h3>Connect your number</h3>
-          <p>Point Atlas at the business line so calls go to the AI receptionist first.</p>
+          <p>Point Auzora at the business line so calls go to the AI receptionist first.</p>
         </article>
         <article class="step">
           <div class="step-num">2</div>
@@ -998,7 +1011,7 @@
         <article class="step">
           <div class="step-num">3</div>
           <h3>Let it handle the call</h3>
-          <p>Atlas answers, qualifies, and books. Your team gets the lead summary instead of a voicemail.</p>
+          <p>Auzora answers, qualifies, and books. Your team gets the lead summary instead of a voicemail.</p>
         </article>
       </div>
     </section>
@@ -1068,7 +1081,7 @@
           <p>No. This is a separate preview route for review until launch approval.</p>
         </article>
         <article class="faq-item">
-          <h3>Can Atlas sound natural?</h3>
+          <h3>Can Auzora sound natural?</h3>
           <p>Yes. The brief calls for a premium, human-feeling experience — not a robotic phone tree.</p>
         </article>
         <article class="faq-item">
@@ -1115,7 +1128,7 @@
               </div>
             </div>
             <div class="field">
-              <label for="notes">What do you want Atlas AI to handle?</label>
+              <label for="notes">What do you want Auzora to handle?</label>
               <textarea id="notes" name="notes" placeholder="Tell us about your calls, booking flow, and the kind of experience you'd like customers to have."></textarea>
             </div>
             <button class="btn btn-primary" type="submit">Request a demo</button>
@@ -1128,8 +1141,8 @@
             <h3>Clean handoff, no clutter</h3>
             <div class="contact-lines">
               <div class="line-item"><span></span><p>The message stays premium and direct.</p></div>
-              <div class="line-item"><span></span><p>Everything points back to Atlas AI.</p></div>
-              <div class="line-item"><span></span><p>The page remains focused on Atlas AI.</p></div>
+              <div class="line-item"><span></span><p>Everything points back to Auzora.</p></div>
+              <div class="line-item"><span></span><p>The page remains focused on Auzora.</p></div>
             </div>
           </article>
 
@@ -1145,6 +1158,11 @@
   <footer class="footer shell">
     <div class="footer-inner">
       <div><strong>Auzora</strong> — premium AI phone automation for businesses that cannot afford missed calls.</div>
+      <nav class="footer-legal" aria-label="Legal">
+        <a href="/legal/privacy.html">Privacy Policy</a>
+        <a href="/legal/terms.html">Terms of Service</a>
+        <a href="/legal/ai-policy.html">AI Policy</a>
+      </nav>
     </div>
   </footer>
 
