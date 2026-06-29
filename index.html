@@ -265,6 +265,70 @@
       box-shadow: 0 0 0 4px rgba(139,92,246,0.10);
     }
 
+    /* ── HERO CALL NOW ── */
+    .hero-call-now {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 18px 24px;
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.85);
+      /* gradient border via background-clip trick */
+      border: 2px solid transparent;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
+        linear-gradient(135deg, var(--blue) 0%, var(--purple) 30%, var(--pink) 55%, var(--orange) 80%, var(--red) 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      box-shadow: 0 4px 24px rgba(139,92,246,0.12), 0 1px 4px rgba(0,0,0,0.04);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      backdrop-filter: blur(8px);
+      transition: box-shadow 0.2s, transform 0.15s;
+      width: 100%;
+    }
+    .hero-call-now:hover {
+      box-shadow: 0 10px 36px rgba(139,92,246,0.22), 0 2px 8px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+    .hero-call-now__icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 1px 3px rgba(139,92,246,0.3));
+    }
+    .hero-call-now__text {
+      color: var(--muted);
+      font-size: 1.1rem;
+      font-weight: 700;
+      flex: 1;
+      white-space: nowrap;
+    }
+    .hero-call-now__text strong {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .hero-call-now__number {
+      display: block;
+      font-size: 2.19rem !important;
+      font-weight: 700;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 2px;
+      color: unset !important;
+    }
+    .hero-call-now__arrow {
+      font-size: 1.25rem;
+      color: var(--purple);
+      flex-shrink: 0;
+    }
+
     .hero-card {
       position: relative;
       border-radius: 34px;
@@ -851,6 +915,15 @@
             <span class="chip">Appointment booking</span>
             <span class="chip">Human-sounding voice</span>
           </div>
+
+          <a class="hero-call-now" href="tel:+18176188518" aria-label="Call Auzora demo line">
+            <span class="hero-call-now__icon">📞</span>
+            <span class="hero-call-now__text">
+              <strong>Hear the voice, ask a question, book a demo.</strong>
+              <strong class="hero-call-now__number">(817) 618-8518</strong>
+            </span>
+            <span class="hero-call-now__arrow">→</span>
+          </a>
         </div>
 
         <div class="hero-card voice-showcase voice-ensemble" aria-label="Voice previews">
@@ -917,7 +990,7 @@
           <div class="section-kicker">Why it matters</div>
           <h2>Missed calls cost real revenue.</h2>
         </div>
-        <p class="section-lead">If a customer reaches voicemail, they often move on. This page keeps the message clear: every call is a chance to win the lead.</p>
+        <p class="section-lead">If a customer reaches voicemail, they often move on. This page keeps the message clear. Every call is a chance to win the lead.</p>
       </div>
 
       <div class="card-grid three">
