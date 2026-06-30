@@ -911,37 +911,18 @@
       justify-content: center;
       padding: 0 40px;
       height: 72px;
-      white-space: nowrap;
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      user-select: none;
       flex-shrink: 0;
       opacity: 0.75;
       transition: opacity 0.2s;
+      user-select: none;
     }
     .crm-logo:hover { opacity: 1; }
-    /* Brand-specific typography */
-    .crm-salesforce { font-family: 'Arial', sans-serif; color: #00A1E0; font-weight: 900; }
-    .crm-hubspot    { font-family: 'Georgia', serif; color: #FF7A59; font-weight: 800; font-style: italic; }
-    .crm-zoho       { font-family: 'Arial', sans-serif; color: #E42527; font-weight: 900; letter-spacing: -0.03em; }
-    .crm-pipedrive  { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #1A1F36; font-weight: 800; }
-    .crm-monday     { font-family: 'Arial', sans-serif; color: #F62B54; font-weight: 900; letter-spacing: -0.04em; }
-    .crm-gohighlevel { font-family: 'Arial Black', sans-serif; color: #0066FF; font-weight: 900; letter-spacing: -0.02em; }
-    .crm-activecampaign { font-family: 'Arial', sans-serif; color: #356AE6; font-weight: 800; }
-    .crm-keap      { font-family: 'Georgia', serif; color: #00A650; font-weight: 700; }
-    .crm-freshsales { font-family: 'Arial', sans-serif; color: #25C16F; font-weight: 800; letter-spacing: -0.02em; }
-    .crm-copper    { font-family: 'Arial', sans-serif; color: #D7603A; font-weight: 800; }
-    .crm-close     { font-family: 'Arial Black', sans-serif; color: #5B2B8B; font-weight: 900; }
-    .crm-nutshell  { font-family: 'Arial', sans-serif; color: #29B5E8; font-weight: 800; }
-    .crm-streak    { font-family: 'Arial', sans-serif; color: #BF4FE0; font-weight: 800; }
-    .crm-notion    { font-family: 'Georgia', serif; color: #191919; font-weight: 700; letter-spacing: -0.03em; }
-    .crm-airtable  { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #2D7FF9; font-weight: 800; }
-    .crm-clickup   { font-family: 'Arial', sans-serif; color: #7B68EE; font-weight: 900; letter-spacing: -0.03em; }
-    .crm-jobber    { font-family: 'Arial', sans-serif; color: #00A651; font-weight: 800; }
-    .crm-servicetitan { font-family: 'Arial Black', sans-serif; color: #FF6B35; font-weight: 900; letter-spacing: -0.02em; }
-    .crm-fieldpulse { font-family: 'Arial', sans-serif; color: #2563EB; font-weight: 800; }
-    .crm-housecall { font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif; color: #00B5B8; font-weight: 800; }
+    .crm-logo img {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -1097,47 +1078,47 @@
       <div class="crm-track-wrap">
         <div class="crm-track" aria-hidden="true">
           <!-- Set 1 -->
-          <span class="crm-logo crm-salesforce">Salesforce</span>
-          <span class="crm-logo crm-hubspot">HubSpot</span>
-          <span class="crm-logo crm-zoho">Zoho CRM</span>
-          <span class="crm-logo crm-pipedrive">Pipedrive</span>
-          <span class="crm-logo crm-monday">monday.com</span>
-          <span class="crm-logo crm-gohighlevel">GoHighLevel</span>
-          <span class="crm-logo crm-activecampaign">ActiveCampaign</span>
-          <span class="crm-logo crm-keap">Keap</span>
-          <span class="crm-logo crm-freshsales">Freshsales</span>
-          <span class="crm-logo crm-copper">Copper</span>
-          <span class="crm-logo crm-close">Close</span>
-          <span class="crm-logo crm-nutshell">Nutshell</span>
-          <span class="crm-logo crm-streak">Streak</span>
-          <span class="crm-logo crm-notion">Notion</span>
-          <span class="crm-logo crm-airtable">Airtable</span>
-          <span class="crm-logo crm-clickup">ClickUp</span>
-          <span class="crm-logo crm-jobber">Jobber</span>
-          <span class="crm-logo crm-servicetitan">ServiceTitan</span>
-          <span class="crm-logo crm-fieldpulse">FieldPulse</span>
-          <span class="crm-logo crm-housecall">Housecall Pro</span>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/salesforce.png" alt="Salesforce"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/hubspot.png" alt="HubSpot"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/zoho.png" alt="Zoho CRM"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/pipedrive.png" alt="Pipedrive"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/monday.png" alt="monday.com"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/gohighlevel.png" alt="GoHighLevel"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/activecampaign.png" alt="ActiveCampaign"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/keap.png" alt="Keap"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/freshsales.png" alt="Freshsales"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/copper.png" alt="Copper"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/close.png" alt="Close"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/nutshell.png" alt="Nutshell"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/streak.png" alt="Streak"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/notion.png" alt="Notion"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/airtable.png" alt="Airtable"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/clickup.png" alt="ClickUp"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/jobber.png" alt="Jobber"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/servicetitan.png" alt="ServiceTitan"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/fieldpulse.png" alt="FieldPulse"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/housecallpro.png" alt="Housecall Pro"></div>
           <!-- Set 2 (duplicate for seamless loop) -->
-          <span class="crm-logo crm-salesforce">Salesforce</span>
-          <span class="crm-logo crm-hubspot">HubSpot</span>
-          <span class="crm-logo crm-zoho">Zoho CRM</span>
-          <span class="crm-logo crm-pipedrive">Pipedrive</span>
-          <span class="crm-logo crm-monday">monday.com</span>
-          <span class="crm-logo crm-gohighlevel">GoHighLevel</span>
-          <span class="crm-logo crm-activecampaign">ActiveCampaign</span>
-          <span class="crm-logo crm-keap">Keap</span>
-          <span class="crm-logo crm-freshsales">Freshsales</span>
-          <span class="crm-logo crm-copper">Copper</span>
-          <span class="crm-logo crm-close">Close</span>
-          <span class="crm-logo crm-nutshell">Nutshell</span>
-          <span class="crm-logo crm-streak">Streak</span>
-          <span class="crm-logo crm-notion">Notion</span>
-          <span class="crm-logo crm-airtable">Airtable</span>
-          <span class="crm-logo crm-clickup">ClickUp</span>
-          <span class="crm-logo crm-jobber">Jobber</span>
-          <span class="crm-logo crm-servicetitan">ServiceTitan</span>
-          <span class="crm-logo crm-fieldpulse">FieldPulse</span>
-          <span class="crm-logo crm-housecall">Housecall Pro</span>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/salesforce.png" alt="Salesforce"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/hubspot.png" alt="HubSpot"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/zoho.png" alt="Zoho CRM"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/pipedrive.png" alt="Pipedrive"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/monday.png" alt="monday.com"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/gohighlevel.png" alt="GoHighLevel"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/activecampaign.png" alt="ActiveCampaign"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/keap.png" alt="Keap"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/freshsales.png" alt="Freshsales"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/copper.png" alt="Copper"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/close.png" alt="Close"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/nutshell.png" alt="Nutshell"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/streak.png" alt="Streak"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/notion.png" alt="Notion"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/airtable.png" alt="Airtable"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/clickup.png" alt="ClickUp"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/jobber.png" alt="Jobber"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/servicetitan.png" alt="ServiceTitan"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/fieldpulse.png" alt="FieldPulse"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/housecallpro.png" alt="Housecall Pro"></div>
         </div>
       </div>
     </section>
