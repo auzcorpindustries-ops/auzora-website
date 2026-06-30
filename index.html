@@ -870,6 +870,59 @@
       .footer-inner { flex-direction: column; align-items: flex-start; }
       .footer-legal { flex-wrap: wrap; gap: 14px; }
     }
+  /* ── CRM INTEGRATION CAROUSEL ── */
+    .crm-section .section-head { margin-bottom: 40px; }
+    .crm-track-wrap {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+    .crm-track-wrap::before,
+    .crm-track-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 120px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .crm-track-wrap::before {
+      left: 0;
+      background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+    }
+    .crm-track-wrap::after {
+      right: 0;
+      background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+    }
+    .crm-track {
+      display: flex;
+      gap: 0;
+      width: max-content;
+      animation: crm-scroll 40s linear infinite;
+    }
+    .crm-track:hover { animation-play-state: paused; }
+    @keyframes crm-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .crm-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 40px;
+      height: 72px;
+      flex-shrink: 0;
+      opacity: 0.75;
+      transition: opacity 0.2s;
+      user-select: none;
+    }
+    .crm-logo:hover { opacity: 1; }
+    .crm-logo img {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -1012,6 +1065,64 @@
       </div>
     </section>
 
+    <!-- CRM INTEGRATION -->
+    <section class="crm-section section shell" id="integrations">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Integrations</div>
+          <h2>Works with your CRM.</h2>
+        </div>
+        <p class="section-lead">Auzora integrates with hundreds of CRM tools, allowing your AI receptionist to seamlessly follow up on leads within your existing systems.</p>
+      </div>
+
+      <div class="crm-track-wrap">
+        <div class="crm-track" aria-hidden="true">
+          <!-- Set 1 -->
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/salesforce.png" alt="Salesforce"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/hubspot.png" alt="HubSpot"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/zoho.png" alt="Zoho CRM"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/pipedrive.png" alt="Pipedrive"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/monday.png" alt="monday.com"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/gohighlevel.png" alt="GoHighLevel"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/activecampaign.png" alt="ActiveCampaign"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/keap.png" alt="Keap"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/freshsales.png" alt="Freshsales"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/copper.png" alt="Copper"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/close.png" alt="Close"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/nutshell.png" alt="Nutshell"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/streak.png" alt="Streak"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/notion.png" alt="Notion"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/airtable.png" alt="Airtable"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/clickup.png" alt="ClickUp"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/jobber.png" alt="Jobber"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/servicetitan.png" alt="ServiceTitan"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/fieldpulse.png" alt="FieldPulse"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/housecallpro.png" alt="Housecall Pro"></div>
+          <!-- Set 2 (duplicate for seamless loop) -->
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/salesforce.png" alt="Salesforce"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/hubspot.png" alt="HubSpot"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/zoho.png" alt="Zoho CRM"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/pipedrive.png" alt="Pipedrive"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/monday.png" alt="monday.com"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/gohighlevel.png" alt="GoHighLevel"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/activecampaign.png" alt="ActiveCampaign"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/keap.png" alt="Keap"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/freshsales.png" alt="Freshsales"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/copper.png" alt="Copper"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/close.png" alt="Close"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/nutshell.png" alt="Nutshell"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/streak.png" alt="Streak"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/notion.png" alt="Notion"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/airtable.png" alt="Airtable"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/clickup.png" alt="ClickUp"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/jobber.png" alt="Jobber"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/servicetitan.png" alt="ServiceTitan"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/fieldpulse.png" alt="FieldPulse"></div>
+          <div class="crm-logo"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/housecallpro.png" alt="Housecall Pro"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="section shell" id="features">
       <div class="section-head">
         <div>
@@ -1107,12 +1218,11 @@
           </div>
           <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="pricing-features">
-            <li>Dedicated AI phone line</li>
+            <li>Dedicated AI phone line (instant setup)</li>
             <li>24/7 call answering</li>
             <li>Calendar appointment booking</li>
             <li>Custom greeting & FAQs</li>
             <li>Client portal access</li>
-            <li>Setup within 48 hours</li>
           </ul>
           <a href="/checkout.html?plan=starter" class="btn btn-secondary pricing-btn">Get Started →</a>
         </article>
@@ -1126,11 +1236,10 @@
           </div>
           <p class="pricing-desc">For businesses that want more lines, deeper insights, and hands-on monthly optimization.</p>
           <ul class="pricing-features">
-            <li>Everything in Starter</li>
-            <li>Up to 10 dedicated AI phone lines</li>
-            <li>Lead capture & instant alerts</li>
+            <li>Everything in Starter Plan</li>
+            <li>Up to 3 dedicated AI phone lines</li>
+            <li>Lead capture CRM</li>
             <li>Priority support</li>
-            <li>Setup within 24 hours</li>
           </ul>
           <a href="#" class="btn btn-primary pricing-btn" style="background:#334155;box-shadow:none;cursor:not-allowed;" aria-disabled="true">Coming Soon</a>
         </article>
