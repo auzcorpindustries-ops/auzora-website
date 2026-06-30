@@ -143,16 +143,19 @@
   }
   .voice-card {
     position: relative; overflow: hidden;
-    border: 1.5px solid var(--border); background: rgba(255,255,255,0.94);
+    border: 1.5px solid var(--border); background: var(--surface2);
     border-radius: 12px; padding: 12px 12px 10px; cursor: pointer; transition: all 0.15s;
   }
+  :root.light .voice-card { background: rgba(255,255,255,0.94); }
   .voice-card::before {
     content: ''; position: absolute; inset: 0 auto auto 0; width: 100%; height: 3px;
     background: var(--voice-accent, var(--accent)); opacity: 0.9;
   }
   .voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 10px 26px rgba(24,33,47,0.08); }
-  .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
-  .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
+  .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.12); }
+  .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.12); }
+  :root.light .voice-card.selected.voice-tone-left { background: rgba(59,130,246,0.08); }
+  :root.light .voice-card.selected.voice-tone-right { background: rgba(124,58,237,0.08); }
   .voice-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
   .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .voice-name { font-size: 12px; font-weight: 700; }
@@ -166,11 +169,12 @@
     box-shadow: 0 1px 2px rgba(16,24,38,0.05);
   }
   .play-btn {
-    background: rgba(16,24,38,0.03); border: 1px solid var(--border);
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: 6px; width: 24px; height: 24px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; color: var(--text);
   }
+  :root.light .play-btn { background: rgba(16,24,38,0.03); }
   .play-btn.left { color: var(--accent); }
   .play-btn.right { color: var(--accent2); }
   .live-only { font-size: 9px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; white-space: nowrap; }
@@ -377,45 +381,6 @@
         <!-- RIGHT -->
         <div style="display:flex;flex-direction:column;gap:20px;">
 
-          <!-- Tone & Style -->
-          <div class="card">
-            <div class="card-title">🎭 Tone & Style</div>
-            <div class="form-group">
-              <label>Tone</label>
-              <select id="s-tone" onchange="setDirty()">
-                <option value="friendly">Friendly — warm &amp; approachable</option>
-                <option value="professional">Professional — polished &amp; business-like</option>
-                <option value="casual">Casual — relaxed &amp; informal</option>
-                <option value="empathetic">Empathetic — compassionate &amp; patient</option>
-                <option value="formal">Formal — precise &amp; structured</option>
-                <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Speaking Pace</label>
-              <select id="s-pace" onchange="setDirty()">
-                <option value="normal">Normal</option>
-                <option value="slow">Slow — clear &amp; deliberate</option>
-                <option value="fast">Fast — concise &amp; snappy</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Language</label>
-              <select id="s-lang" onchange="setDirty()">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="pt">Portuguese</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="ja">Japanese</option>
-                <option value="zh">Mandarin Chinese</option>
-                <option value="ko">Korean</option>
-                <option value="ar">Arabic</option>
-                <option value="hi">Hindi</option>
-              </select>
-            </div>
-          </div>
 
           <!-- Call Script -->
           <div class="card">
@@ -917,7 +882,6 @@ async function loadSettings() {
   buildPortalHoursGrid(c.office_hours || '');
   document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
-  document.getElementById('s-tone').value = c.tone || 'friendly';
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -1108,9 +1072,6 @@ async function saveSettings() {
     escalation_phone:    document.getElementById('s-escalation-phone').value,
     booking_url:         document.getElementById('s-booking-url').value,
     voice:               getPortalVoice(),
-    tone:                document.getElementById('s-tone').value,
-    speaking_pace:       document.getElementById('s-pace').value,
-    lang:                document.getElementById('s-lang').value,
     custom_greeting:     document.getElementById('s-greeting').value,
     escalation_rules:    document.getElementById('s-escalation').value,
     topics_to_avoid:     portalAvoidTopics,
