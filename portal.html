@@ -453,6 +453,16 @@
             <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
           </div>
 
+          <!-- Scheduling Parameters -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div class="card-title" style="margin:0;">📋 Scheduling Parameters</div>
+              <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
+            <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
         </div>
       </div>
 
@@ -894,6 +904,7 @@ async function loadSettings() {
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
+  renderSchedulingParams(c.scheduling_params || []);
   portalServices = [...(c.service_areas || [])];
   renderServiceTags();
   portalSpecialties = [...(c.specialties || [])];
@@ -1059,6 +1070,51 @@ function getPortalFaqs() {
   }).filter(f => f.q || f.a);
 }
 
+// Scheduling Parameters
+function renderSchedulingParams(params) {
+  const list = document.getElementById('s-sched-list');
+  if (!params.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No parameters yet — add fields like Time Zone, Contact Email, or Service Type</div>';
+    return;
+  }
+  list.innerHTML = params.map((p, i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;" id="psched-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Parameter ${i + 1}</span>
+        <button onclick="removeSchedulingParam(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <input type="text" value="${(p.label || '').replace(/"/g, '&quot;')}" placeholder="Field name (e.g. Time Zone, Contact Email)" oninput="setDirty()"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px;" />
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" ${p.required ? 'checked' : ''} onchange="setDirty()" style="accent-color:var(--accent);" />
+        Required — AI must always collect this before booking
+      </label>
+    </div>
+  `).join('');
+}
+
+function addSchedulingParam() {
+  const cur = getSchedulingParams();
+  cur.push({ label: '', required: true });
+  renderSchedulingParams(cur);
+  setDirty();
+}
+
+function removeSchedulingParam(i) {
+  const cur = getSchedulingParams();
+  cur.splice(i, 1);
+  renderSchedulingParams(cur);
+  setDirty();
+}
+
+function getSchedulingParams() {
+  return Array.from(document.querySelectorAll('#s-sched-list [id^="psched-"]')).map(row => {
+    const input = row.querySelector('input[type="text"]');
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    return { label: input?.value || '', required: checkbox?.checked || false };
+  }).filter(p => p.label);
+}
+
 // Save
 async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
@@ -1078,7 +1134,8 @@ async function saveSettings() {
     topics_to_avoid:     portalAvoidTopics,
     after_hours_enabled: document.getElementById('s-ah').checked,
     after_hours_message: document.getElementById('s-ah-msg').value,
-    faqs:                getPortalFaqs()
+    faqs:                getPortalFaqs(),
+    scheduling_params:   getSchedulingParams()
   };
 
   try {
