@@ -180,10 +180,16 @@
   }
   .btn-ghost:hover { border-color: var(--text); color: var(--text); }
   .btn-save {
-    background: var(--accent); color: #fff; border: none;
-    border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;
   }
   .btn-save:hover { background: var(--accent-hover); }
+  .btn-delete {
+    background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 8px;
+    padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-right: auto;
+  }
+  .btn-delete:hover:not(:disabled) { background: var(--red); color: #fff; }
+  .btn-delete:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* DETAIL SECTIONS */
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
@@ -766,7 +772,36 @@
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn-delete" onclick="promptDeleteClient()">Delete Client</button>
       <button class="btn-save" onclick="saveClientEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="delete-modal" style="display:none" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2 style="color:var(--red)">⚠️ Delete Client</h2>
+      <button class="modal-close" onclick="closeDeleteModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;font-size:14px">This will <strong>permanently delete</strong> all data for <strong id="delete-client-name"></strong>, including:</p>
+      <ul style="font-size:13px;color:var(--muted);margin:0 0 16px 18px;line-height:1.9">
+        <li>Client record</li>
+        <li>All call history</li>
+        <li>All captured leads</li>
+        <li>Active Stripe subscription (cancelled immediately)</li>
+      </ul>
+      <p style="font-size:13px;margin-bottom:14px">Type <strong id="delete-confirm-name-label"></strong> to confirm:</p>
+      <input id="delete-confirm-input" type="text" placeholder="Type business name…"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;"
+        oninput="checkDeleteConfirm()" />
+      <div id="delete-error" style="color:var(--red);font-size:12px;margin-top:8px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-delete" id="delete-confirm-btn" onclick="confirmDeleteClient()" disabled style="opacity:0.4;cursor:not-allowed">Delete Permanently</button>
     </div>
   </div>
 </div>
@@ -971,6 +1006,67 @@ async function saveClientEdit() {
     loadAll();
   } catch(e) {
     toast('Failed to update', 'error');
+  }
+}
+
+// DELETE CLIENT
+let deletingClientName = '';
+
+function promptDeleteClient() {
+  if (!editingClientId) return;
+  const c = allClients.find(x => x.clientId === editingClientId);
+  if (!c) return;
+  deletingClientName = c.businessName || '';
+  document.getElementById('delete-client-name').textContent = deletingClientName || 'this client';
+  document.getElementById('delete-confirm-name-label').textContent = deletingClientName || 'the business name';
+  document.getElementById('delete-confirm-input').value = '';
+  document.getElementById('delete-error').style.display = 'none';
+  const btn = document.getElementById('delete-confirm-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.4';
+  btn.style.cursor = 'not-allowed';
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+}
+
+function checkDeleteConfirm() {
+  const val = document.getElementById('delete-confirm-input').value;
+  const btn = document.getElementById('delete-confirm-btn');
+  const match = val === deletingClientName;
+  btn.disabled = !match;
+  btn.style.opacity = match ? '1' : '0.4';
+  btn.style.cursor = match ? 'pointer' : 'not-allowed';
+}
+
+async function confirmDeleteClient() {
+  if (!editingClientId) return;
+  const btn = document.getElementById('delete-confirm-btn');
+  const errEl = document.getElementById('delete-error');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+  errEl.style.display = 'none';
+  try {
+    const apiKey = localStorage.getItem('atlas_admin_key') || '';
+    const res = await fetch(`${API}/clients/${editingClientId}`, {
+      method: 'DELETE',
+      headers: { 'x-api-key': apiKey }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
+    closeDeleteModal();
+    closeModal();
+    toast(`${deletingClientName} deleted (calls: ${data.deleted?.calls ?? 0}, leads: ${data.deleted?.leads ?? 0})`, 'success');
+    loadAll();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Delete Permanently';
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
   }
 }
 
