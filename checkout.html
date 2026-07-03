@@ -269,24 +269,47 @@
 
 <script>
   const PLANS = {
-    starter: {
-      name: 'Starter',
+    beta: {
+      name: 'Beta',
       price: '$199',
       priceMonthly: '$199/mo',
       tagline: 'The essential AI phone agent for your business.',
       stripeUrl: 'https://buy.stripe.com/test_bJe5kveAMev093agcM1ZS00',
+      disabled: false,
       setupWindow: '48 hours',
       badgeClass: 'starter',
       cardClass: 'starter',
       priceClass: 'starter',
       btnClass: 'starter',
       baseFeatures: [
+        'Default voice (Liz)',
         'Dedicated AI phone line',
         '24/7 call answering',
         'Calendar appointment booking',
         'Custom greeting & FAQs',
         'Client portal access',
-        'Setup within 48 hours',
+      ],
+      addFeatures: [],
+    },
+    starter: {
+      name: 'Starter Plan',
+      price: '$199',
+      priceMonthly: '$199/mo',
+      tagline: 'The essential AI phone agent for your business.',
+      stripeUrl: 'https://buy.stripe.com/5kQ5kv2S4cmS2EM4u41ZS03',
+      disabled: true,
+      setupWindow: '48 hours',
+      badgeClass: 'starter',
+      cardClass: 'starter',
+      priceClass: 'starter',
+      btnClass: 'starter',
+      baseFeatures: [
+        'Default voice (Liz)',
+        'Dedicated AI phone line',
+        '24/7 call answering',
+        'Calendar appointment booking',
+        'Custom greeting & FAQs',
+        'Client portal access',
       ],
       addFeatures: [],
     },
@@ -296,12 +319,14 @@
       priceMonthly: '$299/mo',
       tagline: 'Everything you need to never miss a call.',
       stripeUrl: 'https://buy.stripe.com/14A7sD9gscmS0wE6Cc1ZS01',
+      disabled: true,
       setupWindow: '24 hours',
       badgeClass: '',
       cardClass: 'pro',
       priceClass: '',
       btnClass: '',
       baseFeatures: [
+        'Default voice (Liz)',
         'Dedicated AI phone line',
         '24/7 call answering',
         'Calendar appointment booking',
@@ -309,10 +334,10 @@
         'Client portal access',
       ],
       addFeatures: [
-        'Up to 10 dedicated AI phone lines',
-        'Lead capture & instant alerts',
+        'Full access to all 6 voices',
+        'Up to 3 dedicated AI phone lines',
+        'Lead capture CRM',
         'Priority support',
-        'Setup within 24 hours',
       ],
     },
   };
@@ -330,7 +355,7 @@
 
     const badge = document.getElementById('planBadge');
     badge.className = `plan-badge ${plan.badgeClass}`;
-    badge.textContent = key === 'pro' ? '⚡ Pro Plan' : '✦ Starter Plan';
+    badge.textContent = key === 'pro' ? '⚡ Pro Plan' : key === 'beta' ? '✦ Beta' : '✦ Starter Plan';
 
     document.getElementById('planName').textContent = plan.name;
 
@@ -375,13 +400,22 @@
 
     // Checkout button
     const btn = document.getElementById('checkoutBtn');
-    btn.href = plan.stripeUrl;
-    btn.className = `btn-checkout ${plan.btnClass}`;
+    if (plan.disabled) {
+      btn.href = '#';
+      btn.className = `btn-checkout ${plan.btnClass}`;
+      btn.style.cssText = 'background:#334155;box-shadow:none;cursor:not-allowed;opacity:0.6;';
+      btn.textContent = 'Coming Soon';
+      btn.setAttribute('aria-disabled', 'true');
+      btn.addEventListener('click', e => e.preventDefault());
+    } else {
+      btn.href = plan.stripeUrl;
+      btn.className = `btn-checkout ${plan.btnClass}`;
+    }
   }
 
   // Read plan from URL param
   const params = new URLSearchParams(window.location.search);
-  const plan = (params.get('plan') || 'pro').toLowerCase();
+  const plan = (params.get('plan') || 'beta').toLowerCase();
   renderPlan(plan);
 </script>
 

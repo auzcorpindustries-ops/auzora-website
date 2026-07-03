@@ -785,7 +785,7 @@
     .faq-item h3 { font-size: 1rem; margin-bottom: 8px; letter-spacing: -0.03em; }
     .faq-item p { color: var(--muted); font-size: 0.95rem; }
 
-    .contact { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .contact { display: grid; grid-template-columns: 1fr; gap: 16px; }
     .form { display: grid; gap: 14px; }
     .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .field { display: grid; gap: 8px; }
@@ -1211,6 +1211,24 @@
 
       <div class="pricing-grid">
         <article class="pricing-card">
+          <div class="pricing-tier">Beta</div>
+          <div class="pricing-amount">
+            <div class="pricing-monthly"><strong>$199</strong><span>/ month</span></div>
+            <div class="pricing-setup">$300 setup</div>
+          </div>
+          <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
+          <ul class="pricing-features">
+            <li>Default voice (Liz)</li>
+            <li>Dedicated AI phone line</li>
+            <li>24/7 call answering</li>
+            <li>Calendar appointment booking</li>
+            <li>Custom greeting & FAQs</li>
+            <li>Client portal access</li>
+          </ul>
+          <a href="/checkout.html?plan=beta" class="btn btn-secondary pricing-btn">Get Started →</a>
+        </article>
+
+        <article class="pricing-card">
           <div class="pricing-tier">Starter</div>
           <div class="pricing-amount">
             <div class="pricing-monthly"><strong>$199</strong><span>/ month</span></div>
@@ -1218,13 +1236,14 @@
           </div>
           <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="pricing-features">
-            <li>Dedicated AI phone line (instant setup)</li>
+            <li>Default voice (Liz)</li>
+            <li>Dedicated AI phone line</li>
             <li>24/7 call answering</li>
             <li>Calendar appointment booking</li>
             <li>Custom greeting & FAQs</li>
             <li>Client portal access</li>
           </ul>
-          <a href="/checkout.html?plan=starter" class="btn btn-secondary pricing-btn">Get Started →</a>
+          <a href="#" class="btn btn-secondary pricing-btn" style="background:#334155;box-shadow:none;cursor:not-allowed;opacity:0.6;" aria-disabled="true">Coming Soon</a>
         </article>
 
         <article class="pricing-card featured">
@@ -1252,27 +1271,23 @@
       <div class="section-head">
         <div>
           <div class="section-kicker">FAQ</div>
-          <h2>Answers to the obvious questions.</h2>
+          <h2>Answers to the common questions.</h2>
         </div>
-        <p class="section-lead">This section keeps the page practical and reduces friction for the next conversation.</p>
+        <p class="section-lead">If you've got more questions, call our AI receptionist now at (817) 618-8515, she'll help you find the answers you need!</p>
       </div>
 
       <div class="faq">
         <article class="faq-item">
-          <h3>Is this replacing the live homepage right away?</h3>
-          <p>No. This is a separate preview route for review until launch approval.</p>
-        </article>
-        <article class="faq-item">
-          <h3>Can Auzora sound natural?</h3>
-          <p>Yes. The brief calls for a premium, human-feeling experience — not a robotic phone tree.</p>
-        </article>
-        <article class="faq-item">
-          <h3>Who is this for?</h3>
+          <h3>What types of businesses is Auzora built for?</h3>
           <p>Any small or medium business that depends on calls and wants fewer missed leads.</p>
         </article>
         <article class="faq-item">
-          <h3>What happens after the demo request?</h3>
-          <p>The contact form is a placeholder for the launch workflow and can later be wired to the n8n intake flow.</p>
+          <h3>CRM integrations are supported?</h3>
+          <p>Yes! We support virtually any CRM integration with our setup.</p>
+        </article>
+        <article class="faq-item">
+          <h3>How long does setup take?</h3>
+          <p>Once purchased, onboarding takes about 10 minutes. You get your dedicated phone number and client portal access instantly. Calendar and CRM integrations require additional configuration.</p>
         </article>
       </div>
     </section>
@@ -1283,7 +1298,7 @@
           <div class="section-kicker">Contact</div>
           <h2>Start the conversation.</h2>
         </div>
-        <p class="section-lead">The form is simple on purpose: enough detail to capture interest without feeling heavy.</p>
+        <p class="section-lead">Fill out the contact form below if you're interested in a demo, we'll reach out shortly to schedule it with you!</p>
       </div>
 
       <div class="contact">
@@ -1316,30 +1331,13 @@
             <button class="btn btn-primary" type="submit">Request a demo</button>
           </form>
         </article>
-
-        <aside class="contact-aside">
-          <article class="panel">
-            <div class="mini-label">What happens next</div>
-            <h3>Clean handoff, no clutter</h3>
-            <div class="contact-lines">
-              <div class="line-item"><span></span><p>The message stays premium and direct.</p></div>
-              <div class="line-item"><span></span><p>Everything points back to Auzora.</p></div>
-              <div class="line-item"><span></span><p>The page remains focused on Auzora.</p></div>
-            </div>
-          </article>
-
-          <article class="panel">
-            <div class="mini-label">Footer note</div>
-            <p>© <span id="year"></span> Auzora IT Services. Atlas AI is the product shown here.</p>
-          </article>
-        </aside>
       </div>
     </section>
   </main>
 
   <footer class="footer shell">
     <div class="footer-inner">
-      <div><strong>Auzora</strong> — premium AI phone automation for businesses that cannot afford missed calls.</div>
+      <div><strong>© 2026 Auzora IT Services</strong></div>
       <nav class="footer-legal" aria-label="Legal">
         <a href="/legal/privacy.html">Privacy Policy</a>
         <a href="/legal/terms.html">Terms of Service</a>
