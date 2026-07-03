@@ -293,11 +293,11 @@
     },
     starter: {
       name: 'Starter Plan',
-      price: '$199',
-      priceMonthly: '$199/mo',
-      tagline: 'The essential AI phone agent for your business.',
-      stripeUrl: 'https://buy.stripe.com/5kQ5kv2S4cmS2EM4u41ZS03',
-      disabled: true,
+      price: '$0',
+      priceMonthly: '$0 for 3 months',
+      tagline: '3 months free, then $199/month. No setup fee.',
+      stripeUrl: 'https://buy.stripe.com/cNibIT3W81Ie2EM4u41ZS04',
+      disabled: false,
       setupWindow: '48 hours',
       badgeClass: 'starter',
       cardClass: 'starter',
@@ -312,6 +312,7 @@
         'Client portal access',
       ],
       addFeatures: [],
+      trialMonths: 3,
     },
     pro: {
       name: 'Pro',
@@ -396,7 +397,12 @@
     document.getElementById('summaryPlanLabel').textContent = `Auzora ${plan.name}`;
     document.getElementById('summaryPrice').textContent = plan.priceMonthly;
     document.getElementById('summaryTotal').textContent = plan.price;
-    document.getElementById('summaryRecurring').textContent = plan.price;
+    if (plan.trialMonths) {
+      document.querySelector('.summary-note').innerHTML =
+        `Free for ${plan.trialMonths} months, then <span id="summaryRecurring">$199</span>/month. Cancel anytime.`;
+    } else {
+      document.getElementById('summaryRecurring').textContent = plan.price;
+    }
 
     // Checkout button
     const btn = document.getElementById('checkoutBtn');
