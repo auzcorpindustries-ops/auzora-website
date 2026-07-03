@@ -244,7 +244,7 @@
       </div>
       <div class="summary-row">
         <span class="label">Setup fee</span>
-        <span class="value">$0</span>
+        <span class="value" id="summarySetupFee">$0</span>
       </div>
 
       <hr class="summary-divider"/>
@@ -271,9 +271,9 @@
   const PLANS = {
     beta: {
       name: 'Beta',
-      price: '$199',
-      priceMonthly: '$199/mo',
-      tagline: 'The essential AI phone agent for your business.',
+      price: '$0',
+      priceMonthly: '$0 for 3 months',
+      tagline: '3 months free, then $199/month. No setup fee.',
       stripeUrl: 'https://buy.stripe.com/test_bJe5kveAMev093agcM1ZS00',
       disabled: false,
       setupWindow: '48 hours',
@@ -290,6 +290,7 @@
         'Client portal access',
       ],
       addFeatures: [],
+      trialMonths: 3,
     },
     starter: {
       name: 'Starter Plan',
@@ -396,7 +397,13 @@
     document.getElementById('summaryPlanLabel').textContent = `Auzora ${plan.name}`;
     document.getElementById('summaryPrice').textContent = plan.priceMonthly;
     document.getElementById('summaryTotal').textContent = plan.price;
-    document.getElementById('summaryRecurring').textContent = plan.price;
+    if (plan.trialMonths) {
+      document.getElementById('summaryRecurring').textContent = '$199';
+      document.querySelector('.summary-note').innerHTML =
+        `Free for ${plan.trialMonths} months, then <span id="summaryRecurring">$199</span>/month. Cancel anytime.`;
+    } else {
+      document.getElementById('summaryRecurring').textContent = plan.price;
+    }
 
     // Checkout button
     const btn = document.getElementById('checkoutBtn');
