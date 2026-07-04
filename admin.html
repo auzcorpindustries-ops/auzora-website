@@ -953,6 +953,7 @@ async function openDetail(clientId) {
       <div class="detail-item"><div class="detail-label">Industry</div><div class="detail-value" style="font-size:13px">${c.industry||'—'}</div></div>
       <div class="detail-item"><div class="detail-label">Added</div><div class="detail-value" style="font-size:13px">${formatDate(c.createdAt)}</div></div>
       <div class="detail-item"><div class="detail-label">n8n Configured</div><div class="detail-value" style="font-size:13px">${c.n8nConfigured ? '✅ Yes' : '❌ No'}</div></div>
+      <div class="detail-item"><div class="detail-label">Twilio Number</div><div class="detail-value" style="font-size:13px">${c.twilio_number||'—'}</div></div>
     </div>
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Edit</div>
@@ -975,6 +976,10 @@ async function openDetail(clientId) {
         </div>
       </div>
       <div class="form-group">
+        <label>Twilio Number</label>
+        <input type="text" id="edit-twilio-number" placeholder="+1XXXXXXXXXX" value="${c.twilio_number||''}" />
+      </div>
+      <div class="form-group">
         <label>Notes</label>
         <textarea id="edit-notes">${c.notes||''}</textarea>
       </div>
@@ -992,6 +997,7 @@ async function saveClientEdit() {
   const updates = {
     status: document.getElementById('edit-status').value,
     n8nConfigured: document.getElementById('edit-n8n').value === 'true',
+    twilio_number: document.getElementById('edit-twilio-number').value.trim() || null,
     notes: document.getElementById('edit-notes').value
   };
   try {

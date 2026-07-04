@@ -839,7 +839,14 @@ async function loadDashboard() {
   document.getElementById('stat-appts').textContent = appts.length;
   document.getElementById('stat-month').textContent = thisMonth.length;
   document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US',{month:'long'}) + ' appointments';
-  document.getElementById('stat-phone').textContent = portalClient.twilio_number || '—';
+  const phoneEl = document.getElementById('stat-phone');
+  if (portalClient.twilio_number) {
+    phoneEl.textContent = portalClient.twilio_number;
+  } else {
+    phoneEl.textContent = 'Not yet assigned';
+    phoneEl.style.fontSize = '14px';
+    phoneEl.style.color = 'var(--muted)';
+  }
 
   const recent = appts.slice(0, 5);
   document.getElementById('dash-appt-count').textContent = appts.length + ' total';
