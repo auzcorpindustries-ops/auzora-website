@@ -893,6 +893,8 @@ async function loadSettings() {
   buildPortalHoursGrid(c.office_hours || '');
   document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
+  document.getElementById('s-greeting').value = c.custom_greeting || '';
+  document.getElementById('s-escalation').value = c.escalation_rules || '';
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
