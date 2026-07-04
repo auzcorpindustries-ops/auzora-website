@@ -896,13 +896,13 @@ function clientRow(c) {
     ? '<span class="n8n-dot n8n-yes"></span>Yes'
     : '<span class="n8n-dot n8n-no"></span>No';
   return `<tr>
-    <td><div class="client-name">${c.businessName||'—'}</div><div class="client-email">${c.email||''}</div></td>
+    <td><div class="client-name">${c.business_name||c.businessName||'—'}</div><div class="client-email">${c.email||''}</div></td>
     <td>${statusBadge(c.status)}</td>
     <td>${planBadge(c.plan)}</td>
     <td>${c.industry||'—'}</td>
     <td style="font-size:12px">${n8nDot}</td>
     <td style="color:var(--muted);font-size:12px">${formatDate(c.createdAt)}</td>
-    <td><button class="action-btn" onclick="openDetail('${c.clientId}')">View →</button></td>
+    <td><button class="action-btn" onclick="openDetail('${c.client_id}')">View →</button></td>
   </tr>`;
 }
 
@@ -937,10 +937,10 @@ function filterClients() {
 // DETAIL MODAL
 async function openDetail(clientId) {
   editingClientId = clientId;
-  const c = allClients.find(x => x.clientId === clientId);
+  const c = allClients.find(x => x.client_id === clientId);
   if (!c) return;
 
-  document.getElementById('modal-title').textContent = c.businessName;
+  document.getElementById('modal-title').textContent = c.business_name || c.businessName;
   document.getElementById('detail-modal').style.display = 'flex';
 
   document.getElementById('modal-body').innerHTML = `
@@ -949,7 +949,7 @@ async function openDetail(clientId) {
       <div class="detail-item"><div class="detail-label">Plan</div><div class="detail-value">${planBadge(c.plan)}</div></div>
       <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value" style="font-size:13px">${c.email||'—'}</div></div>
       <div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value" style="font-size:13px">${c.phone||'—'}</div></div>
-      <div class="detail-item"><div class="detail-label">Contact</div><div class="detail-value" style="font-size:13px">${c.contactName||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Contact</div><div class="detail-value" style="font-size:13px">${c.contactName||c.name||'—'}</div></div>
       <div class="detail-item"><div class="detail-label">Industry</div><div class="detail-value" style="font-size:13px">${c.industry||'—'}</div></div>
       <div class="detail-item"><div class="detail-label">Added</div><div class="detail-value" style="font-size:13px">${formatDate(c.createdAt)}</div></div>
       <div class="detail-item"><div class="detail-label">n8n Configured</div><div class="detail-value" style="font-size:13px">${c.n8nConfigured ? '✅ Yes' : '❌ No'}</div></div>
@@ -1014,9 +1014,9 @@ let deletingClientName = '';
 
 function promptDeleteClient() {
   if (!editingClientId) return;
-  const c = allClients.find(x => x.clientId === editingClientId);
+  const c = allClients.find(x => x.client_id === editingClientId);
   if (!c) return;
-  deletingClientName = c.businessName || '';
+  deletingClientName = c.business_name || c.businessName || '';
   document.getElementById('delete-client-name').textContent = deletingClientName || 'this client';
   document.getElementById('delete-confirm-name-label').textContent = deletingClientName || 'the business name';
   document.getElementById('delete-confirm-input').value = '';
