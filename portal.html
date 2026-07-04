@@ -552,16 +552,76 @@
         </div>
       </div>
 
-      <!-- Outlook (coming soon) -->\n      <div class=\"card\" style=\"max-width:620px;opacity:0.6;\">
-        <div style=\"display:flex;align-items:center;gap:14px;\">
-          <span style=\"font-size:32px;\">📧</span>
+      <!-- Outlook / Microsoft 365 -->
+      <div class="card" style="max-width:620px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <span style="font-size:32px;">📧</span>
           <div>
-            <div style=\"font-size:16px;font-weight:700;\">Outlook / Microsoft 365</div>
-            <div style=\"font-size:13px;color:var(--muted);\">Microsoft calendar integration — coming soon</div>
+            <div style="font-size:16px;font-weight:700;">Outlook / Microsoft 365</div>
+            <div style="font-size:13px;color:var(--muted);">Appointments sync directly to your Outlook calendar</div>
           </div>
-          <div style=\"margin-left:auto;\">
-            <span style=\"background:rgba(100,116,139,0.15);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);font-weight:600;\">Coming Soon</span>
+          <div id="ocal-badge" style="margin-left:auto;display:none;">
+            <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;">✓ Connected</span>
           </div>
+        </div>
+
+        <!-- Steps -->
+        <div id="ocal-setup" style="display:none;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Setup — 2 steps, takes 1 minute</div>
+
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Share your Outlook calendar with our service account</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Open Outlook → Calendar → Share → Calendar sharing → Add the address below → set permission to <strong>Can edit</strong></div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
+                  <span id="ocal-sa-display">automation@auzora.io</span>
+                  <button onclick="copyText('automation@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Can edit</strong> so your AI agent can add appointments</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Enter your Outlook email address</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">The email address of the Outlook / Microsoft 365 account whose calendar you shared above</div>
+                <input type="text" id="ocal-id-input" placeholder="yourname@outlook.com or yourname@yourcompany.com"
+                  style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;" />
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button onclick="connectOutlookCalendar()" id="ocal-connect-btn"
+              style="background:var(--accent);border:none;border-radius:10px;padding:11px 22px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+              Connect Outlook Calendar
+            </button>
+            <span id="ocal-status" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <!-- Connected state -->
+        <div id="ocal-connected" style="display:none;">
+          <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px;">✓ Outlook calendar connected</div>
+            <div style="font-size:12px;color:var(--muted);">Calendar: <span id="ocal-id-display" style="color:var(--text);font-family:monospace;"></span></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onclick="showOcalSetup()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;color:var(--muted);font-size:13px;cursor:pointer;">Change Calendar</button>
+            <button onclick="disconnectOutlookCalendar()" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:9px 16px;color:var(--red);font-size:13px;cursor:pointer;">Disconnect</button>
+            <button onclick="sendOutlookTestEvent()" id="ocal-test-btn" style="background:none;border:1px solid rgba(34,197,94,0.4);border-radius:8px;padding:9px 16px;color:var(--green);font-size:13px;cursor:pointer;">🧪 Send Test Event</button>
+          </div>
+        </div>
+
+        <!-- Default: show connect button if not set up -->
+        <div id="ocal-cta">
+          <button onclick="showOcalSetup()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:11px 22px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            + Connect Outlook Calendar
+          </button>
         </div>
       </div>
 
@@ -1192,6 +1252,20 @@ function loadIntegrations() {
     document.getElementById('gcal-connected').style.display = 'none';
     document.getElementById('gcal-badge').style.display = 'none';
   }
+
+  const ocalId = portalClient.outlook_calendar_id;
+  if (ocalId) {
+    document.getElementById('ocal-cta').style.display = 'none';
+    document.getElementById('ocal-setup').style.display = 'none';
+    document.getElementById('ocal-connected').style.display = 'block';
+    document.getElementById('ocal-badge').style.display = 'block';
+    document.getElementById('ocal-id-display').textContent = ocalId;
+  } else {
+    document.getElementById('ocal-cta').style.display = 'block';
+    document.getElementById('ocal-setup').style.display = 'none';
+    document.getElementById('ocal-connected').style.display = 'none';
+    document.getElementById('ocal-badge').style.display = 'none';
+  }
 }
 
 function showGcalSetup() {
@@ -1270,6 +1344,82 @@ async function sendCalendarTestEvent() {
 
 function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard ✓', 'success'));
+}
+
+// ── OUTLOOK / MICROSOFT 365 ──────────────────────────────────────────────────
+function showOcalSetup() {
+  document.getElementById('ocal-cta').style.display = 'none';
+  document.getElementById('ocal-connected').style.display = 'none';
+  document.getElementById('ocal-setup').style.display = 'block';
+}
+
+async function connectOutlookCalendar() {
+  const calendarId = document.getElementById('ocal-id-input').value.trim();
+  if (!calendarId) { showToast('Please enter your Outlook email address', 'error'); return; }
+
+  const btn = document.getElementById('ocal-connect-btn');
+  const status = document.getElementById('ocal-status');
+  btn.disabled = true; btn.textContent = 'Verifying...';
+  status.textContent = 'Checking calendar access...';
+  status.style.color = 'var(--muted)';
+
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ outlook_calendar_id: calendarId })
+    });
+    const data = await res.json();
+    if (data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+      loadIntegrations();
+      showToast('Outlook calendar connected! Appointments will now sync automatically ✓', 'success');
+    } else throw new Error(data.error || 'Failed to save');
+  } catch(e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+  btn.disabled = false; btn.textContent = 'Connect Outlook Calendar';
+}
+
+async function disconnectOutlookCalendar() {
+  if (!confirm('Disconnect Outlook calendar? Existing appointments will remain, but new bookings will not sync.')) return;
+  const res = await fetch(`${API}/portal/settings`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+    body: JSON.stringify({ outlook_calendar_id: null })
+  });
+  const data = await res.json();
+  if (data.client) {
+    portalClient = data.client;
+    sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+    loadIntegrations();
+    showToast('Outlook calendar disconnected', 'success');
+  }
+}
+
+async function sendOutlookTestEvent() {
+  const btn = document.getElementById('ocal-test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const res = await fetch(`${API}/portal/calendar/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ provider: 'outlook' })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('✓ Test event sent! Check your Outlook calendar for "Test Appointment (Atlas AI)"', 'success');
+    } else {
+      showToast('✗ ' + (data.error || 'Failed to send test event'), 'error');
+    }
+  } catch(e) {
+    showToast('✗ ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = '🧪 Send Test Event';
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
