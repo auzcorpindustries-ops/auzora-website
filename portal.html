@@ -241,7 +241,7 @@
       <span style="font-size:28px;">🤖</span>
       <span class="login-logo-text">Auzora</span>
     </div>
-    <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by Atlas AI</div>
+    <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by OpenAI</div>
     <div class="login-sub">Client Portal — sign in to manage your AI agent</div>
     <label>Business Email</label>
     <input type="email" id="login-email" placeholder="you@yourbusiness.com" onkeydown="if(event.key==='Enter')login()" />
@@ -882,7 +882,7 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
-  if (name === 'integrations') loadIntegrations();
+  if (name === 'integrations') loaded Integrations();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -1331,7 +1331,7 @@ async function sendCalendarTestEvent() {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast('✓ Test event sent! Check your Google Calendar for "Test Appointment (Atlas AI)"', 'success');
+      showToast('✓ Test event sent! Check your Google Calendar for "Test Appointment (Auzora)"', 'success');
     } else {
       showToast('✗ ' + (data.error || 'Failed to send test event'), 'error');
     }
@@ -1411,7 +1411,7 @@ async function sendOutlookTestEvent() {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast('✓ Test event sent! Check your Outlook calendar for "Test Appointment (Atlas AI)"', 'success');
+      showToast('✓ Test event sent! Check your Outlook calendar for "Test Appointment (Auzora)"', 'success');
     } else {
       showToast('✗ ' + (data.error || 'Failed to send test event'), 'error');
     }
