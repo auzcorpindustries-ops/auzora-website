@@ -339,6 +339,9 @@
     <div class="nav-item" onclick="showPage('persona')" id="nav-persona">
       <span class="nav-icon">🎙️</span> Voice & Persona
     </div>
+    <div class="nav-item" onclick="showPage('phones')" id="nav-phones">
+      <span class="nav-icon">📞</span> Phone Numbers
+    </div>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">⏏ Sign out</div>
     </div>
@@ -513,6 +516,28 @@
           </tr></thead>
           <tbody id="scale-table"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- PHONE NUMBERS PAGE -->
+    <div class="page" id="page-phones">
+      <div class="page-header">
+        <h1>📞 Phone Numbers</h1>
+        <p>All Twilio numbers on the account — assigned and unassigned</p>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Phone Numbers</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="phone-filter" onchange="renderPhonesTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);">
+              <option value="all">All Numbers</option>
+              <option value="assigned">Assigned</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
+            <button class="btn-sm" onclick="loadPhones()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="phones-table-body"><div class="loading">Loading...</div></div>
       </div>
     </div>
 
@@ -844,6 +869,86 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'persona') initPersonaPage();
+  if (name === 'phones') loadPhones();
+}
+
+// PHONE NUMBERS
+let allPhoneNumbers = []; // { phoneNumber, sid, friendlyName, assignedTo: {client_id, business_name} | null }
+
+async function loadPhones() {
+  document.getElementById('phones-table-body').innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const apiKey = localStorage.getItem('atlas_admin_key') || '';
+    // Fetch Twilio numbers and client list in parallel
+    const [numsRes, clientsRes, queueRes] = await Promise.all([
+      fetch(`${API}/phone-numbers`, { headers: { 'x-api-key': apiKey } }),
+      fetch(`${API}/clients`,       { headers: { 'x-api-key': apiKey } }),
+      fetch(`${API}/number-queue`,  { headers: { 'x-api-key': apiKey } }),
+    ]);
+    const numsData    = await numsRes.json();
+    const clientsData = await clientsRes.json();
+    const queueData   = await queueRes.json();
+
+    const clients = Array.isArray(clientsData) ? clientsData : (clientsData.clients || []);
+    const queued  = new Set((queueData.numbers || []).map(n => n.phone_number));
+
+    // Build a lookup: phone number → client
+    const phoneToClient = {};
+    clients.forEach(c => {
+      if (c.twilio_number) phoneToClient[c.twilio_number] = c;
+    });
+
+    const numbers = Array.isArray(numsData) ? numsData : (numsData.numbers || []);
+    allPhoneNumbers = numbers.map(n => ({
+      phoneNumber:  n.phoneNumber || n.phone_number,
+      sid:          n.sid || n.twilio_sid,
+      friendlyName: n.friendlyName || n.friendly_name || '',
+      assignedTo:   phoneToClient[n.phoneNumber || n.phone_number] || null,
+      inQueue:      queued.has(n.phoneNumber || n.phone_number),
+    }));
+
+    renderPhonesTable();
+  } catch(e) {
+    document.getElementById('phones-table-body').innerHTML =
+      '<div class="empty"><div class="empty-icon">⚠️</div><h3>Failed to load phone numbers</h3></div>';
+  }
+}
+
+function renderPhonesTable() {
+  const filter = document.getElementById('phone-filter')?.value || 'all';
+  let rows = allPhoneNumbers;
+  if (filter === 'assigned')   rows = rows.filter(n => n.assignedTo);
+  if (filter === 'unassigned') rows = rows.filter(n => !n.assignedTo);
+
+  if (!rows.length) {
+    document.getElementById('phones-table-body').innerHTML =
+      `<div class="empty"><div class="empty-icon">📭</div><h3>No numbers found</h3></div>`;
+    return;
+  }
+
+  const tbody = rows.map(n => {
+    const status = n.assignedTo
+      ? `<span class="badge badge-active">Assigned</span>`
+      : n.inQueue
+        ? `<span class="badge badge-pending">In Queue</span>`
+        : `<span class="badge badge-inactive">Unassigned</span>`;
+    const client = n.assignedTo
+      ? `<div class="client-name">${n.assignedTo.business_name || n.assignedTo.businessName || '—'}</div>
+         <div class="client-email">${n.assignedTo.client_id || ''}</div>`
+      : '—';
+    return `<tr>
+      <td style="font-family:monospace;font-size:13px">${n.phoneNumber}</td>
+      <td>${status}</td>
+      <td>${client}</td>
+      <td style="color:var(--muted);font-size:12px">${n.friendlyName || '—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${n.sid}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('phones-table-body').innerHTML = `
+    <table><thead><tr>
+      <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th>
+    </tr></thead><tbody>${tbody}</tbody></table>`;
 }
 
 // TOAST
