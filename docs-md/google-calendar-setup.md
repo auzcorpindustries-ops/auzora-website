@@ -17,19 +17,17 @@ Last updated: 2026-07-08
 
 ## Step 1 — Share your calendar with Auzora
 
-Atlas AI writes appointments to your calendar using a service account. You must give it permission first.
+Auzora writes appointments to your calendar using a Google Workspace service account with Domain-Wide Delegation. You must share your calendar with our Workspace user first.
 
 1. Open [Google Calendar](https://calendar.google.com).
-2. In the left sidebar, find the calendar you want Atlas to use. Hover over it and click the **three-dot menu** → **Settings and sharing**.
+2. In the left sidebar, find the calendar you want Auzora to use. Hover over it and click the **three-dot menu** → **Settings and sharing**.
 3. Scroll to **Share with specific people or groups**.
 4. Click **Add people** and enter:
 
-   `auzora-automation@fifth-base-474500-i3.iam.gserviceaccount.com`
+   `ahoward@auzora.io`
 
 5. Set the permission to **Make changes to events**.
 6. Click **Send**.
-
-> **Note:** You do not need to accept an invite — service account shares are granted immediately.
 
 ## Step 2 — Find your Calendar ID
 
@@ -99,7 +97,7 @@ Holiday events are automatically marked **Busy** — Atlas will treat those days
 
 | Problem | Fix |
 |---|---|
-| Event not appearing | Re-check that the service account email is shared with **Make changes to events** permission |
+| Event not appearing | Re-check that `ahoward@auzora.io` is shared with **Make changes to events** permission |
 | Wrong calendar | Confirm the Calendar ID in the portal matches the calendar you shared |
 | Atlas booking outside business hours | Set working hours in Google Calendar (Step 3) and save |
 | Holidays not blocked | Subscribe to the holiday calendar (Step 5) and verify events show as Busy |
