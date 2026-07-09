@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auzora Docs — Google Calendar Setup</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .docs-container { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+    .docs-content { background: rgba(255,255,255,0.92); color: var(--text); padding: 2.25rem; border-radius: 10px; box-shadow: 0 10px 30px rgba(24,33,47,0.08); font-size:1.05rem; line-height:1.85; max-width:780px; margin:0 auto; border: 1px solid rgba(16,24,38,0.08); }
+    .docs-content h1{font-size:2rem;margin-bottom:0.5rem}
+    .docs-content h2{font-size:1.5rem;margin:2.1rem 0 0.9rem;padding-left:0.15rem;letter-spacing:-0.01em}
+    .docs-content h3{font-size:1.1rem;margin:1.4rem 0 0.55rem;padding-left:0.15rem;letter-spacing:-0.005em}
+    .docs-content p, .docs-content li{font-size:1.02rem}
+    .docs-content p{margin:0.45rem 0 0.9rem}
+    .docs-content ul, .docs-content ol{margin:0.5rem 0 1.1rem;padding-left:1.35rem}
+    .docs-content li{margin:0.35rem 0}
+    .docs-content table{width:100%;margin:0.8rem 0 1.5rem;border-collapse:separate;border-spacing:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;overflow:hidden;font-size:0.98rem}
+    .docs-content th, .docs-content td{padding:0.9rem 1rem;border-bottom:1px solid rgba(16,24,38,0.06);vertical-align:top}
+    .docs-content th{background:rgba(248,250,252,0.95);text-align:left}
+    .docs-content tr:last-child td{border-bottom:0}
+    .docs-content a{color:var(--blue)}
+    .docs-theme-light .docs-content{ background: #ffffff; color:#101826 }
+    .docs-theme-light .docs-content code{ background:#eef2f9 }
+    .docs-theme-light .docs-content pre{ background:#f8fafc; color:#101826; border:1px solid rgba(16,24,38,0.08) }
+    .docs-content h1, .docs-content h2, .docs-content h3 { color: var(--text); margin-top:0.4rem }
+    .docs-content pre { background:#f8fafc; color:#101826; padding:1rem; border-radius:6px; overflow:auto; border:1px solid rgba(16,24,38,0.08) }
+    .docs-content code { background:#eef2f9; padding:0.2rem 0.4rem; border-radius:4px }
+    .docs-content img{ max-width:100%; display:block; margin:1rem 0 1.5rem; border-radius:12px }
+  </style>
+</head>
+<body>
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand">
+        <img src="/assets/logo.png" alt="Auzora Logo" class="nav-logo" />
+        <span class="nav-brand-text">Auzora</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#services">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="#pricing" class="btn btn-primary nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <main class="docs-container">
+    <div id="docs" class="docs-content">Loading...</div>
+  </main>
+
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <a href="/" class="footer-brand">
+          <img src="/assets/logo.png" alt="Auzora" class="footer-logo" />
+          <span>Auzora</span>
+        </a>
+        <p class="footer-copy">© 2026 Auzora. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#services">How It Works</a>
+          <a href="#about">About</a>
+          <a href="/contact.html">Contact</a>
+          <a href="/legal/terms.html">Terms</a>
+          <a href="/legal/privacy.html">Privacy</a>
+          <a href="/legal/ai-policy.html">AI Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+  <script>
+    (function(){
+      const slug = 'google-calendar-setup';
+      const mdPath = '/docs-md/' + slug + '.md';
+      const target = document.getElementById('docs');
+      fetch(mdPath).then(r=>{ if(!r.ok) throw new Error('Failed to fetch: '+r.status); return r.text() }).then(md=>{
+        const html = marked.parse(md);
+        target.innerHTML = DOMPurify.sanitize(html);
+      }).catch(err=>{ target.innerHTML = '<p style="color:tomato">Error loading doc: '+err.message+'</p>' });
+    })();
+  </script>
+  <script src="/script.js"></script>
+</body>
+</html>
