@@ -269,6 +269,7 @@
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
+    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">🗓️</span> Scheduling</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
 
@@ -350,21 +351,6 @@
             <div class="form-group">
               <label>Agent Name</label>
               <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Office Hours</label>
-              <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
-                  <span>Set office hours</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
-                  <span>24/7</span>
-                </label>
-              </div>
-              <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
-              <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
             </div>
             <div class="form-group">
               <label>Booking URL</label>
@@ -453,22 +439,69 @@
             <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
           </div>
 
-          <!-- Scheduling Parameters -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div class="card-title" style="margin:0;">📋 Scheduling Parameters</div>
-              <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
-            <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
         </div>
       </div>
 
       <div class="save-bar">
         <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
         <button class="btn-save" id="s-save-btn" onclick="saveSettings()">💾 Save & Apply</button>
+      </div>
+    </div>
+
+    <!-- SCHEDULING -->
+    <div class="page" id="page-scheduling">
+      <div class="page-header">
+        <h1>🗓️ Scheduling</h1>
+        <p>View your calendar and configure office hours &amp; booking requirements</p>
+      </div>
+
+      <!-- Google Calendar Embed -->
+      <div class="card" style="margin-bottom:20px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="card-title" style="margin:0;">📅 Google Calendar</div>
+          <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Connect your calendar in Integrations</span>
+        </div>
+        <div id="scheduling-cal-embed" style="border-radius:10px;overflow:hidden;display:none;">
+          <iframe id="gcal-iframe" style="border:0;width:100%;height:500px;" frameborder="0" scrolling="no"></iframe>
+        </div>
+        <div id="scheduling-cal-placeholder" style="text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;">
+          📭 No Google Calendar connected. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect one here →</span>
+        </div>
+      </div>
+
+      <!-- Office Hours + Scheduling Parameters side by side -->
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <!-- Office Hours -->
+        <div class="card" style="flex:1;min-width:300px;">
+          <div class="card-title" style="margin-bottom:14px;">🕐 Office Hours</div>
+          <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
+              <span>Set office hours</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
+              <span>24/7</span>
+            </label>
+          </div>
+          <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
+          <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
+        </div>
+
+        <!-- Scheduling Parameters -->
+        <div class="card" style="flex:1;min-width:300px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div class="card-title" style="margin:0;">📋 Scheduling Parameters</div>
+            <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
+          <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <span class="unsaved" id="s-unsaved-sched">● Unsaved changes</span>
+        <button class="btn-save" onclick="saveSettings()">💾 Save &amp; Apply</button>
       </div>
     </div>
 
@@ -917,6 +950,7 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
+  if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
 }
 
@@ -988,11 +1022,41 @@ function formatDT(iso) {
 let settingsDirty = false;
 let activeAudio = null;
 
+// ── SCHEDULING PAGE ───────────────────────────────────────────────────────────
+function loadScheduling() {
+  const c = portalClient;
+  if (!c) return;
+
+  // Embed Google Calendar if connected
+  const calId = c.google_calendar_id;
+  const embedDiv = document.getElementById('scheduling-cal-embed');
+  const placeholder = document.getElementById('scheduling-cal-placeholder');
+  const status = document.getElementById('scheduling-cal-status');
+  if (calId) {
+    // Google Calendar iframe uses Google's own theme — can't force light/dark.
+    // The embed auto-adapts based on the viewer's Google account settings.
+    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
+    document.getElementById('gcal-iframe').src = src;
+    embedDiv.style.display = 'block';
+    placeholder.style.display = 'none';
+    status.textContent = calId;
+    status.style.color = 'var(--green)';
+  } else {
+    embedDiv.style.display = 'none';
+    placeholder.style.display = 'block';
+    status.textContent = 'No calendar connected';
+    status.style.color = 'var(--muted)';
+  }
+
+  // Populate office hours + scheduling params (same fields, now on this page)
+  buildPortalHoursGrid(c.office_hours || '24/7');
+  renderSchedulingParams(c.scheduling_params || []);
+}
+
 async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
-  buildPortalHoursGrid(c.office_hours || '');
   document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
@@ -1008,7 +1072,6 @@ async function loadSettings() {
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
-  renderSchedulingParams(c.scheduling_params || []);
   portalServices = [...(c.service_areas || [])];
   renderServiceTags();
   portalSpecialties = [...(c.specialties || [])];
