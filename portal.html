@@ -214,6 +214,8 @@
   .s-tags-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
   .s-tags-wrap:focus-within { border-color: var(--accent); }
   .s-tag-pill { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent2); display: flex; align-items: center; gap: 5px; }
+  .s-tag-pill .s-appt-chk { display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--muted); cursor: pointer; user-select: none; }
+  .s-tag-pill .s-appt-chk input { width: 12px; height: 12px; cursor: pointer; }
   .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
   .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
 
@@ -496,6 +498,16 @@
           </div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
           <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Service Appointment Durations -->
+      <div class="card" style="margin-top:20px;" id="sched-durations-card">
+        <div class="card-title" style="margin-bottom:6px;">⏱️ Service Appointment Durations</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the default appointment length for each service that requires an appointment. The AI receptionist will use this when booking calendar events. Enable "Appt" on a service in Agent Settings to make it configurable here.</div>
+        <div id="s-durations-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div id="s-durations-empty" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;display:none;">
+          No appointment-based services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">Agent Settings</span> and check "Appt" on the services that require appointments.
         </div>
       </div>
 
@@ -862,10 +874,12 @@ function renderServiceTags() {
   if (!wrap) return;
   wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
   const input = document.getElementById('s-services-input');
+  const durations = portalClient?.service_durations || {};
   portalServices.forEach((t, i) => {
     const pill = document.createElement('div');
     pill.className = 's-tag-pill';
-    pill.innerHTML = `${t}<button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
+    const hasAppt = durations.hasOwnProperty(t);
+    pill.innerHTML = `${t}<label class="s-appt-chk" title="Requires Appointment" onclick="event.stopPropagation()"><input type="checkbox" ${hasAppt?'checked':''} onchange="toggleServiceAppt('${t.replace(/'/g,"\\'")}', this.checked)" /> Appt</label><button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
     wrap.insertBefore(pill, input);
   });
 }
@@ -897,7 +911,30 @@ function addSpecialtyTag() {
   portalSpecialties.push(val); renderSpecialtyTags(); setDirty(); input.value = '';
 }
 
-function removeServiceTag(i) { portalServices.splice(i, 1); renderServiceTags(); setDirty(); }
+function removeServiceTag(i) {
+  const svc = portalServices[i];
+  portalServices.splice(i, 1);
+  // Also remove from service_durations if present
+  if (portalClient?.service_durations && svc) delete portalClient.service_durations[svc];
+  renderServiceTags();
+  setDirty();
+  setSchedDirty();
+}
+
+function toggleServiceAppt(serviceName, enabled) {
+  if (!portalClient) portalClient = {};
+  if (!portalClient.service_durations) portalClient.service_durations = {};
+  if (enabled) {
+    if (!portalClient.service_durations[serviceName]) {
+      portalClient.service_durations[serviceName] = 30; // default 30 min
+    }
+  } else {
+    delete portalClient.service_durations[serviceName];
+  }
+  setDirty();
+  setSchedDirty();
+  renderServiceDurations();
+}
 function removeSpecialtyTag(i) { portalSpecialties.splice(i, 1); renderSpecialtyTags(); setDirty(); }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -1051,6 +1088,45 @@ function loadScheduling() {
   // Populate office hours + scheduling params (same fields, now on this page)
   buildPortalHoursGrid(c.office_hours || '24/7');
   renderSchedulingParams(c.scheduling_params || []);
+  renderServiceDurations();
+}
+
+function setSchedDirty() {
+  const el = document.getElementById('s-unsaved-sched');
+  if (el) el.style.display = 'inline';
+}
+
+function renderServiceDurations() {
+  const list = document.getElementById('s-durations-list');
+  const empty = document.getElementById('s-durations-empty');
+  if (!list) return;
+
+  const durations = portalClient?.service_durations || {};
+  const entries = Object.entries(durations);
+
+  if (!entries.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  list.innerHTML = entries.map(([svc, min]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--text);font-weight:500;">${svc}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" min="5" max="480" step="5" value="${min}" style="width:70px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:13px;text-align:center;" onchange="updateServiceDuration('${svc.replace(/'/g,"\\'")}', this.value)" />
+        <span style="font-size:12px;color:var(--muted);">min</span>
+      </div>
+    </div>`).join('');
+}
+
+function updateServiceDuration(serviceName, minutes) {
+  if (!portalClient) portalClient = {};
+  if (!portalClient.service_durations) portalClient.service_durations = {};
+  portalClient.service_durations[serviceName] = parseInt(minutes) || 30;
+  setSchedDirty();
+  setDirty();
 }
 
 async function loadSettings() {
@@ -1302,7 +1378,8 @@ async function saveSettings() {
     after_hours_enabled: document.getElementById('s-ah').checked,
     after_hours_message: document.getElementById('s-ah-msg').value,
     faqs:                getPortalFaqs(),
-    scheduling_params:   getSchedulingParams()
+    scheduling_params:   getSchedulingParams(),
+    service_durations:   portalClient?.service_durations || {}
   };
 
   try {
@@ -1317,6 +1394,8 @@ async function saveSettings() {
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
       settingsDirty = false;
       document.getElementById('s-unsaved').style.display = 'none';
+      const schedUnsaved = document.getElementById('s-unsaved-sched');
+      if (schedUnsaved) schedUnsaved.style.display = 'none';
       showToast('Settings saved — live on next call ✓', 'success');
     } else throw new Error(data.error || 'Save failed');
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
