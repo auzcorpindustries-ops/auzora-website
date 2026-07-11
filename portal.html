@@ -134,6 +134,9 @@
   tr:hover td { background: rgba(255,255,255,0.015); }
   .badge-confirmed { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .badge-pending   { background: rgba(245,158,11,0.1); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  .badge-unconfirmed { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  tr.row-unconfirmed td { background: rgba(239,68,68,0.04); }
+  tr.row-unconfirmed:hover td { background: rgba(239,68,68,0.07); }
   .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
 
   /* ── SETTINGS ── */
@@ -317,12 +320,12 @@
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Appointments Booked</div>
+          <div class="stat-label">Total Appointments Booked</div>
           <div class="stat-value" id="stat-appts">—</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">This Month</div>
+          <div class="stat-label">Bookings This Month</div>
           <div class="stat-value" id="stat-month">—</div>
           <div class="stat-sub" id="stat-month-label">April appointments</div>
         </div>
@@ -1065,14 +1068,18 @@ async function loadDashboard() {
   const data = await res.json();
   const appts = data.appointments || [];
   const now = new Date();
+
+  // Stat: total appointments (all time)
+  document.getElementById('stat-appts').textContent = appts.length;
+
+  // Stat: bookings this month (by booking date / created_at)
   const thisMonth = appts.filter(a => {
-    const d = new Date(a.created_at);
+    const d = new Date(a.created_at || a.booked_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-
-  document.getElementById('stat-appts').textContent = appts.length;
   document.getElementById('stat-month').textContent = thisMonth.length;
   document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US',{month:'long'}) + ' appointments';
+
   const phoneEl = document.getElementById('stat-phone');
   if (portalClient.twilio_number) {
     phoneEl.textContent = portalClient.twilio_number;
@@ -1082,11 +1089,19 @@ async function loadDashboard() {
     phoneEl.style.color = 'var(--muted)';
   }
 
-  const recent = appts.slice(0, 5);
-  document.getElementById('dash-appt-count').textContent = appts.length + ' total';
+  // Recent Appointments: last 14 days, ordered by booking date (newest first)
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const recent = appts
+    .filter(a => {
+      const d = new Date(a.created_at || a.booked_at);
+      return d >= fourteenDaysAgo;
+    })
+    .sort((a, b) => new Date(b.created_at || b.booked_at || 0) - new Date(a.created_at || a.booked_at || 0));
+
+  document.getElementById('dash-appt-count').textContent = recent.length + ' in last 14 days';
   document.getElementById('dash-appt-list').innerHTML = recent.length
     ? apptTableRows(recent, true)
-    : '<div class="empty">No appointments yet — your AI agent will fill this up! 📞</div>';
+    : '<div class="empty">No appointments in the last 14 days.</div>';
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
@@ -1101,16 +1116,22 @@ async function loadAppointments() {
 }
 
 function apptTableRows(appts, compact) {
-  const rows = appts.map(a => `
-    <tr>
+  const rows = appts.map(a => {
+    const confirmed = a.participant_added === true || a.confirmed === true;
+    const rowClass = confirmed ? '' : 'row-unconfirmed';
+    const badge = confirmed
+      ? '<span class="badge-confirmed">✓ Confirmed</span>'
+      : '<span class="badge-unconfirmed">⚠ Unconfirmed</span>';
+    return `
+    <tr class="${rowClass}">
       <td style="font-weight:600;">${a.caller_name || '—'}</td>
       <td style="color:var(--accent2);">${a.service || '—'}</td>
       ${compact ? '' : `<td>${a.caller_phone || '—'}</td>`}
       <td style="color:var(--muted);font-size:12px;">${formatDT(a.datetime)}</td>
       ${compact ? '' : `<td style="color:var(--muted);font-size:11px;">${a.notes || '—'}</td>`}
-      <td><span class="badge-confirmed">✓ Confirmed</span></td>
-    </tr>
-  `).join('');
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
   const headers = compact
     ? '<tr><th>Name</th><th>Service</th><th>Date & Time</th><th>Status</th></tr>'
     : '<tr><th>Name</th><th>Service</th><th>Phone</th><th>Date & Time</th><th>Notes</th><th>Status</th></tr>';
