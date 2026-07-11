@@ -64,6 +64,27 @@
     background: var(--surface); border-bottom: 1px solid var(--border);
     display: flex; align-items: center; padding: 0 24px; gap: 16px;
   }
+
+  /* ── HAMBURGER (mobile only) ── */
+  .hamburger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 36px; height: 36px; background: none; border: none; cursor: pointer;
+    padding: 0; margin-left: -8px;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 2px; background: var(--text);
+    border-radius: 2px; transition: transform 0.25s, opacity 0.25s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Sidebar overlay backdrop (mobile) */
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 140; opacity: 0; transition: opacity 0.3s;
+  }
+  .sidebar-overlay.show { display: block; opacity: 1; }
   .topbar-logo { font-size: 16px; font-weight: 800; color: var(--accent2); }
   .topbar-biz { font-size: 13px; color: var(--muted); }
   .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
@@ -226,7 +247,13 @@
   #toast.error { border-color: var(--red); color: var(--red); }
 
   @media (max-width: 768px) {
-    .sidebar { display: none; }
+    .hamburger { display: flex; }
+    .sidebar {
+      display: flex; transform: translateX(-100%);
+      transition: transform 0.3s ease; z-index: 150;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.3);
+    }
+    .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0; padding: 72px 16px 16px; }
     .stats-grid { grid-template-columns: 1fr; }
     .settings-grid { grid-template-columns: 1fr; }
@@ -258,6 +285,9 @@
 <!-- APP -->
 <div id="app">
   <header class="topbar">
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle navigation menu">
+      <span></span><span></span><span></span>
+    </button>
     <span class="topbar-logo">Auzora</span>
     <span class="topbar-biz" id="topbar-biz"></span>
     <div class="topbar-right">
@@ -267,6 +297,7 @@
     </div>
   </header>
 
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar">
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
@@ -980,6 +1011,15 @@ function launchApp() {
   loadDashboard();
 }
 
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.toggle('open');
+  hamburger.classList.toggle('open', isOpen);
+  overlay.classList.toggle('show', isOpen);
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -989,6 +1029,9 @@ function showPage(name) {
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
+  // Close sidebar on mobile after navigation
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar.classList.contains('open')) toggleSidebar();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
