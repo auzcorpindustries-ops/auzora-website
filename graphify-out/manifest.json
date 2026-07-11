@@ -1,0 +1,242 @@
+{
+  "script.js": {
+    "mtime": 1782747781.922863,
+    "ast_hash": "84c7b33c2e11d8ac7fcb0b66bb4d7a60",
+    "semantic_hash": ""
+  },
+  "BRIEF.md": {
+    "mtime": 1782747781.8870313,
+    "ast_hash": "a596c072cd5f589cbcc3c5c3ccd87716",
+    "semantic_hash": ""
+  },
+  "admin.html": {
+    "mtime": 1782747781.8874383,
+    "ast_hash": "bd5f4d57dfd9cfc2faac46ee516ec40c",
+    "semantic_hash": ""
+  },
+  "checkout.html": {
+    "mtime": 1783101663.3257399,
+    "ast_hash": "cd8c50137329bde1096c7bbf79f6e14d",
+    "semantic_hash": ""
+  },
+  "contact.html": {
+    "mtime": 1782747781.9185178,
+    "ast_hash": "9d2d3809e0bdfbba15e8b75b64109c50",
+    "semantic_hash": ""
+  },
+  "demo.html": {
+    "mtime": 1782747781.918663,
+    "ast_hash": "e3855448e4ad44fec729a80012db63b6",
+    "semantic_hash": ""
+  },
+  "docs-md/forwarding-personal-phone-to-atlas.md": {
+    "mtime": 1782747781.9187844,
+    "ast_hash": "56b070ce1d4f6fdebcf9ba4c94db76bc",
+    "semantic_hash": ""
+  },
+  "docs/forwarding-personal-phone-to-atlas.md": {
+    "mtime": 1782747781.9188921,
+    "ast_hash": "3171b4b6d2c37d2a3bf9ce81a6a2c3fa",
+    "semantic_hash": ""
+  },
+  "docs/forwarding-personal-phone-to-atlas/index.html": {
+    "mtime": 1782747781.9190416,
+    "ast_hash": "26c961d6f090dc05adf147caec9afe56",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1783101663.3657646,
+    "ast_hash": "afcf11f910bfa88b0808b3eb46b96306",
+    "semantic_hash": ""
+  },
+  "legal/ai-policy.html": {
+    "mtime": 1782747781.919693,
+    "ast_hash": "5a21add1b2fcb2712d58275df74702b5",
+    "semantic_hash": ""
+  },
+  "legal/privacy.html": {
+    "mtime": 1782747781.9199884,
+    "ast_hash": "26d5fa5ac1b04161892e60e0875e4733",
+    "semantic_hash": ""
+  },
+  "legal/terms.html": {
+    "mtime": 1782747781.9203663,
+    "ast_hash": "4beac840b331a074a054135b86177663",
+    "semantic_hash": ""
+  },
+  "portal.html": {
+    "mtime": 1783096841.1758876,
+    "ast_hash": "a36ec219b7695f90ad096570323f9dc3",
+    "semantic_hash": ""
+  },
+  "public/docs/forwarding-personal-phone-to-atlas.md": {
+    "mtime": 1782747781.921731,
+    "ast_hash": "56b070ce1d4f6fdebcf9ba4c94db76bc",
+    "semantic_hash": ""
+  },
+  "public/docs/forwarding-personal-phone-to-atlas/index.html": {
+    "mtime": 1782747781.921896,
+    "ast_hash": "517663eea03bd3766ac6ac9c76e93812",
+    "semantic_hash": ""
+  },
+  "redesign-light/index.html": {
+    "mtime": 1782747781.922035,
+    "ast_hash": "658add407422565b15c79a41e828abdf",
+    "semantic_hash": ""
+  },
+  "redesign-v2/index.html": {
+    "mtime": 1782747781.9222007,
+    "ast_hash": "02d4ee021bd736516ad0894ee51f760d",
+    "semantic_hash": ""
+  },
+  "redesign/index.html": {
+    "mtime": 1782747781.9227588,
+    "ast_hash": "0ce04853952420c8289f1e0cdc533f70",
+    "semantic_hash": ""
+  },
+  "assets/avatars/jordan.png": {
+    "mtime": 1782747781.8945625,
+    "ast_hash": "88e9dd56502567c742d74cea11f3f804",
+    "semantic_hash": ""
+  },
+  "assets/avatars/josh.png": {
+    "mtime": 1782747781.8990042,
+    "ast_hash": "fae26e7a3a66447619a6c6e05711f741",
+    "semantic_hash": ""
+  },
+  "assets/avatars/liz.png": {
+    "mtime": 1782747781.9043028,
+    "ast_hash": "7390c61301a571ff08d14ab35423967f",
+    "semantic_hash": ""
+  },
+  "assets/avatars/tiffany.png": {
+    "mtime": 1782747781.9089992,
+    "ast_hash": "0f91fd5523746954fa11e8c1d3bafe23",
+    "semantic_hash": ""
+  },
+  "assets/images/att-call-forwarding.svg": {
+    "mtime": 1782747781.9095612,
+    "ast_hash": "d797d2249fea47b98083acc6f8caf135",
+    "semantic_hash": ""
+  },
+  "assets/images/freepbx-call-forwarding.svg": {
+    "mtime": 1782747781.9096203,
+    "ast_hash": "4dc952370805c8608cd90e897a548fe6",
+    "semantic_hash": ""
+  },
+  "assets/images/iphone-call-forwarding.svg": {
+    "mtime": 1782747781.909677,
+    "ast_hash": "f24e6761fcfa358b5743b6fd899e66cf",
+    "semantic_hash": ""
+  },
+  "assets/logo.png": {
+    "mtime": 1782747781.9104512,
+    "ast_hash": "d01a98a92c2840af9f865c518ec9ce2f",
+    "semantic_hash": ""
+  },
+  "assets/logo.svg": {
+    "mtime": 1782747781.9108524,
+    "ast_hash": "cd917dcf57358be09afa8508c9333aa3",
+    "semantic_hash": ""
+  },
+  "favicon.svg": {
+    "mtime": 1782747781.9191086,
+    "ast_hash": "ab921b9257ca2cc8f42e03f33bf86535",
+    "semantic_hash": ""
+  },
+  "logo.png": {
+    "mtime": 1782747781.9211404,
+    "ast_hash": "d01a98a92c2840af9f865c518ec9ce2f",
+    "semantic_hash": ""
+  },
+  "assets/audio/jordan-preview.mp3": {
+    "mtime": 1782747781.8882184,
+    "ast_hash": "21dac068d1070b54e15c5d4bc4106618",
+    "semantic_hash": ""
+  },
+  "assets/audio/voices/jordan.m4a": {
+    "mtime": 1782747781.8886006,
+    "ast_hash": "f95147fa93d065f6eeb89235f540de35",
+    "semantic_hash": ""
+  },
+  "assets/audio/voices/josh.m4a": {
+    "mtime": 1782747781.8887656,
+    "ast_hash": "72be29e5d833bfe014cc33b98015f9e3",
+    "semantic_hash": ""
+  },
+  "assets/audio/voices/liz.m4a": {
+    "mtime": 1782747781.8889315,
+    "ast_hash": "4d8c231822450f9a80c499d60fcfd9a7",
+    "semantic_hash": ""
+  },
+  "assets/audio/voices/tiffany.m4a": {
+    "mtime": 1782747781.8893554,
+    "ast_hash": "2eeea81dcc53dd183747f8cfaee7234c",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/alloy.mp3": {
+    "mtime": 1782747781.9113529,
+    "ast_hash": "b0884887d938e0db04081b9571626847",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/ash.mp3": {
+    "mtime": 1782747781.9122522,
+    "ast_hash": "95813827f18101325cf81fbee5fa55cb",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/ballad.mp3": {
+    "mtime": 1782747781.9127548,
+    "ast_hash": "c6cd9be6ba6e98bcbc7507f6c2ca96d6",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/cedar.mp3": {
+    "mtime": 1782747781.912814,
+    "ast_hash": "c6cd9be6ba6e98bcbc7507f6c2ca96d6",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/coral.mp3": {
+    "mtime": 1782747781.9132986,
+    "ast_hash": "b8f10af08d1c9f280ab64bc50a7ac21d",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/echo.mp3": {
+    "mtime": 1782747781.9140012,
+    "ast_hash": "5fde6c30d49ef3aa84884340d7fa793a",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/fable.mp3": {
+    "mtime": 1782747781.9147084,
+    "ast_hash": "286c6b1ce357aae50b043a0598452039",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/marin.mp3": {
+    "mtime": 1782747781.9155276,
+    "ast_hash": "c6cd9be6ba6e98bcbc7507f6c2ca96d6",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/nova.mp3": {
+    "mtime": 1782747781.916028,
+    "ast_hash": "32cc2b1ce59ca08b961fc71afb2b82d6",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/onyx.mp3": {
+    "mtime": 1782747781.9169495,
+    "ast_hash": "e2a58edfa88f0f3b2a177192b7da8d24",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/sage.mp3": {
+    "mtime": 1782747781.9174004,
+    "ast_hash": "56649988c55e4974f53c5700100fadc2",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/shimmer.mp3": {
+    "mtime": 1782747781.9179018,
+    "ast_hash": "58dae19e0a14464744fdeff7ef76708b",
+    "semantic_hash": ""
+  },
+  "assets/voice-samples/verse.mp3": {
+    "mtime": 1782747781.9179776,
+    "ast_hash": "c6cd9be6ba6e98bcbc7507f6c2ca96d6",
+    "semantic_hash": ""
+  }
+}
