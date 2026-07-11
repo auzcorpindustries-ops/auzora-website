@@ -535,10 +535,10 @@
       <!-- Service Appointment Durations -->
       <div class="card" style="margin-top:20px;" id="sched-durations-card">
         <div class="card-title" style="margin-bottom:6px;">⏱️ Service Appointment Durations</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the default appointment length for each service that requires an appointment. The AI receptionist will use this when booking calendar events. Enable "Appt" on a service in Agent Settings to make it configurable here.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the default appointment length for each service. Check "Appt" to enable duration configuration for a service — the AI receptionist will use this when booking calendar events.</div>
         <div id="s-durations-list" style="display:flex;flex-direction:column;gap:10px;"></div>
         <div id="s-durations-empty" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;display:none;">
-          No appointment-based services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">Agent Settings</span> and check "Appt" on the services that require appointments.
+          No services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">Agent Settings</span> to add services first.
         </div>
       </div>
 
@@ -905,12 +905,10 @@ function renderServiceTags() {
   if (!wrap) return;
   wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
   const input = document.getElementById('s-services-input');
-  const durations = portalClient?.service_durations || {};
   portalServices.forEach((t, i) => {
     const pill = document.createElement('div');
     pill.className = 's-tag-pill';
-    const hasAppt = durations.hasOwnProperty(t);
-    pill.innerHTML = `${t}<label class="s-appt-chk" title="Requires Appointment" onclick="event.stopPropagation()"><input type="checkbox" ${hasAppt?'checked':''} onchange="toggleServiceAppt('${t.replace(/'/g,"\\'")}', this.checked)" /> Appt</label><button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
+    pill.innerHTML = `${t}<button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
     wrap.insertBefore(pill, input);
   });
 }
@@ -1131,6 +1129,8 @@ function loadScheduling() {
   // Populate office hours + scheduling params (same fields, now on this page)
   buildPortalHoursGrid(c.office_hours || '24/7');
   renderSchedulingParams(c.scheduling_params || []);
+  // Ensure services are loaded for the durations card
+  portalServices = [...(c.service_areas || [])];
   renderServiceDurations();
 }
 
@@ -1144,24 +1144,30 @@ function renderServiceDurations() {
   const empty = document.getElementById('s-durations-empty');
   if (!list) return;
 
-  const durations = portalClient?.service_durations || {};
-  const entries = Object.entries(durations);
-
-  if (!entries.length) {
+  if (!portalServices.length) {
     list.innerHTML = '';
     if (empty) empty.style.display = 'block';
     return;
   }
   if (empty) empty.style.display = 'none';
 
-  list.innerHTML = entries.map(([svc, min]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
-      <span style="font-size:13px;color:var(--text);font-weight:500;">${svc}</span>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <input type="number" min="5" max="480" step="5" value="${min}" style="width:70px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:13px;text-align:center;" onchange="updateServiceDuration('${svc.replace(/'/g,"\\'")}', this.value)" />
+  const durations = portalClient?.service_durations || {};
+  list.innerHTML = portalServices.map(svc => {
+    const safe = svc.replace(/'/g, "\\'");
+    const hasAppt = durations.hasOwnProperty(svc);
+    const dur = durations[svc] || 30;
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--text);font-weight:500;flex:1;">${svc}</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;" title="Enable appointment duration for this service">
+        <input type="checkbox" ${hasAppt?'checked':''} onchange="toggleServiceAppt('${safe}', this.checked)" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;" /> Appt
+      </label>
+      <div style="display:flex;align-items:center;gap:6px;${hasAppt?'':'opacity:0.4;pointer-events:none;'}">
+        <input type="number" min="5" max="480" step="5" value="${dur}" style="width:70px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:13px;text-align:center;" onchange="updateServiceDuration('${safe}', this.value)" />
         <span style="font-size:12px;color:var(--muted);">min</span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function updateServiceDuration(serviceName, minutes) {
