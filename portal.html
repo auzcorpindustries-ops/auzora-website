@@ -303,9 +303,8 @@
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar">
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
-    <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
-    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">🗓️</span> Scheduling</div>
+    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">📅</span> Scheduling</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
 
@@ -346,20 +345,6 @@
     </div>
 
     <!-- APPOINTMENTS -->
-    <div class="page" id="page-appointments">
-      <div class="page-header">
-        <h1>📅 Appointments</h1>
-        <p>All appointments booked by your AI agent</p>
-      </div>
-      <div class="table-wrap">
-        <div class="table-header">
-          <h2>All Appointments</h2>
-          <span style="font-size:12px;color:var(--muted);" id="appt-count-label"></span>
-        </div>
-        <div id="appt-full-list"></div>
-      </div>
-    </div>
-
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="page-header">
@@ -387,10 +372,6 @@
             <div class="form-group">
               <label>Agent Name</label>
               <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Booking URL</label>
-              <input type="text" id="s-booking-url" placeholder="https://calendly.com/..." oninput="setDirty()" />
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label>Escalation Phone</label>
@@ -466,16 +447,16 @@
             </div>
           </div>
 
-          <!-- FAQs -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;">❓ FAQs</div>
-              <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
-            </div>
-            <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
         </div>
+      </div>
+
+      <!-- FAQs (full width) -->
+      <div class="card" style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="card-title" style="margin:0;">❓ FAQs</div>
+          <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+        </div>
+        <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
 
       <div class="save-bar">
@@ -1053,7 +1034,6 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
@@ -1105,16 +1085,6 @@ async function loadDashboard() {
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
-async function loadAppointments() {
-  const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
-  const data = await res.json();
-  const appts = data.appointments || [];
-  document.getElementById('appt-count-label').textContent = appts.length + ' appointments';
-  document.getElementById('appt-full-list').innerHTML = appts.length
-    ? apptTableRows(appts, false)
-    : '<div class="empty">No appointments yet</div>';
-}
-
 function apptTableRows(appts, compact) {
   const rows = appts.map(a => {
     const confirmed = a.participant_added === true || a.confirmed === true;
@@ -1244,7 +1214,6 @@ async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
-  document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
   document.getElementById('s-escalation').value = c.escalation_rules || '';
@@ -1481,7 +1450,6 @@ async function saveSettings() {
     service_areas:       [...portalServices],
     specialties:         [...portalSpecialties],
     escalation_phone:    document.getElementById('s-escalation-phone').value,
-    booking_url:         document.getElementById('s-booking-url').value,
     voice:               getPortalVoice(),
     custom_greeting:     document.getElementById('s-greeting').value,
     escalation_rules:    document.getElementById('s-escalation').value,
