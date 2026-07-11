@@ -214,6 +214,8 @@
   .s-tags-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text; min-height: 44px; transition: border-color 0.2s; }
   .s-tags-wrap:focus-within { border-color: var(--accent); }
   .s-tag-pill { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent2); display: flex; align-items: center; gap: 5px; }
+  .s-tag-pill .s-appt-chk { display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--muted); cursor: pointer; user-select: none; }
+  .s-tag-pill .s-appt-chk input { width: 12px; height: 12px; cursor: pointer; }
   .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
   .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; font-family: var(--font); }
 
@@ -269,6 +271,7 @@
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
+    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">🗓️</span> Scheduling</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
 
@@ -350,21 +353,6 @@
             <div class="form-group">
               <label>Agent Name</label>
               <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Office Hours</label>
-              <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
-                  <span>Set office hours</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
-                  <span>24/7</span>
-                </label>
-              </div>
-              <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
-              <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
             </div>
             <div class="form-group">
               <label>Booking URL</label>
@@ -453,22 +441,79 @@
             <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
           </div>
 
-          <!-- Scheduling Parameters -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div class="card-title" style="margin:0;">📋 Scheduling Parameters</div>
-              <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
-            <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
         </div>
       </div>
 
       <div class="save-bar">
         <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
         <button class="btn-save" id="s-save-btn" onclick="saveSettings()">💾 Save & Apply</button>
+      </div>
+    </div>
+
+    <!-- SCHEDULING -->
+    <div class="page" id="page-scheduling">
+      <div class="page-header">
+        <h1>🗓️ Scheduling</h1>
+        <p>View your calendar and configure office hours &amp; booking requirements</p>
+      </div>
+
+      <!-- Google Calendar Embed -->
+      <div class="card" style="margin-bottom:20px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="card-title" style="margin:0;">📅 Google Calendar</div>
+          <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Connect your calendar in Integrations</span>
+        </div>
+        <div id="scheduling-cal-embed" style="border-radius:10px;overflow:hidden;display:none;">
+          <iframe id="gcal-iframe" style="border:0;width:100%;height:500px;" frameborder="0" scrolling="no"></iframe>
+        </div>
+        <div id="scheduling-cal-placeholder" style="text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;">
+          📭 No Google Calendar connected. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect one here →</span>
+        </div>
+      </div>
+
+      <!-- Office Hours + Scheduling Parameters side by side -->
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <!-- Office Hours -->
+        <div class="card" style="flex:1;min-width:300px;">
+          <div class="card-title" style="margin-bottom:14px;">🕐 Office Hours</div>
+          <div style="display:flex;gap:14px;align-items:center;margin:6px 0 8px;font-size:13px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="radio" name="s-hours-mode" id="s-hours-custom" value="custom" onchange="togglePortalHoursMode('custom');setDirty()" checked />
+              <span>Set office hours</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="radio" name="s-hours-mode" id="s-hours-247" value="247" onchange="togglePortalHoursMode('247');setDirty()" />
+              <span>24/7</span>
+            </label>
+          </div>
+          <div class="hours-grid" id="s-hours-grid" style="margin-top:6px;"></div>
+          <div id="s-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
+        </div>
+
+        <!-- Scheduling Parameters -->
+        <div class="card" style="flex:1;min-width:300px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div class="card-title" style="margin:0;">📋 Scheduling Parameters</div>
+            <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
+          <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Service Appointment Durations -->
+      <div class="card" style="margin-top:20px;" id="sched-durations-card">
+        <div class="card-title" style="margin-bottom:6px;">⏱️ Service Appointment Durations</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the default appointment length for each service that requires an appointment. The AI receptionist will use this when booking calendar events. Enable "Appt" on a service in Agent Settings to make it configurable here.</div>
+        <div id="s-durations-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div id="s-durations-empty" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;display:none;">
+          No appointment-based services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">Agent Settings</span> and check "Appt" on the services that require appointments.
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <span class="unsaved" id="s-unsaved-sched">● Unsaved changes</span>
+        <button class="btn-save" onclick="saveSettings()">💾 Save &amp; Apply</button>
       </div>
     </div>
 
@@ -829,10 +874,12 @@ function renderServiceTags() {
   if (!wrap) return;
   wrap.querySelectorAll('.s-tag-pill').forEach(p => p.remove());
   const input = document.getElementById('s-services-input');
+  const durations = portalClient?.service_durations || {};
   portalServices.forEach((t, i) => {
     const pill = document.createElement('div');
     pill.className = 's-tag-pill';
-    pill.innerHTML = `${t}<button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
+    const hasAppt = durations.hasOwnProperty(t);
+    pill.innerHTML = `${t}<label class="s-appt-chk" title="Requires Appointment" onclick="event.stopPropagation()"><input type="checkbox" ${hasAppt?'checked':''} onchange="toggleServiceAppt('${t.replace(/'/g,"\\'")}', this.checked)" /> Appt</label><button type="button" onclick="removeServiceTag(${i})">\u00d7</button>`;
     wrap.insertBefore(pill, input);
   });
 }
@@ -864,7 +911,30 @@ function addSpecialtyTag() {
   portalSpecialties.push(val); renderSpecialtyTags(); setDirty(); input.value = '';
 }
 
-function removeServiceTag(i) { portalServices.splice(i, 1); renderServiceTags(); setDirty(); }
+function removeServiceTag(i) {
+  const svc = portalServices[i];
+  portalServices.splice(i, 1);
+  // Also remove from service_durations if present
+  if (portalClient?.service_durations && svc) delete portalClient.service_durations[svc];
+  renderServiceTags();
+  setDirty();
+  setSchedDirty();
+}
+
+function toggleServiceAppt(serviceName, enabled) {
+  if (!portalClient) portalClient = {};
+  if (!portalClient.service_durations) portalClient.service_durations = {};
+  if (enabled) {
+    if (!portalClient.service_durations[serviceName]) {
+      portalClient.service_durations[serviceName] = 30; // default 30 min
+    }
+  } else {
+    delete portalClient.service_durations[serviceName];
+  }
+  setDirty();
+  setSchedDirty();
+  renderServiceDurations();
+}
 function removeSpecialtyTag(i) { portalSpecialties.splice(i, 1); renderSpecialtyTags(); setDirty(); }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -917,6 +987,7 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
+  if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
 }
 
@@ -988,11 +1059,80 @@ function formatDT(iso) {
 let settingsDirty = false;
 let activeAudio = null;
 
+// ── SCHEDULING PAGE ───────────────────────────────────────────────────────────
+function loadScheduling() {
+  const c = portalClient;
+  if (!c) return;
+
+  // Embed Google Calendar if connected
+  const calId = c.google_calendar_id;
+  const embedDiv = document.getElementById('scheduling-cal-embed');
+  const placeholder = document.getElementById('scheduling-cal-placeholder');
+  const status = document.getElementById('scheduling-cal-status');
+  if (calId) {
+    // Google Calendar iframe uses Google's own theme — can't force light/dark.
+    // The embed auto-adapts based on the viewer's Google account settings.
+    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
+    document.getElementById('gcal-iframe').src = src;
+    embedDiv.style.display = 'block';
+    placeholder.style.display = 'none';
+    status.textContent = calId;
+    status.style.color = 'var(--green)';
+  } else {
+    embedDiv.style.display = 'none';
+    placeholder.style.display = 'block';
+    status.textContent = 'No calendar connected';
+    status.style.color = 'var(--muted)';
+  }
+
+  // Populate office hours + scheduling params (same fields, now on this page)
+  buildPortalHoursGrid(c.office_hours || '24/7');
+  renderSchedulingParams(c.scheduling_params || []);
+  renderServiceDurations();
+}
+
+function setSchedDirty() {
+  const el = document.getElementById('s-unsaved-sched');
+  if (el) el.style.display = 'inline';
+}
+
+function renderServiceDurations() {
+  const list = document.getElementById('s-durations-list');
+  const empty = document.getElementById('s-durations-empty');
+  if (!list) return;
+
+  const durations = portalClient?.service_durations || {};
+  const entries = Object.entries(durations);
+
+  if (!entries.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  list.innerHTML = entries.map(([svc, min]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--text);font-weight:500;">${svc}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" min="5" max="480" step="5" value="${min}" style="width:70px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:13px;text-align:center;" onchange="updateServiceDuration('${svc.replace(/'/g,"\\'")}', this.value)" />
+        <span style="font-size:12px;color:var(--muted);">min</span>
+      </div>
+    </div>`).join('');
+}
+
+function updateServiceDuration(serviceName, minutes) {
+  if (!portalClient) portalClient = {};
+  if (!portalClient.service_durations) portalClient.service_durations = {};
+  portalClient.service_durations[serviceName] = parseInt(minutes) || 30;
+  setSchedDirty();
+  setDirty();
+}
+
 async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
-  buildPortalHoursGrid(c.office_hours || '');
   document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
@@ -1008,7 +1148,6 @@ async function loadSettings() {
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
-  renderSchedulingParams(c.scheduling_params || []);
   portalServices = [...(c.service_areas || [])];
   renderServiceTags();
   portalSpecialties = [...(c.specialties || [])];
@@ -1239,7 +1378,8 @@ async function saveSettings() {
     after_hours_enabled: document.getElementById('s-ah').checked,
     after_hours_message: document.getElementById('s-ah-msg').value,
     faqs:                getPortalFaqs(),
-    scheduling_params:   getSchedulingParams()
+    scheduling_params:   getSchedulingParams(),
+    service_durations:   portalClient?.service_durations || {}
   };
 
   try {
@@ -1254,6 +1394,8 @@ async function saveSettings() {
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
       settingsDirty = false;
       document.getElementById('s-unsaved').style.display = 'none';
+      const schedUnsaved = document.getElementById('s-unsaved-sched');
+      if (schedUnsaved) schedUnsaved.style.display = 'none';
       showToast('Settings saved — live on next call ✓', 'success');
     } else throw new Error(data.error || 'Save failed');
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
