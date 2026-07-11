@@ -488,6 +488,33 @@
         <p>View your calendar and configure office hours &amp; booking requirements</p>
       </div>
 
+      <!-- Time Zone -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:14px;">🌍 Time Zone</div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Default Time Zone</label>
+          <select id="s-timezone" onchange="setSchedDirty();setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);">
+            <option value="America/Chicago">America/Chicago (Central)</option>
+            <option value="America/New_York">America/New_York (Eastern)</option>
+            <option value="America/Denver">America/Denver (Mountain)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (Pacific)</option>
+            <option value="America/Phoenix">America/Phoenix (Mountain - no DST)</option>
+            <option value="America/Anchorage">America/Anchorage (Alaska)</option>
+            <option value="Pacific/Honolulu">Pacific/Honolulu (Hawaii)</option>
+            <option value="Atlantic/Reykjavik">Atlantic/Reykjavik (GMT+0)</option>
+            <option value="Europe/London">Europe/London (GMT+0/+1)</option>
+            <option value="Europe/Paris">Europe/Paris (CET)</option>
+            <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+            <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+            <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+            <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">This time zone is used for business hours enforcement, calendar event creation, and the Google Calendar preview above.</div>
+        </div>
+      </div>
+
       <!-- Google Calendar Embed -->
       <div class="card" style="margin-bottom:20px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -1105,6 +1132,20 @@ function loadScheduling() {
   const c = portalClient;
   if (!c) return;
 
+  // Populate timezone selector
+  const tzSelect = document.getElementById('s-timezone');
+  if (tzSelect) {
+    const tz = c.timezone || 'America/Chicago';
+    // If the client's timezone isn't in the list, add it
+    if (![...tzSelect.options].some(o => o.value === tz)) {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tz;
+      tzSelect.appendChild(opt);
+    }
+    tzSelect.value = tz;
+  }
+
   // Embed Google Calendar if connected
   const calId = c.google_calendar_id;
   const embedDiv = document.getElementById('scheduling-cal-embed');
@@ -1113,7 +1154,7 @@ function loadScheduling() {
   if (calId) {
     // Google Calendar iframe uses Google's own theme — can't force light/dark.
     // The embed auto-adapts based on the viewer's Google account settings.
-    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
+    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(document.getElementById('s-timezone')?.value || c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
     document.getElementById('gcal-iframe').src = src;
     embedDiv.style.display = 'block';
     placeholder.style.display = 'none';
@@ -1428,7 +1469,8 @@ async function saveSettings() {
     after_hours_message: document.getElementById('s-ah-msg').value,
     faqs:                getPortalFaqs(),
     scheduling_params:   getSchedulingParams(),
-    service_durations:   portalClient?.service_durations || {}
+    service_durations:   portalClient?.service_durations || {},
+    timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago'
   };
 
   try {
