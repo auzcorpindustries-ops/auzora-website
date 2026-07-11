@@ -134,6 +134,9 @@
   tr:hover td { background: rgba(255,255,255,0.015); }
   .badge-confirmed { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .badge-pending   { background: rgba(245,158,11,0.1); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  .badge-unconfirmed { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  tr.row-unconfirmed td { background: rgba(239,68,68,0.04); }
+  tr.row-unconfirmed:hover td { background: rgba(239,68,68,0.07); }
   .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
 
   /* ── SETTINGS ── */
@@ -300,9 +303,8 @@
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar">
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
-    <div class="nav-item" onclick="showPage('appointments')" id="nav-appointments"><span class="nav-icon">📅</span> Appointments</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Agent Settings</div>
-    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">🗓️</span> Scheduling</div>
+    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon">📅</span> Scheduling</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon">🔗</span> Integrations</div>
   </nav>
 
@@ -317,12 +319,12 @@
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Appointments Booked</div>
+          <div class="stat-label">Total Appointments Booked</div>
           <div class="stat-value" id="stat-appts">—</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">This Month</div>
+          <div class="stat-label">Bookings This Month</div>
           <div class="stat-value" id="stat-month">—</div>
           <div class="stat-sub" id="stat-month-label">April appointments</div>
         </div>
@@ -343,20 +345,6 @@
     </div>
 
     <!-- APPOINTMENTS -->
-    <div class="page" id="page-appointments">
-      <div class="page-header">
-        <h1>📅 Appointments</h1>
-        <p>All appointments booked by your AI agent</p>
-      </div>
-      <div class="table-wrap">
-        <div class="table-header">
-          <h2>All Appointments</h2>
-          <span style="font-size:12px;color:var(--muted);" id="appt-count-label"></span>
-        </div>
-        <div id="appt-full-list"></div>
-      </div>
-    </div>
-
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="page-header">
@@ -384,10 +372,6 @@
             <div class="form-group">
               <label>Agent Name</label>
               <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group">
-              <label>Booking URL</label>
-              <input type="text" id="s-booking-url" placeholder="https://calendly.com/..." oninput="setDirty()" />
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label>Escalation Phone</label>
@@ -463,16 +447,16 @@
             </div>
           </div>
 
-          <!-- FAQs -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;">❓ FAQs</div>
-              <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
-            </div>
-            <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
         </div>
+      </div>
+
+      <!-- FAQs (full width) -->
+      <div class="card" style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="card-title" style="margin:0;">❓ FAQs</div>
+          <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+        </div>
+        <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
 
       <div class="save-bar">
@@ -486,6 +470,33 @@
       <div class="page-header">
         <h1>🗓️ Scheduling</h1>
         <p>View your calendar and configure office hours &amp; booking requirements</p>
+      </div>
+
+      <!-- Time Zone -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:14px;">🌍 Time Zone</div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Default Time Zone</label>
+          <select id="s-timezone" onchange="setSchedDirty();setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);">
+            <option value="America/Chicago">America/Chicago (Central)</option>
+            <option value="America/New_York">America/New_York (Eastern)</option>
+            <option value="America/Denver">America/Denver (Mountain)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (Pacific)</option>
+            <option value="America/Phoenix">America/Phoenix (Mountain - no DST)</option>
+            <option value="America/Anchorage">America/Anchorage (Alaska)</option>
+            <option value="Pacific/Honolulu">Pacific/Honolulu (Hawaii)</option>
+            <option value="Atlantic/Reykjavik">Atlantic/Reykjavik (GMT+0)</option>
+            <option value="Europe/London">Europe/London (GMT+0/+1)</option>
+            <option value="Europe/Paris">Europe/Paris (CET)</option>
+            <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+            <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+            <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+            <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">This time zone is used for business hours enforcement, calendar event creation, and the Google Calendar preview above.</div>
+        </div>
       </div>
 
       <!-- Google Calendar Embed -->
@@ -1023,7 +1034,6 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'appointments') loadAppointments();
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
@@ -1038,14 +1048,18 @@ async function loadDashboard() {
   const data = await res.json();
   const appts = data.appointments || [];
   const now = new Date();
+
+  // Stat: total appointments (all time)
+  document.getElementById('stat-appts').textContent = appts.length;
+
+  // Stat: bookings this month (by booking date / created_at)
   const thisMonth = appts.filter(a => {
-    const d = new Date(a.created_at);
+    const d = new Date(a.created_at || a.booked_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-
-  document.getElementById('stat-appts').textContent = appts.length;
   document.getElementById('stat-month').textContent = thisMonth.length;
   document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US',{month:'long'}) + ' appointments';
+
   const phoneEl = document.getElementById('stat-phone');
   if (portalClient.twilio_number) {
     phoneEl.textContent = portalClient.twilio_number;
@@ -1055,35 +1069,39 @@ async function loadDashboard() {
     phoneEl.style.color = 'var(--muted)';
   }
 
-  const recent = appts.slice(0, 5);
-  document.getElementById('dash-appt-count').textContent = appts.length + ' total';
+  // Recent Appointments: last 14 days, ordered by booking date (newest first)
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const recent = appts
+    .filter(a => {
+      const d = new Date(a.created_at || a.booked_at);
+      return d >= fourteenDaysAgo;
+    })
+    .sort((a, b) => new Date(b.created_at || b.booked_at || 0) - new Date(a.created_at || a.booked_at || 0));
+
+  document.getElementById('dash-appt-count').textContent = recent.length + ' in last 14 days';
   document.getElementById('dash-appt-list').innerHTML = recent.length
     ? apptTableRows(recent, true)
-    : '<div class="empty">No appointments yet — your AI agent will fill this up! 📞</div>';
+    : '<div class="empty">No appointments in the last 14 days.</div>';
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
-async function loadAppointments() {
-  const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
-  const data = await res.json();
-  const appts = data.appointments || [];
-  document.getElementById('appt-count-label').textContent = appts.length + ' appointments';
-  document.getElementById('appt-full-list').innerHTML = appts.length
-    ? apptTableRows(appts, false)
-    : '<div class="empty">No appointments yet</div>';
-}
-
 function apptTableRows(appts, compact) {
-  const rows = appts.map(a => `
-    <tr>
+  const rows = appts.map(a => {
+    const confirmed = a.participant_added === true || a.confirmed === true;
+    const rowClass = confirmed ? '' : 'row-unconfirmed';
+    const badge = confirmed
+      ? '<span class="badge-confirmed">✓ Confirmed</span>'
+      : '<span class="badge-unconfirmed">⚠ Unconfirmed</span>';
+    return `
+    <tr class="${rowClass}">
       <td style="font-weight:600;">${a.caller_name || '—'}</td>
       <td style="color:var(--accent2);">${a.service || '—'}</td>
       ${compact ? '' : `<td>${a.caller_phone || '—'}</td>`}
       <td style="color:var(--muted);font-size:12px;">${formatDT(a.datetime)}</td>
       ${compact ? '' : `<td style="color:var(--muted);font-size:11px;">${a.notes || '—'}</td>`}
-      <td><span class="badge-confirmed">✓ Confirmed</span></td>
-    </tr>
-  `).join('');
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
   const headers = compact
     ? '<tr><th>Name</th><th>Service</th><th>Date & Time</th><th>Status</th></tr>'
     : '<tr><th>Name</th><th>Service</th><th>Phone</th><th>Date & Time</th><th>Notes</th><th>Status</th></tr>';
@@ -1105,6 +1123,20 @@ function loadScheduling() {
   const c = portalClient;
   if (!c) return;
 
+  // Populate timezone selector
+  const tzSelect = document.getElementById('s-timezone');
+  if (tzSelect) {
+    const tz = c.timezone || 'America/Chicago';
+    // If the client's timezone isn't in the list, add it
+    if (![...tzSelect.options].some(o => o.value === tz)) {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tz;
+      tzSelect.appendChild(opt);
+    }
+    tzSelect.value = tz;
+  }
+
   // Embed Google Calendar if connected
   const calId = c.google_calendar_id;
   const embedDiv = document.getElementById('scheduling-cal-embed');
@@ -1113,7 +1145,7 @@ function loadScheduling() {
   if (calId) {
     // Google Calendar iframe uses Google's own theme — can't force light/dark.
     // The embed auto-adapts based on the viewer's Google account settings.
-    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
+    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(document.getElementById('s-timezone')?.value || c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
     document.getElementById('gcal-iframe').src = src;
     embedDiv.style.display = 'block';
     placeholder.style.display = 'none';
@@ -1182,7 +1214,6 @@ async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
   document.getElementById('s-agent-name').value = c.agent_name || '';
-  document.getElementById('s-booking-url').value = c.booking_url || '';
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
   document.getElementById('s-escalation').value = c.escalation_rules || '';
@@ -1419,7 +1450,6 @@ async function saveSettings() {
     service_areas:       [...portalServices],
     specialties:         [...portalSpecialties],
     escalation_phone:    document.getElementById('s-escalation-phone').value,
-    booking_url:         document.getElementById('s-booking-url').value,
     voice:               getPortalVoice(),
     custom_greeting:     document.getElementById('s-greeting').value,
     escalation_rules:    document.getElementById('s-escalation').value,
@@ -1428,7 +1458,8 @@ async function saveSettings() {
     after_hours_message: document.getElementById('s-ah-msg').value,
     faqs:                getPortalFaqs(),
     scheduling_params:   getSchedulingParams(),
-    service_durations:   portalClient?.service_durations || {}
+    service_durations:   portalClient?.service_durations || {},
+    timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago'
   };
 
   try {
