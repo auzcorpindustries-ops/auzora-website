@@ -794,6 +794,7 @@ let portalClient = null;
 let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
+let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from ElevenLabs API
 
@@ -1448,26 +1449,26 @@ async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
   btn.textContent = 'Saving...'; btn.disabled = true;
 
-  const payload = {
-    business_name:       document.getElementById('s-biz-name').value,
-    agent_name:          document.getElementById('s-agent-name').value,
-    office_hours:        buildPortalHoursString(),
-    service_areas:       [...portalServices],
-    specialties:         [...portalSpecialties],
-    escalation_phone:    document.getElementById('s-escalation-phone').value,
-    voice:               getPortalVoice(),
-    custom_greeting:     document.getElementById('s-greeting').value,
-    escalation_rules:    document.getElementById('s-escalation').value,
-    topics_to_avoid:     portalAvoidTopics,
-    after_hours_enabled: document.getElementById('s-ah').checked,
-    after_hours_message: document.getElementById('s-ah-msg').value,
-    faqs:                getPortalFaqs(),
-    scheduling_params:   getSchedulingParams(),
-    service_durations:   portalClient?.service_durations || {},
-    timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago'
-  };
-
   try {
+    const payload = {
+      business_name:       document.getElementById('s-biz-name').value,
+      agent_name:          document.getElementById('s-agent-name').value,
+      office_hours:        buildPortalHoursString(),
+      service_areas:       [...portalServices],
+      specialties:         [...portalSpecialties],
+      escalation_phone:    document.getElementById('s-escalation-phone').value,
+      voice:               getPortalVoice(),
+      custom_greeting:     document.getElementById('s-greeting').value,
+      escalation_rules:    document.getElementById('s-escalation').value,
+      topics_to_avoid:     portalAvoidTopics,
+      after_hours_enabled: document.getElementById('s-ah').checked,
+      after_hours_message: document.getElementById('s-ah-msg').value,
+      faqs:                getPortalFaqs(),
+      scheduling_params:   getSchedulingParams(),
+      service_durations:   portalClient?.service_durations || {},
+      timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago'
+    };
+
     const res = await fetch(`${API}/portal/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
