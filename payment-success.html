@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Payment Confirmed — Auzora</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #101826;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px; border-bottom: 1px solid rgba(16,24,38,0.08);
+    background: rgba(255,255,255,0.82); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-size: 20px; font-weight: 900; color: #101826; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
+  .nav-logo span { color: #3b82f6; }
+  .nav-back { font-size: 13px; color: #5f687a; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color .2s; }
+  .nav-back:hover { color: #3b82f6; }
+
+  /* Page */
+  .page { max-width: 640px; margin: 0 auto; padding: 60px 24px; width: 100%; }
+
+  /* Success card */
+  .success-card {
+    background: rgba(255,255,255,0.90); border: 1px solid rgba(16,24,38,0.08);
+    border-radius: 16px; overflow: hidden; position: relative;
+  }
+  .success-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, #7c3aed, #4f46e5);
+  }
+
+  .success-header {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    padding: 40px 40px 32px; text-align: center;
+  }
+  .check-circle {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px; font-size: 36px;
+  }
+  .success-header h1 {
+    font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .success-header p {
+    font-size: 13px; color: rgba(255,255,255,0.75);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  .success-body { padding: 36px 40px; }
+  .success-body h2 {
+    font-size: 22px; font-weight: 800; color: #101826; margin-bottom: 12px;
+  }
+  .success-body p {
+    font-size: 15px; line-height: 1.7; color: #555; margin-bottom: 20px;
+  }
+  .success-body strong { color: #101826; }
+
+  /* Email highlight box */
+  .email-box {
+    background: #f8f8fc; border: 1px solid #e2e2f0; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 28px; display: flex; gap: 16px; align-items: center;
+  }
+  .email-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.20);
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .email-text { font-size: 14px; color: #415065; line-height: 1.6; }
+  .email-text strong { color: #101826; font-weight: 700; }
+
+  /* Next steps */
+  .next-steps { margin-top: 8px; }
+  .next-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #5f687a; margin-bottom: 16px;
+  }
+  .step { display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start; }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3);
+    color: #22c55e; font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-body .step-title { font-size: 14px; font-weight: 600; color: #101826; margin-bottom: 3px; }
+  .step-body .step-desc { font-size: 12px; color: #5f687a; line-height: 1.5; }
+
+  /* Spam note */
+  .spam-note {
+    text-align: center; font-size: 13px; color: #888; margin-top: 28px; padding-top: 20px;
+    border-top: 1px solid rgba(16,24,38,0.06);
+  }
+  .spam-note a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+  .spam-note a:hover { text-decoration: underline; }
+
+  /* Footer link */
+  .home-link {
+    display: block; text-align: center; margin-top: 32px;
+    font-size: 14px; color: #5f687a; text-decoration: none; transition: color .2s;
+  }
+  .home-link:hover { color: #3b82f6; }
+
+  @media (max-width: 640px) {
+    nav { padding: 16px 20px; }
+    .page { padding: 32px 16px; }
+    .success-header { padding: 32px 24px 24px; }
+    .success-body { padding: 28px 24px; }
+    .success-header h1 { font-size: 24px; }
+    .success-body h2 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Auzora<span>.</span></a>
+  <a href="index.html" class="nav-back">← Back to home</a>
+</nav>
+
+<div class="page">
+  <div class="success-card">
+    <div class="success-header">
+      <div class="check-circle">✅</div>
+      <h1>Payment Confirmed</h1>
+      <p>You're all set — check your inbox</p>
+    </div>
+    <div class="success-body">
+      <h2>Your setup link is on its way 📧</h2>
+      <p>We've sent an email to the address you used at checkout with your unique onboarding link. Click the button in that email to complete your setup — it takes about 3 minutes.</p>
+
+      <div class="email-box">
+        <div class="email-icon">📬</div>
+        <div class="email-text">
+          <strong>Check your inbox</strong><br/>
+          Look for an email from <strong>Auzora</strong> with the subject "Payment Confirmed — Complete Your Auzora Setup."
+        </div>
+      </div>
+
+      <div class="next-steps">
+        <div class="next-title">What happens next</div>
+        <div class="step">
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Open the email & click "Complete My Setup"</div>
+            <div class="step-desc">Tell us about your business — agent name, hours, services, FAQs. Takes about 3 minutes.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Get your access code & portal</div>
+            <div class="step-desc">Your welcome email arrives instantly with your client portal access code.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Your AI phone line is provisioned</div>
+            <div class="step-desc">A dedicated number is automatically assigned and configured for your business.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spam-note">
+        Didn't get the email within 5 minutes? Check your spam folder, then contact us at <a href="mailto:support@auzora.io">support@auzora.io</a>.
+      </div>
+    </div>
+  </div>
+
+  <a href="index.html" class="home-link">← Back to auzora.io</a>
+</div>
+
+</body>
+</html>
