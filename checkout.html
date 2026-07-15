@@ -269,28 +269,6 @@
 
 <script>
   const PLANS = {
-    beta: {
-      name: 'Beta',
-      price: '$199',
-      priceMonthly: '$199/mo',
-      tagline: 'The essential AI phone agent for your business.',
-      stripeUrl: 'https://buy.stripe.com/test_bJe5kveAMev093agcM1ZS00',
-      disabled: false,
-      setupWindow: '48 hours',
-      badgeClass: 'starter',
-      cardClass: 'starter',
-      priceClass: 'starter',
-      btnClass: 'starter',
-      baseFeatures: [
-        'Default voice (Liz)',
-        'Dedicated AI phone line',
-        '24/7 call answering',
-        'Calendar appointment booking',
-        'Custom greeting & FAQs',
-        'Client portal access',
-      ],
-      addFeatures: [],
-    },
     starter: {
       name: 'Starter Plan',
       price: '$0',
@@ -421,7 +399,7 @@
 
   // Read plan from URL param
   const params = new URLSearchParams(window.location.search);
-  const plan = (params.get('plan') || 'beta').toLowerCase();
+  const plan = (params.get('plan') || 'starter').toLowerCase();
   renderPlan(plan);
 </script>
 
