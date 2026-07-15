@@ -860,8 +860,12 @@
     }
 
     @media (max-width: 760px) {
-      .topbar-inner { flex-wrap: wrap; padding: 10px 0 14px; }
-      .nav { width: 100%; justify-content: flex-start; }
+      .topbar-inner { flex-wrap: nowrap; padding: 10px 0; gap: 8px; }
+      .brand { flex-shrink: 0; }
+      .brand .brand-copy { display: none; }
+      .nav { width: auto; justify-content: flex-end; gap: 2px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .nav::-webkit-scrollbar { display: none; }
+      .nav a { padding: 8px 10px; font-size: 0.85rem; white-space: nowrap; }
       .hero { padding-top: 48px; }
       .hero h1 { font-size: clamp(2.55rem, 13vw, 4.4rem); }
       .card-grid.four, .card-grid.three, .workflow, .field-grid, .foot-grid, .voice-gallery, .voice-ensemble-grid { grid-template-columns: 1fr; }
@@ -1214,7 +1218,7 @@
           <div class="pricing-tier">Starter</div>
           <div class="pricing-amount">
             <div class="pricing-monthly"><strong>$199</strong><span>/ month</span></div>
-            <div class="pricing-setup" style="color:#22c55e;font-weight:600;">3 months free · No setup fee</div>
+            <div class="pricing-setup" style="color:#22c55e;font-weight:600;">3 months free · No setup fee · <em style="color:#f97316;font-style:normal;font-weight:700;">Limited Time Offer</em></div>
           </div>
           <p class="pricing-desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="pricing-features">
@@ -1329,7 +1333,8 @@
   </footer>
 
   <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
+    const yearEl = document.getElementById('year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     const VOICE_DEMOS = {
       liz: {
