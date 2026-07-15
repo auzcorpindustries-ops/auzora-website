@@ -81,6 +81,13 @@
   }
   .email-text { font-size: 14px; color: #415065; line-height: 1.6; }
   .email-text strong { color: #101826; font-weight: 700; }
+  .email-display {
+    font-size: 16px; font-weight: 700; color: #7c3aed;
+    margin-top: 4px; word-break: break-all;
+  }
+  .email-loading {
+    font-size: 14px; color: #94a3b8; margin-top: 4px;
+  }
 
   /* Next steps */
   .next-steps { margin-top: 8px; }
@@ -146,7 +153,8 @@
         <div class="email-icon">📬</div>
         <div class="email-text">
           <strong>Check your inbox</strong><br/>
-          Look for an email from <strong>Auzora</strong> with the subject "Payment Confirmed — Complete Your Auzora Setup."
+          <span id="email-label">Look for an email from <strong>Auzora</strong> with the subject "Payment Confirmed — Complete Your Auzora Setup."</span>
+          <div id="email-display" class="email-loading">Loading your email address…</div>
         </div>
       </div>
 
@@ -183,6 +191,37 @@
 
   <a href="index.html" class="home-link">← Back to auzora.io</a>
 </div>
+
+<script>
+  (async function() {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const emailDisplay = document.getElementById('email-display');
+    const emailLabel = document.getElementById('email-label');
+
+    if (!sessionId) {
+      emailDisplay.textContent = '';
+      emailDisplay.style.display = 'none';
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://atlas.6845165.xyz/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+
+      if (data.email) {
+        emailDisplay.className = 'email-display';
+        emailDisplay.textContent = data.email;
+        emailLabel.innerHTML = 'A setup link has been sent to <strong>Auzora</strong> at:';
+      } else {
+        emailDisplay.style.display = 'none';
+      }
+    } catch (err) {
+      // If the API call fails, just hide the email display — the page still works
+      emailDisplay.style.display = 'none';
+    }
+  })();
+</script>
 
 </body>
 </html>
