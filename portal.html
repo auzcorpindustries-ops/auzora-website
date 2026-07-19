@@ -1637,11 +1637,10 @@ async
 
 function connectSquare() {
   // Redirect to Square OAuth — the server handles the full flow
-  const token = localStorage.getItem('portalToken');
-  if (!token) { alert('Please log in first.'); return; }
+  if (!portalToken) { showToast('Please log in first.', 'error'); return; }
   // The server's GET /portal/square/oauth endpoint handles the redirect
   // We pass the portal token as a query param so the server knows which client
-  window.location.href = `${API}/portal/square/oauth?token=${encodeURIComponent(token)}`;
+  window.location.href = `${API}/portal/square/oauth?token=${encodeURIComponent(portalToken)}`;
 }
 
 async function disconnectSquare() {
@@ -1654,7 +1653,7 @@ async function disconnectSquare() {
   try {
     const res = await fetch(`${API}/portal/square/disconnect`, {
       method: 'POST',
-      headers: { 'X-Portal-Token': localStorage.getItem('portalToken') },
+      headers: { 'X-Portal-Token': portalToken },
     });
     const data = await res.json();
     
@@ -1684,7 +1683,7 @@ async function sendSquareTestEvent() {
   try {
     const res = await fetch(`${API}/portal/calendar/test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': localStorage.getItem('portalToken') },
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
     });
     const data = await res.json();
     
@@ -1706,7 +1705,7 @@ async function sendSquareTestEvent() {
 async function loadSquareStatus() {
   try {
     const res = await fetch(`${API}/portal/square/status`, {
-      headers: { 'X-Portal-Token': localStorage.getItem('portalToken') },
+      headers: { 'X-Portal-Token': portalToken },
     });
     const data = await res.json();
     
