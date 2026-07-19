@@ -675,6 +675,52 @@
         </div>
       </div>
 
+      <!-- Square -->
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <span style="font-size:32px;">📦</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Square</div>
+            <div style="font-size:13px;color:var(--muted);">Sync appointments with your Square POS booking calendar</div>
+          </div>
+          <div id="square-badge" style="margin-left:auto;display:none;">
+            <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;">✓ Connected</span>
+          </div>
+        </div>
+
+        <!-- Square connected state -->
+        <div id="square-connected" style="display:none;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Square account connected</div>
+                <div style="font-size:12px;color:var(--muted);" id="square-merchant-info">Merchant ID: —</div>
+              </div>
+              <button onclick="disconnectSquare()" id="square-disconnect-btn" style="background:none;border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:9px 16px;color:#ef4444;font-size:13px;cursor:pointer;">Disconnect</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button onclick="sendSquareTestEvent()" id="square-test-btn" style="background:none;border:1px solid rgba(34,197,94,0.4);border-radius:8px;padding:9px 16px;color:var(--green);font-size:13px;cursor:pointer;">🧪 Send Test Event</button>
+          </div>
+        </div>
+
+        <!-- Square subscription notice -->
+        <div id="square-notice" style="display:none;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+          <div style="font-size:12px;color:#ca8a04;line-height:1.6;">
+            <strong>⚠️ Square Appointments subscription required.</strong><br>
+            Square's free tier only allows read access. To create bookings via the API, the merchant must be on <strong>Square Appointments Plus ($49/mo)</strong> or <strong>Premium ($149/mo)</strong>.
+          </div>
+        </div>
+
+        <!-- Default: show connect button -->
+        <div id="square-cta">
+          <button onclick="connectSquare()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:11px 22px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            + Connect Square
+          </button>
+        </div>
+      </div>
+
       <!-- Outlook / Microsoft 365 -->
       <div class="card" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
@@ -1532,6 +1578,8 @@ function loadIntegrations() {
   }
 }
 
+  loadSquareStatus();
+
 function showGcalSetup() {
   document.getElementById('gcal-cta').style.display = 'none';
   document.getElementById('gcal-connected').style.display = 'none';
@@ -1584,7 +1632,118 @@ async function disconnectGoogleCalendar() {
   }
 }
 
-async function sendCalendarTestEvent() {
+async 
+// ─── Square Integration ──────────────────────────────────────────────────────
+
+function connectSquare() {
+  // Redirect to Square OAuth — the server handles the full flow
+  const token = localStorage.getItem('portalToken');
+  if (!token) { alert('Please log in first.'); return; }
+  // The server's GET /portal/square/oauth endpoint handles the redirect
+  // We pass the portal token as a query param so the server knows which client
+  window.location.href = `${API}/portal/square/oauth?token=${encodeURIComponent(token)}`;
+}
+
+async function disconnectSquare() {
+  if (!confirm('Are you sure you want to disconnect Square? Your AI agent will no longer sync appointments to Square.')) return;
+  
+  const btn = document.getElementById('square-disconnect-btn');
+  btn.disabled = true;
+  btn.textContent = 'Disconnecting...';
+  
+  try {
+    const res = await fetch(`${API}/portal/square/disconnect`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': localStorage.getItem('portalToken') },
+    });
+    const data = await res.json();
+    
+    if (res.ok) {
+      // Update UI to show disconnected state
+      document.getElementById('square-badge').style.display = 'none';
+      document.getElementById('square-connected').style.display = 'none';
+      document.getElementById('square-cta').style.display = 'block';
+      alert('Square has been disconnected. Your AI agent will use Google Calendar if connected.');
+    } else {
+      alert(data.error || 'Failed to disconnect Square.');
+      btn.disabled = false;
+      btn.textContent = 'Disconnect';
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Disconnect';
+  }
+}
+
+async function sendSquareTestEvent() {
+  const btn = document.getElementById('square-test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  
+  try {
+    const res = await fetch(`${API}/portal/calendar/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': localStorage.getItem('portalToken') },
+    });
+    const data = await res.json();
+    
+    if (res.ok && data.ok) {
+      btn.textContent = '✓ Test Event Sent';
+      setTimeout(() => { btn.textContent = '🧪 Send Test Event'; btn.disabled = false; }, 3000);
+    } else {
+      alert(data.error || 'Test event failed. Make sure your Square account has an active Appointments subscription.');
+      btn.textContent = '🧪 Send Test Event';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+    btn.textContent = '🧪 Send Test Event';
+    btn.disabled = false;
+  }
+}
+
+async function loadSquareStatus() {
+  try {
+    const res = await fetch(`${API}/portal/square/status`, {
+      headers: { 'X-Portal-Token': localStorage.getItem('portalToken') },
+    });
+    const data = await res.json();
+    
+    if (res.ok && data.connected) {
+      // Show connected state
+      document.getElementById('square-cta').style.display = 'none';
+      document.getElementById('square-connected').style.display = 'block';
+      document.getElementById('square-badge').style.display = 'block';
+      
+      if (data.merchant_id) {
+        document.getElementById('square-merchant-info').textContent = `Merchant ID: ${data.merchant_id}`;
+      }
+    } else {
+      // Show connect button + subscription notice
+      document.getElementById('square-notice').style.display = 'block';
+    }
+  } catch (e) {
+    console.warn('Could not load Square status:', e);
+  }
+}
+
+// Check for Square OAuth callback results in URL params
+function checkSquareCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('square_connected') === '1') {
+    // Success — reload to clear params and show connected state
+    alert('Square connected successfully! Your AI agent will now sync appointments to Square.');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    loadSquareStatus();
+  } else if (params.get('square_error')) {
+    const error = params.get('square_error');
+    alert(`Square connection failed: ${error}`);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function sendCalendarTestEvent() {
   const btn = document.getElementById('gcal-test-btn');
   btn.disabled = true;
   btn.textContent = 'Sending...';
