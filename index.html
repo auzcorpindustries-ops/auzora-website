@@ -274,14 +274,14 @@
 
   <header id="top" class="az-hero">
     <div class="az-hero-bg"></div>
-    <div class="az-orbit-ring">
-      <div style="width:700px;height:860px;"></div>
-      <div style="width:1000px;height:960px;"></div>
-      <div style="width:1320px;height:1040px;"></div>
-      <div style="width:1680px;height:1120px;"></div>
+    <div class="az-orbit-ring" style="position:absolute;left:50%;top:52%;width:0;height:0;pointer-events:none;">
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:700px;height:860px;border:1px solid rgba(16,24,38,0.055);border-radius:50%;"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1000px;height:960px;border:1px solid rgba(16,24,38,0.055);border-radius:50%;"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1320px;height:1040px;border:1px solid rgba(16,24,38,0.055);border-radius:50%;"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1680px;height:1120px;border:1px solid rgba(16,24,38,0.055);border-radius:50%;"></div>
     </div>
 
-    <div class="az-orbit" style="left:50%;top:52%;width:0;height:0;pointer-events:none;">
+    <div class="az-orbit" style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:min(1240px,calc(100% - 80px));height:100%;pointer-events:none;">
       <div class="az-orbit" style="position:absolute;left:40px;top:14%;width:62px;height:62px;border-radius:99px;background:#fff;border:1px solid rgba(16,24,38,0.08);box-shadow:0 6px 20px rgba(16,24,38,.08);display:grid;place-items:center;animation:floaty 7s ease-in-out infinite"><img src="https://auzora-crms.s3.us-east-2.amazonaws.com/logos/salesforce.png" alt="Salesforce" style="width:29px;height:29px;object-fit:contain"></div>
       <div class="az-orbit" style="position:absolute;left:8px;top:33%;width:54px;height:54px;border-radius:99px;background:#fff;border:1px solid rgba(16,24,38,0.08);box-shadow:0 6px 20px rgba(16,24,38,.08);display:grid;place-items:center;animation:floaty 5s ease-in-out infinite"><img src="https://cdn.simpleicons.org/hubspot" alt="HubSpot" style="width:25px;height:25px;object-fit:contain"></div>
       <div class="az-orbit" style="position:absolute;left:0px;top:56%;width:58px;height:58px;border-radius:99px;background:#fff;border:1px solid rgba(16,24,38,0.08);box-shadow:0 6px 20px rgba(16,24,38,.08);display:grid;place-items:center;animation:floaty 6s ease-in-out infinite"><img src="https://cdn.simpleicons.org/googlecalendar" alt="Google Calendar" style="width:27px;height:27px;object-fit:contain"></div>
