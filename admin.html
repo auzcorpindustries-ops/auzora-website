@@ -794,6 +794,18 @@ tr:hover td { background: var(--tint); }
               <div id="p-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
             </div>
 
+            <!-- SMS Booking Form -->
+            <div class="persona-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="persona-card-title" style="margin:0;">📲 SMS Booking Form</div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                  <input type="checkbox" id="p-sms-booking" onchange="markDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+              <div id="p-sms-booking-off" style="font-size:13px;color:var(--muted);">When enabled, the AI receptionist offers callers the option to book via a text message with a link to an online form.</div>
+            </div>
+
             <!-- Services & Specialties -->
             <div class="persona-card">
               <div class="persona-card-title"><i data-lucide="wrench"></i> Services &amp; Specialties</div>
@@ -1658,6 +1670,8 @@ function renderPersonaForm(c) {
 
   // After hours
   const ahEnabled = c.after_hours_enabled || false;
+  const smsBooking = document.getElementById('p-sms-booking');
+  if (smsBooking) smsBooking.checked = c.sms_booking_enabled || false;
   document.getElementById('p-after-hours').checked = ahEnabled;
   document.getElementById('p-after-hours-msg').value = c.after_hours_message || '';
   toggleAdminAH();
@@ -1723,6 +1737,7 @@ async function savePersona() {
     topics_to_avoid:  adminAvoidTopics,
     // After hours
     after_hours_enabled: document.getElementById('p-after-hours').checked,
+    sms_booking_enabled: document.getElementById('p-sms-booking') ? document.getElementById('p-sms-booking').checked : false,
     after_hours_message: document.getElementById('p-after-hours-msg').value,
     // Advanced (admin-only)
     system_prompt_override: document.getElementById('p-system-prompt').value || null,
