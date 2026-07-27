@@ -984,6 +984,70 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
         <div id="ob-lead-list"></div>
       </div>
+
+      <!-- Campaigns (Phase 2) -->
+      <div class="page-header" style="margin-top:32px;">
+        <h2><i data-lucide="megaphone" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Campaigns</h2>
+        <p>Bulk-upload a lead list and let your AI agent dial them automatically within your business hours — with retries for no-answers.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="plus-circle"></i> New Campaign</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>Campaign Name *</label>
+            <input type="text" id="cmp-name" placeholder="e.g. Spring Follow-up" />
+          </div>
+          <div class="form-group">
+            <label>Script Context (optional)</label>
+            <input type="text" id="cmp-script" placeholder="e.g. Mention 10% spring discount for new customers" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>Max Retries (after first call)</label>
+            <input type="number" id="cmp-retries" value="2" min="0" max="5" style="width:80px;" />
+            <span style="font-size:11px;color:var(--muted);">0–5 (default 2 = 3 total attempts per lead)</span>
+          </div>
+          <div class="form-group">
+            <label>Retry Delay (minutes)</label>
+            <input type="number" id="cmp-delay" value="60" min="15" style="width:80px;" />
+            <span style="font-size:11px;color:var(--muted);">Min 15 min between attempts</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lead List *</label>
+          <textarea id="cmp-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
+          <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
+        </div>
+        <button class="btn-save" id="cmp-create-btn" onclick="createCampaign()">📋 Create Campaign</button>
+        <span id="cmp-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+
+      <!-- Campaign list -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <h2>Your Campaigns</h2>
+          <button onclick="loadCampaigns()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
+        </div>
+        <div id="cmp-list"></div>
+      </div>
+
+      <!-- Campaign detail modal -->
+      <div id="cmp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCmpModal()">
+        <div style="background:var(--card);border-radius:16px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+            <div>
+              <h2 id="cmp-modal-title" style="margin:0;"></h2>
+              <span id="cmp-modal-status" style="font-size:12px;"></span>
+            </div>
+            <button onclick="closeCmpModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+          </div>
+          <div id="cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
+          <div id="cmp-modal-leads"></div>
+          <div id="cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -1243,7 +1307,7 @@ function showPage(name) {
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
-  if (name === 'outbound') loadOutbound();
+  if (name === 'outbound') { loadOutbound(); loadCampaigns(); }
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
@@ -2202,6 +2266,201 @@ async function startOutboundCall() {
   }
   btn.disabled = false; btn.style.opacity = '1';
   setTimeout(() => { status.textContent = ''; status.style.color = 'var(--muted)'; }, 6000);
+}
+
+// ── CAMPAIGNS (Phase 2) ──────────────────────────────────────────────────────
+
+function parseLeadList(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.map(line => {
+    const parts = line.split(',').map(p => p.trim());
+    return { phone: parts[0] || '', name: parts[1] || '', service: parts[2] || '', notes: parts[3] || '' };
+  }).filter(l => l.phone);
+}
+
+async function createCampaign() {
+  const name = document.getElementById('cmp-name').value.trim();
+  if (!name) { showToast('Campaign name is required', 'error'); return; }
+  const script = document.getElementById('cmp-script').value.trim();
+  const retries = parseInt(document.getElementById('cmp-retries').value, 10) || 2;
+  const delay = parseInt(document.getElementById('cmp-delay').value, 10) || 60;
+  const leads = parseLeadList(document.getElementById('cmp-leads').value);
+  if (!leads.length) { showToast('Add at least one lead (phone number required)', 'error'); return; }
+
+  const btn = document.getElementById('cmp-create-btn');
+  const status = document.getElementById('cmp-create-status');
+  btn.disabled = true; btn.style.opacity = '0.6'; status.textContent = 'Creating…';
+  try {
+    const res = await fetch(`${API}/outbound/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ name, script_context: script, max_retries: retries, retry_delay_minutes: delay, leads })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const skipped = data.skipped?.length || 0;
+      status.textContent = `✓ Created — ${data.imported} leads imported${skipped ? `, ${skipped} skipped` : ''}`;
+      status.style.color = 'var(--green)';
+      showToast(`Campaign "${name}" created with ${data.imported} leads ✓`, 'success');
+      document.getElementById('cmp-name').value = '';
+      document.getElementById('cmp-script').value = '';
+      document.getElementById('cmp-leads').value = '';
+      document.getElementById('cmp-retries').value = '2';
+      document.getElementById('cmp-delay').value = '60';
+      loadCampaigns();
+    } else throw new Error(data.error || 'Failed');
+  } catch (e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = '#f87171';
+    showToast(e.message, 'error');
+  }
+  btn.disabled = false; btn.style.opacity = '1';
+  setTimeout(() => { status.textContent = ''; status.style.color = 'var(--muted)'; }, 8000);
+}
+
+const CMP_STATUS_COLORS = {
+  draft: '#94a3b8', active: '#22c55e', paused: '#f59e0b', completed: '#6366f1'
+};
+const CMP_LEAD_STATUS_COLORS = {
+  pending: '#94a3b8', called: '#3b82f6', reached: '#22c55e', 'no-answer': '#f59e0b',
+  voicemail: '#a855f7', 'opted-out': '#ef4444', 'max-attempts': '#6b7280', failed: '#ef4444'
+};
+
+async function loadCampaigns() {
+  const listEl = document.getElementById('cmp-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="empty">Loading campaigns…</div>';
+  try {
+    const res = await fetch(`${API}/outbound/campaigns`, { headers: { 'X-Portal-Token': portalToken } });
+    const data = await res.json();
+    const campaigns = data.campaigns || [];
+    if (!campaigns.length) {
+      listEl.innerHTML = '<div class="empty">No campaigns yet. Create one above to start bulk-calling leads.</div>';
+      return;
+    }
+    const rows = campaigns.map(c => {
+      const s = c.stats || {};
+      const color = CMP_STATUS_COLORS[c.status] || '#94a3b8';
+      const reached = s.reached || 0;
+      const total = s.total || 0;
+      const pct = total ? Math.round(reached / total * 100) : 0;
+      return `
+      <tr style="cursor:pointer;" onclick="viewCampaign('${c.campaign_id}')">
+        <td style="font-weight:600;">${c.name || 'Untitled'}</td>
+        <td><span style="background:${color}22;color:${color};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;">${c.status}</span></td>
+        <td style="color:var(--muted);font-size:13px;">${total} leads</td>
+        <td style="font-size:13px;">${reached} reached (${pct}%)</td>
+        <td style="color:var(--muted);font-size:12px;">${c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
+      </tr>`;
+    }).join('');
+    listEl.innerHTML = `<table><tr><th>Name</th><th>Status</th><th>Leads</th><th>Progress</th><th>Created</th></tr><tbody>${rows}</tbody></table>`;
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty">Could not load campaigns.</div>';
+  }
+}
+
+async function viewCampaign(id) {
+  const modal = document.getElementById('cmp-modal');
+  modal.style.display = 'flex';
+  document.getElementById('cmp-modal-title').textContent = 'Loading…';
+  document.getElementById('cmp-modal-status').textContent = '';
+  document.getElementById('cmp-modal-stats').innerHTML = '';
+  document.getElementById('cmp-modal-leads').innerHTML = '';
+  document.getElementById('cmp-modal-actions').innerHTML = '';
+  try {
+    const res = await fetch(`${API}/outbound/campaigns/${id}`, { headers: { 'X-Portal-Token': portalToken } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    const c = data.campaign;
+    document.getElementById('cmp-modal-title').textContent = c.name;
+    const color = CMP_STATUS_COLORS[c.status] || '#94a3b8';
+    document.getElementById('cmp-modal-status').innerHTML = `<span style="background:${color}22;color:${color};padding:2px 8px;border-radius:6px;font-weight:700;text-transform:uppercase;">${c.status}</span>`;
+    if (c.script_context) {
+      document.getElementById('cmp-modal-status').innerHTML += `<span style="margin-left:8px;color:var(--muted);">Script: ${c.script_context}</span>`;
+    }
+    // Stats badges
+    const s = c.stats || {};
+    const stats = [
+      { label: 'Total', val: s.total || 0, color: '#94a3b8' },
+      { label: 'Reached', val: s.reached || 0, color: '#22c55e' },
+      { label: 'No Answer', val: s['no-answer'] || 0, color: '#f59e0b' },
+      { label: 'Voicemail', val: s.voicemail || 0, color: '#a855f7' },
+      { label: 'Pending', val: s.pending || 0, color: '#3b82f6' },
+      { label: 'Opted Out', val: s['opted-out'] || 0, color: '#ef4444' },
+    ];
+    document.getElementById('cmp-modal-stats').innerHTML = stats.map(st =>
+      `<div style="background:var(--bg);border-radius:8px;padding:8px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:${st.color};">${st.val}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${st.label}</div></div>`
+    ).join('');
+    // Lead table
+    const leads = c.leads || [];
+    const leadRows = leads.map(l => {
+      const status = l.outbound_status || 'pending';
+      const color = CMP_LEAD_STATUS_COLORS[status] || '#94a3b8';
+      const attempts = l.outbound_call_count ? ` (${l.outbound_call_count}×)` : '';
+      return `
+      <tr>
+        <td style="font-weight:600;">${l.phone || '—'}</td>
+        <td>${l.name || '—'}</td>
+        <td><span style="color:${color};font-weight:600;font-size:12px;">${status}${attempts}</span></td>
+        <td style="color:var(--muted);font-size:12px;">${l.next_attempt_at ? 'Retry: ' + new Date(l.next_attempt_at).toLocaleString() : '—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('cmp-modal-leads').innerHTML = `<table><tr><th>Phone</th><th>Name</th><th>Status</th><th>Next Attempt</th></tr><tbody>${leadRows}</tbody></table>`;
+    // Action buttons
+    const actions = [];
+    if (c.status === 'draft' || c.status === 'paused') {
+      actions.push(`<button onclick="startCampaign('${id}')" style="background:var(--accent);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-weight:700;cursor:pointer;">▶ Start Dialing</button>`);
+    }
+    if (c.status === 'active') {
+      actions.push(`<button onclick="pauseCampaign('${id}')" style="background:#f59e0b;border:none;border-radius:8px;padding:8px 16px;color:#fff;font-weight:700;cursor:pointer;">⏸ Pause</button>`);
+    }
+    actions.push(`<button onclick="deleteCampaign('${id}')" style="background:#ef4444;border:none;border-radius:8px;padding:8px 16px;color:#fff;font-weight:700;cursor:pointer;">🗑 Delete</button>`);
+    document.getElementById('cmp-modal-actions').innerHTML = actions.join('');
+  } catch (e) {
+    document.getElementById('cmp-modal-title').textContent = 'Error';
+    document.getElementById('cmp-modal-leads').innerHTML = `<div class="empty">${e.message}</div>`;
+  }
+}
+
+function closeCmpModal() {
+  document.getElementById('cmp-modal').style.display = 'none';
+}
+
+async function startCampaign(id) {
+  try {
+    const res = await fetch(`${API}/outbound/campaigns/${id}/start`, { method: 'POST', headers: { 'X-Portal-Token': portalToken } });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Campaign started — AI will dial leads during business hours ✓', 'success');
+      viewCampaign(id);
+      loadCampaigns();
+    } else throw new Error(data.error || 'Failed');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function pauseCampaign(id) {
+  try {
+    const res = await fetch(`${API}/outbound/campaigns/${id}/pause`, { method: 'POST', headers: { 'X-Portal-Token': portalToken } });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Campaign paused', 'info');
+      viewCampaign(id);
+      loadCampaigns();
+    } else throw new Error(data.error || 'Failed');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteCampaign(id) {
+  if (!confirm('Delete this campaign? Pending leads will be cancelled. Lead records and opt-out flags are kept for history.')) return;
+  try {
+    const res = await fetch(`${API}/outbound/campaigns/${id}`, { method: 'DELETE', headers: { 'X-Portal-Token': portalToken } });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Campaign deleted', 'info');
+      closeCmpModal();
+      loadCampaigns();
+    } else throw new Error(data.error || 'Failed');
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
