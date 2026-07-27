@@ -973,6 +973,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <textarea id="ob-notes" rows="2" placeholder="e.g. Called last Tuesday asking about pricing — wants a quote for a 20x40 pool"></textarea>
         </div>
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()">📞 Start AI Call</button>
+        <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">🧪 Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
       </div>
 
@@ -2229,7 +2230,7 @@ async function callLead(leadId, btn) {
   setTimeout(loadOutbound, 1500);
 }
 
-async function startOutboundCall() {
+async function startOutboundCall(isTest) {
   const phone = document.getElementById('ob-phone').value.trim();
   if (!phone) { showToast('Enter a phone number to call', 'error'); return; }
   const name = document.getElementById('ob-name').value.trim();
@@ -2240,20 +2241,20 @@ async function startOutboundCall() {
   if (service) contextParts.push(`Interested in: ${service}`);
   if (notes) contextParts.push(`Notes: ${notes}`);
 
-  const btn = document.getElementById('ob-call-btn');
+  const btn = isTest ? document.getElementById('ob-test-btn') : document.getElementById('ob-call-btn');
   const status = document.getElementById('ob-call-status');
-  btn.disabled = true; btn.style.opacity = '0.6'; status.textContent = 'Starting call…';
+  btn.disabled = true; btn.style.opacity = '0.6'; status.textContent = isTest ? 'Starting test call…' : 'Starting call…';
   try {
     const res = await fetch(`${API}/outbound/call`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ phone, lead_context: contextParts.join('. ') })
+      body: JSON.stringify({ phone, lead_context: contextParts.join('. '), test: isTest === true })
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      status.textContent = '✓ Call started';
+      status.textContent = isTest ? '✓ Test call started' : '✓ Call started';
       status.style.color = 'var(--green)';
-      showToast('AI call started — your agent is dialing now ✓', 'success');
+      showToast(isTest ? 'Test call started — business hours bypassed ✓' : 'AI call started — your agent is dialing now ✓', 'success');
       document.getElementById('ob-phone').value = '';
       document.getElementById('ob-name').value = '';
       document.getElementById('ob-service').value = '';
