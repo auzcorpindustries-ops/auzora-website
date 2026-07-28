@@ -413,6 +413,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon"><i data-lucide="calendar-days"></i></span> Scheduling</div>
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon"><i data-lucide="unplug"></i></span> Integrations</div>
     <div class="nav-item" onclick="showPage('outbound')" id="nav-outbound"><span class="nav-icon"><i data-lucide="phone-outgoing"></i></span> Outbound</div>
+    <div class="nav-item" onclick="showPage('sms')" id="nav-sms"><span class="nav-icon"><i data-lucide="message-square"></i></span> SMS Services</div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar" id="sidebar-initials">–</div>
@@ -987,44 +988,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <p>Have your AI agent call leads back — follow up on inquiries and book appointments</p>
       </div>
 
-      <!-- Call a number directly -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label>Phone Number *</label>
-            <input type="tel" id="ob-phone" placeholder="(555) 123-4567" />
-          </div>
-          <div class="form-group">
-            <label>Lead Name</label>
-            <input type="text" id="ob-name" placeholder="John Smith" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Interested In (service)</label>
-          <input type="text" id="ob-service" placeholder="e.g. Pool Cleaning" />
-        </div>
-        <div class="form-group">
-          <label>Notes for the AI (optional)</label>
-          <textarea id="ob-notes" rows="2" placeholder="e.g. Called last Tuesday asking about pricing — wants a quote for a 20x40 pool"></textarea>
-        </div>
-        <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
-        <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">🧪 Test Call (any time)</button>
-        <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
-      </div>
-
-      <!-- Captured leads -->
-      <div class="table-wrap">
-        <div class="table-header">
-          <h2>Captured Leads</h2>
-          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
-        </div>
-        <div id="ob-lead-list"></div>
-      </div>
-
       <!-- Campaigns (Phase 2) -->
       <div class="page-header" style="margin-top:32px;">
         <h2><i data-lucide="megaphone" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Campaigns</h2>
@@ -1089,9 +1052,53 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- SMS Campaigns -->
+      <!-- Call a number directly -->
       <div class="page-header" style="margin-top:32px;">
-        <h2><i data-lucide="message-square" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> SMS Campaigns</h2>
+        <h2><i data-lucide="phone-forwarded" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Call a Lead</h2>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="phone-forwarded"></i> Manual Call</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="ob-phone" placeholder="(555) 123-4567" />
+          </div>
+          <div class="form-group">
+            <label>Lead Name</label>
+            <input type="text" id="ob-name" placeholder="John Smith" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Interested In (service)</label>
+          <input type="text" id="ob-service" placeholder="e.g. Pool Cleaning" />
+        </div>
+        <div class="form-group">
+          <label>Notes for the AI (optional)</label>
+          <textarea id="ob-notes" rows="2" placeholder="e.g. Called last Tuesday asking about pricing — wants a quote for a 20x40 pool"></textarea>
+        </div>
+        <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
+        <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">🧪 Test Call (any time)</button>
+        <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+
+      <!-- Captured leads -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <h2>Captured Leads</h2>
+          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+        </div>
+        <div id="ob-lead-list"></div>
+      </div>
+
+    </div>
+
+    <!-- SMS Services Page -->
+    <div class="page" id="page-sms">
+      <div class="page-header">
+        <h1><i data-lucide="message-square" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> SMS Services</h1>
         <p>Bulk-text leads with follow-up messages, promotions, and booking links. Opt-outs are honored automatically.</p>
       </div>
 
@@ -1417,7 +1424,8 @@ function showPage(name) {
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
-  if (name === 'outbound') { loadOutbound(); loadCampaigns(); loadSmsCampaigns(); }
+  if (name === 'outbound') { loadOutbound(); loadCampaigns(); }
+  if (name === 'sms') { loadSmsCampaigns(); }
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
@@ -2289,42 +2297,75 @@ async function testWebhook() {
 }
 
 // ── OUTBOUND ─────────────────────────────────────────────────────────────────
+let obLeadsAll = [];
+let obLeadsPage = 0;
+const OB_LEADS_PER_PAGE = 25;
+
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
   listEl.innerHTML = '<div class="empty">Loading leads…</div>';
   try {
     const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
     const data = await res.json();
-    const leads = Array.isArray(data) ? data : (data.leads || []);
-    document.getElementById('ob-lead-count').textContent = leads.length + ' lead' + (leads.length === 1 ? '' : 's');
-    if (!leads.length) {
-      listEl.innerHTML = '<div class="empty">No leads captured yet. Leads from inbound calls will appear here with a Call button.</div>';
-      return;
-    }
-    const rows = leads.map(l => {
-      const optedOut = l.outbound_opted_out === true;
-      const status = optedOut ? 'opted-out' : (l.outbound_status || 'new');
-      const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
-      const attempts = l.outbound_call_count ? ` (${l.outbound_call_count}×)` : '';
-      const callBtn = optedOut
-        ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
-        : (l.phone
-            ? `<button onclick="callLead('${l.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
-            : '<span style="font-size:11px;color:var(--muted);">No phone</span>');
-      return `
-      <tr>
-        <td style="font-weight:600;">${l.phone || '—'}</td>
-        <td style="color:var(--accent2);">${l.email || '—'}</td>
-        <td style="color:var(--muted);font-size:12px;">${l.captured_at ? new Date(l.captured_at).toLocaleString() : '—'}</td>
-        <td><span class="${badgeClass}">${status}${attempts}</span></td>
-        <td>${callBtn}</td>
-      </tr>`;
-    }).join('');
-    listEl.innerHTML = `<table><tr><th>Phone</th><th>Email</th><th>Captured</th><th>Outbound Status</th><th></th></tr><tbody>${rows}</tbody></table>`;
+    obLeadsAll = Array.isArray(data) ? data : (data.leads || []);
+    obLeadsPage = 0;
+    renderObLeads();
   } catch (e) {
     listEl.innerHTML = '<div class="empty">Could not load leads.</div>';
   }
 }
+
+function renderObLeads() {
+  const listEl = document.getElementById('ob-lead-list');
+  const leads = obLeadsAll;
+  document.getElementById('ob-lead-count').textContent = leads.length + ' lead' + (leads.length === 1 ? '' : 's');
+  if (!leads.length) {
+    listEl.innerHTML = '<div class="empty">No leads captured yet. Leads from inbound calls will appear here with a Call button.</div>';
+    return;
+  }
+  const totalPages = Math.ceil(leads.length / OB_LEADS_PER_PAGE);
+  if (obLeadsPage > totalPages - 1) obLeadsPage = totalPages - 1;
+  if (obLeadsPage < 0) obLeadsPage = 0;
+  const start = obLeadsPage * OB_LEADS_PER_PAGE;
+  const pageLeads = leads.slice(start, start + OB_LEADS_PER_PAGE);
+
+  const rows = pageLeads.map(l => {
+    const optedOut = l.outbound_opted_out === true;
+    const status = optedOut ? 'opted-out' : (l.outbound_status || 'new');
+    const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
+    const attempts = l.outbound_call_count ? ` (${l.outbound_call_count}×)` : '';
+    const callBtn = optedOut
+      ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
+      : (l.phone
+          ? `<button onclick="callLead('${l.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
+          : '<span style="font-size:11px;color:var(--muted);">No phone</span>');
+    return `
+    <tr>
+      <td style="font-weight:600;">${l.phone || '—'}</td>
+      <td style="color:var(--accent2);">${l.email || '—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${l.captured_at ? new Date(l.captured_at).toLocaleString() : '—'}</td>
+      <td><span class="${badgeClass}">${status}${attempts}</span></td>
+      <td>${callBtn}</td>
+    </tr>`;
+  }).join('');
+
+  let pagination = '';
+  if (totalPages > 1) {
+    pagination = `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:8px 0;">
+      <span style="font-size:12px;color:var(--muted);">Showing ${start + 1}–${Math.min(start + OB_LEADS_PER_PAGE, leads.length)} of ${leads.length}</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="obLeadsPrev()" ${obLeadsPage === 0 ? 'disabled' : ''} style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;cursor:${obLeadsPage === 0 ? 'default' : 'pointer'};opacity:${obLeadsPage === 0 ? 0.4 : 1};color:var(--muted);">← Prev</button>
+        <span style="font-size:12px;color:var(--muted);padding:4px 8px;">Page ${obLeadsPage + 1} of ${totalPages}</span>
+        <button onclick="obLeadsNext()" ${obLeadsPage >= totalPages - 1 ? 'disabled' : ''} style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;cursor:${obLeadsPage >= totalPages - 1 ? 'default' : 'pointer'};opacity:${obLeadsPage >= totalPages - 1 ? 0.4 : 1};color:var(--muted);">Next →</button>
+      </div>
+    </div>`;
+  }
+
+  listEl.innerHTML = `<table><tr><th>Phone</th><th>Email</th><th>Captured</th><th>Outbound Status</th><th></th></tr><tbody>${rows}</tbody></table>${pagination}`;
+}
+
+function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
+function obLeadsNext() { obLeadsPage++; renderObLeads(); }
 
 async function callLead(leadId, btn) {
   if (!confirm('Have your AI agent call this lead now?')) return;
