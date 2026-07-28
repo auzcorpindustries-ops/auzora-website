@@ -907,7 +907,7 @@ tr:hover td { background: var(--tint); }
 <div id="toast"></div>
 
 <script>
-const API = 'https://atlas.6845165.xyz/admin';
+const API = (location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/admin';
 const ADMIN_PASS = 'auzora2026'; // change this
 let allClients = [];
 let editingClientId = null;
@@ -1260,7 +1260,7 @@ async function confirmDeleteClient() {
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
 // Use the same base + API key as the rest of the admin portal so requests are authorized.
 const ATLAS_API = API;
-const VOICES_API = 'https://atlas.6845165.xyz/api/voices';
+const VOICES_API = (location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/api/voices';
 function adminAuthHeaders(extra = {}) {
   return Object.assign({ 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }, extra);
 }
