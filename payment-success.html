@@ -207,7 +207,8 @@
     }
 
     try {
-      const res = await fetch(`https://atlas.6845165.xyz/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`);
+      const _apiBase = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
+      const res = await fetch(`${_apiBase}/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
 
       if (data.email) {
