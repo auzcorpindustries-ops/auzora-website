@@ -569,6 +569,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <label>Escalation Phone</label>
               <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
             </div>
+
+            <!-- Warm Transfer Toggle -->
+            <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                  <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+            </div>
+
+            <!-- Appointment Reminders Toggle -->
+            <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                  <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -626,6 +654,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div class="form-group">
               <label>Escalation Rules</label>
               <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Lead Follow-up SMS Template</label>
+              <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label>Topics to Avoid</label>
@@ -1029,7 +1062,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
           <span style="font-size:32px;">🔗</span>
           <div>
-            <div style="font-size:16px;font-weight:700;">Lead Webhook</div>
+            <div style="font-size:16px;font-weight:700;">Lead Webhook (Outbound)</div>
             <div style="font-size:13px;color:var(--muted);">Send captured leads to your CRM, Zapier, Make, n8n, or any webhook URL</div>
           </div>
         </div>
@@ -1054,6 +1087,36 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             🧪 Send Test Payload
           </button>
           <span id="webhook-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Lead Intake (Inbound) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <span style="font-size:32px;">📥</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Lead Intake (Inbound)</div>
+            <div style="font-size:13px;color:var(--muted);">Receive leads from your website forms or CRM — instant SMS + AI call follow-up</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+          POST form submissions or CRM webhooks directly to Auzora. We'll instantly text and call the lead — no n8n or Zapier required.
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
+          POST /leads/inbound<br>
+          Header: x-lead-token: <span id="i-lead-token-display">Loading...</span><br>
+          Body: { "name": "...", "phone": "...", "email": "...", "service": "...", "source": "..." }
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="copyLeadToken()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            Copy Token
+          </button>
+          <button onclick="copyLeadWebhookUrl()"
+            style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--muted2);font-size:13px;font-weight:600;cursor:pointer;">
+            Copy Full URL
+          </button>
+          <span id="lead-intake-status" style="font-size:12px;color:var(--muted);"></span>
         </div>
       </div>
 
@@ -1744,6 +1807,11 @@ async function loadSettings() {
   document.getElementById('s-greeting').value = c.custom_greeting || '';
   document.getElementById('s-escalation').value = c.escalation_rules || '';
 
+  // Warm transfer + reminders
+  document.getElementById('s-warm-transfer').checked = c.warm_transfer_enabled || false;
+  document.getElementById('s-reminders').checked = c.reminders_enabled !== false; // default true
+  document.getElementById('s-lead-template').value = c.sms_lead_template || '';
+
   // Tone & Style
   document.getElementById('s-tone').value = c.tone || 'friendly';
   document.getElementById('s-pace').value = c.speaking_pace || 'normal';
@@ -1990,6 +2058,9 @@ async function saveSettings() {
       topics_to_avoid:     portalAvoidTopics,
       after_hours_enabled: document.getElementById('s-ah').checked,
       after_hours_message: document.getElementById('s-ah-msg').value,
+      warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
+      reminders_enabled: document.getElementById('s-reminders').checked,
+      sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
       faqs:                getPortalFaqs(),
       scheduling_params:   getSchedulingParams(),
       service_durations:   portalClient?.service_durations || {},
@@ -2062,6 +2133,7 @@ function loadIntegrations() {
 }
 
   loadSquareStatus();
+  loadLeadIntakeToken();
 
 function showGcalSetup() {
   document.getElementById('gcal-cta').style.display = 'none';
@@ -2429,6 +2501,42 @@ async function testWebhook() {
     showToast('Test failed: ' + e.message, 'error');
   }
   setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+// ── LEAD INTAKE ──────────────────────────────────────────────────────────────
+let leadIntakeToken = '';
+
+async function loadLeadIntakeToken() {
+  try {
+    const res = await fetch(`${API}/leads/token`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error('Failed to fetch token');
+    const data = await res.json();
+    leadIntakeToken = data.token || '';
+    const display = leadIntakeToken.length > 20
+      ? leadIntakeToken.slice(0, 12) + '...' + leadIntakeToken.slice(-8)
+      : leadIntakeToken;
+    const el = document.getElementById('i-lead-token-display');
+    if (el) el.textContent = display;
+  } catch (e) {
+    const el = document.getElementById('i-lead-token-display');
+    if (el) el.textContent = 'Unable to load';
+  }
+}
+
+function copyLeadToken() {
+  if (!leadIntakeToken) return;
+  copyText(leadIntakeToken);
+  const status = document.getElementById('lead-intake-status');
+  if (status) { status.textContent = 'Token copied!'; status.style.color = 'var(--green)'; setTimeout(() => { status.textContent = ''; }, 3000); }
+}
+
+function copyLeadWebhookUrl() {
+  if (!leadIntakeToken) return;
+  const fullUrl = `${API.replace(/\/$/, '')}/leads/inbound`;
+  const curlCmd = `curl -X POST ${fullUrl} \\\n  -H "x-lead-token: ${leadIntakeToken}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"name":"John Doe","phone":"+15551234567","service":"Consultation","source":"website"}'`;
+  copyText(curlCmd);
+  const status = document.getElementById('lead-intake-status');
+  if (status) { status.textContent = 'Full curl command copied!'; status.style.color = 'var(--green)'; setTimeout(() => { status.textContent = ''; }, 3000); }
 }
 
 // ── OUTBOUND ─────────────────────────────────────────────────────────────────
