@@ -1,0 +1,91 @@
+# .github/workflows/auto-merge.yml — Auto-merge PRs to develop after CI passes
+# Only applies to PRs targeting `develop` (NOT main — those need human approval).
+name: Auto-Merge to Develop
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-Merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI checks and merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = pr.head.sha;
+
+            console.log(`PR #${pr.number}: waiting for CI checks on ${sha}`);
+
+            // auzora-website has no CI jobs — if there are no check runs,
+            // just merge after a short delay (lets Last checks register).
+            const maxWaitMs = 2 * 60 * 1000; // 2 min timeout
+            const intervalMs = 15_000;
+            const start = Date.now();
+
+            while (Date.now() - start < maxWaitMs) {
+              const { data: { check_runs } } = await github.rest.checks.listForRef({
+                owner, repo, ref: sha, per_page: 100,
+              });
+
+              // No CI configured on this repo — merge immediately after
+              // a brief wait for any webhook-triggered checks to register.
+              if (check_runs.length === 0) {
+                console.log('No CI checks found — waiting 15s for any to register...');
+                await new Promise(r => setTimeout(r, 15_000));
+
+                const { data: { check_runs: recheck } } = await github.rest.checks.listForRef({
+                  owner, repo, ref: sha, per_page: 100,
+                });
+
+                if (recheck.length === 0) {
+                  console.log('Still no CI checks — merging (no CI configured on this repo)');
+                  await github.rest.pulls.merge({
+                    owner, repo,
+                    pull_number: pr.number,
+                    merge_method: 'squash',
+                  });
+                  console.log(`PR #${pr.number}: merged!`);
+                  return;
+                }
+              }
+
+              // If we have CI checks, wait for all to complete
+              const allDone = check_runs.every(c => c.status === 'completed');
+              if (allDone) {
+                console.log('All CI checks completed:');
+                check_runs.forEach(c => console.log(`  ${c.name}: ${c.conclusion}`));
+
+                const allPassed = check_runs.every(c => c.conclusion === 'success');
+                if (!allPassed) {
+                  console.log('CI checks did not all pass — skipping merge');
+                  return;
+                }
+
+                console.log('All CI checks passed — merging!');
+                await github.rest.pulls.merge({
+                  owner, repo,
+                  pull_number: pr.number,
+                  merge_method: 'squash',
+                });
+                console.log(`PR #${pr.number}: merged!`);
+                return;
+              }
+
+              const pending = check_runs.filter(c => c.status !== 'completed').map(c => c.name);
+              console.log(`Waiting for: ${pending.join(', ')}...`);
+              await new Promise(r => setTimeout(r, intervalMs));
+            }
+
+            console.log('Timed out waiting for CI checks (2 min) — skipping merge');
