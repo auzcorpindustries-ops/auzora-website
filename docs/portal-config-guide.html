@@ -1,0 +1,69 @@
+<!-- Auzora Configuration Docs — rendered inside the portal Docs tab -->
+
+<h2>SMS Campaigns</h2>
+<p>Bulk-text your leads with follow-up messages, promotions, and booking links. Opt-outs are honored automatically.</p>
+
+<ol>
+  <li><strong>Open the SMS Services tab</strong> in your portal sidebar.</li>
+  <li><strong>Name your campaign</strong> — e.g. "Spring Follow-up".</li>
+  <li><strong>Set the throttle</strong> — messages per minute (default 30). Lower this if your carrier requires it.</li>
+  <li><strong>Write your message template</strong> — use <code>{{name}}</code> for personalization. Example: <code>Hi {{name}}! We have a 10% spring special. Reply to book or call us at {{business_phone}}.</code></li>
+  <li><strong>Upload your lead list</strong> — one per line: <code>phone, name</code>. Phone is required; name is optional. Max 200 leads per campaign.</li>
+  <li><strong>Click "Create SMS Campaign"</strong> — messages begin sending immediately within your throttle limit.</li>
+  <li><strong>Monitor progress</strong> — click any campaign in the list to see per-lead delivery status (pending, sent, delivered, failed, opted-out).</li>
+</ol>
+
+<p style="font-size:13px;color:var(--muted);margin-top:8px;">
+  Opt-out handling: leads who reply STOP, UNSUBSCRIBE, CANCEL, or END are automatically excluded from all future campaigns. They can opt back in by replying START.
+</p>
+
+<hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+
+<h2>AI Callback Flows</h2>
+<p>Your AI agent can place outbound calls to leads automatically — from inbound lead follow-up to missed-call callbacks and bulk campaigns.</p>
+
+<h3 style="margin-top:16px;">A. Inbound Lead → Auto Call</h3>
+<ol>
+  <li>A lead submits your web form (Lead Intake endpoint).</li>
+  <li>The AI instantly sends a follow-up SMS (no business-hours check).</li>
+  <li>If within calling hours, the AI places an outbound call to the lead.</li>
+  <li>If outside calling hours, the call is skipped — the lead still gets the SMS.</li>
+</ol>
+<p style="font-size:13px;color:var(--muted);">Configured automatically when you set up Lead Intake on the Integrations tab. No extra toggle needed.</p>
+
+<h3 style="margin-top:16px;">B. Missed Call → Auto Callback</h3>
+<ol>
+  <li>A caller dials your Auzora number and the call is missed (no-answer, busy, or failed).</li>
+  <li>The AI sends a follow-up SMS to the caller immediately.</li>
+  <li>If <strong>auto-callback is enabled</strong>, the AI waits a short delay (default 2 min), then calls the caller back — but only within business hours.</li>
+  <li>If outside business hours, the callback is rescheduled for the next hour and retried.</li>
+</ol>
+<p style="font-size:13px;color:var(--muted);">Contact support to enable auto-callback for your account. Rate-limited to one callback per caller per hour.</p>
+
+<h3 style="margin-top:16px;">C. Bulk Call Campaigns</h3>
+<ol>
+  <li><strong>Open the Outbound tab</strong> in your portal sidebar.</li>
+  <li><strong>Name your campaign</strong> — e.g. "March Re-engagement".</li>
+  <li><strong>Add script context</strong> (optional) — e.g. "Mention 10% spring discount for new customers". The AI weaves this into its natural conversation.</li>
+  <li><strong>Set retries</strong> — max retry attempts after the first call (default 2 = 3 total attempts per lead).</li>
+  <li><strong>Set retry delay</strong> — minutes between attempts (default 60, min 15).</li>
+  <li><strong>Upload your lead list</strong> — one per line: <code>phone, name, service, notes</code>. Phone is required; other fields optional. Max 200 leads.</li>
+  <li><strong>Click "Create Campaign"</strong> — the AI starts dialing within your business hours.</li>
+  <li><strong>Monitor progress</strong> — click any campaign to see per-lead call outcomes (reached, no-answer, voicemail, opted-out).</li>
+</ol>
+<p style="font-size:13px;color:var(--muted);">Calls only happen within your configured business hours (Scheduling tab). Leads who say "stop calling" or "don't call" are automatically opted out.</p>
+
+<h3 style="margin-top:16px;">D. Manual Single Call</h3>
+<ol>
+  <li><strong>Open the Outbound tab</strong>.</li>
+  <li><strong>Enter a phone number</strong> in the "Quick Call" box at the top.</li>
+  <li><strong>Click "Place Call"</strong> — the AI dials the lead immediately (within business hours).</li>
+</ol>
+
+<hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+
+<h2>Business Hours</h2>
+<p style="font-size:14px;">All outbound calls (campaigns, callbacks, lead follow-up) respect your business hours configured on the <strong>Scheduling</strong> tab. SMS messages send regardless of business hours.</p>
+
+<h2>Need Help?</h2>
+<p style="font-size:14px;">Contact <a href="mailto:support@auzora.io" style="color:var(--accent);">support@auzora.io</a> for configuration changes, enabling auto-callback, or any questions.</p>
