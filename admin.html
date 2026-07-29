@@ -399,6 +399,9 @@ tr:hover td { background: var(--tint); }
     <div class="nav-item" onclick="showPage('costs')" id="nav-costs">
       <span class="nav-icon"><i data-lucide="calculator"></i></span> Cost Estimator
     </div>
+    <div class="nav-item" onclick="showPage('live-costs')" id="nav-live-costs">
+      <span class="nav-icon"><i data-lucide="trending-up"></i></span> Live Spend
+    </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar">AH</div>
@@ -577,6 +580,33 @@ tr:hover td { background: var(--tint); }
           </tr></thead>
           <tbody id="scale-table"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- LIVE COSTS PAGE -->
+    <div class="page" id="page-live-costs">
+      <div class="page-header">
+        <h1>Live Spend Dashboard</h1>
+        <p>Real-time usage and costs across all providers · <span id="costs-refreshed" style="color:var(--muted);">Loading…</span></p>
+      </div>
+
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;" id="costs-summary">
+        <div class="table-card" style="padding:20px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Total Estimated Monthly</div>
+          <div style="font-size:2rem;font-weight:800;margin-top:8px;" id="costs-total">—</div>
+        </div>
+      </div>
+
+      <!-- Provider grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;" id="costs-providers">
+        <div class="table-card" style="padding:40px;text-align:center;color:var(--muted);">
+          Loading provider data…
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:12px;">
+        <button onclick="loadLiveCosts(true)" id="costs-refresh-btn" style="background:var(--purple);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">Refresh</button>
       </div>
     </div>
 
@@ -943,6 +973,200 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'persona') initPersonaPage();
   if (name === 'phones') loadPhones();
+  if (name === 'live-costs') loadLiveCosts();
+}
+
+// LIVE COSTS DASHBOARD
+async function loadLiveCosts(forceRefresh) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const refreshedEl = document.getElementById('costs-refreshed');
+  const providersEl = document.getElementById('costs-providers');
+  const totalEl = document.getElementById('costs-total');
+
+  refreshedEl.textContent = 'Loading…';
+  providersEl.innerHTML = '<div class="table-card" style="padding:40px;text-align:center;color:var(--muted);">Querying provider APIs…</div>';
+  totalEl.textContent = '—';
+
+  try {
+    const url = `${API}/costs${forceRefresh ? '?refresh=true' : ''}`;
+    const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    refreshedEl.textContent = data.cached ? `Cached · refreshed ${new Date(data.refreshed).toLocaleTimeString()}` : `Fresh · ${new Date(data.refreshed).toLocaleTimeString()}`;
+    totalEl.textContent = `$${data.totalEstimatedMonthly?.toFixed(2) || '0.00'}`;
+
+    const cards = [];
+
+    // Twilio
+    const tw = data.twilio;
+    if (tw.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">📞</span>
+            <span style="font-weight:700;font-size:14px;">Twilio</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${tw.estimatedCost?.total || '0.00'}/mo</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+            <div><span style="color:var(--muted);">Phone Numbers:</span> ${tw.phoneNumbers}</div>
+            <div><span style="color:var(--muted);">Calls (mo):</span> ${tw.callsThisMonth}</div>
+            <div><span style="color:var(--muted);">Call Minutes:</span> ${tw.callMinutes}</div>
+            <div><span style="color:var(--muted);">SMS Segments:</span> ${tw.smsSegments}</div>
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('📞', 'Twilio', tw.reason));
+    }
+
+    // OpenAI
+    const oa = data.openai;
+    if (oa.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">🤖</span>
+            <span style="font-weight:700;font-size:14px;">OpenAI</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${oa.currentMonthCost || '0.00'} this mo</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">
+            ${oa.monthly?.slice(-3).map(m => `${m.month}: $${m.total}`).join(' · ') || 'No data'}
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('🤖', 'OpenAI', oa.reason));
+    }
+
+    // ElevenLabs
+    const el = data.elevenlabs;
+    if (el.enabled) {
+      const usedPct = parseFloat(el.usedPercent) || 0;
+      const barColor = usedPct > 80 ? 'var(--red)' : usedPct > 50 ? 'var(--yellow)' : 'var(--green)';
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">🔊</span>
+            <span style="font-weight:700;font-size:14px;">ElevenLabs</span>
+            <span style="margin-left:auto;background:rgba(124,58,237,.12);color:var(--purple);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">${el.tier} · $${el.tierCost}/mo</span>
+          </div>
+          <div style="font-size:12px;margin-bottom:8px;">
+            <span style="color:var(--muted);">Characters:</span> ${el.characterCount?.toLocaleString() || 0} / ${el.characterLimit?.toLocaleString() || 0}
+          </div>
+          <div style="background:var(--bg);border-radius:6px;height:6px;overflow:hidden;">
+            <div style="width:${usedPct}%;height:100%;background:${barColor};transition:width .3s;"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">${usedPct}% used</div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('🔊', 'ElevenLabs', el.reason));
+    }
+
+    // AWS
+    const aws = data.aws;
+    if (aws.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">☁️</span>
+            <span style="font-weight:700;font-size:14px;">AWS</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${aws.currentMonthCost?.toFixed(2) || '0.00'} this mo</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+            ${aws.topServices?.slice(0, 5).map(s => `<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">${s.service}</span><span>$${s.amount}</span></div>`).join('') || 'No data'}
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('☁️', 'AWS', aws.reason));
+    }
+
+    // Stripe
+    const st = data.stripe;
+    if (st.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">💳</span>
+            <span style="font-weight:700;font-size:14px;">Stripe</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">MRR: $${st.mrr}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+            <div><span style="color:var(--muted);">Available:</span> $${st.balance?.available?.toFixed(2)}</div>
+            <div><span style="color:var(--muted);">Pending:</span> $${st.balance?.pending?.toFixed(2)}</div>
+            <div><span style="color:var(--muted);">Active Subs:</span> ${st.activeSubscriptions}</div>
+            <div><span style="color:var(--muted);">Charges (mo):</span> ${st.chargesThisMonth}</div>
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('💳', 'Stripe', st.reason));
+    }
+
+    // Resend
+    const rs = data.resend;
+    if (rs.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">📧</span>
+            <span style="font-weight:700;font-size:14px;">Resend</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free tier</span>
+          </div>
+          <div style="font-size:12px;">
+            <div><span style="color:var(--muted);">Emails this month:</span> ${rs.emailsThisMonth}</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:6px;">${rs.note || ''}</div>
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('📧', 'Resend', rs.reason));
+    }
+
+    // Google
+    const go = data.google;
+    cards.push(`
+      <div class="table-card" style="padding:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span style="font-size:1.1rem;">📅</span>
+          <span style="font-weight:700;font-size:14px;">Google Workspace</span>
+          <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);">${go.note || 'Calendar API is free'}</div>
+      </div>`);
+
+    // Square
+    const sq = data.square;
+    if (sq.enabled) {
+      cards.push(`
+        <div class="table-card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:1.1rem;">⬜</span>
+            <span style="font-weight:700;font-size:14px;">Square</span>
+            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free</span>
+          </div>
+          <div style="font-size:12px;">
+            <div><span style="color:var(--muted);">Connected locations:</span> ${sq.connectedLocations}</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:6px;">${sq.note || ''}</div>
+          </div>
+        </div>`);
+    } else {
+      cards.push(disabledCard('⬜', 'Square', sq.reason));
+    }
+
+    providersEl.innerHTML = cards.join('');
+  } catch (e) {
+    providersEl.innerHTML = `<div class="table-card" style="padding:40px;text-align:center;color:var(--red);">Error: ${e.message}</div>`;
+    refreshedEl.textContent = 'Error';
+  }
+}
+
+function disabledCard(icon, name, reason) {
+  return `
+    <div class="table-card" style="padding:20px;opacity:.6;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:1.1rem;">${icon}</span>
+        <span style="font-weight:700;font-size:14px;">${name}</span>
+        <span style="margin-left:auto;background:rgba(239,68,68,.12);color:var(--red);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Disabled</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">${reason || 'Not configured'}</div>
+    </div>`;
 }
 
 // PHONE NUMBERS
