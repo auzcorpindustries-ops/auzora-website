@@ -493,6 +493,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('outbound')" id="nav-outbound"><span class="nav-icon"><i data-lucide="phone-outgoing"></i></span> Outbound</div>
     <div class="nav-item" onclick="showPage('sms')" id="nav-sms"><span class="nav-icon"><i data-lucide="message-square"></i></span> SMS Services</div>
     <div class="nav-item" onclick="showPage('account')" id="nav-account"><span class="nav-icon"><i data-lucide="user-cog"></i></span> Account</div>
+    <div class="nav-item" onclick="showPage('docs')" id="nav-docs"><span class="nav-icon"><i data-lucide="book-open"></i></span> Docs</div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar" id="sidebar-initials">–</div>
@@ -1441,6 +1442,21 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
     </div>
 
+    <!-- ─── DOCS PAGE ────────────────────────────────────────────────────── -->
+    <div class="page" id="page-docs">
+      <div class="page-header">
+        <h1><i data-lucide="book-open" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Documentation</h1>
+        <p>Configuration guides for SMS campaigns, AI callback flows, and more.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="file-text"></i> Configuration Guide</div>
+        <div id="docs-content" style="font-size:14px;line-height:1.7;color:var(--text);">
+          <p style="color:var(--muted);">Loading documentation…</p>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1755,6 +1771,7 @@ function showPage(name) {
   if (name === 'outbound') { loadOutbound(); loadCampaigns(); }
   if (name === 'sms') { loadSmsCampaigns(); }
   if (name === 'account') loadAccount();
+  if (name === 'docs') loadDocs();
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
@@ -3001,6 +3018,65 @@ async function deleteAccount() {
     }, 2000);
   } catch (e) {
     status.textContent = e.message; status.style.color = '#ef4444';
+  }
+}
+
+// ── DOCS ────────────────────────────────────────────────────────────────────
+async function loadDocs() {
+  const container = document.getElementById('docs-content');
+  try {
+    const res = await fetch('docs/portal-config-guide.html');
+    if (!res.ok) throw new Error('Failed to load docs');
+    const html = await res.text();
+    container.innerHTML = html;
+  } catch (e) {
+    // Fallback: inline the key content if fetch fails (e.g. file:// protocol)
+    container.innerHTML = `
+      <h2>SMS Campaigns</h2>
+      <ol>
+        <li><strong>Open the SMS Services tab</strong> in your portal sidebar.</li>
+        <li><strong>Name your campaign</strong> — e.g. "Spring Follow-up".</li>
+        <li><strong>Set the throttle</strong> — messages per minute (default 30).</li>
+        <li><strong>Write your message template</strong> — use <code>{{name}}</code> for personalization.</li>
+        <li><strong>Upload your lead list</strong> — one per line: <code>phone, name</code>. Max 200 leads.</li>
+        <li><strong>Click "Create SMS Campaign"</strong> — messages begin sending immediately.</li>
+        <li><strong>Monitor progress</strong> — click any campaign to see delivery status.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted);">Opt-out handling: leads who reply STOP, UNSUBSCRIBE, CANCEL, or END are automatically excluded. Reply START to opt back in.</p>
+      <hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+      <h2>AI Callback Flows</h2>
+      <h3>A. Inbound Lead → Auto Call</h3>
+      <ol>
+        <li>A lead submits your web form (Lead Intake endpoint).</li>
+        <li>The AI instantly sends a follow-up SMS.</li>
+        <li>If within calling hours, the AI places an outbound call to the lead.</li>
+      </ol>
+      <h3>B. Missed Call → Auto Callback</h3>
+      <ol>
+        <li>A caller dials your Auzora number and the call is missed.</li>
+        <li>The AI sends a follow-up SMS to the caller immediately.</li>
+        <li>If auto-callback is enabled, the AI calls back within business hours.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted);">Contact support to enable auto-callback.</p>
+      <h3>C. Bulk Call Campaigns</h3>
+      <ol>
+        <li><strong>Open the Outbound tab</strong>.</li>
+        <li><strong>Name your campaign</strong> and add optional script context.</li>
+        <li><strong>Set retries</strong> (default 2) and <strong>retry delay</strong> (default 60 min).</li>
+        <li><strong>Upload your lead list</strong> — one per line: <code>phone, name, service, notes</code>. Max 200 leads.</li>
+        <li><strong>Click "Create Campaign"</strong> — the AI dials within business hours.</li>
+        <li><strong>Monitor progress</strong> — click any campaign for per-lead outcomes.</li>
+      </ol>
+      <h3>D. Manual Single Call</h3>
+      <ol>
+        <li>Open the Outbound tab.</li>
+        <li>Enter a phone number in the "Quick Call" box.</li>
+        <li>Click "Place Call".</li>
+      </ol>
+      <hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+      <h2>Need Help?</h2>
+      <p>Contact <a href="mailto:support@auzora.io" style="color:var(--accent);">support@auzora.io</a> for configuration changes or questions.</p>
+    `;
   }
 }
 
