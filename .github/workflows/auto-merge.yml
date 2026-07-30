@@ -39,17 +39,22 @@ jobs:
                 owner, repo, ref: sha, per_page: 100,
               });
 
+              // Exclude our own "Auto-Merge" check run — otherwise we'd
+              // wait for ourselves to finish, causing a circular timeout.
+              const external = check_runs.filter(c => c.name !== 'Auto-Merge');
+
               // No CI configured on this repo — merge after a brief wait.
-              if (check_runs.length === 0) {
-                console.log('No CI checks found — waiting 15s for any to register...');
+              if (external.length === 0) {
+                console.log('No external CI checks found — waiting 15s for any to register...');
                 await new Promise(r => setTimeout(r, 15_000));
 
                 const { data: { check_runs: recheck } } = await github.rest.checks.listForRef({
                   owner, repo, ref: sha, per_page: 100,
                 });
+                const externalRecheck = recheck.filter(c => c.name !== 'Auto-Merge');
 
-                if (recheck.length === 0) {
-                  console.log('Still no CI checks — merging (no CI configured on this repo)');
+                if (externalRecheck.length === 0) {
+                  console.log('Still no external CI checks — merging (no CI configured on this repo)');
                   await github.rest.pulls.merge({
                     owner, repo,
                     pull_number: pr.number,
@@ -60,15 +65,15 @@ jobs:
                 }
               }
 
-              // If we have CI checks, wait for all to complete
-              const allDone = check_runs.every(c => c.status === 'completed');
+              // If we have external CI checks, wait for all to complete
+              const allDone = external.every(c => c.status === 'completed');
               if (allDone) {
-                console.log('All CI checks completed:');
-                check_runs.forEach(c => console.log(`  ${c.name}: ${c.conclusion}`));
+                console.log('All external CI checks completed:');
+                external.forEach(c => console.log(`  ${c.name}: ${c.conclusion}`));
 
                 // A check with conclusion 'neutral' (e.g. Netlify "Pages changed")
                 // is not a failure — only block on 'failure' or 'cancelled'.
-                const failed = check_runs.filter(c =>
+                const failed = external.filter(c =>
                   c.conclusion === 'failure' || c.conclusion === 'cancelled'
                 );
                 if (failed.length > 0) {
@@ -87,7 +92,7 @@ jobs:
                 return;
               }
 
-              const pending = check_runs.filter(c => c.status !== 'completed').map(c => c.name);
+              const pending = external.filter(c => c.status !== 'completed').map(c => c.name);
               console.log(`Waiting for: ${pending.join(', ')}...`);
               await new Promise(r => setTimeout(r, intervalMs));
             }
