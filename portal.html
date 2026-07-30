@@ -46,34 +46,88 @@ input, select, textarea, button { font-family: inherit; }
 input[type=range] { width: 100%; accent-color: var(--purple); }
 
 /* ── LOGIN ─────────────────────────────────────────────────────────────── */
-#login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
-.login-box {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
-  padding: 36px; width: 100%; max-width: 404px; box-shadow: var(--shadow);
+#login-screen { min-height: 100vh; display: flex; }
+
+/* Left brand panel */
+.login-left {
+  flex: 1.3; position: relative; overflow: hidden; height: 100vh;
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: linear-gradient(160deg, #1c2333, #111827 55%, #1e1330);
 }
-.login-logo { display: flex; align-items: center; gap: 11px; margin-bottom: 20px; }
-.login-logo img { width: 38px; height: 38px; object-fit: contain; }
-.login-logo-text { font-size: 16px; font-weight: 800; letter-spacing: .3px; color: var(--text); }
-.login-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 26px; }
-.login-box label {
-  display: block; font-size: 11px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .6px; margin: 16px 0 6px;
+.login-left::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(59,130,246,0.35), rgba(124,58,237,0.30), rgba(236,72,153,0.30));
+  mix-blend-mode: overlay;
 }
-.login-box input {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
+.login-left-brand {
+  position: relative; display: flex; align-items: center; gap: 10px;
+  margin: 36px 36px 0;
+}
+.login-left-brand img { width: 30px; height: 30px; object-fit: contain; }
+.login-left-brand span { font-size: 15px; font-weight: 800; letter-spacing: .4px; color: #fff; }
+.login-left-hero {
+  position: absolute; inset: 0 36px; display: flex; flex-direction: column;
+  justify-content: center; pointer-events: none;
+}
+.login-left-hero-inner { max-width: 460px; pointer-events: auto; }
+.login-left-hero h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: #fff; line-height: 1.25; }
+.login-left-hero p { font-size: 13px; color: rgba(255,255,255,0.72); line-height: 1.5; margin-top: 8px; }
+.login-left-phone {
+  position: relative; flex-shrink: 0; margin-top: auto; margin-bottom: 36px; margin-left: 36px;
+  width: 200px; height: 180px; overflow: visible;
+}
+.login-left-phone img { width: 100%; border-radius: 16px; box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+
+/* Right form panel */
+.login-right {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 40px; overflow-y: auto; background: #ffffff;
+}
+.login-right-inner { width: 100%; max-width: 380px; }
+.login-right-inner h1 { font-size: 23px; font-weight: 800; letter-spacing: -.3px; color: #101826; }
+.login-right-inner > p { font-size: 13px; color: #5f687a; line-height: 1.5; margin-top: 8px; }
+.login-right-inner label {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase; color: #5f687a; margin-bottom: 6px;
+}
+.login-right-inner input {
+  width: 100%; background: #f7f8fa; border: 1px solid rgba(16,24,38,0.08);
+  border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #101826;
   outline: none; transition: border-color .2s;
 }
-.login-box input:focus { border-color: var(--accent); }
+.login-right-inner input:focus { border-color: #3b82f6; }
 .login-btn {
-  width: 100%; margin-top: 22px; background: var(--grad); color: #fff; border: none;
-  border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 10px 24px rgba(124,58,237,.24); transition: filter .2s;
+  width: 100%; margin-top: 22px; border: none; border-radius: 10px; padding: 13px;
+  font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, #3B82F6, #7C3AED, #EC4899);
+  box-shadow: 0 10px 24px rgba(124,58,237,0.24); transition: filter .2s;
 }
 .login-btn:hover { filter: brightness(1.06); }
 .login-btn:disabled { opacity: .6; cursor: not-allowed; filter: none; }
-.login-error { color: var(--red); font-size: 12px; margin-top: 12px; text-align: center; }
-.login-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 18px; }
+.login-error { color: #ef4444; font-size: 12px; margin-top: 12px; text-align: center; }
+.login-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; }
+.login-divider > div { flex: 1; height: 1px; background: rgba(16,24,38,0.08); }
+.login-divider > span { font-size: 11px; color: #9aa3b2; }
+.google-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: 1px solid rgba(16,24,38,0.12); background: #fff; border-radius: 10px;
+  padding: 12px; font-size: 14px; font-weight: 600; color: #101826;
+  cursor: pointer; text-decoration: none; transition: background .2s;
+}
+.google-btn:hover { background: #f7f8fa; }
+.login-hint { font-size: 12px; color: #5f687a; text-align: center; margin-top: 18px; }
+.login-hint a { color: #3b82f6; }
+.google-signup-link {
+  display: block; text-align: center; margin-top: 8px; font-size: 12px;
+  color: #5f687a; text-decoration: none; transition: color .2s;
+}
+.google-signup-link:hover { color: #101826; }
+
+@media (max-width: 768px) {
+  #login-screen { flex-direction: column; }
+  .login-left { display: none; }
+  .login-right { flex: 1; height: 100vh; }
+}
 
 /* ── SHELL ─────────────────────────────────────────────────────────────── */
 #app { display: none; }
@@ -368,30 +422,44 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
+  <!-- Left brand panel -->
+  <div class="login-left">
+    <div class="login-left-brand">
       <img src="/logo.png" alt="Auzora" />
-      <span class="login-logo-text">AUZORA</span>
+      <span>AUZORA</span>
     </div>
-    <div style="font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">Powered by OpenAI</div>
-    <div class="login-sub">Client Portal — sign in to manage your AI agent</div>
-    <label>Business Email</label>
-    <input type="email" id="login-email" placeholder="you@yourbusiness.com" onkeydown="if(event.key==='Enter')login()" />
-    <label>Access Code</label>
-    <input type="text" id="login-code" placeholder="XXXXXXXX" style="text-transform:uppercase;letter-spacing:2px;" onkeydown="if(event.key==='Enter')login()" />
-    <button class="login-btn" id="login-btn" onclick="login()">Sign In →</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-divider" style="display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>OR<div style="flex:1;height:1px;background:var(--border);"></div>
+    <div class="login-left-hero">
+      <div class="login-left-hero-inner">
+        <h2>Your AI phone agent, always on the clock</h2>
+        <p>Track bookings, tune your agent's voice and scripts, and manage every integration from one dashboard.</p>
+      </div>
     </div>
-    <a href="#" id="google-signin-link" onclick="googleSignIn(event)" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:13px;font-weight:600;transition:background .2s;" onmouseover="this.style.background='var(--tint)'" onmouseout="this.style.background=''">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Sign in with Google
-    </a>
-    <a href="#" id="google-signup-link" onclick="googleSignUp(event)" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:8px;text-decoration:none;color:var(--muted);font-size:12px;transition:color .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
-      New to Auzora? Sign up with Google →
-    </a>
-    <div class="login-hint">Need access? Contact <a href="mailto:support@auzora.io" style="color:var(--accent2);">support@auzora.io</a></div>
+  </div>
+  <!-- Right form panel -->
+  <div class="login-right">
+    <div class="login-right-inner">
+      <h1>Sign in to your agent</h1>
+      <p>Manage voice, scheduling and integrations for your Atlas AI phone agent.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label>Business Email</label>
+          <input type="email" id="login-email" placeholder="you@yourbusiness.com" onkeydown="if(event.key==='Enter')login()" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label>Access Code</label>
+          <input type="text" id="login-code" placeholder="XXXXXXXX" style="text-transform:uppercase;letter-spacing:3px;" onkeydown="if(event.key==='Enter')login()" />
+        </div>
+      </div>
+      <button class="login-btn" id="login-btn" onclick="login()">Sign In</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-divider"><div></div><span>OR</span><div></div></div>
+      <a href="#" class="google-btn" onclick="googleSignIn(event)">
+        <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.89c2.28-2.1 3.53-5.2 3.53-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.89-3c-1.08.72-2.45 1.16-4.04 1.16-3.11 0-5.74-2.1-6.68-4.92H1.32v3.09C3.29 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.32 14.33c-.24-.72-.38-1.49-.38-2.33s.14-1.61.38-2.33V6.58H1.32C.48 8.24 0 10.06 0 12s.48 3.76 1.32 5.42l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.6 4.6 1.79l3.45-3.45C17.95 1.19 15.24 0 12 0 7.31 0 3.29 2.7 1.32 6.58l4 3.09c.94-2.82 3.57-4.92 6.68-4.92z"/></svg>
+        Sign in with Google
+      </a>
+      <a href="#" class="google-signup-link" onclick="googleSignUp(event)">New to Auzora? Sign up with Google →</a>
+      <div class="login-hint">Need access? Contact <a href="mailto:support@auzora.io">support@auzora.io</a></div>
+    </div>
   </div>
 </div>
 
@@ -424,6 +492,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon"><i data-lucide="unplug"></i></span> Integrations</div>
     <div class="nav-item" onclick="showPage('outbound')" id="nav-outbound"><span class="nav-icon"><i data-lucide="phone-outgoing"></i></span> Outbound</div>
     <div class="nav-item" onclick="showPage('sms')" id="nav-sms"><span class="nav-icon"><i data-lucide="message-square"></i></span> SMS Services</div>
+    <div class="nav-item" onclick="showPage('account')" id="nav-account"><span class="nav-icon"><i data-lucide="user-cog"></i></span> Account</div>
+    <div class="nav-item" onclick="showPage('docs')" id="nav-docs"><span class="nav-icon"><i data-lucide="book-open"></i></span> Docs</div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar" id="sidebar-initials">–</div>
@@ -501,6 +571,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <label>Escalation Phone</label>
               <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
             </div>
+
+            <!-- Warm Transfer Toggle -->
+            <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                  <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+            </div>
+
+            <!-- Appointment Reminders Toggle -->
+            <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                  <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                  Enable
+                </label>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -558,6 +656,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div class="form-group">
               <label>Escalation Rules</label>
               <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Lead Follow-up SMS Template</label>
+              <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label>Topics to Avoid</label>
@@ -961,7 +1064,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
           <span style="font-size:32px;">🔗</span>
           <div>
-            <div style="font-size:16px;font-weight:700;">Lead Webhook</div>
+            <div style="font-size:16px;font-weight:700;">Lead Webhook (Outbound)</div>
             <div style="font-size:13px;color:var(--muted);">Send captured leads to your CRM, Zapier, Make, n8n, or any webhook URL</div>
           </div>
         </div>
@@ -986,6 +1089,36 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             🧪 Send Test Payload
           </button>
           <span id="webhook-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Lead Intake (Inbound) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <span style="font-size:32px;">📥</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;">Lead Intake (Inbound)</div>
+            <div style="font-size:13px;color:var(--muted);">Receive leads from your website forms or CRM — instant SMS + AI call follow-up</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+          POST form submissions or CRM webhooks directly to Auzora. We'll instantly text and call the lead — no n8n or Zapier required.
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
+          POST /leads/inbound<br>
+          Header: x-lead-token: <span id="i-lead-token-display">Loading...</span><br>
+          Body: { "name": "...", "phone": "...", "email": "...", "service": "...", "source": "..." }
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="copyLeadToken()"
+            style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+            Copy Token
+          </button>
+          <button onclick="copyLeadWebhookUrl()"
+            style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--muted2);font-size:13px;font-weight:600;cursor:pointer;">
+            Copy Full URL
+          </button>
+          <span id="lead-intake-status" style="font-size:12px;color:var(--muted);"></span>
         </div>
       </div>
 
@@ -1173,6 +1306,153 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div id="sms-cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
           <div id="sms-cmp-modal-leads"></div>
           <div id="sms-cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ACCOUNT PAGE ─────────────────────────────────────────────────── -->
+    <div class="page" id="page-account">
+      <div class="page-header">
+        <h1><i data-lucide="user-cog" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Account</h1>
+        <p>Manage your profile, security settings, notifications, and integrations.</p>
+      </div>
+
+      <!-- Card 1: Profile -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="building-2"></i> Profile Information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>Business Name</label>
+            <input type="text" id="ac-business-name" placeholder="Your Business" oninput="setAcDirty()" />
+          </div>
+          <div class="form-group">
+            <label>Contact Email <span style="font-size:11px;color:var(--muted);">(login email)</span></label>
+            <input type="email" id="ac-email" placeholder="you@business.com" oninput="setAcDirty()" />
+          </div>
+          <div class="form-group">
+            <label>Contact Phone</label>
+            <input type="text" id="ac-phone" placeholder="(555) 000-0000" oninput="setAcDirty()" />
+          </div>
+          <div class="form-group">
+            <label>Industry</label>
+            <input type="text" id="ac-industry" placeholder="e.g. Dental, Legal, Salon" oninput="setAcDirty()" />
+          </div>
+          <div class="form-group">
+            <label>Timezone</label>
+            <select id="ac-timezone" onchange="setAcDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+              <option value="America/Chicago">America/Chicago (Central)</option>
+              <option value="America/New_York">America/New_York (Eastern)</option>
+              <option value="America/Denver">America/Denver (Mountain)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (Pacific)</option>
+              <option value="America/Phoenix">America/Phoenix (Mountain - no DST)</option>
+              <option value="America/Anchorage">America/Anchorage (Alaska)</option>
+              <option value="Pacific/Honolulu">Pacific/Honolulu (Hawaii)</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:end;">
+            <div style="font-size:11px;color:var(--muted);">
+              <div><strong>Twilio Number:</strong> <span id="ac-twilio">—</span></div>
+              <div><strong>Plan:</strong> <span id="ac-plan" style="text-transform:capitalize;">—</span></div>
+              <div><strong>Member Since:</strong> <span id="ac-created">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button onclick="saveProfile()" id="ac-save-btn" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;cursor:pointer;">Save Profile</button>
+          <span id="ac-profile-status" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Card 2: Security -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="shield"></i> Security</div>
+
+        <!-- Access Code -->
+        <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Access Code</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Your access code is used to log in to the portal. Regenerate it if you think it's been compromised.</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;">
+              <span id="ac-access-code" style="font-family:monospace;font-size:16px;letter-spacing:2px;color:var(--text);">••••••••</span>
+              <button onclick="toggleAccessCodeVisibility()" id="ac-toggle-btn" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;">Show</button>
+            </div>
+            <button onclick="regenerateAccessCode()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;cursor:pointer;">Regenerate</button>
+            <span id="ac-code-status" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <!-- 2FA -->
+        <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Two-Factor Authentication (2FA)</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Add an extra layer of security. Requires a TOTP authenticator app (Google Authenticator, Authy, 1Password).</div>
+          <div id="ac-2fa-disabled">
+            <button onclick="start2FASetup()" id="ac-2fa-btn" style="background:var(--accent);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;cursor:pointer;">Enable 2FA</button>
+            <span style="font-size:12px;color:var(--muted);margin-left:8px;">Not enabled</span>
+          </div>
+          <div id="ac-2fa-enabled" style="display:none;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:13px;color:var(--green);font-weight:600;">✓ Enabled</span>
+              <span id="ac-2fa-backup-count" style="font-size:12px;color:var(--muted);"></span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button onclick="regenBackupCodes()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:12px;cursor:pointer;">Regenerate Backup Codes</button>
+              <button onclick="disable2FA()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:#ef4444;font-size:12px;cursor:pointer;">Disable 2FA</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sessions -->
+        <div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Active Sessions</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Revoke all active sessions. You'll be logged out on all other devices.</div>
+          <button onclick="revokeAllSessions()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;cursor:pointer;">Revoke All Sessions</button>
+          <span id="ac-session-status" style="font-size:12px;color:var(--muted);margin-left:8px;"></span>
+        </div>
+      </div>
+
+      <!-- Card 3: Notifications -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="bell"></i> Notification Preferences</div>
+        <div id="ac-notif-list" style="display:flex;flex-direction:column;gap:14px;">
+          <!-- Toggles injected by JS -->
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button onclick="saveNotifications()" id="ac-notif-save-btn" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;cursor:pointer;">Save Preferences</button>
+          <span id="ac-notif-status" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Card 4: Integrations Summary -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="unplug"></i> Connected Integrations</div>
+        <div id="ac-integrations-list" style="display:flex;flex-direction:column;gap:10px;">
+          <!-- Status badges injected by JS -->
+        </div>
+      </div>
+
+      <!-- Card 5: Danger Zone -->
+      <div class="card" style="margin-bottom:20px;border:1px solid #ef4444;">
+        <div class="card-title" style="color:#ef4444;"><i data-lucide="alert-triangle"></i> Danger Zone</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Permanently deactivate your account. Your AI agent will go offline, all campaigns and reminders will stop, and your data will be retained for 30 days before deletion. This cannot be undone.</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="text" id="ac-delete-confirm" placeholder='Type DELETE to confirm' style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+          <button onclick="deleteAccount()" id="ac-delete-btn" style="background:#ef4444;border:none;border-radius:8px;padding:8px 20px;color:#fff;font-size:13px;cursor:pointer;">Delete Account</button>
+        </div>
+        <span id="ac-delete-status" style="font-size:12px;color:var(--muted);margin-top:6px;display:block;"></span>
+      </div>
+    </div>
+
+    <!-- ─── DOCS PAGE ────────────────────────────────────────────────────── -->
+    <div class="page" id="page-docs">
+      <div class="page-header">
+        <h1><i data-lucide="book-open" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Documentation</h1>
+        <p>Configuration guides for SMS campaigns, AI callback flows, and more.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="file-text"></i> Configuration Guide</div>
+        <div id="docs-content" style="font-size:14px;line-height:1.7;color:var(--text);">
+          <p style="color:var(--muted);">Loading documentation…</p>
         </div>
       </div>
     </div>
@@ -1396,7 +1676,7 @@ async function login() {
     sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
     launchApp();
   } catch(e) { err.textContent = 'Connection error. Please try again.'; }
-  finally { btn.disabled = false; btn.textContent = 'Sign In →'; }
+  finally { btn.disabled = false; btn.textContent = 'Sign In'; }
 }
 
 // ── GOOGLE SIGN-IN / SIGN-UP ──────────────────────────────────────────────────
@@ -1490,6 +1770,8 @@ function showPage(name) {
   if (name === 'integrations') loadIntegrations();
   if (name === 'outbound') { loadOutbound(); loadCampaigns(); }
   if (name === 'sms') { loadSmsCampaigns(); }
+  if (name === 'account') loadAccount();
+  if (name === 'docs') loadDocs();
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
@@ -1675,6 +1957,11 @@ async function loadSettings() {
   document.getElementById('s-escalation-phone').value = c.escalation_phone || '';
   document.getElementById('s-greeting').value = c.custom_greeting || '';
   document.getElementById('s-escalation').value = c.escalation_rules || '';
+
+  // Warm transfer + reminders
+  document.getElementById('s-warm-transfer').checked = c.warm_transfer_enabled || false;
+  document.getElementById('s-reminders').checked = c.reminders_enabled !== false; // default true
+  document.getElementById('s-lead-template').value = c.sms_lead_template || '';
 
   // Tone & Style
   document.getElementById('s-tone').value = c.tone || 'friendly';
@@ -1922,6 +2209,9 @@ async function saveSettings() {
       topics_to_avoid:     portalAvoidTopics,
       after_hours_enabled: document.getElementById('s-ah').checked,
       after_hours_message: document.getElementById('s-ah-msg').value,
+      warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
+      reminders_enabled: document.getElementById('s-reminders').checked,
+      sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
       faqs:                getPortalFaqs(),
       scheduling_params:   getSchedulingParams(),
       service_durations:   portalClient?.service_durations || {},
@@ -1994,6 +2284,7 @@ function loadIntegrations() {
 }
 
   loadSquareStatus();
+  loadLeadIntakeToken();
 
 function showGcalSetup() {
   document.getElementById('gcal-cta').style.display = 'none';
@@ -2361,6 +2652,432 @@ async function testWebhook() {
     showToast('Test failed: ' + e.message, 'error');
   }
   setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+// ── LEAD INTAKE ──────────────────────────────────────────────────────────────
+let leadIntakeToken = '';
+
+async function loadLeadIntakeToken() {
+  try {
+    const res = await fetch(`${API}/leads/token`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error('Failed to fetch token');
+    const data = await res.json();
+    leadIntakeToken = data.token || '';
+    const display = leadIntakeToken.length > 20
+      ? leadIntakeToken.slice(0, 12) + '...' + leadIntakeToken.slice(-8)
+      : leadIntakeToken;
+    const el = document.getElementById('i-lead-token-display');
+    if (el) el.textContent = display;
+  } catch (e) {
+    const el = document.getElementById('i-lead-token-display');
+    if (el) el.textContent = 'Unable to load';
+  }
+}
+
+function copyLeadToken() {
+  if (!leadIntakeToken) return;
+  copyText(leadIntakeToken);
+  const status = document.getElementById('lead-intake-status');
+  if (status) { status.textContent = 'Token copied!'; status.style.color = 'var(--green)'; setTimeout(() => { status.textContent = ''; }, 3000); }
+}
+
+function copyLeadWebhookUrl() {
+  if (!leadIntakeToken) return;
+  const fullUrl = `${API.replace(/\/$/, '')}/leads/inbound`;
+  const curlCmd = `curl -X POST ${fullUrl} \\\n  -H "x-lead-token: ${leadIntakeToken}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"name":"John Doe","phone":"+15551234567","service":"Consultation","source":"website"}'`;
+  copyText(curlCmd);
+  const status = document.getElementById('lead-intake-status');
+  if (status) { status.textContent = 'Full curl command copied!'; status.style.color = 'var(--green)'; setTimeout(() => { status.textContent = ''; }, 3000); }
+}
+
+// ── ACCOUNT ──────────────────────────────────────────────────────────────────
+let acDirty = false;
+let acAccessCodeVisible = false;
+let acAccessCode = '';
+const acNotifPrefs = [
+  { key: 'email_new_lead', label: 'Email me when a new lead is captured' },
+  { key: 'sms_new_lead', label: 'SMS me when a new lead is captured' },
+  { key: 'email_missed_call', label: 'Email me about missed calls' },
+  { key: 'email_booking_confirmation', label: 'Email me when AI books an appointment' },
+  { key: 'email_daily_summary', label: 'Send me a daily summary email' },
+  { key: 'webhook_failure_alert', label: 'Alert me if a webhook fails' },
+];
+
+function setAcDirty() { acDirty = true; }
+
+async function loadAccount() {
+  try {
+    const [acctRes, secRes, notifRes] = await Promise.all([
+      fetch(`${API}/portal/account`, { headers: { 'X-Portal-Token': portalToken } }),
+      fetch(`${API}/portal/account/security`, { headers: { 'X-Portal-Token': portalToken } }),
+      fetch(`${API}/portal/account/notifications`, { headers: { 'X-Portal-Token': portalToken } }),
+    ]);
+    const acct = await acctRes.json();
+    const sec = await secRes.json();
+    const notif = await notifRes.json();
+
+    // Profile
+    document.getElementById('ac-business-name').value = acct.business_name || '';
+    document.getElementById('ac-email').value = acct.email || '';
+    document.getElementById('ac-phone').value = acct.phone || '';
+    document.getElementById('ac-industry').value = acct.industry || '';
+    if (acct.timezone) document.getElementById('ac-timezone').value = acct.timezone;
+    document.getElementById('ac-twilio').textContent = acct.twilio_number || 'Not assigned';
+    document.getElementById('ac-plan').textContent = acct.plan || '—';
+    document.getElementById('ac-created').textContent = acct.created_at ? new Date(acct.created_at).toLocaleDateString() : '—';
+
+    // Security
+    acAccessCode = portalClient.access_code || '';
+    document.getElementById('ac-access-code').textContent = '••••••••';
+    acAccessCodeVisible = false;
+    document.getElementById('ac-toggle-btn').textContent = 'Show';
+    if (sec.last_access_code_change) {
+      document.getElementById('ac-code-status').textContent = 'Last changed: ' + new Date(sec.last_access_code_change).toLocaleDateString();
+    }
+    if (sec.last_login) {
+      document.getElementById('ac-session-status').textContent = 'Last login: ' + new Date(sec.last_login).toLocaleString();
+    }
+
+    // 2FA
+    if (sec.twofa_enabled) {
+      document.getElementById('ac-2fa-disabled').style.display = 'none';
+      document.getElementById('ac-2fa-enabled').style.display = 'block';
+      const remaining = portalClient.security?.twofa_backup_codes_remaining || 0;
+      document.getElementById('ac-2fa-backup-count').textContent = `(${remaining} backup codes remaining)`;
+    } else {
+      document.getElementById('ac-2fa-disabled').style.display = 'block';
+      document.getElementById('ac-2fa-enabled').style.display = 'none';
+    }
+
+    // Notifications
+    const list = document.getElementById('ac-notif-list');
+    list.innerHTML = acNotifPrefs.map(p => `
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="ac-notif-${p.key}" ${notif[p.key] ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;" />
+        <span style="font-size:14px;">${p.label}</span>
+      </label>
+    `).join('');
+
+    // Integrations summary
+    loadAccountIntegrations();
+
+    acDirty = false;
+  } catch (e) {
+    console.error('loadAccount error', e);
+  }
+}
+
+function loadAccountIntegrations() {
+  const list = document.getElementById('ac-integrations-list');
+  const items = [
+    { name: 'Google Calendar', connected: !!portalClient.google_calendar_id, action: "showPage('integrations')" },
+    { name: 'Square', connected: !!portalClient.square_location_id, action: "showPage('integrations')" },
+    { name: 'Lead Webhook (Outbound)', connected: !!portalClient.webhook_url, action: "showPage('integrations')" },
+    { name: 'Lead Intake (Inbound)', connected: true, action: "showPage('integrations')" },
+  ];
+  list.innerHTML = items.map(i => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;">${i.name}</span>
+        ${i.connected
+          ? '<span style="font-size:11px;padding:2px 8px;background:var(--green);color:#fff;border-radius:4px;">Connected</span>'
+          : '<span style="font-size:11px;padding:2px 8px;background:var(--muted);color:#fff;border-radius:4px;">Not Connected</span>'}
+      </div>
+      <span style="color:var(--accent);cursor:pointer;font-size:13px;text-decoration:underline;" onclick="${i.action}">Manage →</span>
+    </div>
+  `).join('');
+}
+
+async function saveProfile() {
+  const btn = document.getElementById('ac-save-btn');
+  const status = document.getElementById('ac-profile-status');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${API}/portal/account`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({
+        business_name: document.getElementById('ac-business-name').value,
+        email: document.getElementById('ac-email').value,
+        phone: document.getElementById('ac-phone').value,
+        industry: document.getElementById('ac-industry').value,
+        timezone: document.getElementById('ac-timezone').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    portalClient = data;
+    status.textContent = 'Saved!'; status.style.color = 'var(--green)';
+    acDirty = false;
+  } catch (e) {
+    status.textContent = e.message; status.style.color = '#ef4444';
+  }
+  btn.disabled = false; btn.textContent = 'Save Profile';
+  setTimeout(() => { status.textContent = ''; }, 3000);
+}
+
+function toggleAccessCodeVisibility() {
+  acAccessCodeVisible = !acAccessCodeVisible;
+  document.getElementById('ac-access-code').textContent = acAccessCodeVisible ? acAccessCode : '••••••••';
+  document.getElementById('ac-toggle-btn').textContent = acAccessCodeVisible ? 'Hide' : 'Show';
+}
+
+async function regenerateAccessCode() {
+  if (!confirm('Regenerate your access code? Your old code will stop working immediately.')) return;
+  const status = document.getElementById('ac-code-status');
+  try {
+    const res = await fetch(`${API}/portal/account/access-code`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    acAccessCode = data.access_code;
+    acAccessCodeVisible = true;
+    document.getElementById('ac-access-code').textContent = acAccessCode;
+    document.getElementById('ac-toggle-btn').textContent = 'Hide';
+    status.textContent = 'New code: ' + data.access_code + ' — saved. Check your email.';
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = e.message; status.style.color = '#ef4444';
+  }
+}
+
+async function revokeAllSessions() {
+  if (!confirm('Revoke all sessions? You will be logged out on all other devices.')) return;
+  const status = document.getElementById('ac-session-status');
+  try {
+    const res = await fetch(`${API}/portal/account/sessions/revoke`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.token) { portalToken = data.token; sessionStorage.setItem('portalToken', portalToken); }
+    status.textContent = data.message; status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = e.message; status.style.color = '#ef4444';
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+async function saveNotifications() {
+  const btn = document.getElementById('ac-notif-save-btn');
+  const status = document.getElementById('ac-notif-status');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const prefs = {};
+    acNotifPrefs.forEach(p => {
+      const el = document.getElementById('ac-notif-' + p.key);
+      prefs[p.key] = el ? el.checked : true;
+    });
+    const res = await fetch(`${API}/portal/account/notifications`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify(prefs),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    status.textContent = 'Saved!'; status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = e.message; status.style.color = '#ef4444';
+  }
+  btn.disabled = false; btn.textContent = 'Save Preferences';
+  setTimeout(() => { status.textContent = ''; }, 3000);
+}
+
+async function start2FASetup() {
+  try {
+    const res = await fetch(`${API}/portal/account/2fa/setup`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    // Show QR in a modal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:12px;padding:24px;max-width:360px;text-align:center;">
+        <h3 style="margin:0 0 12px;">Scan QR Code</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Open your authenticator app and scan this code.</p>
+        <img src="${data.qrCodeUrl}" style="width:200px;height:200px;margin:0 auto 16px;display:block;" />
+        <input type="text" id="ac-2fa-verify-input" placeholder="Enter 6-digit code" maxlength="6" style="width:100%;text-align:center;font-size:18px;letter-spacing:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);outline:none;margin-bottom:12px;" />
+        <div style="display:flex;gap:8px;">
+          <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);cursor:pointer;">Cancel</button>
+          <button onclick="verify2FASetup(this)" style="flex:1;background:var(--accent);border:none;border-radius:8px;padding:8px;color:#fff;cursor:pointer;">Verify</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  } catch (e) {
+    showToast('2FA setup failed: ' + e.message, 'error');
+  }
+}
+
+async function verify2FASetup(btn) {
+  const overlay = btn.closest('div[style*=fixed]');
+  const code = document.getElementById('ac-2fa-verify-input').value.trim();
+  if (!code) return;
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  try {
+    const res = await fetch(`${API}/portal/account/2fa/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    overlay.remove();
+    // Show backup codes
+    const bcOverlay = document.createElement('div');
+    bcOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    bcOverlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:12px;padding:24px;max-width:400px;">
+        <h3 style="margin:0 0 8px;text-align:center;">Save Your Backup Codes</h3>
+        <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;">Store these safely — you won't see them again.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px;">
+          ${data.backupCodes.map(c => `<div style="font-family:monospace;font-size:14px;text-align:center;padding:6px;background:var(--surface2);border-radius:4px;">${c}</div>`).join('')}
+        </div>
+        <button onclick="this.closest('div[style*=fixed]').remove();location.reload();" style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:10px;color:#fff;cursor:pointer;">I've Saved Them</button>
+      </div>`;
+    document.body.appendChild(bcOverlay);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Verify';
+    showToast(e.message, 'error');
+  }
+}
+
+async function disable2FA() {
+  const code = prompt('Enter your access code to disable 2FA:');
+  if (!code) return;
+  try {
+    const res = await fetch(`${API}/portal/account/2fa/disable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ access_code: code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast('2FA disabled', 'success');
+    loadAccount();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function regenBackupCodes() {
+  const code = prompt('Enter your access code to regenerate backup codes:');
+  if (!code) return;
+  try {
+    const res = await fetch(`${API}/portal/account/2fa/backup-codes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ access_code: code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    // Show backup codes (reuse pattern)
+    const bcOverlay = document.createElement('div');
+    bcOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    bcOverlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:12px;padding:24px;max-width:400px;">
+        <h3 style="margin:0 0 8px;text-align:center;">New Backup Codes</h3>
+        <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;">Old codes are invalidated. Save these new ones.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px;">
+          ${data.backupCodes.map(c => `<div style="font-family:monospace;font-size:14px;text-align:center;padding:6px;background:var(--surface2);border-radius:4px;">${c}</div>`).join('')}
+        </div>
+        <button onclick="this.closest('div[style*=fixed]').remove();loadAccount();" style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:10px;color:#fff;cursor:pointer;">I've Saved Them</button>
+      </div>`;
+    document.body.appendChild(bcOverlay);
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function deleteAccount() {
+  const confirmText = document.getElementById('ac-delete-confirm').value;
+  const status = document.getElementById('ac-delete-status');
+  if (confirmText !== 'DELETE') {
+    status.textContent = 'Type DELETE to confirm.'; status.style.color = '#ef4444'; return;
+  }
+  const code = prompt('Enter your access code to confirm account deletion:');
+  if (!code) return;
+  try {
+    const res = await fetch(`${API}/portal/account/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ confirm: 'DELETE', access_code: code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    status.textContent = data.message; status.style.color = 'var(--green)';
+    setTimeout(() => {
+      sessionStorage.removeItem('portalToken');
+      sessionStorage.removeItem('portalClient');
+      location.reload();
+    }, 2000);
+  } catch (e) {
+    status.textContent = e.message; status.style.color = '#ef4444';
+  }
+}
+
+// ── DOCS ────────────────────────────────────────────────────────────────────
+async function loadDocs() {
+  const container = document.getElementById('docs-content');
+  try {
+    const res = await fetch('docs/portal-config-guide.html');
+    if (!res.ok) throw new Error('Failed to load docs');
+    const html = await res.text();
+    container.innerHTML = html;
+  } catch (e) {
+    // Fallback: inline the key content if fetch fails (e.g. file:// protocol)
+    container.innerHTML = `
+      <h2>SMS Campaigns</h2>
+      <ol>
+        <li><strong>Open the SMS Services tab</strong> in your portal sidebar.</li>
+        <li><strong>Name your campaign</strong> — e.g. "Spring Follow-up".</li>
+        <li><strong>Set the throttle</strong> — messages per minute (default 30).</li>
+        <li><strong>Write your message template</strong> — use <code>{{name}}</code> for personalization.</li>
+        <li><strong>Upload your lead list</strong> — one per line: <code>phone, name</code>. Max 200 leads.</li>
+        <li><strong>Click "Create SMS Campaign"</strong> — messages begin sending immediately.</li>
+        <li><strong>Monitor progress</strong> — click any campaign to see delivery status.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted);">Opt-out handling: leads who reply STOP, UNSUBSCRIBE, CANCEL, or END are automatically excluded. Reply START to opt back in.</p>
+      <hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+      <h2>AI Callback Flows</h2>
+      <h3>A. Inbound Lead → Auto Call</h3>
+      <ol>
+        <li>A lead submits your web form (Lead Intake endpoint).</li>
+        <li>The AI instantly sends a follow-up SMS.</li>
+        <li>If within calling hours, the AI places an outbound call to the lead.</li>
+      </ol>
+      <h3>B. Missed Call → Auto Callback</h3>
+      <ol>
+        <li>A caller dials your Auzora number and the call is missed.</li>
+        <li>The AI sends a follow-up SMS to the caller immediately.</li>
+        <li>If auto-callback is enabled, the AI calls back within business hours.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted);">Contact support to enable auto-callback.</p>
+      <h3>C. Bulk Call Campaigns</h3>
+      <ol>
+        <li><strong>Open the Outbound tab</strong>.</li>
+        <li><strong>Name your campaign</strong> and add optional script context.</li>
+        <li><strong>Set retries</strong> (default 2) and <strong>retry delay</strong> (default 60 min).</li>
+        <li><strong>Upload your lead list</strong> — one per line: <code>phone, name, service, notes</code>. Max 200 leads.</li>
+        <li><strong>Click "Create Campaign"</strong> — the AI dials within business hours.</li>
+        <li><strong>Monitor progress</strong> — click any campaign for per-lead outcomes.</li>
+      </ol>
+      <h3>D. Manual Single Call</h3>
+      <ol>
+        <li>Open the Outbound tab.</li>
+        <li>Enter a phone number in the "Quick Call" box.</li>
+        <li>Click "Place Call".</li>
+      </ol>
+      <hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
+      <h2>Need Help?</h2>
+      <p>Contact <a href="mailto:support@auzora.io" style="color:var(--accent);">support@auzora.io</a> for configuration changes or questions.</p>
+    `;
+  }
 }
 
 // ── OUTBOUND ─────────────────────────────────────────────────────────────────
