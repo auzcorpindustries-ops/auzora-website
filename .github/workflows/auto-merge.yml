@@ -39,8 +39,7 @@ jobs:
                 owner, repo, ref: sha, per_page: 100,
               });
 
-              // No CI configured on this repo — merge immediately after
-              // a brief wait for any webhook-triggered checks to register.
+              // No CI configured on this repo — merge after a brief wait.
               if (check_runs.length === 0) {
                 console.log('No CI checks found — waiting 15s for any to register...');
                 await new Promise(r => setTimeout(r, 15_000));
@@ -67,13 +66,18 @@ jobs:
                 console.log('All CI checks completed:');
                 check_runs.forEach(c => console.log(`  ${c.name}: ${c.conclusion}`));
 
-                const allPassed = check_runs.every(c => c.conclusion === 'success');
-                if (!allPassed) {
-                  console.log('CI checks did not all pass — skipping merge');
+                // A check with conclusion 'neutral' (e.g. Netlify "Pages changed")
+                // is not a failure — only block on 'failure' or 'cancelled'.
+                const failed = check_runs.filter(c =>
+                  c.conclusion === 'failure' || c.conclusion === 'cancelled'
+                );
+                if (failed.length > 0) {
+                  console.log('CI checks failed — skipping merge:');
+                  failed.forEach(c => console.log(`  ${c.name}: ${c.conclusion}`));
                   return;
                 }
 
-                console.log('All CI checks passed — merging!');
+                console.log('All CI checks passed (or neutral) — merging!');
                 await github.rest.pulls.merge({
                   owner, repo,
                   pull_number: pr.number,
