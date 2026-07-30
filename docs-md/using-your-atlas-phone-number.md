@@ -77,7 +77,7 @@ Use this when you want to keep answering your own calls but never miss one. Your
 
 **VoIP / PBX / business phone system** — Look for **Call Handling**, **Call Routing**, or **No answer forwarding**. Ring the extension first, then route **NOANSWER** to your Atlas number. Start with a 20-second timeout.
 
-> **Tip:** Set your ring time a little shorter than your voicemail pickup time, so Atlas grabs the call *before* voicemail does.
+> **TIP** Set your ring time a little shorter than your voicemail pickup time, so Atlas grabs the call *before* voicemail does.
 
 ---
 
@@ -102,7 +102,7 @@ Atlas can hand a live call off to a real person — you, a manager, or a specifi
 2. When a rule is met, Atlas says something like *"Let me connect you with the team directly,"* and transfers the call to your escalation number.
 3. If the transfer number doesn't answer, Atlas can take a message or offer to book a callback.
 
-> **Note:** Escalation rules are guidance for the AI, written in plain language — the more specific you are about *who* and *when*, the more reliably Atlas routes the call.
+> **NOTE** Escalation rules are guidance for the AI, written in plain language — the more specific you are about *who* and *when*, the more reliably Atlas routes the call.
 
 ---
 

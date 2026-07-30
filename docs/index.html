@@ -5,124 +5,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Auzora Docs</title>
   <link rel="stylesheet" href="/styles.css" />
-  <style>
-    .docs-index-container {
-      max-width: 900px;
-      margin: 3rem auto;
-      padding: 0 1rem;
-    }
-    .docs-index-header {
-      margin-bottom: 2.5rem;
-    }
-    .docs-index-header h1 {
-      font-size: 2.25rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
-    }
-    .docs-index-header p {
-      font-size: 1.1rem;
-      color: var(--muted, #5f687a);
-      line-height: 1.6;
-    }
-    .docs-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem;
-    }
-    .doc-card {
-      display: block;
-      background: #fff;
-      border: 1px solid rgba(16,24,38,0.08);
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
-    }
-    .doc-card:hover {
-      border-color: #7C3AED;
-      box-shadow: 0 8px 24px rgba(124,58,237,0.10);
-      transform: translateY(-2px);
-    }
-    .doc-card-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-      color: #101826;
-    }
-    .doc-card-desc {
-      font-size: 0.95rem;
-      color: #5f687a;
-      line-height: 1.5;
-    }
-    .doc-card-meta {
-      font-size: 0.8rem;
-      color: #9aa3b2;
-      margin-top: 0.75rem;
-    }
-    .docs-back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-      color: #5f687a;
-      text-decoration: none;
-      margin-bottom: 1.5rem;
-    }
-    .docs-back-link:hover { color: #7C3AED; }
-  </style>
+  <link rel="stylesheet" href="/docs/docs.css" />
 </head>
-<body>
-  <nav id="navbar">
-    <div class="nav-inner">
-      <a href="/" class="nav-brand">
-        <img src="/assets/logo.png" alt="Auzora Logo" class="nav-logo" />
-        <span class="nav-brand-text">Auzora</span>
-      </a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-        <span></span><span></span><span></span>
-      </button>
-      <ul class="nav-links" id="navLinks">
-        <li><a href="/#services">How It Works</a></li>
-        <li><a href="/#pricing">Pricing</a></li>
-        <li><a href="/#faq">FAQ</a></li>
-        <li><a href="/contact.html">Contact</a></li>
-        <li><a href="/portal.html" class="btn-sign-in">Sign In</a></li>
-      </ul>
+<body class="docs-page">
+
+<div class="docs-shell">
+
+  <!-- ── Top bar ─────────────────────────────────────────────────── -->
+  <header class="docs-topbar">
+    <a href="/" class="docs-topbar-brand">
+      <img src="/assets/logo.png" alt="Auzora" onerror="this.style.display='none'" />
+      <span>Auzora</span>
+    </a>
+    <nav class="docs-tabs">
+      <span class="docs-tab active">Documentation</span>
+      <span class="docs-tab">Guides</span>
+      <span class="docs-tab">Changelog</span>
+      <span class="docs-tab">Help Center</span>
+    </nav>
+    <div class="docs-topbar-right">
+      <div class="docs-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+        <span class="docs-search-text">Search or jump to..</span>
+        <span class="docs-search-key">/</span>
+      </div>
+      <a href="/portal.html" class="docs-signin">Sign in</a>
     </div>
-  </nav>
+  </header>
 
-  <div class="docs-index-container">
-    <a href="/" class="docs-back-link">← Back to Auzora</a>
-    <div class="docs-index-header">
-      <h1>Documentation</h1>
-      <p>Guides and references for setting up and using your Auzora AI phone agent.</p>
+  <!-- ── Three-column body ───────────────────────────────────────── -->
+  <div class="docs-body">
+
+    <!-- Left sidebar -->
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-dropdown">
+        <span>Client guides</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5f687a" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <nav class="docs-nav">
+        <a class="docs-nav-item active" href="/docs/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          All guides
+        </a>
+        <div class="docs-nav-group">Getting started</div>
+        <a class="docs-nav-item" href="/docs/using-your-atlas-phone-number/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          Using your Atlas phone number
+        </a>
+        <a class="docs-nav-item" href="/docs/forwarding-personal-phone-to-atlas/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          Forward your personal phone to Atlas
+        </a>
+        <div class="docs-nav-group">Calendars &amp; booking</div>
+        <a class="docs-nav-item" href="/docs/google-calendar-setup/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          Google Calendar setup
+        </a>
+        <div class="docs-nav-group">Outbound</div>
+        <a class="docs-nav-item" href="/docs/outbound-sms-and-callbacks/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          SMS campaigns &amp; AI callbacks
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Landing content -->
+    <div class="docs-landing">
+      <div class="docs-landing-inner">
+        <h1>Documentation</h1>
+        <p class="docs-landing-intro">Guides and references for setting up and using your Auzora AI phone agent.</p>
+        <div class="docs-card-grid">
+
+          <a class="docs-card" href="/docs/using-your-atlas-phone-number/">
+            <div class="docs-card-eyebrow">
+              <span class="docs-card-eyebrow-dot"></span>
+              <span class="docs-card-eyebrow-text">Guide</span>
+            </div>
+            <div class="docs-card-title">Using your Atlas phone number</div>
+            <div class="docs-card-desc">Every way to route calls to and from your dedicated Atlas number.</div>
+            <div class="docs-card-meta">Updated July 2026</div>
+          </a>
+
+          <a class="docs-card" href="/docs/forwarding-personal-phone-to-atlas/">
+            <div class="docs-card-eyebrow">
+              <span class="docs-card-eyebrow-dot"></span>
+              <span class="docs-card-eyebrow-text">Tutorial</span>
+            </div>
+            <div class="docs-card-title">Forward your personal phone to Atlas</div>
+            <div class="docs-card-desc">Conditionally forward unanswered calls from your personal phone to your AI agent.</div>
+            <div class="docs-card-meta">Updated June 2026</div>
+          </a>
+
+          <a class="docs-card" href="/docs/google-calendar-setup/">
+            <div class="docs-card-eyebrow">
+              <span class="docs-card-eyebrow-dot"></span>
+              <span class="docs-card-eyebrow-text">Tutorial</span>
+            </div>
+            <div class="docs-card-title">Google Calendar setup</div>
+            <div class="docs-card-desc">Connect your calendar so your AI agent can check availability and book appointments.</div>
+            <div class="docs-card-meta">Updated July 2026</div>
+          </a>
+
+          <a class="docs-card" href="/docs/outbound-sms-and-callbacks/">
+            <div class="docs-card-eyebrow">
+              <span class="docs-card-eyebrow-dot"></span>
+              <span class="docs-card-eyebrow-text">Reference</span>
+            </div>
+            <div class="docs-card-title">SMS campaigns &amp; AI callbacks</div>
+            <div class="docs-card-desc">Bulk-text leads, auto-follow-up new leads, and let the AI call back missed calls.</div>
+            <div class="docs-card-meta">Updated July 2026</div>
+          </a>
+
+        </div>
+      </div>
     </div>
 
-    <div class="docs-grid">
+  </div><!-- /docs-body -->
+</div><!-- /docs-shell -->
 
-      <a class="doc-card" href="/docs/forwarding-personal-phone-to-atlas/">
-        <div class="doc-card-title">Forward your personal phone to Atlas</div>
-        <div class="doc-card-desc">How to conditionally forward calls from your personal phone to your Atlas AI agent.</div>
-        <div class="doc-card-meta">Updated June 2026</div>
-      </a>
-
-      <a class="doc-card" href="/docs/google-calendar-setup/">
-        <div class="doc-card-title">Google Calendar setup</div>
-        <div class="doc-card-desc">Connect your Google Calendar so your AI agent can check availability and book appointments.</div>
-        <div class="doc-card-meta">Updated June 2026</div>
-      </a>
-
-      <a class="doc-card" href="/docs/using-your-atlas-phone-number/">
-        <div class="doc-card-title">Using your Atlas phone number</div>
-        <div class="doc-card-desc">Everything you need to know about your dedicated Atlas number — calling, testing, and SMS.</div>
-        <div class="doc-card-meta">Updated June 2026</div>
-      </a>
-
-    </div>
-  </div>
-
-  <script src="/main.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>
