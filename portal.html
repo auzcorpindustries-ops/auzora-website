@@ -1480,6 +1480,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
 
+// Outbound leads state — declared early to avoid temporal dead zone issues
+let obLeadsAll = [];
+let obLeadsPage = 0;
+const OB_LEADS_PER_PAGE = 25;
+
 // n8n workflow constants — declared early so loadWorkflows() can use them
 // before the rest of the script finishes executing.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
@@ -3109,9 +3114,7 @@ async function loadDocs() {
 }
 
 // ── OUTBOUND ─────────────────────────────────────────────────────────────────
-let obLeadsAll = [];
-let obLeadsPage = 0;
-const OB_LEADS_PER_PAGE = 25;
+// (obLeadsAll, obLeadsPage, OB_LEADS_PER_PAGE moved to top of script)
 
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
