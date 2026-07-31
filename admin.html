@@ -674,23 +674,8 @@ tr:hover td { background: var(--tint); }
                 <label>Agent Name</label>
                 <input type="text" id="p-agent-name" oninput="markDirty()" />
               </div>
-              <div class="form-group">
-                <label>Office Hours</label>
-                <div class="hours-row" style="margin:6px 0 8px;">
-                  <div class="hours-day">
-                    <input type="checkbox" id="p-hours-247" onchange="toggleAdminHoursMode(this.checked ? '247' : 'custom');markDirty()" />
-                    <label for="p-hours-247">Open 24/7</label>
-                  </div>
-                  <div></div>
-                </div>
-                <div class="hours-grid" id="p-hours-grid" style="margin-top:6px;"></div>
-                <div id="p-hours-note" style="font-size:13px;color:var(--muted);margin-top:8px;display:none;">24/7 selected — office hours are disabled.</div>
-              </div>
-              <div class="form-group">
-                <label>Booking URL</label>
-                <input type="text" id="p-booking-url" placeholder="https://calendly.com/..." oninput="markDirty()" />
-              </div>
               <div class="form-group" style="margin-bottom:0;">
+
                 <label>Escalation Phone</label>
                 <input type="text" id="p-escalation-phone" placeholder="(555) 000-0000" oninput="markDirty()" />
               </div>
@@ -1582,62 +1567,6 @@ function parseHoursString(str) {
   return result;
 }
 
-function buildAdminHoursGrid(hoursStr) {
-  const grid = document.getElementById('p-hours-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  adminHoursMode = hoursStr === '24/7' ? '247' : 'custom';
-  const parsed = parseHoursString(adminHoursMode === '247' ? '' : hoursStr);
-  DAYS.forEach(day => {
-    const d = parsed[day];
-    const row = document.createElement('div');
-    row.className = 'hours-row';
-    row.innerHTML = `
-      <div class="hours-day">
-        <input type="checkbox" id="p_day_${day}" ${d.open ? 'checked' : ''} onchange="toggleAdminDay('${day}');markDirty()">
-        <label for="p_day_${day}">${day.slice(0,3)}</label>
-      </div>
-      <div class="hours-times" id="p_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
-        <input type="time" id="p_from_${day}" value="${d.from}" oninput="markDirty()">
-        <span class="hours-sep">–</span>
-        <input type="time" id="p_to_${day}" value="${d.to}" oninput="markDirty()">
-      </div>`;
-    grid.appendChild(row);
-  });
-  toggleAdminHoursMode(adminHoursMode, true);
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-function toggleAdminHoursMode(mode, quiet = false) {
-  adminHoursMode = mode;
-  const grid = document.getElementById('p-hours-grid');
-  const note = document.getElementById('p-hours-note');
-  const all247 = document.getElementById('p-hours-247');
-  if (all247) all247.checked = mode === '247';
-  if (grid) {
-    const disabled = mode === '247';
-    grid.style.opacity = disabled ? '0.45' : '1';
-    grid.style.pointerEvents = disabled ? 'none' : '';
-  }
-  if (note) note.style.display = mode === '247' ? 'block' : 'none';
-  if (!quiet) markDirty();
-}
-
-function toggleAdminDay(day) {
-  const open = document.getElementById('p_day_' + day).checked;
-  const times = document.getElementById('p_times_' + day);
-  times.style.opacity = open ? '1' : '0.3';
-  times.style.pointerEvents = open ? '' : 'none';
-}
-
-function buildAdminHoursString() {
-  if (adminHoursMode === '247') return '24/7';
-  return DAYS
-    .filter(d => document.getElementById('p_day_' + d)?.checked)
-    .map(d => `${d} ${document.getElementById('p_from_'+d).value}–${document.getElementById('p_to_'+d).value}`)
-    .join(', ');
-}
-
 // ── SERVICE / SPECIALTY TAGS ──────────────────────────────────────────────────
 function renderAdminServiceTags() {
   const wrap = document.getElementById('p-services-tags');
@@ -1881,11 +1810,7 @@ function renderPersonaForm(c) {
   // Business info
   document.getElementById('p-business-name').value = c.business_name || '';
   document.getElementById('p-agent-name').value = c.agent_name || '';
-  document.getElementById('p-booking-url').value = c.booking_url || '';
   document.getElementById('p-escalation-phone').value = c.escalation_phone || '';
-
-  // Office hours grid
-  buildAdminHoursGrid(c.office_hours || '');
 
   // Voice + realtime settings
   const vad = c.vad_threshold ?? 0.5;
@@ -1951,8 +1876,6 @@ async function savePersona() {
     // Business info
     business_name:    document.getElementById('p-business-name').value,
     agent_name:       document.getElementById('p-agent-name').value,
-    office_hours:     buildAdminHoursString(),
-    booking_url:      document.getElementById('p-booking-url').value,
     escalation_phone: document.getElementById('p-escalation-phone').value,
     // Services & specialties
     service_areas:    getAdminServices(),
