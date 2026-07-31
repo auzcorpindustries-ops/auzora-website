@@ -402,6 +402,9 @@ tr:hover td { background: var(--tint); }
     <div class="nav-item" onclick="showPage('live-costs')" id="nav-live-costs">
       <span class="nav-icon"><i data-lucide="trending-up"></i></span> Live Spend
     </div>
+    <div class="nav-item" onclick="showPage('workflows')" id="nav-workflows">
+      <span class="nav-icon"><i data-lucide="workflow"></i></span> Workflow Requests
+    </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar">AH</div>
@@ -887,6 +890,21 @@ tr:hover td { background: var(--tint); }
       </div>
     </div>
 
+    <!-- WORKFLOWS PAGE -->
+    <div class="page" id="page-workflows">
+      <div class="page-header">
+        <h1>Workflow Requests</h1>
+        <p>Review and approve client n8n automation requests</p>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Pending Requests</h2>
+          <button onclick="loadWorkflowRequests()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
+        </div>
+        <div id="workflow-pending-list"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -974,6 +992,7 @@ function showPage(name) {
   if (name === 'persona') initPersonaPage();
   if (name === 'phones') loadPhones();
   if (name === 'live-costs') loadLiveCosts();
+  if (name === 'workflows') loadWorkflowRequests();
 }
 
 // LIVE COSTS DASHBOARD
@@ -2103,6 +2122,86 @@ async function createClient() {
     showPage('clients');
   } catch(e) {
     toast('Failed to create client', 'error');
+  }
+}
+
+// ── WORKFLOW REQUESTS ─────────────────────────────────────────
+const WF_NAMES = {
+  1: 'Inbound Lead Follow-Up', 2: 'After Hours Lead Follow-Up',
+  3: 'Unresponsive Warm Lead', 4: 'Outbound Campaign Follow-Up',
+  5: 'Missed Call Auto SMS', 6: 'Missed Call Auto Callback',
+  7: 'Outbound No Answer Follow-Up',
+};
+
+async function loadWorkflowRequests() {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const container = document.getElementById('workflow-pending-list');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const res = await fetch(`${API}/workflows/pending`, { headers: { 'x-api-key': apiKey } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const pending = data.pending || [];
+
+    if (pending.length === 0) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">No pending workflow requests.</div>';
+      return;
+    }
+
+    container.innerHTML = pending.map(r => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:600;font-size:14px;">${r.business_name}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px;">
+            ${WF_NAMES[r.template_id] || 'Unknown'} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="approveWorkflow('${r.client_id}', ${r.template_id})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve</button>
+          <button onclick="rejectWorkflow('${r.client_id}', ${r.template_id})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="padding:20px;color:var(--red);">Error: ${err.message}</div>`;
+  }
+}
+
+async function approveWorkflow(clientId, templateId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/workflows/${clientId}/${templateId}/approve`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || 'Failed to approve');
+      return;
+    }
+    toast('Workflow approved & activated', 'success');
+    loadWorkflowRequests();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function rejectWorkflow(clientId, templateId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/workflows/${clientId}/${templateId}/reject`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || 'Failed to reject');
+      return;
+    }
+    toast('Workflow rejected', 'info');
+    loadWorkflowRequests();
+  } catch (err) {
+    alert('Error: ' + err.message);
   }
 }
 </script>

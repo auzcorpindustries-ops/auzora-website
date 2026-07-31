@@ -62,6 +62,8 @@ Last updated: 2026-06-04
 - Example path: **MyAT&T → Manage devices → Call forwarding settings**
 - Use the **No answer** row, then save.
 
+![AT&T call forwarding settings](/assets/images/att-call-forwarding.svg)
+
 ### 4) Verizon
 
 1. Open **My Verizon**.
@@ -88,6 +90,8 @@ Set the destination to your Atlas number and save.
 
 - Example dialplan idea: ring the extension, then route **NOANSWER** to Atlas.
 - If your PBX has a timeout field, start at 20 seconds.
+
+![PBX call forwarding settings](/assets/images/freepbx-call-forwarding.svg)
 
 ### 7) Twilio
 

@@ -29,6 +29,8 @@ Auzora writes appointments to your calendar using a Google Workspace service acc
 5. Set the permission to **Make changes to events**.
 6. Click **Send**.
 
+> **IMPORTANT** Anything less than **Make changes to events** means Auzora can read your calendar but not book — appointments will silently fail to appear.
+
 ## Step 2 — Find your Calendar ID
 
 1. In **Settings and sharing** for the same calendar, scroll to **Integrate calendar**.
