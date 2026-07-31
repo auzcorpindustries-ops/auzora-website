@@ -321,18 +321,18 @@
         <div class="az-chat-card">
           <div class="az-chat-header">
             <span style="position:relative;flex:none">
-              <img src="/assets/avatars/jordan.png" alt="Jordan — Auzora AI receptionist" />
+              <img src="/assets/avatars/jordan.png" alt="Bobby — Auzora AI receptionist" />
               <span style="position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:99px;background:linear-gradient(135deg,#3B82F6,#7C3AED,#EC4899);border:2px solid #fff"></span>
             </span>
             <span style="display:flex;flex-direction:column;gap:2px;flex:1">
-              <span class="name">Jordan · Auzora AI receptionist</span>
+              <span class="name">Bobby · Auzora AI receptionist</span>
               <span class="sub">Following up with Dana R. · missed call 7:42 PM</span>
             </span>
             <span class="az-chat-live">● LIVE</span>
           </div>
           <div class="az-chat-body">
             <div class="az-chat-bubble-ai">
-              <img src="/assets/avatars/jordan.png" alt="Jordan" />
+              <img src="/assets/avatars/jordan.png" alt="Bobby" />
               <div class="bubble">Hi Dana — sorry we missed you! I can get a tech out Thursday at 10am. Want me to lock that in?</div>
             </div>
             <div class="az-chat-bubble-user">
@@ -392,12 +392,12 @@
         </div>
         <div class="az-voice-card">
           <div class="az-voice-header">
-            <img src="/assets/avatars/jordan.png" alt="Jordan" />
-            <div><div class="az-voice-name">Jordan</div></div>
+            <img src="/assets/avatars/jordan.png" alt="Bobby" />
+            <div><div class="az-voice-name">Bobby</div></div>
           </div>
           <p>Confident, steady, and after-hours ready.</p>
-          <button class="az-voice-play" type="button" data-voice="jordan">▶ Play voice</button>
-          <audio data-voice-audio="jordan" preload="auto" src="/assets/audio/jordan-preview.mp3" hidden></audio>
+          <button class="az-voice-play" type="button" data-voice="bobby">▶ Play voice</button>
+          <audio data-voice-audio="bobby" preload="auto" src="/assets/audio/jordan-preview.mp3" hidden></audio>
         </div>
       </div>
     </div>
@@ -707,9 +707,9 @@
         src: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/1da06ea679a54975ad96a2221fe6530d/voices/6aDn1KB0hjpdcocrUkmq/rpx5WDhu18UBjesNKE8S.mp3',
         text: "Hi, I'm Tiffany. I keep the conversation warm and make it easy to schedule a visit.",
       },
-      jordan: {
+      bobby: {
         src: '/assets/audio/jordan-preview.mp3',
-        text: "Hi, I'm Jordan. I stay polished, professional, and ready to help after hours too.",
+        text: "Hi, I'm Bobby. I stay polished, professional, and ready to help after hours too.",
       },
     };
 
@@ -724,7 +724,7 @@
     }
 
     async function ensureBlobVoiceSource(name, audio, demo) {
-      if (name !== 'jordan') return audio;
+      if (name !== 'bobby') return audio;
       const cachedUrl = voiceObjectUrls.get(name);
       if (cachedUrl) {
         if (audio.src !== cachedUrl) audio.src = cachedUrl;
