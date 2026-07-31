@@ -3698,6 +3698,7 @@ async function loadWorkflows(page) {
               ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
               : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
             }
+            ${status === 'active' ? `<button onclick="testWorkflow(${id}, this)" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
           </div>
         </div>`;
     }).join('');
@@ -3723,6 +3724,29 @@ async function toggleWorkflow(templateId, enable) {
     loadWorkflows('ob');
   } catch (err) {
     alert('Error updating workflow: ' + err.message);
+  }
+}
+
+async function testWorkflow(templateId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Sending…'; btn.style.opacity = '0.6';
+  try {
+    const res = await fetch(`${API}/portal/workflows/${templateId}/test`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Test failed');
+      return;
+    }
+    btn.textContent = 'Sent ✓';
+    setTimeout(() => { btn.textContent = orig; }, 3000);
+  } catch (err) {
+    alert('Error testing workflow: ' + err.message);
+    btn.textContent = orig;
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
   }
 }
 </script>
