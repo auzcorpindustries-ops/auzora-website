@@ -3328,7 +3328,7 @@ function renderObLeads() {
 
   const MAX_PREVIEW = 5; // show up to 5 previous interactions when expanded
 
-  const cards = grouped.map((group, idx) => {
+  const rows = grouped.map((group, idx) => {
     const latest = group[0];
     const phone = latest.phone || '—';
     const email = latest.email || '';
@@ -3338,6 +3338,7 @@ function renderObLeads() {
     const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
     const attempts = latest.outbound_call_count ? ` (${latest.outbound_call_count}×)` : '';
     const lastDate = latest.captured_at ? new Date(latest.captured_at).toLocaleString() : '—';
+    const intent = latest.intent || latest.lead_context || '—';
 
     const callBtn = optedOut
       ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
@@ -3366,7 +3367,7 @@ function renderObLeads() {
       const previewHtml = previewItems.map(historyRow).join('');
       const moreHtml = hasMore ? group.slice(1 + MAX_PREVIEW).map(historyRow).join('') : '';
       historyHtml = `
-        <div id="lead-history-${idx}" style="display:none;margin-top:8px;padding-left:12px;border-left:2px solid var(--border);">
+        <div id="lead-history-${idx}" style="display:none;padding:12px 16px;background:var(--field);border-radius:8px;margin-top:4px;">
           ${previewHtml}
           ${hasMore ? `<div id="lead-more-${idx}" style="display:none;">${moreHtml}</div>` : ''}
           ${hasMore ? `<a href="#" onclick="document.getElementById('lead-more-${idx}').style.display='block';this.style.display='none';return false;" style="font-size:11px;color:var(--accent);display:block;margin-top:6px;">View ${historyItems.length - MAX_PREVIEW} more interaction${historyItems.length - MAX_PREVIEW === 1 ? '' : 's'}</a>` : ''}
@@ -3377,25 +3378,50 @@ function renderObLeads() {
       ? `<button onclick="const h=document.getElementById('lead-history-${idx}');h.style.display=h.style.display==='none'?'block':'none';this.textContent=h.style.display==='none'?'Show history (${historyItems.length})':'Hide history'" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;">Show history (${historyItems.length})</button>`
       : '';
 
+    // Intent dot color
+    const intentLower = intent.toLowerCase();
+    const intentDotColor = intentLower.includes('quote') || intentLower.includes('inquiry') || intentLower.includes('weekly') ? '#16a34a' :
+                           intentLower.includes('repair') || intentLower.includes('heater') ? '#f59e0b' : '#9aa3b2';
+
     return `
-    <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="flex:1;min-width:120px;">
-          <div style="font-weight:600;font-size:14px;">${phone}${name ? ' · ' + name : ''}</div>
-          ${email ? `<div style="color:var(--accent2);font-size:12px;">${email}</div>` : ''}
-          <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="${badgeClass}">${status}${attempts}</span>
-          ${callBtn}
-        </div>
-      </div>
-      <div style="margin-top:8px;">${expandBtn}</div>
-      ${historyHtml}
-    </div>`;
+    <tbody>
+    <tr>
+      <td style="color:var(--muted);">${idx + 1}</td>
+      <td>
+        <div style="font-weight:600;font-size:14px;">${phone}${name ? ' · ' + name : ''}</div>
+        ${email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : ''}
+        <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
+      </td>
+      <td><span class="${badgeClass}">${status}${attempts}</span></td>
+      <td style="color:var(--muted);">—</td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
+      <td style="color:var(--muted);">—</td>
+      <td style="color:var(--muted);">—</td>
+      <td style="color:var(--muted);">—</td>
+      <td style="color:var(--muted);">—</td>
+      <td style="color:var(--muted);">—</td>
+      <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
+    </tr>
+    ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    </tbody>`;
   }).join('');
 
-  listEl.innerHTML = cards;
+  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:1200px;">
+    <thead><tr>
+      <th style="width:40px;">#</th>
+      <th>Lead</th>
+      <th>Status</th>
+      <th>Score</th>
+      <th>Intent</th>
+      <th>Source</th>
+      <th>Opportunity</th>
+      <th>Assigned</th>
+      <th>Next Action</th>
+      <th>AI Recommendation</th>
+      <th style="text-align:right;">Action</th>
+    </tr></thead>
+    ${rows}
+  </table></div>`;
 }
 
 function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
