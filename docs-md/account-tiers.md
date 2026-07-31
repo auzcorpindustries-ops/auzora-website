@@ -20,9 +20,9 @@ Auzora offers three account tiers — **Starter**, **Pro**, and **Premium** — 
 | Client portal access | ✓ | ✓ | ✓ |
 | External CRM lead capture integration | — | ✓ | ✓ |
 | Internal lead capture CRM | — | — | ✓ |
-| AI follow-up calls on leads | — | — | ✓ |
-| AI follow-up SMS on leads | — | — | ✓ |
-| Priority support | — | ✓ | ✓ |
+| AI follow-up calls on leads | — | ✓ | ✓ |
+| AI follow-up SMS on leads | — | ✓ | ✓ |
+| Priority support | — | — | ✓ |
 
 ---
 
@@ -49,7 +49,7 @@ Small businesses and solo operators who need a reliable AI receptionist to answe
 
 ## Pro Plan
 
-Everything in Starter, plus the ability to capture leads into an external CRM system you already use.
+Everything in Starter, plus lead capture with external CRM integration and AI-powered follow-up calls and SMS.
 
 ### What's included
 
@@ -58,7 +58,8 @@ Everything in Starter, plus the ability to capture leads into an external CRM sy
 - **Full access to all 6 AI voices** — choose from Liz, Josh, Tiffany, and more to match your brand's tone
 - **Up to 3 dedicated AI phone lines** — route different departments or locations to separate numbers
 - **External CRM lead capture integration** — when a caller provides their name, phone number, or other details, your AI agent automatically pushes the lead into your existing external CRM via webhook or API integration
-- **Priority support** — faster response times from our team when you need help
+- **AI follow-up calls on leads** — your AI receptionist automatically calls leads back to qualify, schedule, or nurture them, using the same natural conversation as inbound calls
+- **AI follow-up SMS on leads** — leads receive an instant SMS follow-up after their call, and you can run bulk SMS campaigns to re-engage cold leads
 
 ### How external CRM integration works
 
@@ -73,21 +74,22 @@ Your Auzora portal's **Integrations** tab lets you configure webhook endpoints f
 
 ### Who it's for
 
-Growing businesses that already use a CRM and want their AI receptionist to feed leads directly into their existing pipeline — so nothing falls through the cracks.
+Growing businesses that already use a CRM and want their AI receptionist to feed leads directly into their existing pipeline — plus automatic AI follow-up calls and SMS to nurture every lead.
 
 ---
 
 ## Premium Plan
 
-Everything in Pro, plus Auzora's built-in lead capture CRM with AI-powered outbound follow-up.
+Everything in Pro, plus Auzora's built-in lead capture CRM with bulk outbound campaigns.
 
 ### What's included
 
 **Everything in Pro, plus:**
 
 - **Internal lead capture CRM** — every lead your AI agent captures is stored in your Auzora portal's built-in CRM, with full contact details, call history, and lead status — no external system required
-- **AI follow-up calls on leads** — your AI receptionist automatically calls leads back to qualify, schedule, or nurture them, using the same natural conversation as inbound calls
-- **AI follow-up SMS on leads** — leads receive an instant SMS follow-up after their call, and you can run bulk SMS campaigns to re-engage cold leads
+- **Bulk SMS campaigns** — upload up to 200 leads per campaign with personalization fields
+- **Bulk call campaigns** — AI dials a lead list with custom script context
+- **Priority support** — faster response times from our team when you need help
 
 ### How the internal CRM works
 
@@ -112,7 +114,7 @@ The Premium tier unlocks the full outbound toolkit documented in the [SMS campai
 
 ### Who it's for
 
-Businesses that want a complete, hands-off lead management system — capture, follow-up calls, and SMS campaigns — all powered by AI and managed from a single portal, with no external CRM required.
+Businesses that want a complete, hands-off lead management system — a built-in CRM with bulk SMS and call campaigns — all powered by AI and managed from a single portal, with no external CRM required.
 
 ---
 
@@ -123,11 +125,12 @@ Businesses that want a complete, hands-off lead management system — capture, f
 | Caller info captured in call logs | ✓ | ✓ | ✓ |
 | Leads pushed to external CRM | — | ✓ | ✓ |
 | Leads stored in Auzora CRM | — | — | ✓ |
-| Auto follow-up SMS to new leads | — | — | ✓ |
-| Auto follow-up calls to new leads | — | — | ✓ |
+| Auto follow-up SMS to new leads | — | ✓ | ✓ |
+| Auto follow-up calls to new leads | — | ✓ | ✓ |
 | Bulk SMS campaigns | — | — | ✓ |
 | Bulk call campaigns | — | — | ✓ |
 | Manual outbound calls | — | — | ✓ |
+| Priority support | — | — | ✓ |
 
 ---
 
@@ -145,10 +148,10 @@ Businesses that want a complete, hands-off lead management system — capture, f
 Yes. Most businesses start on Starter and upgrade as their needs grow. Your agent configuration, phone number, and call history all carry over.
 
 **Do I need an external CRM to use the Pro plan?**
-No. The Pro plan works without an external CRM — you simply won't use the webhook integration. But the main value of Pro is pushing leads to an external system, so it's best if you already have one.
+No. The Pro plan works without an external CRM — you simply won't use the webhook integration. But Pro's main value is lead capture with external CRM integration plus AI follow-up calls and SMS, so it's best if you have a CRM to push leads into.
 
 **What's the difference between Pro and Premium lead capture?**
-Pro pushes leads to an external CRM you already use (HubSpot, Salesforce, etc.). Premium stores leads in Auzora's built-in CRM and adds AI-powered follow-up calls and SMS — so the AI actively reaches back out to leads on your behalf.
+Pro pushes leads to an external CRM and includes AI follow-up calls and SMS. Premium adds Auzora's built-in CRM so leads are stored in your portal with full contact details, call history, and lead status — plus bulk SMS and call campaigns for re-engaging cold leads at scale.
 
 **Can I use both an external CRM and the internal CRM on Premium?**
 Yes. Premium includes everything in Pro, so you can push leads to an external CRM *and* use the internal CRM with follow-up calls and SMS simultaneously.
