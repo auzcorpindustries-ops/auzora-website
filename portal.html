@@ -7,31 +7,32 @@
 <title>Client Portal — Auzora</title>
 <style>
 /* ─────────────────────────────────────────────────────────────────────────────
-   AUZORA PORTAL — redesigned theme
-   Drop-in replacement for the contents of <style> in portal.html.
-   Every existing class / id / JS hook is preserved. Dark is default,
-   toggleTheme() adds .light on :root exactly as before.
+   AUZORA PORTAL — v2 light-first theme
+   Light is default; .dark class adds dark overrides.
+   All existing class / id / JS hooks preserved.
    ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
+  --bg: #eef0f4; --surface: #ffffff; --surface2: #f7f8fa; --panel: #fbfbfc;
+  --border: rgba(16,24,38,0.08); --head: #ffffff; --glass: rgba(255,255,255,0.78);
+  --accent: #3B82F6; --accent2: #7C3AED;
+  --grad: linear-gradient(135deg, #3B82F6, #7C3AED, #EC4899);
+  --green: #22c55e; --yellow: #b45309; --orange: #F97316; --red: #EF4444;
+  --blue: #3B82F6; --purple: #7C3AED; --pink: #EC4899;
+  --text: #101826; --muted: #5f687a; --faint: #9aa3b2; --tint: rgba(16,24,38,0.035);
+  --shadow: 0 24px 60px rgba(24,33,47,0.08);
+  --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+:root.dark {
   --bg: #0b0f16; --surface: #131a26; --surface2: #0d131d; --panel: #0f1520;
   --border: rgba(255,255,255,0.09); --head: #101724; --glass: rgba(15,21,32,0.82);
   --accent: #3b82f6; --accent2: #a78bfa;
-  --grad: linear-gradient(135deg, #3B82F6, #7C3AED, #EC4899);
   --green: #22c55e; --yellow: #f59e0b; --orange: #f97316; --red: #ef4444;
-  --blue: #38bdf8; --purple: #7c3aed;
-  --text: #e6ebf3; --muted: #8b95a7; --tint: rgba(255,255,255,0.05);
+  --blue: #38bdf8; --purple: #7c3aed; --pink: #EC4899;
+  --text: #e6ebf3; --muted: #8b95a7; --faint: #6b7585; --tint: rgba(255,255,255,0.05);
   --shadow: 0 18px 44px rgba(0,0,0,0.35);
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-}
-:root.light {
-  --bg: #f6f7f9; --surface: #ffffff; --surface2: #f7f8fa; --panel: #fbfbfc;
-  --border: rgba(16,24,38,0.08); --head: #fafbfc; --glass: rgba(255,255,255,0.82);
-  --accent: #3b82f6; --accent2: #7c3aed;
-  --green: #16a34a; --yellow: #b45309; --orange: #f97316; --red: #dc2626;
-  --blue: #0284c7; --purple: #7c3aed;
-  --text: #101826; --muted: #5f687a; --tint: rgba(16,24,38,0.035);
-  --shadow: 0 16px 40px rgba(24,33,47,0.06);
+  --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -41,7 +42,7 @@ body {
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--purple); }
-::placeholder { color: #9aa3b2; }
+::placeholder { color: var(--faint); }
 input, select, textarea, button { font-family: inherit; }
 input[type=range] { width: 100%; accent-color: var(--purple); }
 
@@ -129,24 +130,56 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
   .login-right { flex: 1; height: 100vh; }
 }
 
-/* ── SHELL ─────────────────────────────────────────────────────────────── */
+/* ── SHELL (v2 — rounded card container) ───────────────────────────────── */
 #app { display: none; }
-.topbar {
-  position: fixed; top: 0; left: 246px; right: 0; z-index: 100; height: 62px;
-  background: var(--glass); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 22px; gap: 12px;
+.shell-wrap {
+  min-height: 100vh; padding: 16px; display: flex; justify-content: center;
 }
+.shell {
+  width: 100%; max-width: 1560px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: var(--shadow); overflow: hidden; display: flex; align-items: stretch;
+}
+
+/* ── HEADER (replaces .topbar) ─────────────────────────────────────────── */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px;
+  padding: 22px 28px; border-bottom: 1px solid var(--border);
+  background: var(--glass); backdrop-filter: blur(12px);
+}
+.topbar-left { flex: 1 1 320px; min-width: 0; }
+.topbar-left h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; line-height: 1.2; }
+.topbar-left p { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .topbar-logo { font-size: 17px; font-weight: 700; letter-spacing: -.2px; }
 .topbar-biz { font-size: 12px; color: var(--muted); }
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .agent-status {
-  display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-  color: var(--green); background: rgba(34,197,94,.10);
-  border: 1px solid rgba(34,197,94,.22); border-radius: 999px; padding: 5px 11px;
+  display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+  color: #16a34a; background: rgba(34,197,94,0.10);
+  border: 1px solid rgba(34,197,94,0.22); border-radius: 999px; padding: 6px 12px;
 }
-.pulse { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+.pulse { width: 6px; height: 6px; background: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.35); } }
+.bell-btn {
+  width: 42px; height: 42px; border: 1px solid rgba(16,24,38,0.12);
+  background: var(--surface); border-radius: 11px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  transition: border-color .15s, color .15s;
+}
+.bell-btn:hover { border-color: var(--purple); color: var(--purple); }
+.bell-btn svg { width: 18px; height: 18px; }
+.user-chip {
+  display: flex; align-items: center; gap: 11px; cursor: pointer;
+}
+.user-chip .avatar {
+  width: 42px; height: 42px; border-radius: 11px; background: var(--grad); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+.user-chip .meta { display: flex; flex-direction: column; min-width: 0; }
+.user-chip .meta b { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.user-chip .meta span { font-size: 13px; color: var(--muted); }
+.user-chip .chevron { width: 17px; height: 17px; color: var(--faint); flex-shrink: 0; }
 .theme-toggle, .logout-btn {
   height: 34px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 9px; padding: 0 12px; font-size: 12px; font-weight: 600;
@@ -158,39 +191,42 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 
 /* ── SIDEBAR ───────────────────────────────────────────────────────────── */
 .sidebar {
-  position: fixed; left: 0; top: 0; bottom: 0; width: 246px; z-index: 110;
-  background: var(--panel); border-right: 1px solid var(--border);
-  padding: 14px 12px; display: flex; flex-direction: column; gap: 2px;
+  flex: 1 1 262px; max-width: 290px; min-width: 0;
+  border-right: 1px solid var(--border);
+  padding: 24px 18px 28px; display: flex; flex-direction: column;
 }
-.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 2px 4px 14px; }
-.sidebar-brand img { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
-.sidebar-brand b { font-size: 14px; font-weight: 800; letter-spacing: .4px; }
+.sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 22px; }
+.sidebar-brand img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+.sidebar-brand b { font-size: 25px; font-weight: 800; letter-spacing: -.7px; }
 .sidebar-search {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 7px 9px; font-size: 13px; color: var(--muted); cursor: text;
+  display: flex; align-items: center; gap: 9px; margin-bottom: 16px;
+  background: var(--surface2); border: 1px solid rgba(16,24,38,0.10);
+  border-radius: 10px; padding: 9px 12px; font-size: 14px; color: var(--faint); cursor: text;
 }
+.sidebar-search svg { width: 16px; height: 16px; color: var(--faint); flex-shrink: 0; }
 .sidebar-search kbd {
-  margin-left: auto; font-size: 10px; font-weight: 600; font-family: var(--font);
-  border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px;
+  margin-left: auto; font-size: 11px; font-weight: 600; font-family: var(--font);
+  color: var(--muted); border: 1px solid rgba(16,24,38,0.12); border-radius: 5px; padding: 1px 5px;
 }
 .nav-group {
   font-size: 10px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase;
   color: var(--muted); opacity: .8; padding: 14px 10px 6px;
 }
 .nav-item {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
-  border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--muted);
+  display: flex; align-items: center; gap: 13px; padding: 11px 14px;
+  border-radius: 11px; font-size: 15px; font-weight: 500; color: var(--muted);
   cursor: pointer; border: none; transition: background .15s, color .15s;
 }
-.nav-item:hover { color: var(--text); background: var(--tint); }
+.nav-item:hover { color: var(--text); background: rgba(16,24,38,0.035); }
 .nav-item.active {
-  color: var(--text); background: rgba(124,58,237,.12);
-  box-shadow: inset 2px 0 0 var(--purple);
+  color: var(--text); font-weight: 700; background: rgba(124,58,237,0.08);
+  box-shadow: inset 0 0 0 1px rgba(124,58,237,0.16);
 }
-.nav-icon { display: flex; width: 16px; height: 16px; }
-.nav-icon svg { width: 16px; height: 16px; }
-.sidebar-footer { margin-top: auto; padding-top: 12px; }
+.nav-item.active .nav-icon { color: var(--purple); }
+.nav-icon { display: flex; width: 19px; height: 19px; flex-shrink: 0; }
+.nav-icon svg { width: 19px; height: 19px; }
+.nav-divider { height: 1px; background: rgba(16,24,38,0.08); margin: 12px 0; }
+.sidebar-footer { margin-top: auto; padding-top: 20px; }
 .sidebar-user {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px;
   border: 1px solid var(--border); border-radius: 11px; background: var(--surface);
@@ -217,28 +253,29 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .sidebar-overlay.show { display: block; opacity: 1; }
 
 /* ── PAGES ─────────────────────────────────────────────────────────────── */
-.main { margin-left: 246px; padding: 84px 22px 28px; min-height: 100vh; }
+.main { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; }
+.main-content { flex: 1; padding: 22px 28px 40px; min-width: 0; }
 .page { display: none; }
-.page.active { display: flex; flex-direction: column; gap: 18px; }
-.page-header { margin: 0 0 2px; }
-.page-header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.2px; }
-.page-header p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.page.active { display: flex; flex-direction: column; gap: 20px; }
+.page-header { margin: 0; }
+.page-header h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; }
+.page-header p { font-size: 14.5px; color: var(--muted); margin-top: 4px; }
 
 /* ── CARDS ─────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 18px;
+  border-radius: 13px; padding: 20px 22px;
 }
 .card-title {
-  display: flex; align-items: center; gap: 9px;
-  font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 16px; font-weight: 700; text-transform: none; letter-spacing: 0;
   color: var(--text); margin-bottom: 14px;
 }
-.card-title svg { width: 16px; height: 16px; color: var(--purple); }
-.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+.card-title svg { width: 18px; height: 18px; color: var(--purple); }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; }
 .stat-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px 18px;
+  border-radius: 13px; padding: 18px 20px;
 }
 .stat-icon {
   width: 34px; height: 34px; border-radius: 9px; margin-bottom: 14px;
@@ -248,39 +285,56 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .stat-icon svg { width: 17px; height: 17px; }
 .stat-icon.purple { background: rgba(124,58,237,.10); color: var(--purple); }
 .stat-icon.pink { background: rgba(236,72,153,.10); color: #EC4899; }
-.stat-label { font-size: 12px; color: var(--muted); text-transform: none; letter-spacing: 0; margin-top: 3px; }
-.stat-value { font-size: 28px; font-weight: 800; letter-spacing: -.6px; margin: 0; }
-.stat-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.stat-label { font-size: 14.5px; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.stat-value { font-size: 29px; font-weight: 800; letter-spacing: -.8px; margin: 7px 0 9px; }
+.stat-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
 /* ── TABLE ─────────────────────────────────────────────────────────────── */
 .table-wrap {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; overflow: hidden;
+  border-radius: 13px; overflow: hidden;
 }
 .table-header {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  padding: 16px 22px; border-bottom: 1px solid var(--border);
 }
-.table-header h2 { font-size: 14px; font-weight: 700; flex: 1; }
-table { width: 100%; border-collapse: collapse; }
+.table-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 600px; }
 th {
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--muted); padding: 10px 18px; text-align: left;
+  font-size: 13.5px; font-weight: 500; color: var(--muted);
+  padding: 15px 12px; text-align: left;
   background: var(--head); border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
-td { padding: 12px 18px; font-size: 13px; border-bottom: 1px solid var(--border); }
+th:first-child { padding-left: 22px; }
+th:last-child { padding-right: 22px; }
+td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid rgba(16,24,38,0.06); }
+td:first-child { padding-left: 22px; }
+td:last-child { padding-right: 22px; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--tint); }
+tr:hover td { background: rgba(16,24,38,0.02); }
 .badge-confirmed, .badge-pending, .badge-unconfirmed {
-  display: inline-block; border-radius: 999px; padding: 3px 10px;
-  font-size: 11px; font-weight: 700; white-space: nowrap;
+  display: inline-block; border-radius: 8px; padding: 5px 11px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; border: none;
 }
-.badge-confirmed { background: rgba(34,197,94,.10); color: var(--green); border: 1px solid rgba(34,197,94,.24); }
-.badge-pending { background: rgba(245,158,11,.10); color: var(--yellow); border: 1px solid rgba(245,158,11,.26); }
-.badge-unconfirmed { background: rgba(239,68,68,.08); color: var(--red); border: 1px solid rgba(239,68,68,.24); }
+.badge-confirmed { background: rgba(34,197,94,.12); color: #16a34a; }
+.badge-pending { background: rgba(245,158,11,.13); color: var(--yellow); }
+.badge-unconfirmed { background: rgba(239,68,68,.09); color: var(--red); }
 tr.row-unconfirmed td { background: rgba(239,68,68,.04); }
 tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+
+/* ── PROGRESS BARS ─────────────────────────────────────────────────────── */
+.progress-wrap { display: flex; align-items: center; gap: 10px; }
+.progress-track { flex: 1; height: 7px; border-radius: 999px; background: #f1f3f7; overflow: hidden; min-width: 70px; }
+.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #3B82F6, #7C3AED, #EC4899); }
+.progress-text { font-size: 13.5px; white-space: nowrap; }
+
+/* ── CAMPAIGN TABS ─────────────────────────────────────────────────────── */
+.cmp-tabs { display: flex; gap: 5px; background: #f2f3f6; border-radius: 11px; padding: 4px; }
+.cmp-tab { font-size: 14px; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--muted); border: none; background: none; transition: all .15s; }
+.cmp-tab.active { font-weight: 700; color: #101826; background: #fff; box-shadow: 0 1px 2px rgba(16,24,38,0.08); }
 
 /* ── FORMS ─────────────────────────────────────────────────────────────── */
 .settings-grid {
@@ -289,16 +343,38 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 }
 .form-group { margin-bottom: 12px; }
 .form-group label {
-  display: block; font-size: 11px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+  display: block; font-size: 11.5px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
 }
 .form-group input, .form-group select, .form-group textarea {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 10px 12px; color: var(--text); font-size: 13px;
+  width: 100%; background: var(--surface2); border: 1px solid rgba(16,24,38,0.14);
+  border-radius: 10px; padding: 11px 14px; color: var(--text); font-size: 14px;
   outline: none; transition: border-color .2s;
 }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--purple); }
 .form-group textarea { resize: vertical; min-height: 78px; }
+
+/* ── BUTTONS ───────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 11px;
+  padding: 12px 20px; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+  background: #3B82F6; box-shadow: var(--btn-shadow); transition: filter .15s; white-space: nowrap;
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; filter: none; }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(16,24,38,0.12);
+  background: var(--surface); border-radius: 11px; padding: 11px 16px; font-size: 14px;
+  font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.btn-secondary:hover { border-color: var(--purple); color: var(--purple); }
+.btn-call {
+  display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 10px;
+  padding: 11px 20px; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+  background: #22c55e; transition: filter .15s; white-space: nowrap;
+}
+.btn-call:hover { filter: brightness(1.06); }
 
 /* ── VOICE GRID ────────────────────────────────────────────────────────── */
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
@@ -350,11 +426,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 }
 .tag-x { cursor: pointer; font-size: 13px; line-height: 1; }
 .s-tags-wrap {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface2); border: 1px solid rgba(16,24,38,0.14); border-radius: 10px;
   padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
   cursor: text; min-height: 44px; transition: border-color .2s;
 }
-.s-tags-wrap:focus-within { border-color: var(--accent); }
+.s-tags-wrap:focus-within { border-color: var(--purple); }
 .s-tag-pill {
   background: rgba(124,58,237,.10); border: 1px solid rgba(124,58,237,.22);
   border-radius: 999px; padding: 3px 9px; font-size: 12px; font-weight: 600;
@@ -370,9 +446,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .unsaved { font-size: 12px; font-weight: 600; color: var(--orange); display: none; }
 .btn-save {
   display: inline-flex; align-items: center; gap: 7px;
-  background: var(--grad); color: #fff; border: none; border-radius: 10px;
-  padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 18px rgba(124,58,237,.22); transition: filter .2s;
+  background: #3B82F6; color: #fff; border: none; border-radius: 11px;
+  padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: var(--btn-shadow); transition: filter .15s;
 }
 .btn-save:hover { filter: brightness(1.06); }
 .btn-save:disabled { opacity: .6; cursor: not-allowed; filter: none; }
@@ -386,11 +462,37 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .hours-times { display: flex; gap: 8px; align-items: center; min-width: 0; }
 .hours-times input[type="time"] {
   flex: 1 1 112px; min-width: 112px;
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface2); border: 1px solid rgba(16,24,38,0.14); border-radius: 8px;
   padding: 7px 8px; color: var(--text); font-size: 13px; outline: none;
 }
-.hours-times input[type="time"]:focus { border-color: var(--accent); }
+.hours-times input[type="time"]:focus { border-color: var(--purple); }
 .hours-sep { font-size: 12px; color: var(--muted); }
+
+/* ── INFO CALLOUT ──────────────────────────────────────────────────────── */
+.info-callout {
+  display: flex; gap: 12px; border: 1px solid rgba(59,130,246,0.22);
+  background: rgba(59,130,246,0.05); border-radius: 12px; padding: 14px 16px;
+}
+.info-callout svg { width: 17px; height: 17px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.info-callout span { font-size: 14px; line-height: 1.6; color: var(--text); }
+
+/* ── AUTOMATION ROW ────────────────────────────────────────────────────── */
+.wf-row { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 18px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.wf-num { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; font-weight: 800; }
+.wf-num.call { background: rgba(59,130,246,0.10); color: #3B82F6; }
+.wf-num.sms { background: rgba(236,72,153,0.10); color: #EC4899; }
+.wf-info { flex: 1 1 300px; min-width: 0; }
+.wf-name { font-size: 15.5px; font-weight: 700; }
+.wf-desc { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.55; }
+.wf-status { display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+.wf-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── EMPTY STATE TILE ──────────────────────────────────────────────────── */
+.empty-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; }
+.empty-tile-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(124,58,237,0.08); color: var(--purple); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.empty-tile-icon svg { width: 28px; height: 28px; }
+.empty-tile h2 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+.empty-tile p { font-size: 14.5px; color: var(--muted); line-height: 1.6; margin-top: 8px; max-width: 420px; }
 
 /* ── TOAST ─────────────────────────────────────────────────────────────── */
 #toast {
@@ -404,16 +506,21 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 #toast.error { border-color: var(--red); color: var(--red); }
 
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
-@media (max-width: 1000px) {
-  .stats-grid { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .hamburger { display: flex; }
-  .topbar { left: 0; padding: 0 14px; }
-  .sidebar { transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 110; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); background: var(--panel); }
   .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; padding: 76px 14px 20px; }
+  .shell { flex-direction: column; }
+}
+@media (max-width: 760px) {
+  .shell-wrap { padding: 0; }
+  .shell { border-radius: 0; border: none; }
+  .topbar { padding: 16px 18px; }
+  .topbar-right { flex-wrap: wrap; }
+  .main-content { padding: 16px 18px 28px; }
+  .stats-grid { grid-template-columns: 1fr; }
   .voice-grid { grid-template-columns: 1fr 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
 }
 
 </style>
@@ -465,52 +572,57 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 <!-- APP -->
 <div id="app">
-  <header class="topbar">
-    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle navigation menu">
-      <span></span><span></span><span></span>
-    </button>
-    <span class="topbar-logo">Auzora</span>
-    <span class="topbar-biz" id="topbar-biz"></span>
-    <div class="topbar-right">
-      <div class="agent-status"><div class="pulse"></div> Agent Active</div>
-      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☀️ Light</button>
-      <button class="logout-btn" onclick="logout()">Sign out</button>
-    </div>
-  </header>
+<div class="shell-wrap">
+<div class="shell">
 
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar">
     <div class="sidebar-brand">
       <img src="/logo.png" alt="Auzora" />
-      <b>AUZORA</b>
+      <b>Auzora</b>
     </div>
-    <div class="sidebar-search">Search <kbd>⌘K</kbd></div>
+    <div class="sidebar-search"><i data-lucide="search"></i> Search <kbd>⌘K</kbd></div>
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</div>
-    <div class="nav-group">Agent</div>
-    <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon"><i data-lucide="sliders-horizontal"></i></span> Agent Settings</div>
-    <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon"><i data-lucide="calendar-days"></i></span> Scheduling</div>
-    <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon"><i data-lucide="unplug"></i></span> Integrations</div>
-    <div class="nav-item" onclick="showPage('outbound')" id="nav-outbound"><span class="nav-icon"><i data-lucide="phone-outgoing"></i></span> Outbound</div>
-    <div class="nav-item" onclick="showPage('sms')" id="nav-sms"><span class="nav-icon"><i data-lucide="message-square"></i></span> SMS Services</div>
-    <div class="nav-item" onclick="showPage('account')" id="nav-account"><span class="nav-icon"><i data-lucide="user-cog"></i></span> Account</div>
-    <div class="nav-item" onclick="showPage('docs')" id="nav-docs"><span class="nav-icon"><i data-lucide="book-open"></i></span> Docs</div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon"><i data-lucide="bot"></i></span> AI Agent</div>
+    <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon"><i data-lucide="contact-round"></i></span> Leads &amp; CRM</div>
+    <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
+    <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
+    <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
     <div class="sidebar-footer">
-      <div class="sidebar-user">
-        <div class="avatar" id="sidebar-initials">–</div>
-        <div class="meta"><b id="sidebar-biz">—</b><span id="sidebar-plan">Client portal</span></div>
-      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-item" onclick="showPage('scheduling')" id="nav-scheduling"><span class="nav-icon"><i data-lucide="calendar-days"></i></span> Scheduling</div>
+      <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon"><i data-lucide="unplug"></i></span> Integrations</div>
+      <div class="nav-item" onclick="showPage('account')" id="nav-account"><span class="nav-icon"><i data-lucide="user-cog"></i></span> Account</div>
+      <div class="nav-item" onclick="showPage('docs')" id="nav-docs"><span class="nav-icon"><i data-lucide="book-open"></i></span> Docs</div>
     </div>
   </nav>
 
-  <main class="main">
+  <div class="main">
+  <header class="topbar">
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle navigation menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-left">
+      <h1 id="topbar-title">Welcome back</h1>
+      <p id="topbar-sub">Your AI agent is live and handling calls</p>
+    </div>
+    <div class="topbar-right">
+      <div class="agent-status"><div class="pulse"></div> Agent Active</div>
+      <button class="bell-btn"><i data-lucide="bell"></i></button>
+      <div class="user-chip">
+        <div class="avatar" id="sidebar-initials">–</div>
+        <div class="meta"><b id="sidebar-biz">—</b><span id="sidebar-plan">Client portal</span></div>
+        <i data-lucide="chevron-down" class="chevron"></i>
+      </div>
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Dark</button>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="main-content">
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="page-header">
-        <h1 id="dash-title">Welcome back</h1>
-        <p>Your AI agent is live and handling calls</p>
-      </div>
-
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Appointments Booked</div>
@@ -542,7 +654,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="page-header">
-        <h1><i data-lucide="sliders-horizontal" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Agent Settings</h1>
+        <h1><i data-lucide="bot" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> AI Agent</h1>
         <p>Customize how your AI phone agent sounds and behaves</p>
       </div>
 
@@ -733,11 +845,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
     <!-- SCHEDULING -->
     <div class="page" id="page-scheduling">
-      <div class="page-header">
-        <h1><i data-lucide="calendar-days" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Scheduling</h1>
-        <p>View your calendar and configure office hours &amp; booking requirements</p>
-      </div>
-
       <!-- Time Zone -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-title" style="margin-bottom:14px;"><i data-lucide="globe"></i> Time Zone</div>
@@ -815,7 +922,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the default appointment length for each service. Check "Appt" to enable duration configuration for a service — the AI receptionist will use this when booking calendar events.</div>
         <div id="s-durations-list" style="display:flex;flex-direction:column;gap:10px;"></div>
         <div id="s-durations-empty" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;display:none;">
-          No services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">Agent Settings</span> to add services first.
+          No services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">AI Agent</span> to add services first.
         </div>
       </div>
 
@@ -827,11 +934,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
     <!-- INTEGRATIONS -->
     <div class="page" id="page-integrations">
-      <div class="page-header">
-        <h1><i data-lucide="unplug" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Integrations</h1>
-        <p>Connect your calendars — appointments booked by your AI agent will appear automatically</p>
-      </div>
-
       <!-- Google Calendar -->
       <div class="card" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
@@ -1059,39 +1161,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- Lead Webhook -->
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-          <span style="font-size:32px;">🔗</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;">Lead Webhook (Outbound)</div>
-            <div style="font-size:13px;color:var(--muted);">Send captured leads to your CRM, Zapier, Make, n8n, or any webhook URL</div>
-          </div>
-        </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
-          When your AI agent captures a lead, we'll POST the lead data as JSON to this URL instantly.
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
-          { "client_id": "…", "client_name": "…", "phone": "…", "intent": "…", "captured_at": "…" }
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Webhook URL</label>
-          <input type="url" id="i-webhook-url" placeholder="https://hooks.zapier.com/hooks/catch/..." oninput="setDirty()"
-            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:inherit;" />
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <button onclick="saveWebhookUrl()"
-            style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
-            💾 Save Webhook
-          </button>
-          <button onclick="testWebhook()"
-            style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--muted2);font-size:13px;font-weight:600;cursor:pointer;">
-            🧪 Send Test Payload
-          </button>
-          <span id="webhook-status" style="font-size:12px;color:var(--muted);"></span>
-        </div>
-      </div>
-
       <!-- Lead Intake (Inbound) -->
       <div class="card">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
@@ -1124,90 +1193,49 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
     </div>
 
-    <!-- OUTBOUND -->
-    <div class="page" id="page-outbound">
-      <div class="page-header">
-        <h1><i data-lucide="phone-outgoing" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Outbound Calls</h1>
-        <p>Have your AI agent call leads back — follow up on inquiries and book appointments</p>
+    <!-- LEADS & CRM -->
+    <div class="page" id="page-leads">
+      <!-- Lead stat cards (new metrics — blank for now) -->
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="stat-label">Total Leads</div>
+          <div class="stat-value" id="stat-leads-total">—</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">New</div>
+          <div class="stat-value" id="stat-leads-new" style="color:#b45309;">—</div>
+          <div class="stat-sub">Not yet contacted</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Reached</div>
+          <div class="stat-value" id="stat-leads-reached" style="color:#16a34a;">—</div>
+          <div class="stat-sub">Answered an AI call</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Opted Out</div>
+          <div class="stat-value" id="stat-leads-opted" style="color:#EF4444;">—</div>
+          <div class="stat-sub">Never dialed again</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">With Email</div>
+          <div class="stat-value" id="stat-leads-email">—</div>
+          <div class="stat-sub">Exportable to CRM</div>
+        </div>
       </div>
 
-      <!-- Campaigns (Phase 2) -->
-      <div class="page-header" style="margin-top:32px;">
-        <h2><i data-lucide="megaphone" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Campaigns</h2>
-        <p>Bulk-upload a lead list and let your AI agent dial them automatically within your business hours — with retries for no-answers.</p>
-      </div>
-
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-title"><i data-lucide="plus-circle"></i> New Campaign</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label>Campaign Name *</label>
-            <input type="text" id="cmp-name" placeholder="e.g. Spring Follow-up" />
-          </div>
-          <div class="form-group">
-            <label>Script Context (optional)</label>
-            <input type="text" id="cmp-script" placeholder="e.g. Mention 10% spring discount for new customers" />
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label>Max Retries (after first call)</label>
-            <input type="number" id="cmp-retries" value="2" min="0" max="5" style="width:80px;" />
-            <span style="font-size:11px;color:var(--muted);">0–5 (default 2 = 3 total attempts per lead)</span>
-          </div>
-          <div class="form-group">
-            <label>Retry Delay (minutes)</label>
-            <input type="number" id="cmp-delay" value="60" min="15" style="width:80px;" />
-            <span style="font-size:11px;color:var(--muted);">Min 15 min between attempts</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Lead List *</label>
-          <textarea id="cmp-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
-          <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
-        </div>
-        <button class="btn-save" id="cmp-create-btn" onclick="createCampaign()">📋 Create Campaign</button>
-        <span id="cmp-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
-      </div>
-
-      <!-- Campaign list -->
-      <div class="table-wrap">
+      <!-- Captured leads -->
+      <div class="table-wrap" style="margin-bottom:20px;">
         <div class="table-header">
-          <h2>Your Campaigns</h2>
-          <button onclick="loadCampaigns()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
+          <h2>Captured Leads</h2>
+          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
         </div>
-        <div id="cmp-list"></div>
+        <div id="ob-lead-list"></div>
       </div>
 
-      <!-- Outbound Automation (n8n workflows) -->
-      <div class="card" style="margin-top:24px;">
-        <h2 style="margin-bottom:4px;">Call Automations</h2>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Automated call-back and follow-up workflows. Request activation — an admin will review and enable.</p>
-        <div id="ob-workflow-list" style="display:flex;flex-direction:column;gap:12px;"></div>
-      </div>
-
-      <!-- Campaign detail modal -->
-      <div id="cmp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCmpModal()">
-        <div style="background:var(--card);border-radius:16px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
-          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
-            <div>
-              <h2 id="cmp-modal-title" style="margin:0;"></h2>
-              <span id="cmp-modal-status" style="font-size:12px;"></span>
-            </div>
-            <button onclick="closeCmpModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
-          </div>
-          <div id="cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
-          <div id="cmp-modal-leads"></div>
-          <div id="cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
-        </div>
-      </div>
-
-      <!-- Call a number directly -->
-      <div class="page-header" style="margin-top:32px;">
-        <h2><i data-lucide="phone-forwarded" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Call a Lead</h2>
-      </div>
+      <!-- Call a Lead -->
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-title"><i data-lucide="phone-forwarded"></i> Manual Call</div>
+        <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
           Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
         </div>
@@ -1230,97 +1258,213 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <textarea id="ob-notes" rows="2" placeholder="e.g. Called last Tuesday asking about pricing — wants a quote for a 20x40 pool"></textarea>
         </div>
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
-        <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">🧪 Test Call (any time)</button>
+        <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
       </div>
-
-      <!-- Captured leads -->
-      <div class="table-wrap">
-        <div class="table-header">
-          <h2>Captured Leads</h2>
-          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
-        </div>
-        <div id="ob-lead-list"></div>
-      </div>
-
     </div>
 
-    <!-- SMS Services Page -->
-    <div class="page" id="page-sms">
-      <div class="page-header">
-        <h1><i data-lucide="message-square" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> SMS Services</h1>
-        <p>Bulk-text leads with follow-up messages, promotions, and booking links. Opt-outs are honored automatically.</p>
+    <!-- CAMPAIGNS -->
+    <div class="page" id="page-campaigns">
+      <!-- Tab pill group -->
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="display:flex;gap:5px;background:#f2f3f6;border-radius:11px;padding:4px;">
+          <span class="cmp-tab active" data-tab="call" onclick="switchCampaignTab('call')" style="font-size:14px;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:700;color:#101826;background:#fff;box-shadow:0 1px 2px rgba(16,24,38,0.08);">Call campaigns</span>
+          <span class="cmp-tab" data-tab="sms" onclick="switchCampaignTab('sms')" style="font-size:14px;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;color:#5f687a;">SMS campaigns</span>
+        </div>
       </div>
 
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-title"><i data-lucide="plus-circle"></i> New SMS Campaign</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label>Campaign Name *</label>
-            <input type="text" id="sms-name" placeholder="e.g. Spring Promo Blast" />
+      <!-- Call campaign panel -->
+      <div id="cmp-call-panel" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card">
+          <div class="card-title"><i data-lucide="plus-circle"></i> New Campaign</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+              <label>Campaign Name *</label>
+              <input type="text" id="cmp-name" placeholder="e.g. Spring Follow-up" />
+            </div>
+            <div class="form-group">
+              <label>Script Context (optional)</label>
+              <input type="text" id="cmp-script" placeholder="e.g. Mention 10% spring discount for new customers" />
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+              <label>Max Retries (after first call)</label>
+              <input type="number" id="cmp-retries" value="2" min="0" max="5" style="width:80px;" />
+              <span style="font-size:11px;color:var(--muted);">0–5 (default 2 = 3 total attempts per lead)</span>
+            </div>
+            <div class="form-group">
+              <label>Retry Delay (minutes)</label>
+              <input type="number" id="cmp-delay" value="60" min="15" style="width:80px;" />
+              <span style="font-size:11px;color:var(--muted);">Min 15 min between attempts</span>
+            </div>
           </div>
           <div class="form-group">
-            <label>Throttle (msgs/min)</label>
-            <input type="number" id="sms-throttle" value="30" min="1" max="75" style="width:80px;" />
-            <span style="font-size:11px;color:var(--muted);">Max messages per minute (carrier compliance)</span>
+            <label>Lead List *</label>
+            <textarea id="cmp-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
+            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
+          </div>
+          <button class="btn-save" id="cmp-create-btn" onclick="createCampaign()">Create Campaign</button>
+          <span id="cmp-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Your Campaigns</h2>
+            <button onclick="loadCampaigns()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Refresh</button>
+          </div>
+          <div id="cmp-list"></div>
+        </div>
+
+        <!-- Campaign detail modal -->
+        <div id="cmp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCmpModal()">
+          <div style="background:#fff;border-radius:16px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+              <div>
+                <h2 id="cmp-modal-title" style="margin:0;"></h2>
+                <span id="cmp-modal-status" style="font-size:12px;"></span>
+              </div>
+              <button onclick="closeCmpModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+            </div>
+            <div id="cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
+            <div id="cmp-modal-leads"></div>
+            <div id="cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
           </div>
         </div>
-        <div class="form-group">
-          <label>Message Template *</label>
-          <textarea id="sms-template" rows="4" placeholder="Hi {{name}}, this is {{business_name}}. We received your inquiry about {{service}}. Book your appointment here: {{booking_url}}"></textarea>
-          <span style="font-size:11px;color:var(--muted);">Placeholders: {{name}}, {{service}}, {{business_name}}, {{booking_url}}. "Reply STOP to unsubscribe" is auto-appended.</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label>Max Retries (after first attempt)</label>
-            <input type="number" id="sms-retries" value="2" min="0" max="5" style="width:80px;" />
-            <span style="font-size:11px;color:var(--muted);">0–5 (default 2 = 3 total attempts per lead)</span>
-          </div>
-          <div class="form-group">
-            <label>Retry Delay (minutes)</label>
-            <input type="number" id="sms-delay" value="60" min="15" style="width:80px;" />
-            <span style="font-size:11px;color:var(--muted);">Min 15 min between attempts</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Lead List *</label>
-          <textarea id="sms-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
-          <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
-        </div>
-        <button class="btn-save" id="sms-create-btn" onclick="createSmsCampaign()" style="background:#22c55e;">Create SMS Campaign</button>
-        <span id="sms-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
       </div>
 
-      <!-- SMS Campaign list -->
-      <div class="table-wrap">
-        <div class="table-header">
-          <h2>Your SMS Campaigns</h2>
-          <button onclick="loadSmsCampaigns()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
+      <!-- SMS campaign panel -->
+      <div id="cmp-sms-panel" style="display:none;flex-direction:column;gap:20px;">
+        <div class="card">
+          <div class="card-title"><i data-lucide="plus-circle"></i> New SMS Campaign</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+              <label>Campaign Name *</label>
+              <input type="text" id="sms-name" placeholder="e.g. Spring Promo Blast" />
+            </div>
+            <div class="form-group">
+              <label>Throttle (msgs/min)</label>
+              <input type="number" id="sms-throttle" value="30" min="1" max="75" style="width:80px;" />
+              <span style="font-size:11px;color:var(--muted);">Max messages per minute (carrier compliance)</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Message Template *</label>
+            <textarea id="sms-template" rows="4" placeholder="Hi {{name}}, this is {{business_name}}. We received your inquiry about {{service}}. Book your appointment here: {{booking_url}}"></textarea>
+            <span style="font-size:11px;color:var(--muted);">Placeholders: {{name}}, {{service}}, {{business_name}}, {{booking_url}}. "Reply STOP to unsubscribe" is auto-appended.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+              <label>Max Retries (after first attempt)</label>
+              <input type="number" id="sms-retries" value="2" min="0" max="5" style="width:80px;" />
+              <span style="font-size:11px;color:var(--muted);">0–5 (default 2 = 3 total attempts per lead)</span>
+            </div>
+            <div class="form-group">
+              <label>Retry Delay (minutes)</label>
+              <input type="number" id="sms-delay" value="60" min="15" style="width:80px;" />
+              <span style="font-size:11px;color:var(--muted);">Min 15 min between attempts</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Lead List *</label>
+            <textarea id="sms-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
+            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
+          </div>
+          <button class="btn-save" id="sms-create-btn" onclick="createSmsCampaign()" style="background:#22c55e;">Create SMS Campaign</button>
+          <span id="sms-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
         </div>
-        <div id="sms-cmp-list"></div>
+
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Your SMS Campaigns</h2>
+            <button onclick="loadSmsCampaigns()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Refresh</button>
+          </div>
+          <div id="sms-cmp-list"></div>
+        </div>
+
+        <!-- SMS Campaign detail modal -->
+        <div id="sms-cmp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeSmsCmpModal()">
+          <div style="background:#fff;border-radius:16px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+              <div>
+                <h2 id="sms-cmp-modal-title" style="margin:0;"></h2>
+                <span id="sms-cmp-modal-status" style="font-size:12px;"></span>
+              </div>
+              <button onclick="closeSmsCmpModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+            </div>
+            <div id="sms-cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
+            <div id="sms-cmp-modal-leads"></div>
+            <div id="sms-cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTOMATIONS -->
+    <div class="page" id="page-automations">
+      <!-- Info callout -->
+      <div style="display:flex;gap:12px;border:1px solid rgba(59,130,246,0.22);background:rgba(59,130,246,0.05);border-radius:12px;padding:14px 16px;margin-bottom:20px;">
+        <i data-lucide="info" style="width:17px;height:17px;color:#3B82F6;flex-shrink:0;margin-top:1px"></i>
+        <span style="font-size:14px;line-height:1.6;color:#101826;">Automated call-back and follow-up workflows. Request activation — an admin will review and enable.</span>
       </div>
 
-      <!-- SMS Automation (n8n workflows) -->
-      <div class="card" style="margin-top:24px;">
-        <h2 style="margin-bottom:4px;">SMS Automations</h2>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Automated SMS follow-up workflows. Request activation — an admin will review and enable.</p>
+      <!-- Call Automations -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <i data-lucide="phone-outgoing" style="width:18px;height:18px;color:#3B82F6"></i>
+          <span style="font-size:17px;font-weight:700;">Call Automations</span>
+        </div>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Automated call-back and follow-up workflows.</div>
+        <div id="ob-workflow-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- SMS Automations -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <i data-lucide="message-square" style="width:18px;height:18px;color:#EC4899"></i>
+          <span style="font-size:17px;font-weight:700;">SMS Automations</span>
+        </div>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Automated SMS follow-up workflows.</div>
         <div id="sms-workflow-list" style="display:flex;flex-direction:column;gap:12px;"></div>
       </div>
 
-      <!-- SMS Campaign detail modal -->
-      <div id="sms-cmp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeSmsCmpModal()">
-        <div style="background:var(--card);border-radius:16px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
-          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
-            <div>
-              <h2 id="sms-cmp-modal-title" style="margin:0;"></h2>
-              <span id="sms-cmp-modal-status" style="font-size:12px;"></span>
-            </div>
-            <button onclick="closeSmsCmpModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
-          </div>
-          <div id="sms-cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
-          <div id="sms-cmp-modal-leads"></div>
-          <div id="sms-cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <!-- Lead Webhook (moved from Integrations) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <i data-lucide="webhook" style="width:18px;height:18px;color:#7C3AED"></i>
+          <span style="font-size:16px;font-weight:700;">Lead Webhook</span>
         </div>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;">Send captured leads to your CRM, Zapier, Make, n8n, or any webhook URL.</div>
+        <div style="background:var(--field);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
+          { "client_id": "…", "client_name": "…", "phone": "…", "intent": "…", "captured_at": "…" }
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Webhook URL</label>
+          <input type="url" id="i-webhook-url" placeholder="https://hooks.zapier.com/hooks/catch/..." oninput="setDirty()"
+            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="saveWebhookUrl()"
+            style="background:#3B82F6;border:none;border-radius:10px;padding:11px 20px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+            Save Webhook
+          </button>
+          <button onclick="testWebhook()"
+            style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:11px 20px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">
+            Send Test Payload
+          </button>
+          <span id="webhook-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 20px;background:#fff;border:1px solid var(--border);border-radius:13px;">
+        <div style="width:60px;height:60px;border-radius:16px;background:rgba(124,58,237,0.08);color:#7C3AED;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <i data-lucide="bar-chart-3" style="width:28px;height:28px"></i>
+        </div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;">Analytics is coming soon</div>
+        <div style="font-size:14.5px;color:var(--muted);line-height:1.6;margin-top:8px;max-width:420px;">Call volume, booking conversion and campaign performance will show up here.</div>
       </div>
     </div>
 
@@ -1472,7 +1616,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div>
 
   </main>
-</div>
+    </div><!-- /shell -->
+  </div><!-- /shell-wrap -->
+</div><!-- /app -->
 
 <div id="toast"></div>
 
@@ -1780,7 +1926,11 @@ function launchApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('topbar-biz').textContent = portalClient.business_name;
-  document.getElementById('dash-title').textContent = `Welcome, ${portalClient.business_name}`;
+  document.getElementById('sidebar-biz').textContent = portalClient.business_name;
+  const initials = (portalClient.business_name || '?').slice(0,2).toUpperCase();
+  document.getElementById('sidebar-initials').textContent = initials;
+  document.getElementById('topbar-title').textContent = `Welcome, ${portalClient.business_name}`;
+  document.getElementById('topbar-sub').textContent = 'Your AI agent is live and handling calls';
   loadDashboard();
 }
 
@@ -1798,11 +1948,29 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
+  // Update header title/subtitle
+  const pageMeta = {
+    dashboard: { title: 'Dashboard', sub: 'Your AI agent is live and handling calls' },
+    settings: { title: 'AI Agent', sub: 'Customize how your AI phone agent sounds and behaves' },
+    leads: { title: 'Leads & CRM', sub: 'Every lead your AI agent captured — call them back or export to your CRM' },
+    campaigns: { title: 'Campaigns', sub: 'Bulk-dial and bulk-text your lead lists, with automatic retries' },
+    automations: { title: 'Automations', sub: 'n8n follow-up workflows and your lead webhook' },
+    analytics: { title: 'Analytics', sub: 'Performance across calls, bookings and campaigns' },
+    scheduling: { title: 'Scheduling', sub: 'View your calendar and configure office hours & booking requirements' },
+    integrations: { title: 'Integrations', sub: 'Connect your calendars and lead destinations' },
+    account: { title: 'Account', sub: 'Profile, security, notifications and connected integrations' },
+    docs: { title: 'Docs', sub: 'Guides for getting the most out of your agent' },
+  };
+  const meta = pageMeta[name] || { title: '', sub: '' };
+  document.getElementById('topbar-title').textContent = meta.title;
+  document.getElementById('topbar-sub').textContent = meta.sub;
   if (name === 'settings') loadSettings();
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
-  if (name === 'outbound') { loadOutbound(); loadCampaigns(); loadWorkflows('ob'); }
-  if (name === 'sms') { loadSmsCampaigns(); loadWorkflows('sms'); }
+  if (name === 'leads')       loadOutbound();
+  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); }
+  if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
+  // analytics: no loader
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
   // Close sidebar on mobile after navigation
@@ -2805,7 +2973,7 @@ function loadAccountIntegrations() {
   const items = [
     { name: 'Google Calendar', connected: !!portalClient.google_calendar_id, action: "showPage('integrations')" },
     { name: 'Square', connected: !!portalClient.square_location_id, action: "showPage('integrations')" },
-    { name: 'Lead Webhook (Outbound)', connected: !!portalClient.webhook_url, action: "showPage('integrations')" },
+    { name: 'Lead Webhook (Outbound)', connected: !!portalClient.webhook_url, action: "showPage('automations')" },
     { name: 'Lead Intake (Inbound)', connected: true, action: "showPage('integrations')" },
   ];
   list.innerHTML = items.map(i => `
@@ -3375,10 +3543,11 @@ async function loadCampaigns() {
         <td><span style="background:${color}22;color:${color};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;">${c.status}</span></td>
         <td style="color:var(--muted);font-size:13px;">${total} leads</td>
         <td style="font-size:13px;">${reached} reached (${pct}%)</td>
+        <td style="color:var(--muted);font-size:13px;">—</td>
         <td style="color:var(--muted);font-size:12px;">${c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
       </tr>`;
     }).join('');
-    listEl.innerHTML = `<table><tr><th>Name</th><th>Status</th><th>Leads</th><th>Progress</th><th>Created</th></tr><tbody>${rows}</tbody></table>`;
+    listEl.innerHTML = `<table><tr><th>Name</th><th>Status</th><th>Leads</th><th>Progress</th><th>Conversion</th><th>Created</th></tr><tbody>${rows}</tbody></table>`;
   } catch (e) {
     listEl.innerHTML = '<div class="empty">Could not load campaigns.</div>';
   }
@@ -3535,7 +3704,7 @@ async function loadSmsCampaigns() {
       return;
     }
     container.innerHTML = `<table class="lead-table"><thead><tr>
-      <th>Name</th><th>Status</th><th>Sent</th><th>Delivered</th><th>Failed</th><th>Opt-outs</th><th></th>
+      <th>Name</th><th>Status</th><th>Sent</th><th>Delivered</th><th>Failed</th><th>Opt-outs</th><th>Conversion</th><th></th>
     </tr></thead><tbody>${campaigns.map(c => {
       const s = c.stats || {};
       return `<tr style="cursor:pointer;" onclick="viewSmsCampaign('${c.campaign_id}')">
@@ -3545,6 +3714,7 @@ async function loadSmsCampaigns() {
         <td>${s.delivered || 0}</td>
         <td>${s.failed || 0}</td>
         <td>${s['opted-out'] || 0}</td>
+        <td style="color:var(--muted);font-size:13px;">—</td>
         <td><button onclick="event.stopPropagation();viewSmsCampaign('${c.campaign_id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">View</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;
@@ -3655,7 +3825,26 @@ function toggleTheme() {
   const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
   applyTheme(current === 'light' ? 'dark' : 'light');
 }
-applyTheme(localStorage.getItem('atlas_theme') || 'dark');
+applyTheme(localStorage.getItem('atlas_theme') || 'light');
+
+// ── CAMPAIGN TAB TOGGLE ──────────────────────────────────────────────────────
+function switchCampaignTab(tab) {
+  document.getElementById('cmp-call-panel').style.display = tab === 'call' ? 'flex' : 'none';
+  document.getElementById('cmp-sms-panel').style.display = tab === 'sms' ? 'flex' : 'none';
+  document.querySelectorAll('.cmp-tab').forEach(t => {
+    if (t.dataset.tab === tab) {
+      t.style.fontWeight = '700';
+      t.style.color = '#101826';
+      t.style.background = '#fff';
+      t.style.boxShadow = '0 1px 2px rgba(16,24,38,0.08)';
+    } else {
+      t.style.fontWeight = '600';
+      t.style.color = '#5f687a';
+      t.style.background = 'transparent';
+      t.style.boxShadow = 'none';
+    }
+  });
+}
 
 // ── n8n WORKFLOW MANAGEMENT ────────────────────────────────────
 // (Constants moved to top of script — see SMS_WORKFLOW_IDS etc.)
