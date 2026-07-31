@@ -405,6 +405,10 @@ tr:hover td { background: var(--tint); }
     <div class="nav-item" onclick="showPage('workflows')" id="nav-workflows">
       <span class="nav-icon"><i data-lucide="workflow"></i></span> Workflow Requests
     </div>
+    <div class="nav-group">Testing</div>
+    <div class="nav-item" onclick="showPage('test-leads')" id="nav-test-leads">
+      <span class="nav-icon"><i data-lucide="flask-conical"></i></span> Test Leads
+    </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
         <div class="avatar">AH</div>
@@ -890,6 +894,58 @@ tr:hover td { background: var(--tint); }
       </div>
     </div>
 
+    <!-- TEST LEADS PAGE -->
+    <div class="page" id="page-test-leads">
+      <div class="page-header">
+        <h1>Test Leads</h1>
+        <p>Create test leads for any client across all 7 capture methods</p>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Select Client</h2>
+          <button onclick="loadTestLeadClients()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Refresh</button>
+        </div>
+        <select id="test-lead-client" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;margin-bottom:20px;">
+          <option value="">Loading clients...</option>
+        </select>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Lead Details (Optional)</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <input id="test-lead-name" type="text" placeholder="Name" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+          <input id="test-lead-phone" type="text" placeholder="Phone (+15551234567)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+          <input id="test-lead-email" type="text" placeholder="Email" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+          <input id="test-lead-intent" type="text" placeholder="Intent (e.g. Pool cleaning quote)" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;">
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Capture Methods</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;" id="test-lead-buttons">
+          <button onclick="createTestLead('inbound')" style="background:#3B82F6;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Inbound Call</button>
+          <button onclick="createTestLead('webhook')" style="background:#7C3AED;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Lead Intake Webhook</button>
+          <button onclick="createTestLead('missed-call')" style="background:#EC4899;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call Callback</button>
+          <button onclick="createTestLead('missed-sms')" style="background:#EC4899;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call SMS</button>
+          <button onclick="createTestLead('triggered-call')" style="background:#F59E0B;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Triggered Call</button>
+          <button onclick="createTestLead('triggered-sms')" style="background:#F59E0B;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Triggered SMS</button>
+          <button onclick="createTestLead('campaign')" style="background:#22c55e;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Campaign Outreach</button>
+        </div>
+        <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+          <button onclick="scoreTestLeads()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;">Score All Unsored Leads</button>
+        </div>
+      </div>
+      <div class="table-card" id="test-lead-results" style="display:none;">
+        <div class="table-toolbar">
+          <h2>Results</h2>
+          <button onclick="document.getElementById('test-lead-results').style.display='none'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Clear</button>
+        </div>
+        <div id="test-lead-results-list"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -978,6 +1034,7 @@ function showPage(name) {
   if (name === 'phones') loadPhones();
   if (name === 'live-costs') loadLiveCosts();
   if (name === 'workflows') loadWorkflowRequests();
+  if (name === 'test-leads') loadTestLeadClients();
 }
 
 // LIVE COSTS DASHBOARD
@@ -2125,6 +2182,87 @@ async function rejectWorkflow(clientId, templateId) {
     loadWorkflowRequests();
   } catch (err) {
     alert('Error: ' + err.message);
+  }
+}
+
+// ─── TEST LEADS ──────────────────────────────────────────────────
+
+async function loadTestLeadClients() {
+  const sel = document.getElementById('test-lead-client');
+  sel.innerHTML = '<option value="">Loading clients...</option>';
+  try {
+    const res = await fetch(`${API}/clients`, { headers: adminAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const clients = Array.isArray(data) ? data : (data.clients || []);
+    sel.innerHTML = '<option value="">— Select a client —</option>' +
+      clients.map(c => `<option value="${c.client_id}">${c.business_name || c.client_id}</option>`).join('');
+  } catch (err) {
+    sel.innerHTML = '<option value="">Error loading clients</option>';
+    toast('Error loading clients: ' + err.message, 'error');
+  }
+}
+
+function addTestResult(type, result, error) {
+  const container = document.getElementById('test-lead-results');
+  const list = document.getElementById('test-lead-results-list');
+  container.style.display = 'block';
+  const status = error ? 'error' : 'success';
+  const color = error ? 'var(--red)' : '#22c55e';
+  const msg = error ? error : result.message + (result.lead_id ? ` (ID: ${result.lead_id})` : '');
+  const entry = document.createElement('div');
+  entry.style.cssText = 'padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;';
+  entry.innerHTML = `<div><span style="font-weight:600;font-size:13px;">${type}</span><div style="color:${color};font-size:12px;margin-top:2px;">${msg}</div></div><span style="font-size:11px;color:var(--muted);">${new Date().toLocaleTimeString()}</span>`;
+  list.insertBefore(entry, list.firstChild);
+}
+
+async function createTestLead(type) {
+  const clientId = document.getElementById('test-lead-client').value;
+  if (!clientId) { toast('Select a client first', 'error'); return; }
+
+  const body = {
+    client_id: clientId,
+    name: document.getElementById('test-lead-name').value || undefined,
+    phone: document.getElementById('test-lead-phone').value || undefined,
+    email: document.getElementById('test-lead-email').value || undefined,
+    intent: document.getElementById('test-lead-intent').value || undefined,
+  };
+
+  const labels = { inbound: 'Inbound Call', webhook: 'Webhook', 'missed-call': 'Missed Call', 'missed-sms': 'Missed SMS', 'triggered-call': 'Triggered Call', 'triggered-sms': 'Triggered SMS', campaign: 'Campaign' };
+
+  try {
+    const res = await fetch(`${API}/test/leads/${type}`, {
+      method: 'POST',
+      headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    addTestResult(labels[type] || type, data);
+    toast(`Test lead created: ${labels[type]}`, 'success');
+  } catch (err) {
+    addTestResult(labels[type] || type, null, err.message);
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+async function scoreTestLeads() {
+  const clientId = document.getElementById('test-lead-client').value;
+  if (!clientId) { toast('Select a client first', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API}/test/leads/score`, {
+      method: 'POST',
+      headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ client_id: clientId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    addTestResult('Score Leads', data);
+    toast(data.message, 'success');
+  } catch (err) {
+    addTestResult('Score Leads', null, err.message);
+    toast('Error: ' + err.message, 'error');
   }
 }
 </script>
