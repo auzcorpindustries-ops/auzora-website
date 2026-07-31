@@ -3115,15 +3115,18 @@ const OB_LEADS_PER_PAGE = 25;
 
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
+  if (!listEl) return;
   listEl.innerHTML = '<div class="empty">Loading leads…</div>';
   try {
     const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     obLeadsAll = Array.isArray(data) ? data : (data.leads || []);
     obLeadsPage = 0;
     renderObLeads();
   } catch (e) {
-    listEl.innerHTML = '<div class="empty">Could not load leads.</div>';
+    console.error('loadOutbound error:', e.message);
+    listEl.innerHTML = '<div class="empty">Could not load leads. <a href="#" onclick="loadOutbound();return false;" style="color:var(--accent);">Retry</a></div>';
   }
 }
 
