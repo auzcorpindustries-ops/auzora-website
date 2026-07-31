@@ -272,11 +272,12 @@
   const PLANS = {
     starter: {
       name: 'Starter Plan',
-      price: '$0',
-      priceMonthly: '$0 for 3 months',
-      tagline: '3 months free, then $199/month. No setup fee.',
-      stripeUrl: 'https://buy.stripe.com/cNibIT3W81Ie2EM4u41ZS04',
-      disabled: false,
+      price: '$199',
+      priceMonthly: '$199/mo',
+      setupFee: '$100',
+      tagline: 'Everything you need to stop missing calls and start booking more appointments.',
+      stripeUrl: '',
+      disabled: true,
       setupWindow: '48 hours',
       badgeClass: 'starter',
       cardClass: 'starter',
@@ -291,14 +292,14 @@
         'Client portal access',
       ],
       addFeatures: [],
-      trialMonths: 3,
     },
     pro: {
       name: 'Pro',
       price: '$299',
       priceMonthly: '$299/mo',
-      tagline: 'Everything you need to never miss a call.',
-      stripeUrl: 'https://buy.stripe.com/14A7sD9gscmS0wE6Cc1ZS01',
+      setupFee: '$150',
+      tagline: 'Lead capture with external CRM integration and AI-powered follow-up calls and SMS.',
+      stripeUrl: '',
       disabled: true,
       setupWindow: '24 hours',
       badgeClass: '',
@@ -316,9 +317,33 @@
       addFeatures: [
         'Full access to all 6 voices',
         'Up to 3 dedicated AI phone lines',
-        'Lead capture CRM',
+        'External CRM lead capture integration',
+        'AI follow-up calls on leads',
+        'AI follow-up SMS on leads',
+      ],
+    },
+    premium: {
+      name: 'Premium',
+      price: '$499',
+      priceMonthly: '$499/mo',
+      setupFee: '$300',
+      tagline: 'Built-in CRM with bulk SMS and call campaigns — no external system required.',
+      stripeUrl: '',
+      disabled: true,
+      setupWindow: '24 hours',
+      badgeClass: '',
+      cardClass: 'pro',
+      priceClass: '',
+      btnClass: '',
+      baseFeatures: [
+        'Everything in Pro, plus:',
+        'Internal lead capture CRM',
+        'Bulk SMS campaigns',
+        'Bulk call campaigns',
+        'Manual outbound calls',
         'Priority support',
       ],
+      addFeatures: [],
     },
   };
 
@@ -375,13 +400,17 @@
     // Summary
     document.getElementById('summaryPlanLabel').textContent = `Auzora ${plan.name}`;
     document.getElementById('summaryPrice').textContent = plan.priceMonthly;
-    document.getElementById('summaryTotal').textContent = plan.price;
-    if (plan.trialMonths) {
-      document.querySelector('.summary-note').innerHTML =
-        `Free for ${plan.trialMonths} months, then <span id="summaryRecurring">$199</span>/month. Cancel anytime.`;
-    } else {
-      document.getElementById('summaryRecurring').textContent = plan.price;
+
+    // Show setup fee
+    const setupRow = document.querySelector('.summary-row .label');
+    const setupRows = document.querySelectorAll('.summary-row');
+    if (setupRows.length >= 4) {
+      setupRows[3].querySelector('.value').textContent = plan.setupFee || '$0';
     }
+
+    document.getElementById('summaryTotal').textContent = plan.price;
+    document.querySelector('.summary-note').innerHTML =
+      `Then <span id="summaryRecurring">${plan.price}</span>/month. Cancel anytime.`;
 
     // Checkout button
     const btn = document.getElementById('checkoutBtn');
