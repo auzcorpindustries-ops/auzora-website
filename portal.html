@@ -1925,8 +1925,9 @@ function logout() {
 function launchApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('topbar-biz').textContent = portalClient.business_name;
   document.getElementById('sidebar-biz').textContent = portalClient.business_name;
+  const tbiz = document.getElementById('topbar-biz');
+  if (tbiz) tbiz.textContent = portalClient.business_name;
   const initials = (portalClient.business_name || '?').slice(0,2).toUpperCase();
   document.getElementById('sidebar-initials').textContent = initials;
   document.getElementById('topbar-title').textContent = `Welcome, ${portalClient.business_name}`;
