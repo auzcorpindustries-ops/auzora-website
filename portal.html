@@ -3333,7 +3333,7 @@ function renderObLeads() {
     const phone = latest.phone || '—';
     const email = latest.email || '';
     const name = latest.name || '';
-    const optedOut = latest.outbound_opted_out === true || latest.opt_out === true;
+    const optedOut = latest.outbound_opted_out === true || latest.opt_out === true || latest.outbound_status === 'opted-out';
     const status = optedOut ? 'opted-out' : (latest.outbound_status || 'new');
     const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
     const attempts = latest.outbound_call_count ? ` (${latest.outbound_call_count}×)` : '';
@@ -3403,8 +3403,8 @@ function renderObLeads() {
     <tr>
       <td style="color:var(--muted);">${idx + 1}</td>
       <td>
-        <div style="font-weight:600;font-size:14px;">${phone}${name ? ' · ' + name : ''}</div>
-        ${email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : ''}
+        <div style="font-weight:600;font-size:14px;">${name || email || phone}</div>
+        ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
       <td><span class="${badgeClass}">${status}${attempts}</span></td>
