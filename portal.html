@@ -3383,6 +3383,21 @@ function renderObLeads() {
     const intentDotColor = intentLower.includes('quote') || intentLower.includes('inquiry') || intentLower.includes('weekly') ? '#16a34a' :
                            intentLower.includes('repair') || intentLower.includes('heater') ? '#f59e0b' : '#9aa3b2';
 
+    // Lead score
+    const score = latest.lead_score;
+    const scoreTrend = latest.lead_score_trend;
+    const trendIcon = scoreTrend === 'up' ? '&#8593;' : scoreTrend === 'down' ? '&#8595;' : '';
+    const trendColor = scoreTrend === 'up' ? '#16a34a' : scoreTrend === 'down' ? '#ef4444' : 'var(--muted)';
+    const scoreHtml = score != null
+      ? `<span style="font-weight:700;color:${score >= 70 ? '#16a34a' : score >= 40 ? '#b45309' : '#9aa3b2'};">${trendIcon ? `<span style="color:${trendColor};font-size:11px;">${trendIcon}</span> ` : ''}${score}</span>`
+      : '<span style="color:var(--muted);">—</span>';
+
+    // AI recommendation
+    const aiRec = latest.ai_recommendation;
+    const aiRecHtml = aiRec
+      ? `<span style="font-size:13px;color:var(--text);">${aiRec}</span>`
+      : '<span style="color:var(--muted);">—</span>';
+
     return `
     <tbody>
     <tr>
@@ -3393,13 +3408,13 @@ function renderObLeads() {
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
       <td><span class="${badgeClass}">${status}${attempts}</span></td>
-      <td style="color:var(--muted);">—</td>
+      <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td style="color:var(--muted);">—</td>
       <td style="color:var(--muted);">—</td>
       <td style="color:var(--muted);">—</td>
       <td style="color:var(--muted);">—</td>
-      <td style="color:var(--muted);">—</td>
+      <td>${aiRecHtml}</td>
       <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
     </tr>
     ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
