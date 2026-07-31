@@ -3410,10 +3410,10 @@ function renderObLeads() {
       <td><span class="${badgeClass}">${status}${attempts}</span></td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
+      <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td style="color:var(--muted);">—</td>
       <td style="color:var(--muted);">—</td>
-      <td style="color:var(--muted);">—</td>
-      <td style="color:var(--muted);">—</td>
+      <td>${latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${aiRecHtml}</td>
       <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
     </tr>
