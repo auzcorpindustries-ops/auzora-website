@@ -3164,6 +3164,7 @@ function renderObLeads() {
     const latest = group[0];
     const phone = latest.phone || '—';
     const email = latest.email || '';
+    const name = latest.name || '';
     const optedOut = latest.outbound_opted_out === true || latest.opt_out === true;
     const status = optedOut ? 'opted-out' : (latest.outbound_status || 'new');
     const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
@@ -3212,7 +3213,7 @@ function renderObLeads() {
     <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="flex:1;min-width:120px;">
-          <div style="font-weight:600;font-size:14px;">${phone}</div>
+          <div style="font-weight:600;font-size:14px;">${phone}${name ? ' · ' + name : ''}</div>
           ${email ? `<div style="color:var(--accent2);font-size:12px;">${email}</div>` : ''}
           <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
         </div>
