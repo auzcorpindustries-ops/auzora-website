@@ -185,7 +185,7 @@
     .az-step p { font-size: 14.5px; line-height: 1.6; color: #5f687a; margin: 0; }
 
     /* ── PRICING ── */
-    .az-pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 880px; }
+    .az-pricing { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1100px; }
     .az-pricing-card { position: relative; background: #fff; border-radius: 24px; padding: 36px; box-shadow: 0 12px 36px rgba(124,58,237,.12); }
     .az-pricing-card.starter { border: 2px solid transparent; background-image: linear-gradient(#fff,#fff), var(--accent); background-origin: border-box; background-clip: padding-box, border-box; }
     .az-pricing-card.pro { background: rgba(255,255,255,0.78); border: 1px solid rgba(16,24,38,0.08); }
@@ -567,15 +567,14 @@
     <div class="az-section-inner">
       <div class="az-kicker blue">Pricing</div>
       <h2 class="az-h2">Simple pricing. No surprises.</h2>
-      <p class="az-section-lead">Starter plan includes 3 months free — no setup fee, no charge until your trial ends. No contracts — cancel anytime.</p>
+      <p class="az-section-lead">Three tiers — Starter, Pro, and Premium. No contracts — cancel anytime.</p>
       <div class="az-pricing">
         <div class="az-pricing-card starter">
-          <div class="az-pricing-badge-offer">Limited Time Offer · 3 months free</div>
           <div class="az-pricing-tier">Starter</div>
           <div class="az-pricing-amount">
             <span class="price">$199</span><span class="period">/ month</span>
           </div>
-          <div class="az-pricing-setup">No setup fee · Cancel anytime</div>
+          <div class="az-pricing-setup">$100 setup · Cancel anytime</div>
           <p class="desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="az-pricing-features">
             <li><span class="check">✓</span>Default voice (Liz)</li>
@@ -588,20 +587,39 @@
           <a href="/checkout.html?plan=starter" class="az-pricing-btn starter">Get Started →</a>
         </div>
         <div class="az-pricing-card pro">
-          <div class="az-pricing-badge-soon">Coming Soon</div>
           <div class="az-pricing-tier">Pro</div>
           <div class="az-pricing-amount">
             <span class="price">$299</span><span class="period">/ month</span>
           </div>
-          <div class="az-pricing-setup">$500 setup</div>
-          <p class="desc">For businesses that want more lines, deeper insights, and hands-on monthly optimization.</p>
+          <div class="az-pricing-setup">$150 setup · Cancel anytime</div>
+          <p class="desc">Lead capture with external CRM integration and AI-powered follow-up calls and SMS.</p>
           <ul class="az-pricing-features pro-features">
             <li><span class="check">✓</span>Everything in Starter Plan</li>
+            <li><span class="check">✓</span>Full access to all 6 voices</li>
             <li><span class="check">✓</span>Up to 3 dedicated AI phone lines</li>
-            <li><span class="check">✓</span>Lead capture CRM</li>
+            <li><span class="check">✓</span>External CRM lead capture integration</li>
+            <li><span class="check">✓</span>AI follow-up calls on leads</li>
+            <li><span class="check">✓</span>AI follow-up SMS on leads</li>
+          </ul>
+          <a href="/checkout.html?plan=pro" class="az-pricing-btn starter">Get Started →</a>
+        </div>
+        <div class="az-pricing-card pro">
+          <div class="az-pricing-badge-soon">Best Value</div>
+          <div class="az-pricing-tier">Premium</div>
+          <div class="az-pricing-amount">
+            <span class="price">$499</span><span class="period">/ month</span>
+          </div>
+          <div class="az-pricing-setup">$300 setup · Cancel anytime</div>
+          <p class="desc">Built-in CRM with bulk SMS and call campaigns — no external system required.</p>
+          <ul class="az-pricing-features pro-features">
+            <li><span class="check">✓</span>Everything in Pro Plan</li>
+            <li><span class="check">✓</span>Internal lead capture CRM</li>
+            <li><span class="check">✓</span>Bulk SMS campaigns</li>
+            <li><span class="check">✓</span>Bulk call campaigns</li>
+            <li><span class="check">✓</span>Manual outbound calls</li>
             <li><span class="check">✓</span>Priority support</li>
           </ul>
-          <span class="az-pricing-btn pro">Coming Soon</span>
+          <a href="/checkout.html?plan=premium" class="az-pricing-btn starter">Get Started →</a>
         </div>
       </div>
       <p class="az-pricing-note">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. Questions? <a href="#contact">Talk to us first.</a></p>
