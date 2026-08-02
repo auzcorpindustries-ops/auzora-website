@@ -3457,7 +3457,7 @@ function renderObLeads() {
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td style="color:var(--muted);">—</td>
       <td style="color:var(--muted);">—</td>
-      <td>${latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
       <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
     </tr>
