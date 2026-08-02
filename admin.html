@@ -2196,10 +2196,12 @@ async function approveWorkflow(clientId, templateId) {
 
 async function rejectWorkflow(clientId, templateId) {
   const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const reason = prompt('Reason for rejection (optional):') || 'Request rejected by admin';
   try {
     const res = await fetch(`${API}/workflows/${clientId}/${templateId}/reject`, {
       method: 'PATCH',
-      headers: { 'x-api-key': apiKey },
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
     });
     if (!res.ok) {
       const err = await res.json();
