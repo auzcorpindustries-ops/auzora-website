@@ -3951,20 +3951,26 @@ async function loadWorkflows(page) {
       const meta = WORKFLOW_META[id];
       const wf = wfMap[id];
       const status = wf?.status || 'off';
+      const rejectionReason = wf?.rejection_reason;
       const badgeColor = {
         off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
-        rejected: '#ef4444', cancelled: 'var(--muted)',
+        rejected: '#ef4444', cancelled: 'var(--muted)', failed: '#ef4444',
       }[status] || 'var(--muted)';
-      const badgeText = { off: 'Off', requested: 'Pending', active: 'Active', rejected: 'Rejected', cancelled: 'Off' }[status] || 'Off';
-      const toggleLabel = status === 'off' || status === 'rejected' || status === 'cancelled' ? 'Request' : status === 'requested' ? 'Pending' : 'Disable';
+      const badgeText = { off: 'Off', requested: 'Pending', active: 'Active', rejected: 'Rejected', cancelled: 'Off', failed: 'Failed' }[status] || 'Off';
+      const toggleLabel = status === 'off' || status === 'rejected' || status === 'cancelled' || status === 'failed' ? 'Request' : status === 'requested' ? 'Pending' : 'Disable';
       const toggleDisabled = status === 'requested';
       const toggleAction = status === 'active' ? `toggleWorkflow(${id}, false)` : (status === 'requested' ? '' : `toggleWorkflow(${id}, true)`);
+
+      const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
+        ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${rejectionReason}</div>`
+        : '';
 
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:12px;">
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${meta.name}</div>
             <div style="color:var(--muted);font-size:12px;margin-top:2px;">${meta.desc}</div>
+            ${reasonBanner}
           </div>
           <div style="display:flex;align-items:center;gap:12px;">
             <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
