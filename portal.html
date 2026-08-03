@@ -3344,6 +3344,21 @@ async function loadOutbound() {
   }
 }
 
+// Format elapsed time since an ISO timestamp — human-readable "3 minutes ago"
+function formatTimeSinceLabel(isoTs) {
+  if (!isoTs) return 'N/A';
+  const ms = Date.now() - new Date(isoTs).getTime();
+  if (ms < 0 || ms < 60000) return 'just now';
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return mins + ' minute' + (mins === 1 ? '' : 's') + ' ago';
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return hrs + ' hour' + (hrs === 1 ? '' : 's') + ' ago';
+  const days = Math.round(hrs / 24);
+  if (days < 30) return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+  const months = Math.round(days / 30);
+  return months + ' month' + (months === 1 ? '' : 's') + ' ago';
+}
+
 function renderObLeads() {
   const listEl = document.getElementById('ob-lead-list');
   const leads = obLeadsAll;
@@ -3454,8 +3469,8 @@ function renderObLeads() {
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
-      <td style="color:var(--muted);">—</td>
-      <td style="color:var(--muted);">—</td>
+      <td><span style="font-size:13px;color:var(--text);">${latest.previous_action || 'N/A'}</span></td>
+      <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
       <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
@@ -3472,8 +3487,8 @@ function renderObLeads() {
       <th>Score</th>
       <th>Intent</th>
       <th>Source</th>
-      <th>Opportunity</th>
-      <th>Assigned</th>
+      <th>Previous Action</th>
+      <th>Time Since Previous Action</th>
       <th>Next Action</th>
       <th>AI Recommendation</th>
       <th style="text-align:right;">Action</th>
