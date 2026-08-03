@@ -134,9 +134,10 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 #app { display: none; }
 .shell-wrap {
   min-height: 100vh; padding: 16px; display: flex; justify-content: center;
+  background: var(--bg, #f9fafb);
 }
 .shell {
-  width: 100%; max-width: 1560px; background: var(--surface);
+  width: 100%; max-width: 1600px; background: var(--surface);
   border: 1px solid var(--border); border-radius: 18px;
   box-shadow: var(--shadow); overflow: hidden; display: flex; align-items: stretch;
 }
@@ -254,7 +255,7 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 
 /* ── PAGES ─────────────────────────────────────────────────────────────── */
 .main { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; }
-.main-content { flex: 1; padding: 22px 28px 40px; min-width: 0; }
+.main-content { flex: 1; padding: 22px 28px 40px; min-width: 0; overflow-x: hidden; }
 .page { display: none; }
 .page.active { display: flex; flex-direction: column; gap: 20px; }
 .page-header { margin: 0; }
@@ -511,16 +512,21 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 110; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); background: var(--panel); }
   .sidebar.open { transform: translateX(0); }
   .shell { flex-direction: column; }
+  .main-content { padding: 18px 20px 32px; }
 }
 @media (max-width: 760px) {
   .shell-wrap { padding: 0; }
   .shell { border-radius: 0; border: none; }
-  .topbar { padding: 16px 18px; }
-  .topbar-right { flex-wrap: wrap; }
-  .main-content { padding: 16px 18px 28px; }
+  .topbar { padding: 14px 16px; }
+  .topbar-right { flex-wrap: wrap; gap: 8px; }
+  .topbar-left h1 { font-size: 20px; }
+  .topbar-left p { font-size: 13px; }
+  .main-content { padding: 14px 14px 24px; }
   .stats-grid { grid-template-columns: 1fr; }
   .voice-grid { grid-template-columns: 1fr 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
+  .card { padding: 16px 14px; }
+  .stat-card { padding: 14px 12px; }
 }
 
 </style>
@@ -3479,7 +3485,7 @@ function renderObLeads() {
     </tbody>`;
   }).join('');
 
-  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:1200px;">
+  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:980px;">
     <thead><tr>
       <th style="width:40px;">#</th>
       <th>Lead</th>
@@ -3488,7 +3494,7 @@ function renderObLeads() {
       <th>Intent</th>
       <th>Source</th>
       <th>Previous Action</th>
-      <th>Time Since Previous Action</th>
+      <th>Time Elapsed</th>
       <th>Next Action</th>
       <th>AI Recommendation</th>
       <th style="text-align:right;">Action</th>
