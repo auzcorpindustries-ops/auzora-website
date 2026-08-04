@@ -4474,9 +4474,15 @@ function renderWorkflowParams(templateId, data) {
   if (!panel) return;
 
   const units = data.wait_units || ['minutes', 'hours', 'days'];
+  const timezones = data.timezones || [];
 
-  // ── Wait intervals ──
+  // ── Wait steps ──
+  // Two shapes: a relative interval (number + unit), or a wall-clock time
+  // (HH:MM + timezone). The backend catalog decides which — a step like
+  // "call next morning at 9 AM" is wall-clock, because a relative +9h fires at
+  // 11am for a 2am lead and 5am for an 8pm lead.
   const waitRows = (data.waits || []).map(w => {
+    if (w.mode === 'specificTime') return renderSpecificTimeRow(templateId, w, timezones, data);
     const opts = units.map(u =>
       `<option value="${u}"${u === w.unit ? ' selected' : ''}>${u}</option>`
     ).join('');
@@ -4558,6 +4564,47 @@ function renderWorkflowParams(templateId, data) {
   (data.templates || []).forEach(t => updateTemplateCount(templateId, t.key));
 }
 
+// Render a wall-clock wait step: time-of-day input + timezone select.
+// The timezone select's first option is "Use my business timezone", which saves
+// no timezone at all so the step keeps following client.timezone if the client
+// later changes it on the Scheduling page.
+function renderSpecificTimeRow(templateId, w, timezones, data) {
+  const clientTz = data.client_timezone || '';
+  const tzOpts = [
+    `<option value=""${!w.timezone ? ' selected' : ''}>Use my business timezone${clientTz ? ' (' + escapeHtmlAttr(tzLabel(clientTz)) + ')' : ''}</option>`,
+  ].concat(timezones.map(tz =>
+    `<option value="${escapeHtmlAttr(tz)}"${tz === w.timezone ? ' selected' : ''}>${escapeHtmlAttr(tzLabel(tz))}</option>`
+  )).join('');
+
+  return `
+    <div style="padding:8px 0;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;font-size:13px;">
+          ${escapeHtmlAttr(w.label)}
+          <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(124,58,237,0.12);color:var(--accent2);margin-left:6px;">TIME OF DAY</span>
+        </div>
+        <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
+               value="${escapeHtmlAttr(w.at || '09:00')}"
+               oninput="updateWaitHint(${templateId}, '${w.key}')"
+               style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
+        <select id="wfp-${templateId}-wait-${w.key}-tz"
+                onchange="updateWaitHint(${templateId}, '${w.key}')"
+                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;max-width:200px;">
+          ${tzOpts}
+        </select>
+      </div>
+      <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11px;color:var(--muted);margin-top:5px;"></div>
+    </div>`;
+}
+
+// "America/New_York" -> "New York (America)" reads worse than just the city,
+// so show the city and keep the region as a suffix only when it disambiguates.
+function tzLabel(tz) {
+  const parts = String(tz).split('/');
+  const city = (parts[parts.length - 1] || tz).replace(/_/g, ' ');
+  return parts.length > 1 ? `${city} — ${parts[0].replace(/_/g, ' ')}` : city;
+}
+
 // `wfpActiveField` tracks which textarea last had focus so the merge-field
 // chips know where to insert. Declared at the top of the script (TDZ note).
 
@@ -4580,12 +4627,33 @@ function insertMergeField(templateId, token) {
 }
 
 function updateWaitHint(templateId, key) {
+  const hint = document.getElementById(`wfp-${templateId}-wait-${key}-hint`);
+  if (!hint) return;
+  const cached = (wfParamCache[templateId]?.waits || []).find(w => w.key === key);
+
+  // ── wall-clock step ──
+  const atEl = document.getElementById(`wfp-${templateId}-wait-${key}-at`);
+  if (atEl) {
+    const tzEl = document.getElementById(`wfp-${templateId}-wait-${key}-tz`);
+    const at = atEl.value;
+    if (!/^\d{1,2}:\d{2}$/.test(at)) {
+      hint.textContent = 'pick a time of day';
+      hint.style.color = '#ef4444';
+      return;
+    }
+    const tz = (tzEl && tzEl.value) || wfParamCache[templateId]?.client_timezone || '';
+    hint.style.color = 'var(--muted)';
+    // Show the next actual run so the client can sanity-check their timezone.
+    hint.textContent = `Next run: ${describeNextRun(at, tz)}`
+      + (cached?.default?.at ? ` · default ${to12h(cached.default.at)}` : '');
+    return;
+  }
+
+  // ── relative interval step ──
   const valEl = document.getElementById(`wfp-${templateId}-wait-${key}-value`);
   const unitEl = document.getElementById(`wfp-${templateId}-wait-${key}-unit`);
-  const hint = document.getElementById(`wfp-${templateId}-wait-${key}-hint`);
-  if (!valEl || !unitEl || !hint) return;
+  if (!valEl || !unitEl) return;
 
-  const cached = (wfParamCache[templateId]?.waits || []).find(w => w.key === key);
   const max = (wfParamCache[templateId]?.max_wait_by_unit || {})[unitEl.value];
   valEl.max = max || 9999;
 
@@ -4601,7 +4669,52 @@ function updateWaitHint(templateId, key) {
     return;
   }
   hint.style.color = 'var(--muted)';
-  hint.textContent = cached ? `default ${cached.default.value} ${cached.default.unit}` : '';
+  hint.textContent = cached?.default ? `default ${cached.default.value} ${cached.default.unit}` : '';
+}
+
+// "09:00" -> "9:00 AM"
+function to12h(at) {
+  const [h, m] = String(at).split(':').map(Number);
+  const suffix = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+// Human description of the next occurrence of HH:MM in `tz`, computed in the
+// browser so the hint updates live as the client edits (no round trip).
+// Mirrors the backend's resolveSpecificTime(): roll to tomorrow if already past.
+function describeNextRun(at, tz) {
+  const [hour, minute] = String(at).split(':').map(Number);
+  const now = new Date();
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit', hour12: false,
+    });
+    const parts = fmt.formatToParts(now);
+    const g = (t) => parseInt(parts.find(p => p.type === t).value, 10);
+
+    const build = (dayOffset) => {
+      const base = Date.UTC(g('year'), g('month') - 1, g('day') + dayOffset, hour, minute, 0);
+      const p2 = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }).formatToParts(new Date(base));
+      const g2 = (t) => parseInt(p2.find(p => p.type === t).value, 10);
+      const wallAsUTC = Date.UTC(g2('year'), g2('month') - 1, g2('day'), g2('hour') % 24, g2('minute'), g2('second'));
+      return new Date(base + (base - wallAsUTC));
+    };
+
+    let target = build(0);
+    let sameDay = true;
+    if (target.getTime() <= now.getTime()) { target = build(1); sameDay = false; }
+
+    const day = target.toLocaleDateString('en-US', { timeZone: tz || undefined, weekday: 'short' });
+    const hrs = Math.round((target.getTime() - now.getTime()) / 3600000);
+    return `${sameDay ? 'today' : day} at ${to12h(at)} (in ~${hrs}h)`;
+  } catch (err) {
+    // Unknown timezone — still show the wall clock rather than nothing.
+    return to12h(at);
+  }
 }
 
 function updateTemplateCount(templateId, key) {
@@ -4627,6 +4740,17 @@ function collectWorkflowParams(templateId) {
   const data = wfParamCache[templateId] || {};
   const waits = {};
   (data.waits || []).forEach(w => {
+    if (w.mode === 'specificTime') {
+      const at = document.getElementById(`wfp-${templateId}-wait-${w.key}-at`);
+      const tz = document.getElementById(`wfp-${templateId}-wait-${w.key}-tz`);
+      if (!at) return;
+      const entry = { mode: 'specificTime', at: at.value };
+      // Empty select = "use my business timezone": omit the field entirely so
+      // the step keeps inheriting client.timezone rather than pinning a copy.
+      if (tz && tz.value) entry.timezone = tz.value;
+      waits[w.key] = entry;
+      return;
+    }
     const v = document.getElementById(`wfp-${templateId}-wait-${w.key}-value`);
     const u = document.getElementById(`wfp-${templateId}-wait-${w.key}-unit`);
     if (v && u) waits[w.key] = { value: Number(v.value), unit: u.value };
@@ -4771,6 +4895,12 @@ function updateWorkflowStepSummary(templateId) {
   const data = wfParamCache[templateId];
   if (!line || !data || !(data.waits || []).length) return;
   const parts = data.waits.map(w => {
+    // The API supplies a ready-made display string for both modes; these
+    // fallbacks only matter if an older backend omits it.
+    if (w.display) return `${escapeHtmlAttr(w.label)}: ${escapeHtmlAttr(w.display)}`;
+    if (w.mode === 'specificTime' || w.at) {
+      return `${escapeHtmlAttr(w.label)}: ${escapeHtmlAttr(to12h(w.at || '09:00'))}`;
+    }
     const n = w.value;
     const unit = String(w.unit).replace(/s$/, '');
     return `${escapeHtmlAttr(w.label)}: ${n} ${n === 1 ? unit : unit + 's'}`;
