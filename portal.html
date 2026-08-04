@@ -1537,6 +1537,22 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <!-- Card 1: Profile -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="building-2"></i> Profile Information</div>
+        <!-- Profile Photo -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border);">
+          <div id="ac-photo-preview" style="width:64px;height:64px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;flex-shrink:0;overflow:hidden;background-size:cover;background-position:center;">
+            <span id="ac-photo-initials">–</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Company Photo</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">PNG or JPEG, up to 5MB. Automatically resized to 256×256.</div>
+            <div style="display:flex;gap:8px;">
+              <input type="file" id="ac-photo-input" accept="image/png,image/jpeg" style="display:none;" onchange="handlePhotoSelect(event)" />
+              <button onclick="document.getElementById('ac-photo-input').click()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--text);font-size:13px;cursor:pointer;">Upload Photo</button>
+              <button onclick="removeProfilePhoto()" id="ac-photo-remove-btn" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;display:none;">Remove</button>
+            </div>
+            <span id="ac-photo-status" style="font-size:12px;color:var(--muted);display:block;margin-top:4px;"></span>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
             <label>Business Name</label>
@@ -2005,6 +2021,9 @@ function launchApp() {
   document.getElementById('sidebar-initials').textContent = initials;
   document.getElementById('topbar-title').textContent = `Welcome, ${portalClient.business_name}`;
   document.getElementById('topbar-sub').textContent = 'Your AI agent is live and handling calls';
+  // Apply profile photo if one is saved
+  acProfilePhoto = portalClient.profile_photo || null;
+  if (acProfilePhoto) applyProfilePhotoToPortal();
   loadDashboard();
 }
 
@@ -2979,6 +2998,104 @@ const acNotifPrefs = [
 
 function setAcDirty() { acDirty = true; }
 
+// ── PROFILE PHOTO ──────────────────────────────────────────────
+let acProfilePhoto = null;
+
+function updatePhotoPreview() {
+  const preview = document.getElementById('ac-photo-preview');
+  const initialsEl = document.getElementById('ac-photo-initials');
+  const removeBtn = document.getElementById('ac-photo-remove-btn');
+  if (acProfilePhoto) {
+    preview.style.background = `url(${acProfilePhoto}) center/cover, var(--grad)`;
+    initialsEl.style.display = 'none';
+    removeBtn.style.display = 'inline';
+  } else {
+    preview.style.background = 'var(--grad)';
+    initialsEl.style.display = 'flex';
+    initialsEl.textContent = (portalClient.business_name || '?').slice(0, 2).toUpperCase();
+    removeBtn.style.display = 'none';
+  }
+  // Also update topbar + sidebar avatars portal-wide
+  applyProfilePhotoToPortal();
+}
+
+function applyProfilePhotoToPortal() {
+  const topbarAvatar = document.getElementById('sidebar-initials');
+  if (!topbarAvatar) return;
+  if (acProfilePhoto) {
+    topbarAvatar.style.background = `url(${acProfilePhoto}) center/cover, var(--grad)`;
+    topbarAvatar.textContent = '';
+  } else {
+    topbarAvatar.style.background = 'var(--grad)';
+    const initials = (portalClient.business_name || '?').slice(0, 2).toUpperCase();
+    topbarAvatar.textContent = initials;
+  }
+}
+
+function handlePhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('ac-photo-status');
+
+  // Validate type
+  if (!['image/png', 'image/jpeg'].includes(file.type)) {
+    status.textContent = 'Only PNG and JPEG files are supported.';
+    status.style.color = '#ef4444';
+    event.target.value = '';
+    return;
+  }
+  // Validate size (5MB max)
+  if (file.size > 5 * 1024 * 1024) {
+    status.textContent = 'File too large. Maximum size is 5MB.';
+    status.style.color = '#ef4444';
+    event.target.value = '';
+    return;
+  }
+
+  status.textContent = 'Processing…';
+  status.style.color = 'var(--muted)';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Resize to 256x256 using canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      // Cover-fit: crop to square from center
+      const minDim = Math.min(img.width, img.height);
+      const sx = (img.width - minDim) / 2;
+      const sy = (img.height - minDim) / 2;
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 256, 256);
+      // Use JPEG for smaller size (photos), PNG for logos
+      const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      const dataUrl = canvas.toDataURL(mimeType, 0.85);
+      acProfilePhoto = dataUrl;
+      updatePhotoPreview();
+      status.textContent = 'Photo ready — click Save Profile to upload.';
+      status.style.color = 'var(--green)';
+      setAcDirty();
+    };
+    img.onerror = function() {
+      status.textContent = 'Could not read image file.';
+      status.style.color = '#ef4444';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removeProfilePhoto() {
+  acProfilePhoto = null;
+  updatePhotoPreview();
+  document.getElementById('ac-photo-status').textContent = 'Photo will be removed on save.';
+  document.getElementById('ac-photo-status').style.color = 'var(--muted)';
+  setAcDirty();
+}
+
 async function loadAccount() {
   try {
     const [acctRes, secRes, notifRes] = await Promise.all([
@@ -2999,6 +3116,10 @@ async function loadAccount() {
     document.getElementById('ac-twilio').textContent = acct.twilio_number || 'Not assigned';
     document.getElementById('ac-plan').textContent = acct.plan || '—';
     document.getElementById('ac-created').textContent = acct.created_at ? new Date(acct.created_at).toLocaleDateString() : '—';
+
+    // Profile Photo
+    acProfilePhoto = acct.profile_photo || null;
+    updatePhotoPreview();
 
     // Security
     acAccessCode = portalClient.access_code || '';
@@ -3076,11 +3197,15 @@ async function saveProfile() {
         phone: document.getElementById('ac-phone').value,
         industry: document.getElementById('ac-industry').value,
         timezone: document.getElementById('ac-timezone').value,
+        profile_photo: acProfilePhoto || null,
       }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
     portalClient = data;
+    // Sync photo state from server response
+    acProfilePhoto = portalClient.profile_photo || null;
+    updatePhotoPreview();
     status.textContent = 'Saved!'; status.style.color = 'var(--green)';
     acDirty = false;
   } catch (e) {
