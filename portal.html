@@ -1404,6 +1404,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           </div>
         </div>
       </div>
+
+      <!-- Campaign Activity Log -->
+      <div class="table-wrap" style="margin-top:20px;">
+        <div class="table-header">
+          <h2>Campaign Activity Log</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="cmp-activity-filter" style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;" onchange="loadCampaignActivity()">
+              <option value="">All Campaigns</option>
+              <option value="campaign_outreach">Call Campaigns</option>
+              <option value="sms_campaign">SMS Campaigns</option>
+            </select>
+            <button onclick="loadCampaignActivity()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Refresh</button>
+          </div>
+        </div>
+        <div id="cmp-activity-feed" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="empty">No campaign activity yet.</div>
+        </div>
+      </div>
     </div>
 
     <!-- AUTOMATIONS -->
@@ -2018,7 +2036,7 @@ function showPage(name) {
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
-  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); }
+  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
@@ -3916,6 +3934,83 @@ async function deleteSmsCampaign(id) {
     if (res.ok && data.success) { showToast('SMS campaign deleted', 'info'); closeSmsCmpModal(); loadSmsCampaigns(); }
     else throw new Error(data.error || 'Failed');
   } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ── CAMPAIGN ACTIVITY LOG ────────────────────────────────────────────────────
+
+async function loadCampaignActivity() {
+  const feed = document.getElementById('cmp-activity-feed');
+  if (!feed) return;
+  feed.innerHTML = '<div class="empty">Loading campaign activity…</div>';
+  try {
+    const filter = document.getElementById('cmp-activity-filter')?.value || '';
+    // Fetch both call and SMS campaign logs in parallel, then merge
+    const fetches = [];
+    if (!filter || filter === 'campaign_outreach') {
+      fetches.push(
+        fetch(`${API}/portal/activity?workflow_id=campaign_outreach&limit=50`, {
+          headers: { 'X-Portal-Token': portalToken }
+        }).then(r => r.json()).then(d => d.logs || []).catch(() => [])
+      );
+    }
+    if (!filter || filter === 'sms_campaign') {
+      fetches.push(
+        fetch(`${API}/portal/activity?workflow_id=sms_campaign&limit=50`, {
+          headers: { 'X-Portal-Token': portalToken }
+        }).then(r => r.json()).then(d => d.logs || []).catch(() => [])
+      );
+    }
+    const results = await Promise.all(fetches);
+    let logs = results.flat().sort((a, b) =>
+      new Date(b.timestamp) - new Date(a.timestamp)
+    ).slice(0, 50);
+
+    if (!logs.length) {
+      feed.innerHTML = '<div class="empty">No campaign activity yet. Events will appear here when campaigns send calls or SMS.</div>';
+      return;
+    }
+
+    const statusColors = {
+      success: '#22c55e', failed: '#ef4444', pending: '#f59e0b', info: '#3B82F6',
+    };
+    const statusBg = {
+      success: 'rgba(34,197,94,0.10)', failed: 'rgba(239,68,68,0.10)',
+      pending: 'rgba(245,158,11,0.10)', info: 'rgba(59,130,246,0.10)',
+    };
+
+    feed.innerHTML = logs.map(log => {
+      const time = new Date(log.timestamp).toLocaleString();
+      const color = statusColors[log.status] || '#9aa3b2';
+      const bg = statusBg[log.status] || 'rgba(154,163,178,0.08)';
+      const evLabel = (log.event_type || '').replace(/_/g, ' ');
+      const wfLabel = (log.workflow_id || '').replace(/_/g, ' ');
+      const d = log.details || {};
+      const detailParts = [];
+      if (d.phone) detailParts.push(`Phone: ${d.phone}`);
+      if (d.campaign_id) detailParts.push(`Campaign: ${d.campaign_id.slice(-8)}`);
+      if (d.call_sid) detailParts.push(`SID: ${d.call_sid.slice(-8)}`);
+      if (d.sms_sid) detailParts.push(`SID: ${d.sms_sid.slice(-8)}`);
+      if (d.outcome) detailParts.push(`Outcome: ${d.outcome}`);
+      if (d.call_code) detailParts.push(`Code: ${d.call_code}`);
+      const detailStr = detailParts.join(' · ');
+
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+            <div style="font-weight:600;font-size:13px;">${evLabel}</div>
+            <div style="font-size:11px;color:var(--muted);white-space:nowrap;">${time}</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${wfLabel}${log.lead_id ? ' · Lead: ' + log.lead_id.slice(-8) : ''}</div>
+          ${detailStr ? `<div style="font-size:11px;color:var(--text);margin-top:4px;opacity:0.8;">${detailStr}</div>` : ''}
+          ${log.error ? `<div style="font-size:11px;color:${color};margin-top:3px;">${log.error}</div>` : ''}
+          <span style="display:inline-block;margin-top:5px;padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:${bg};color:${color};">${log.status}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    feed.innerHTML = '<div class="empty">Could not load campaign activity.</div>';
+  }
 }
 
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
