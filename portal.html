@@ -1306,9 +1306,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
           <div class="form-group">
-            <label>Lead List *</label>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <label>Lead List *</label>
+              <button type="button" onclick="importCsvFile('cmp-leads')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Import CSV</button>
+            </div>
             <textarea id="cmp-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
-            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
+            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads. CSV columns: phone, name, service, notes.</span>
           </div>
           <button class="btn-save" id="cmp-create-btn" onclick="createCampaign()">Create Campaign</button>
           <span id="cmp-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
@@ -1372,9 +1375,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
           <div class="form-group">
-            <label>Lead List *</label>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <label>Lead List *</label>
+              <button type="button" onclick="importCsvFile('sms-leads')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Import CSV</button>
+            </div>
             <textarea id="sms-leads" rows="6" placeholder="One lead per line, format: phone, name, service, notes&#10;Example:&#10;5551234567, John Smith, Pool Cleaning, Called last week&#10;5559876543, Jane Doe, , Interested in weekly service"></textarea>
-            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads.</span>
+            <span style="font-size:11px;color:var(--muted);">Phone is required; name, service, and notes are optional. Max 200 leads. CSV columns: phone, name, service, notes.</span>
           </div>
           <button class="btn-save" id="sms-create-btn" onclick="createSmsCampaign()" style="background:#22c55e;">Create SMS Campaign</button>
           <span id="sms-create-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
@@ -1402,6 +1408,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div id="sms-cmp-modal-leads"></div>
             <div id="sms-cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Campaign Activity Log -->
+      <div class="table-wrap" style="margin-top:20px;">
+        <div class="table-header">
+          <h2>Campaign Activity Log</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="cmp-activity-filter" style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;" onchange="loadCampaignActivity()">
+              <option value="">All Campaigns</option>
+              <option value="campaign_outreach">Call Campaigns</option>
+              <option value="sms_campaign">SMS Campaigns</option>
+            </select>
+            <button onclick="loadCampaignActivity()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">Refresh</button>
+          </div>
+        </div>
+        <div id="cmp-activity-feed" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="empty">No campaign activity yet.</div>
         </div>
       </div>
     </div>
@@ -1513,6 +1537,22 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <!-- Card 1: Profile -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="building-2"></i> Profile Information</div>
+        <!-- Profile Photo -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border);">
+          <div id="ac-photo-preview" style="width:64px;height:64px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;flex-shrink:0;overflow:hidden;background-size:cover;background-position:center;">
+            <span id="ac-photo-initials">–</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Company Photo</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">PNG or JPEG, up to 5MB. Automatically resized to 256×256.</div>
+            <div style="display:flex;gap:8px;">
+              <input type="file" id="ac-photo-input" accept="image/png,image/jpeg" style="display:none;" onchange="handlePhotoSelect(event)" />
+              <button onclick="document.getElementById('ac-photo-input').click()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--text);font-size:13px;cursor:pointer;">Upload Photo</button>
+              <button onclick="removeProfilePhoto()" id="ac-photo-remove-btn" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;display:none;">Remove</button>
+            </div>
+            <span id="ac-photo-status" style="font-size:12px;color:var(--muted);display:block;margin-top:4px;"></span>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
             <label>Business Name</label>
@@ -1685,13 +1725,13 @@ const OB_LEADS_PER_PAGE = 25;
 var SMS_WORKFLOW_IDS = [1, 2, 5];
 var OB_WORKFLOW_IDS = [3, 4, 6, 7];
 var WORKFLOW_META = {
-  1: { name: 'Inbound Lead Follow-Up', desc: 'SMS → wait 5m → AI call → wait 2h → SMS → wait 24h → final SMS' },
-  2: { name: 'After Hours Lead Follow-Up', desc: '"We\'re closed" SMS → wait 9h → AI call next morning → wait 1h → follow-up SMS' },
-  3: { name: 'Unresponsive Warm Lead', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
-  4: { name: 'Outbound Campaign Follow-Up', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
-  5: { name: 'Missed Call Auto SMS', desc: 'Instant SMS → wait 30m → follow-up SMS → wait 2h → final SMS' },
-  6: { name: 'Missed Call Auto Callback', desc: 'Instant SMS → wait 2m → AI callback → wait 10m → post-call SMS' },
-  7: { name: 'Outbound No Answer Follow-Up', desc: 'SMS → wait 1h → retry AI call → wait 1h → final SMS' },
+  1: { name: 'Inbound Lead Follow-Up', summary: 'Re-engages warm leads who stopped responding with a mix of SMS and AI calls.', desc: 'SMS → wait 5m → AI call → wait 2h → SMS → wait 24h → final SMS' },
+  2: { name: 'After Hours Lead Follow-Up', summary: 'Captures after-hours leads and follows up first thing the next morning.', desc: '"We\'re closed" SMS → wait 9h → AI call next morning → wait 1h → follow-up SMS' },
+  3: { name: 'Unresponsive Warm Lead', summary: 'Re-engages leads who went quiet with a multi-day SMS and call sequence.', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
+  4: { name: 'Outbound Campaign Follow-Up', summary: 'Follows up on outreach campaigns with recap texts and retry calls.', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
+  5: { name: 'Missed Call Auto SMS', summary: 'Instantly texts back anyone whose call was missed, then follows up.', desc: 'Instant SMS → wait 30m → follow-up SMS → wait 2h → final SMS' },
+  6: { name: 'Missed Call Auto Callback', summary: 'Automatically calls back missed callers within minutes and follows up by text.', desc: 'Instant SMS → wait 2m → AI callback → wait 10m → post-call SMS' },
+  7: { name: 'Outbound No Answer Follow-Up', summary: 'Keeps trying to reach leads who didn\'t pick up, with escalating follow-ups.', desc: 'SMS → wait 1h → retry AI call → wait 1h → final SMS' },
 };
 let portalClient = null;
 let portalAvoidTopics = [];
@@ -1981,6 +2021,9 @@ function launchApp() {
   document.getElementById('sidebar-initials').textContent = initials;
   document.getElementById('topbar-title').textContent = `Welcome, ${portalClient.business_name}`;
   document.getElementById('topbar-sub').textContent = 'Your AI agent is live and handling calls';
+  // Apply profile photo if one is saved
+  acProfilePhoto = portalClient.profile_photo || null;
+  if (acProfilePhoto) applyProfilePhotoToPortal();
   loadDashboard();
 }
 
@@ -2018,7 +2061,7 @@ function showPage(name) {
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
-  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); }
+  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
@@ -2955,6 +2998,104 @@ const acNotifPrefs = [
 
 function setAcDirty() { acDirty = true; }
 
+// ── PROFILE PHOTO ──────────────────────────────────────────────
+let acProfilePhoto = null;
+
+function updatePhotoPreview() {
+  const preview = document.getElementById('ac-photo-preview');
+  const initialsEl = document.getElementById('ac-photo-initials');
+  const removeBtn = document.getElementById('ac-photo-remove-btn');
+  if (acProfilePhoto) {
+    preview.style.background = `url(${acProfilePhoto}) center/cover, var(--grad)`;
+    initialsEl.style.display = 'none';
+    removeBtn.style.display = 'inline';
+  } else {
+    preview.style.background = 'var(--grad)';
+    initialsEl.style.display = 'flex';
+    initialsEl.textContent = (portalClient.business_name || '?').slice(0, 2).toUpperCase();
+    removeBtn.style.display = 'none';
+  }
+  // Also update topbar + sidebar avatars portal-wide
+  applyProfilePhotoToPortal();
+}
+
+function applyProfilePhotoToPortal() {
+  const topbarAvatar = document.getElementById('sidebar-initials');
+  if (!topbarAvatar) return;
+  if (acProfilePhoto) {
+    topbarAvatar.style.background = `url(${acProfilePhoto}) center/cover, var(--grad)`;
+    topbarAvatar.textContent = '';
+  } else {
+    topbarAvatar.style.background = 'var(--grad)';
+    const initials = (portalClient.business_name || '?').slice(0, 2).toUpperCase();
+    topbarAvatar.textContent = initials;
+  }
+}
+
+function handlePhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('ac-photo-status');
+
+  // Validate type
+  if (!['image/png', 'image/jpeg'].includes(file.type)) {
+    status.textContent = 'Only PNG and JPEG files are supported.';
+    status.style.color = '#ef4444';
+    event.target.value = '';
+    return;
+  }
+  // Validate size (5MB max)
+  if (file.size > 5 * 1024 * 1024) {
+    status.textContent = 'File too large. Maximum size is 5MB.';
+    status.style.color = '#ef4444';
+    event.target.value = '';
+    return;
+  }
+
+  status.textContent = 'Processing…';
+  status.style.color = 'var(--muted)';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Resize to 256x256 using canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      // Cover-fit: crop to square from center
+      const minDim = Math.min(img.width, img.height);
+      const sx = (img.width - minDim) / 2;
+      const sy = (img.height - minDim) / 2;
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 256, 256);
+      // Use JPEG for smaller size (photos), PNG for logos
+      const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      const dataUrl = canvas.toDataURL(mimeType, 0.85);
+      acProfilePhoto = dataUrl;
+      updatePhotoPreview();
+      status.textContent = 'Photo ready — click Save Profile to upload.';
+      status.style.color = 'var(--green)';
+      setAcDirty();
+    };
+    img.onerror = function() {
+      status.textContent = 'Could not read image file.';
+      status.style.color = '#ef4444';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removeProfilePhoto() {
+  acProfilePhoto = null;
+  updatePhotoPreview();
+  document.getElementById('ac-photo-status').textContent = 'Photo will be removed on save.';
+  document.getElementById('ac-photo-status').style.color = 'var(--muted)';
+  setAcDirty();
+}
+
 async function loadAccount() {
   try {
     const [acctRes, secRes, notifRes] = await Promise.all([
@@ -2975,6 +3116,10 @@ async function loadAccount() {
     document.getElementById('ac-twilio').textContent = acct.twilio_number || 'Not assigned';
     document.getElementById('ac-plan').textContent = acct.plan || '—';
     document.getElementById('ac-created').textContent = acct.created_at ? new Date(acct.created_at).toLocaleDateString() : '—';
+
+    // Profile Photo
+    acProfilePhoto = acct.profile_photo || null;
+    updatePhotoPreview();
 
     // Security
     acAccessCode = portalClient.access_code || '';
@@ -3052,11 +3197,15 @@ async function saveProfile() {
         phone: document.getElementById('ac-phone').value,
         industry: document.getElementById('ac-industry').value,
         timezone: document.getElementById('ac-timezone').value,
+        profile_photo: acProfilePhoto || null,
       }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
     portalClient = data;
+    // Sync photo state from server response
+    acProfilePhoto = portalClient.profile_photo || null;
+    updatePhotoPreview();
     status.textContent = 'Saved!'; status.style.color = 'var(--green)';
     acDirty = false;
   } catch (e) {
@@ -3568,6 +3717,134 @@ async function startOutboundCall(isTest) {
 
 // ── CAMPAIGNS (Phase 2) ──────────────────────────────────────────────────────
 
+// ── CSV IMPORT ──────────────────────────────────────────────────────────────
+const MAX_CSV_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_LEADS = 200;
+
+function importCsvFile(targetTextareaId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,text/csv,text/plain';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', function() {
+    const file = input.files[0];
+    if (!file) { document.body.removeChild(input); return; }
+    document.body.removeChild(input);
+    processCsvFile(file, targetTextareaId);
+  });
+  input.click();
+}
+
+function processCsvFile(file, targetTextareaId) {
+  // File type validation
+  const name = file.name.toLowerCase();
+  const isCsv = name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'text/plain' || file.type === '';
+  if (!isCsv) {
+    showToast('Please select a .csv file', 'error');
+    return;
+  }
+  // File size validation
+  if (file.size > MAX_CSV_SIZE) {
+    showToast('File too large — max 2MB', 'error');
+    return;
+  }
+  if (file.size === 0) {
+    showToast('File is empty', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) {
+      showToast('No data found in file', 'error');
+      return;
+    }
+
+    // Detect and skip header row
+    let dataLines = lines;
+    const firstLine = lines[0].toLowerCase();
+    if (firstLine.includes('phone') || firstLine.includes('name') || firstLine.includes('number')) {
+      dataLines = lines.slice(1);
+    }
+
+    if (!dataLines.length) {
+      showToast('File has a header but no data rows', 'error');
+      return;
+    }
+
+    // Validate lead count
+    if (dataLines.length > MAX_LEADS) {
+      showToast(`Too many leads — max ${MAX_LEADS}. File has ${dataLines.length}.`, 'error');
+      return;
+    }
+
+    // Parse CSV: handle quoted fields
+    const parsed = dataLines.map(line => parseCsvLine(line));
+
+    // Validate each row has at least a phone number
+    const valid = [];
+    const skipped = [];
+    for (let i = 0; i < parsed.length; i++) {
+      const parts = parsed[i];
+      if (!parts.length || !parts[0] || !parts[0].replace(/\D/g, '')) {
+        skipped.push(i + 1);
+        continue;
+      }
+      valid.push(parts.slice(0, 4).join(', '));
+    }
+
+    if (!valid.length) {
+      showToast('No valid leads found — each row needs at least a phone number', 'error');
+      return;
+    }
+
+    // Populate the textarea
+    const textarea = document.getElementById(targetTextareaId);
+    if (!textarea) {
+      showToast('Target field not found', 'error');
+      return;
+    }
+    textarea.value = valid.join('\n');
+
+    if (skipped.length) {
+      showToast(`Imported ${valid.length} leads, skipped ${skipped.length} invalid row(s)`, 'success');
+    } else {
+      showToast(`Imported ${valid.length} lead(s) from CSV`, 'success');
+    }
+  };
+  reader.onerror = function() {
+    showToast('Failed to read file', 'error');
+  };
+  reader.readAsText(file);
+}
+
+function parseCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 function parseLeadList(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   return lines.map(line => {
@@ -3918,6 +4195,83 @@ async function deleteSmsCampaign(id) {
   } catch (e) { showToast(e.message, 'error'); }
 }
 
+// ── CAMPAIGN ACTIVITY LOG ────────────────────────────────────────────────────
+
+async function loadCampaignActivity() {
+  const feed = document.getElementById('cmp-activity-feed');
+  if (!feed) return;
+  feed.innerHTML = '<div class="empty">Loading campaign activity…</div>';
+  try {
+    const filter = document.getElementById('cmp-activity-filter')?.value || '';
+    // Fetch both call and SMS campaign logs in parallel, then merge
+    const fetches = [];
+    if (!filter || filter === 'campaign_outreach') {
+      fetches.push(
+        fetch(`${API}/portal/activity?workflow_id=campaign_outreach&limit=50`, {
+          headers: { 'X-Portal-Token': portalToken }
+        }).then(r => r.json()).then(d => d.logs || []).catch(() => [])
+      );
+    }
+    if (!filter || filter === 'sms_campaign') {
+      fetches.push(
+        fetch(`${API}/portal/activity?workflow_id=sms_campaign&limit=50`, {
+          headers: { 'X-Portal-Token': portalToken }
+        }).then(r => r.json()).then(d => d.logs || []).catch(() => [])
+      );
+    }
+    const results = await Promise.all(fetches);
+    let logs = results.flat().sort((a, b) =>
+      new Date(b.timestamp) - new Date(a.timestamp)
+    ).slice(0, 50);
+
+    if (!logs.length) {
+      feed.innerHTML = '<div class="empty">No campaign activity yet. Events will appear here when campaigns send calls or SMS.</div>';
+      return;
+    }
+
+    const statusColors = {
+      success: '#22c55e', failed: '#ef4444', pending: '#f59e0b', info: '#3B82F6',
+    };
+    const statusBg = {
+      success: 'rgba(34,197,94,0.10)', failed: 'rgba(239,68,68,0.10)',
+      pending: 'rgba(245,158,11,0.10)', info: 'rgba(59,130,246,0.10)',
+    };
+
+    feed.innerHTML = logs.map(log => {
+      const time = new Date(log.timestamp).toLocaleString();
+      const color = statusColors[log.status] || '#9aa3b2';
+      const bg = statusBg[log.status] || 'rgba(154,163,178,0.08)';
+      const evLabel = (log.event_type || '').replace(/_/g, ' ');
+      const wfLabel = (log.workflow_id || '').replace(/_/g, ' ');
+      const d = log.details || {};
+      const detailParts = [];
+      if (d.phone) detailParts.push(`Phone: ${d.phone}`);
+      if (d.campaign_id) detailParts.push(`Campaign: ${d.campaign_id.slice(-8)}`);
+      if (d.call_sid) detailParts.push(`SID: ${d.call_sid.slice(-8)}`);
+      if (d.sms_sid) detailParts.push(`SID: ${d.sms_sid.slice(-8)}`);
+      if (d.outcome) detailParts.push(`Outcome: ${d.outcome}`);
+      if (d.call_code) detailParts.push(`Code: ${d.call_code}`);
+      const detailStr = detailParts.join(' · ');
+
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+            <div style="font-weight:600;font-size:13px;">${evLabel}</div>
+            <div style="font-size:11px;color:var(--muted);white-space:nowrap;">${time}</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${wfLabel}${log.lead_id ? ' · Lead: ' + log.lead_id.slice(-8) : ''}</div>
+          ${detailStr ? `<div style="font-size:11px;color:var(--text);margin-top:4px;opacity:0.8;">${detailStr}</div>` : ''}
+          ${log.error ? `<div style="font-size:11px;color:${color};margin-top:3px;">${log.error}</div>` : ''}
+          <span style="display:inline-block;margin-top:5px;padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:${bg};color:${color};">${log.status}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    feed.innerHTML = '<div class="empty">Could not load campaign activity.</div>';
+  }
+}
+
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   const isLight = theme === 'light';
@@ -3989,7 +4343,8 @@ async function loadWorkflows(page) {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:12px;">
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${meta.name}</div>
-            <div style="color:var(--muted);font-size:12px;margin-top:2px;">${meta.desc}</div>
+            ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
+            <div style="color:var(--muted);font-size:12px;margin-top:4px;">${meta.desc}</div>
             ${reasonBanner}
           </div>
           <div style="display:flex;align-items:center;gap:12px;">
