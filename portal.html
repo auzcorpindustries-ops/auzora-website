@@ -1733,6 +1733,14 @@ var WORKFLOW_META = {
   6: { name: 'Missed Call Auto Callback', summary: 'Automatically calls back missed callers within minutes and follows up by text.', desc: 'Instant SMS → wait 2m → AI callback → wait 10m → post-call SMS' },
   7: { name: 'Outbound No Answer Follow-Up', summary: 'Keeps trying to reach leads who didn\'t pick up, with escalating follow-ups.', desc: 'SMS → wait 1h → retry AI call → wait 1h → final SMS' },
 };
+// Workflow parameter state — declared early (with `var`, like the constants
+// above) because a restored session can run showPage('automations') →
+// loadWorkflows() → loadWorkflowParams() BEFORE the rest of the script has
+// finished executing. A `let` declared further down would still be in its
+// temporal dead zone at that point, throwing
+// "Cannot access 'wfParamCache' before initialization".
+var wfParamCache = {};
+var wfpActiveField = null;
 let portalClient = null;
 let portalAvoidTopics = [];
 let portalServices = [];
@@ -4340,21 +4348,25 @@ async function loadWorkflows(page) {
         : '';
 
       return `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:12px;">
-          <div style="flex:1;">
-            <div style="font-weight:600;font-size:14px;">${meta.name}</div>
-            ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
-            <div style="color:var(--muted);font-size:12px;margin-top:4px;">${meta.desc}</div>
-            ${reasonBanner}
+        <div style="border:1px solid var(--border);border-radius:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;">${meta.name}</div>
+              ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
+              <div style="color:var(--muted);font-size:12px;margin-top:4px;" id="wf-steps-${id}">${meta.desc}</div>
+              ${reasonBanner}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
+              ${toggleDisabled
+                ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
+                : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
+              }
+              ${status === 'active' ? `<button onclick="testWorkflow(${id}, this)" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
+              <button onclick="toggleWorkflowParams(${id})" id="wf-cfg-btn-${id}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
-            ${toggleDisabled
-              ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
-              : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
-            }
-            ${status === 'active' ? `<button onclick="testWorkflow(${id}, this)" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
-          </div>
+          <div id="wf-params-${id}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>
         </div>`;
     }).join('');
   } catch (err) {
@@ -4403,6 +4415,497 @@ async function testWorkflow(templateId, btn) {
   } finally {
     btn.disabled = false; btn.style.opacity = '1';
   }
+}
+
+// ─── WORKFLOW PARAMETERS (wait intervals + message templates) ────
+// Per-workflow config: how long each step waits, and the exact message text
+// sent at each step. The backend catalog (workflowParamCatalog.js) is the
+// single source of truth for which fields exist — this UI renders whatever
+// GET /portal/workflows/:id/params returns rather than hard-coding a list.
+
+// Cache the fetched catalog per template so Save can read the field keys back
+// without a second round trip. `wfParamCache` and `wfpActiveField` are declared
+// at the top of the script (see the TDZ note there), not here.
+
+function toggleWorkflowParams(templateId) {
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  const btn = document.getElementById(`wf-cfg-btn-${templateId}`);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  if (isOpen) {
+    panel.style.display = 'none';
+    if (btn) btn.textContent = 'Customize';
+    return;
+  }
+  panel.style.display = 'block';
+  if (btn) btn.textContent = 'Hide';
+  loadWorkflowParams(templateId);
+}
+
+function escapeHtmlAttr(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function loadWorkflowParams(templateId) {
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  if (!panel) return;
+  panel.innerHTML = '<div style="color:var(--muted);font-size:13px;">Loading settings…</div>';
+
+  try {
+    const res = await fetch(`${API}/portal/workflows/${templateId}/params`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    wfParamCache[templateId] = data;
+    renderWorkflowParams(templateId, data);
+  } catch (err) {
+    panel.innerHTML = `<div style="color:#ef4444;font-size:13px;">Unable to load settings: ${escapeHtmlAttr(err.message)}</div>`;
+  }
+}
+
+function renderWorkflowParams(templateId, data) {
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  if (!panel) return;
+
+  const units = data.wait_units || ['minutes', 'hours', 'days'];
+  const timezones = data.timezones || [];
+
+  // ── Wait steps ──
+  // Two shapes: a relative interval (number + unit), or a wall-clock time
+  // (HH:MM + timezone). The backend catalog decides which — a step like
+  // "call next morning at 9 AM" is wall-clock, because a relative +9h fires at
+  // 11am for a 2am lead and 5am for an 8pm lead.
+  const waitRows = (data.waits || []).map(w => {
+    if (w.mode === 'specificTime') return renderSpecificTimeRow(templateId, w, timezones, data);
+    const opts = units.map(u =>
+      `<option value="${u}"${u === w.unit ? ' selected' : ''}>${u}</option>`
+    ).join('');
+    const max = (data.max_wait_by_unit || {})[w.unit] || 9999;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;">
+        <div style="flex:1;min-width:150px;font-size:13px;">${escapeHtmlAttr(w.label)}</div>
+        <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
+               value="${w.value}" min="1" max="${max}" step="1"
+               oninput="updateWaitHint(${templateId}, '${w.key}')"
+               style="width:80px;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
+        <select id="wfp-${templateId}-wait-${w.key}-unit"
+                onchange="updateWaitHint(${templateId}, '${w.key}')"
+                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
+          ${opts}
+        </select>
+        <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11px;color:var(--muted);min-width:120px;">default ${w.default.value} ${w.default.unit}</span>
+      </div>`;
+  }).join('');
+
+  // ── Merge field reference chips ──
+  const chips = (data.merge_fields || []).map(f =>
+    `<button type="button" onclick="insertMergeField(${templateId}, '${f.token}')"
+       title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
+       style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-family:monospace;color:var(--text);cursor:pointer;">{{${f.token}}}</button>`
+  ).join(' ');
+
+  // ── Message templates ──
+  const tplRows = (data.templates || []).map(t => {
+    const isVoice = t.channel === 'voice';
+    const chanBadge = isVoice
+      ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(59,130,246,0.12);color:#3B82F6;">VOICE</span>'
+      : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(236,72,153,0.12);color:#EC4899;">SMS</span>';
+    return `
+      <div style="padding:12px 0;border-top:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:600;">${escapeHtmlAttr(t.label)}</span>
+          ${chanBadge}
+          <span id="wfp-${templateId}-tpl-${t.key}-count" style="margin-left:auto;font-size:11px;color:var(--muted);"></span>
+        </div>
+        <textarea id="wfp-${templateId}-tpl-${t.key}" rows="3" maxlength="${t.max_chars}"
+                  data-channel="${t.channel}"
+                  oninput="updateTemplateCount(${templateId}, '${t.key}')"
+                  onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
+                  style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--text);outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
+        ${isVoice ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Read aloud by your AI agent — keep it conversational. Links are spoken as "the link we just texted you".</div>' : ''}
+      </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Wait Times</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">How long this workflow pauses before each step.</div>
+      ${waitRows || '<div style="font-size:12px;color:var(--muted);">No wait steps in this workflow.</div>'}
+
+      <div style="font-size:13px;font-weight:700;margin-top:16px;">Message Templates</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+        Click a field below to insert it. Values are filled in automatically when the message sends —
+        if a value is unknown, it's left out cleanly rather than showing a placeholder.
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">${chips}</div>
+      ${tplRows}
+
+      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--tint);"></div>
+      <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+        <button onclick="saveWorkflowParams(${templateId}, this)"
+                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:none;cursor:pointer;">Save Settings</button>
+        <button onclick="previewWorkflowParams(${templateId}, this)"
+                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Preview</button>
+        <button onclick="resetWorkflowParams(${templateId}, this)"
+                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">Reset to Defaults</button>
+      </div>
+    </div>`;
+
+  // Initialize the live hints/counters
+  (data.waits || []).forEach(w => updateWaitHint(templateId, w.key));
+  (data.templates || []).forEach(t => updateTemplateCount(templateId, t.key));
+}
+
+// Render a wall-clock wait step: time-of-day input + timezone select.
+// The timezone select's first option is "Use my business timezone", which saves
+// no timezone at all so the step keeps following client.timezone if the client
+// later changes it on the Scheduling page.
+function renderSpecificTimeRow(templateId, w, timezones, data) {
+  const clientTz = data.client_timezone || '';
+  const tzOpts = [
+    `<option value=""${!w.timezone ? ' selected' : ''}>Use my business timezone${clientTz ? ' (' + escapeHtmlAttr(tzLabel(clientTz)) + ')' : ''}</option>`,
+  ].concat(timezones.map(tz =>
+    `<option value="${escapeHtmlAttr(tz)}"${tz === w.timezone ? ' selected' : ''}>${escapeHtmlAttr(tzLabel(tz))}</option>`
+  )).join('');
+
+  return `
+    <div style="padding:8px 0;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;font-size:13px;">
+          ${escapeHtmlAttr(w.label)}
+          <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(124,58,237,0.12);color:var(--accent2);margin-left:6px;">TIME OF DAY</span>
+        </div>
+        <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
+               value="${escapeHtmlAttr(w.at || '09:00')}"
+               oninput="updateWaitHint(${templateId}, '${w.key}')"
+               style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
+        <select id="wfp-${templateId}-wait-${w.key}-tz"
+                onchange="updateWaitHint(${templateId}, '${w.key}')"
+                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;max-width:200px;">
+          ${tzOpts}
+        </select>
+      </div>
+      <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11px;color:var(--muted);margin-top:5px;"></div>
+    </div>`;
+}
+
+// "America/New_York" -> "New York (America)" reads worse than just the city,
+// so show the city and keep the region as a suffix only when it disambiguates.
+function tzLabel(tz) {
+  const parts = String(tz).split('/');
+  const city = (parts[parts.length - 1] || tz).replace(/_/g, ' ');
+  return parts.length > 1 ? `${city} — ${parts[0].replace(/_/g, ' ')}` : city;
+}
+
+// `wfpActiveField` tracks which textarea last had focus so the merge-field
+// chips know where to insert. Declared at the top of the script (TDZ note).
+
+function insertMergeField(templateId, token) {
+  // Default to the first template textarea if the user hasn't focused one yet.
+  let el = wfpActiveField ? document.getElementById(wfpActiveField) : null;
+  if (!el || !el.id.startsWith(`wfp-${templateId}-tpl-`)) {
+    el = document.querySelector(`textarea[id^="wfp-${templateId}-tpl-"]`);
+  }
+  if (!el) return;
+  const snippet = `{{${token}}}`;
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
+  el.value = el.value.slice(0, start) + snippet + el.value.slice(end);
+  el.focus();
+  el.selectionStart = el.selectionEnd = start + snippet.length;
+  wfpActiveField = el.id;
+  const key = el.id.replace(`wfp-${templateId}-tpl-`, '');
+  updateTemplateCount(templateId, key);
+}
+
+function updateWaitHint(templateId, key) {
+  const hint = document.getElementById(`wfp-${templateId}-wait-${key}-hint`);
+  if (!hint) return;
+  const cached = (wfParamCache[templateId]?.waits || []).find(w => w.key === key);
+
+  // ── wall-clock step ──
+  const atEl = document.getElementById(`wfp-${templateId}-wait-${key}-at`);
+  if (atEl) {
+    const tzEl = document.getElementById(`wfp-${templateId}-wait-${key}-tz`);
+    const at = atEl.value;
+    if (!/^\d{1,2}:\d{2}$/.test(at)) {
+      hint.textContent = 'pick a time of day';
+      hint.style.color = '#ef4444';
+      return;
+    }
+    const tz = (tzEl && tzEl.value) || wfParamCache[templateId]?.client_timezone || '';
+    hint.style.color = 'var(--muted)';
+    // Show the next actual run so the client can sanity-check their timezone.
+    hint.textContent = `Next run: ${describeNextRun(at, tz)}`
+      + (cached?.default?.at ? ` · default ${to12h(cached.default.at)}` : '');
+    return;
+  }
+
+  // ── relative interval step ──
+  const valEl = document.getElementById(`wfp-${templateId}-wait-${key}-value`);
+  const unitEl = document.getElementById(`wfp-${templateId}-wait-${key}-unit`);
+  if (!valEl || !unitEl) return;
+
+  const max = (wfParamCache[templateId]?.max_wait_by_unit || {})[unitEl.value];
+  valEl.max = max || 9999;
+
+  const n = Number(valEl.value);
+  if (!Number.isInteger(n) || n < 1) {
+    hint.textContent = 'must be a whole number ≥ 1';
+    hint.style.color = '#ef4444';
+    return;
+  }
+  if (max && n > max) {
+    hint.textContent = `max ${max} ${unitEl.value}`;
+    hint.style.color = '#ef4444';
+    return;
+  }
+  hint.style.color = 'var(--muted)';
+  hint.textContent = cached?.default ? `default ${cached.default.value} ${cached.default.unit}` : '';
+}
+
+// "09:00" -> "9:00 AM"
+function to12h(at) {
+  const [h, m] = String(at).split(':').map(Number);
+  const suffix = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+// Human description of the next occurrence of HH:MM in `tz`, computed in the
+// browser so the hint updates live as the client edits (no round trip).
+// Mirrors the backend's resolveSpecificTime(): roll to tomorrow if already past.
+function describeNextRun(at, tz) {
+  const [hour, minute] = String(at).split(':').map(Number);
+  const now = new Date();
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit', hour12: false,
+    });
+    const parts = fmt.formatToParts(now);
+    const g = (t) => parseInt(parts.find(p => p.type === t).value, 10);
+
+    const build = (dayOffset) => {
+      const base = Date.UTC(g('year'), g('month') - 1, g('day') + dayOffset, hour, minute, 0);
+      const p2 = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }).formatToParts(new Date(base));
+      const g2 = (t) => parseInt(p2.find(p => p.type === t).value, 10);
+      const wallAsUTC = Date.UTC(g2('year'), g2('month') - 1, g2('day'), g2('hour') % 24, g2('minute'), g2('second'));
+      return new Date(base + (base - wallAsUTC));
+    };
+
+    let target = build(0);
+    let sameDay = true;
+    if (target.getTime() <= now.getTime()) { target = build(1); sameDay = false; }
+
+    const day = target.toLocaleDateString('en-US', { timeZone: tz || undefined, weekday: 'short' });
+    const hrs = Math.round((target.getTime() - now.getTime()) / 3600000);
+    return `${sameDay ? 'today' : day} at ${to12h(at)} (in ~${hrs}h)`;
+  } catch (err) {
+    // Unknown timezone — still show the wall clock rather than nothing.
+    return to12h(at);
+  }
+}
+
+function updateTemplateCount(templateId, key) {
+  const el = document.getElementById(`wfp-${templateId}-tpl-${key}`);
+  const out = document.getElementById(`wfp-${templateId}-tpl-${key}-count`);
+  if (!el || !out) return;
+  const len = el.value.length;
+  const channel = el.dataset.channel;
+  if (channel === 'voice') {
+    out.textContent = `${len} chars`;
+    out.style.color = 'var(--muted)';
+    return;
+  }
+  const seg = (wfParamCache[templateId]?.sms_limits?.segment_chars) || 160;
+  const warn = (wfParamCache[templateId]?.sms_limits?.warn_chars) || 480;
+  const segments = Math.ceil(len / seg) || 0;
+  out.textContent = `${len} chars · ${segments} SMS segment${segments === 1 ? '' : 's'}`;
+  out.style.color = len > warn ? '#f59e0b' : 'var(--muted)';
+}
+
+// Collect the form state into the API's expected shape.
+function collectWorkflowParams(templateId) {
+  const data = wfParamCache[templateId] || {};
+  const waits = {};
+  (data.waits || []).forEach(w => {
+    if (w.mode === 'specificTime') {
+      const at = document.getElementById(`wfp-${templateId}-wait-${w.key}-at`);
+      const tz = document.getElementById(`wfp-${templateId}-wait-${w.key}-tz`);
+      if (!at) return;
+      const entry = { mode: 'specificTime', at: at.value };
+      // Empty select = "use my business timezone": omit the field entirely so
+      // the step keeps inheriting client.timezone rather than pinning a copy.
+      if (tz && tz.value) entry.timezone = tz.value;
+      waits[w.key] = entry;
+      return;
+    }
+    const v = document.getElementById(`wfp-${templateId}-wait-${w.key}-value`);
+    const u = document.getElementById(`wfp-${templateId}-wait-${w.key}-unit`);
+    if (v && u) waits[w.key] = { value: Number(v.value), unit: u.value };
+  });
+  const templates = {};
+  (data.templates || []).forEach(t => {
+    const el = document.getElementById(`wfp-${templateId}-tpl-${t.key}`);
+    if (el) templates[t.key] = el.value;
+  });
+  return { waits, templates };
+}
+
+function showWfpMessage(templateId, text, kind) {
+  const box = document.getElementById(`wfp-${templateId}-msg`);
+  if (!box) return;
+  const colors = {
+    error: { bg: 'rgba(239,68,68,0.08)', fg: '#ef4444' },
+    warn:  { bg: 'rgba(245,158,11,0.08)', fg: '#f59e0b' },
+    ok:    { bg: 'rgba(34,197,94,0.08)',  fg: '#22c55e' },
+  }[kind] || { bg: 'var(--tint)', fg: 'var(--text)' };
+  box.style.display = 'block';
+  box.style.background = colors.bg;
+  box.style.color = colors.fg;
+  box.innerHTML = text;
+}
+
+async function saveWorkflowParams(templateId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…'; btn.style.opacity = '0.6';
+  try {
+    const body = collectWorkflowParams(templateId);
+    const res = await fetch(`${API}/portal/workflows/${templateId}/params`, {
+      method: 'PUT',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      // The API returns a `details` array of per-field validation errors.
+      const details = (data.details || []).map(d => `• ${escapeHtmlAttr(d)}`).join('<br>');
+      showWfpMessage(templateId, `<strong>${escapeHtmlAttr(data.error || 'Save failed')}</strong>${details ? '<br>' + details : ''}`, 'error');
+      return;
+    }
+    // Keep the in-memory client record in sync so a page switch doesn't show stale values.
+    if (portalClient) {
+      portalClient.workflow_params = portalClient.workflow_params || {};
+      portalClient.workflow_params[String(templateId)] = body;
+    }
+    // Refresh the cache + step summary line with the newly effective values.
+    // NOTE: loadWorkflowParams() re-renders the whole panel, which destroys the
+    // message box — so the confirmation MUST be shown after the reload, not
+    // before it, or it silently disappears.
+    await loadWorkflowParams(templateId);
+    updateWorkflowStepSummary(templateId);
+    if ((data.warnings || []).length) {
+      showWfpMessage(templateId, `Saved. ${data.warnings.map(escapeHtmlAttr).join(' · ')}`, 'warn');
+    } else {
+      showWfpMessage(templateId, 'Settings saved.', 'ok');
+    }
+  } catch (err) {
+    showWfpMessage(templateId, `Error saving: ${escapeHtmlAttr(err.message)}`, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
+  }
+}
+
+async function previewWorkflowParams(templateId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Rendering…'; btn.style.opacity = '0.6';
+  const box = document.getElementById(`wfp-${templateId}-preview`);
+  try {
+    const { templates } = collectWorkflowParams(templateId);
+    const res = await fetch(`${API}/portal/workflows/${templateId}/params/preview`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templates }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const catTemplates = (wfParamCache[templateId]?.templates) || [];
+    const rows = catTemplates.map(t => {
+      const p = data.preview[t.key];
+      if (!p) return '';
+      if (p.error) {
+        return `<div style="margin-bottom:10px;"><div style="font-size:12px;font-weight:600;">${escapeHtmlAttr(t.label)}</div>
+                <div style="font-size:12px;color:#ef4444;">${escapeHtmlAttr(p.error)}</div></div>`;
+      }
+      const meta = [
+        `${p.chars} chars`,
+        p.segments != null ? `${p.segments} segment${p.segments === 1 ? '' : 's'}` : null,
+        p.truncated ? 'trimmed to fit' : null,
+        (p.unresolved || []).length ? `no value for: ${p.unresolved.join(', ')}` : null,
+      ].filter(Boolean).join(' · ');
+      return `<div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;margin-bottom:3px;">${escapeHtmlAttr(t.label)}</div>
+                <div style="font-size:13px;line-height:1.5;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 11px;">${escapeHtmlAttr(p.text)}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtmlAttr(meta)}</div>
+              </div>`;
+    }).join('');
+
+    const sample = data.sample_lead || {};
+    box.style.display = 'block';
+    box.innerHTML = `<div style="font-size:12px;font-weight:700;margin-bottom:8px;">Preview — sample contact: ${escapeHtmlAttr(sample.name || 'Jordan Smith')}</div>${rows}`;
+  } catch (err) {
+    showWfpMessage(templateId, `Preview failed: ${escapeHtmlAttr(err.message)}`, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
+  }
+}
+
+async function resetWorkflowParams(templateId, btn) {
+  if (!confirm('Reset this workflow\'s wait times and message templates back to the Auzora defaults?')) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Resetting…'; btn.style.opacity = '0.6';
+  try {
+    // An empty body tells the API to drop this workflow's overrides.
+    const res = await fetch(`${API}/portal/workflows/${templateId}/params`, {
+      method: 'PUT',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (portalClient?.workflow_params) delete portalClient.workflow_params[String(templateId)];
+    const preview = document.getElementById(`wfp-${templateId}-preview`);
+    if (preview) preview.style.display = 'none';
+    await loadWorkflowParams(templateId);
+    updateWorkflowStepSummary(templateId);
+    showWfpMessage(templateId, 'Reset to defaults.', 'ok');
+  } catch (err) {
+    showWfpMessage(templateId, `Reset failed: ${escapeHtmlAttr(err.message)}`, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
+  }
+}
+
+// Rewrite the "SMS → wait 5m → AI call" summary line so it reflects the
+// client's configured intervals instead of the template defaults.
+function updateWorkflowStepSummary(templateId) {
+  const line = document.getElementById(`wf-steps-${templateId}`);
+  const data = wfParamCache[templateId];
+  if (!line || !data || !(data.waits || []).length) return;
+  const parts = data.waits.map(w => {
+    // The API supplies a ready-made display string for both modes; these
+    // fallbacks only matter if an older backend omits it.
+    if (w.display) return `${escapeHtmlAttr(w.label)}: ${escapeHtmlAttr(w.display)}`;
+    if (w.mode === 'specificTime' || w.at) {
+      return `${escapeHtmlAttr(w.label)}: ${escapeHtmlAttr(to12h(w.at || '09:00'))}`;
+    }
+    const n = w.value;
+    const unit = String(w.unit).replace(/s$/, '');
+    return `${escapeHtmlAttr(w.label)}: ${n} ${n === 1 ? unit : unit + 's'}`;
+  });
+  line.textContent = parts.join(' · ');
 }
 
 // ─── ACTIVITY FEED (Analytics page) ──────────────────────────────
