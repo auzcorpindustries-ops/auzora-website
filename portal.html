@@ -1201,7 +1201,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
     <!-- LEADS & CRM -->
     <div class="page" id="page-leads">
-      <!-- Lead stat cards (new metrics — blank for now) -->
+      <!-- Lead stat cards — populated by updateLeadStats() from the same
+           grouped/status logic the table below uses, so the numbers always
+           agree with the badges. -->
       <div class="stats-grid" style="margin-bottom:20px;">
         <div class="stat-card">
           <div class="stat-label">Total Leads</div>
@@ -1222,11 +1224,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="stat-label">Opted Out</div>
           <div class="stat-value" id="stat-leads-opted" style="color:#EF4444;">—</div>
           <div class="stat-sub">Never dialed again</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">With Email</div>
-          <div class="stat-value" id="stat-leads-email">—</div>
-          <div class="stat-sub">Exportable to CRM</div>
         </div>
       </div>
 
@@ -3507,6 +3504,46 @@ async function loadOutbound() {
   }
 }
 
+// Populate the Leads & CRM stat cards.
+//
+// Takes the GROUPED leads (array of arrays — one group per person, newest
+// interaction first) so the counts match the "N leads" label and the rendered
+// rows. Counting raw interactions instead would make Total Leads disagree with
+// the table, which is what the row grouping exists to prevent.
+//
+// Status is derived with the SAME expression the table badge uses, so a lead
+// counted as "Reached" here is always the lead showing a Reached badge below.
+function updateLeadStats(grouped) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  let reached = 0, optedOut = 0, isNew = 0;
+
+  for (const group of (grouped || [])) {
+    const latest = Array.isArray(group) ? group[0] : group;
+    if (!latest) continue;
+
+    // Mirrors renderObLeads(): opt-out wins over any other status.
+    const isOptedOut = latest.outbound_opted_out === true
+      || latest.opt_out === true
+      || latest.outbound_status === 'opted-out';
+    if (isOptedOut) { optedOut++; continue; }
+
+    const status = latest.outbound_status || 'new';
+    if (status === 'reached') reached++;
+    else if (status === 'new') isNew++;
+    // Any other status (pending, no-answer, failed…) counts toward the total
+    // but is deliberately not bucketed as New — it HAS been contacted.
+  }
+
+  set('stat-leads-total', (grouped || []).length);
+  set('stat-leads-new', isNew);
+  set('stat-leads-reached', reached);
+  set('stat-leads-opted', optedOut);
+}
+
 // Format elapsed time since an ISO timestamp — human-readable "3 minutes ago"
 function formatTimeSinceLabel(isoTs) {
   if (!isoTs) return 'N/A';
@@ -3527,6 +3564,8 @@ function renderObLeads() {
   const leads = obLeadsAll;
   if (!leads.length) {
     document.getElementById('ob-lead-count').textContent = '0 leads';
+    // Show real zeros rather than leaving em-dashes, which read as "broken".
+    updateLeadStats([]);
     listEl.innerHTML = '<div class="empty">No leads captured yet. Leads from inbound calls will appear here with a Call button.</div>';
     return;
   }
@@ -3546,6 +3585,10 @@ function renderObLeads() {
   grouped.sort((a, b) => new Date(b[0].captured_at || b[0].created_at) - new Date(a[0].captured_at || a[0].created_at));
 
   document.getElementById('ob-lead-count').textContent = grouped.length + ' lead' + (grouped.length === 1 ? '' : 's') + ' (' + leads.length + ' interactions)';
+
+  // Stat cards. Count GROUPED leads (one per person), not raw interaction rows,
+  // so "Total Leads" agrees with the "N leads" label and the visible row count.
+  updateLeadStats(grouped);
 
   const MAX_PREVIEW = 5; // show up to 5 previous interactions when expanded
 
@@ -4926,16 +4969,34 @@ async function loadActivity() {
     if (search) params.set('search', search);
     params.set('limit', '50');
 
+    // `cache: 'no-store'` is deliberate. The endpoint sends an ETag but no
+    // Cache-Control, so Chrome revalidates with If-None-Match and can hand this
+    // fetch a 304 — and `res.ok` is FALSE for 304, which tripped the guard below
+    // and showed "Could not load activity" even though the data was fine.
+    // This is a live feed; always take a fresh 200.
     const res = await fetch(`${API}/portal/activity?${params}`, {
-      headers: { 'X-Portal-Token': portalToken }
+      headers: { 'X-Portal-Token': portalToken },
+      cache: 'no-store',
     });
+
+    // A 304 carries no body, so treat it as "nothing changed" and keep what's
+    // already rendered rather than throwing.
+    if (res.status === 304) return;
+
+    if (res.status === 401) throw new Error('SESSION');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     activityAll = data.logs || [];
     renderActivity();
   } catch (e) {
     console.error('loadActivity error:', e.message);
-    feed.innerHTML = '<div class="empty">Could not load activity. <a href="#" onclick="loadActivity();return false;" style="color:var(--accent);">Retry</a></div>';
+    // Distinguish an expired session from a real failure — otherwise the user
+    // sees a generic "Retry" that can never succeed.
+    const expired = e.message === 'SESSION';
+    const msg = expired
+      ? 'Your session expired. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);">Sign in again</a>'
+      : 'Could not load activity. <a href="#" onclick="loadActivity();return false;" style="color:var(--accent);">Retry</a>';
+    feed.innerHTML = `<div class="empty">${msg}</div>`;
   }
 }
 
