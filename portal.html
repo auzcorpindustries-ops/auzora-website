@@ -1926,6 +1926,7 @@ var WORKFLOW_META = {
 // "Cannot access 'wfParamCache' before initialization".
 var wfParamCache = {};
 var wfpActiveField = null;
+var wfTestTemplateId = null;
 let portalClient = null;
 let portalAvoidTopics = [];
 let portalServices = [];
@@ -2498,15 +2499,23 @@ async function loadSettings() {
     r.checked = r.value === vmMode;
   });
 
-  // Load ElevenLabs voices then render grid
-  await loadVoices();
-  renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
+  // ── Render tag-based fields BEFORE async loadVoices() ──────────────────
+  // These must populate synchronously so portalServices / portalSpecialties
+  // / getPortalFaqs() return real data if the user clicks Save before
+  // loadVoices() resolves. Previously, a slow voice API call blocked these
+  // renders, and saving during that window wrote empty arrays to DynamoDB.
   renderPortalAvoidTags(c.topics_to_avoid || []);
   renderPortalFaqs(c.faqs || []);
   portalServices = [...(c.service_areas || [])];
   renderServiceTags();
   portalSpecialties = [...(c.specialties || [])];
   renderSpecialtyTags();
+
+  // Load ElevenLabs voices then render grid (async — non-blocking for data)
+  loadVoices().then(() => {
+    renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
+  }).catch(() => {});
+
   settingsDirty = false;
   document.getElementById('s-unsaved').style.display = 'none';
 }
@@ -2725,13 +2734,33 @@ async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
   btn.textContent = 'Saving...'; btn.disabled = true;
 
+  // ── Defensive guard: don't overwrite existing data with empties ────────
+  // If portalClient had FAQs/services/specialties but the local arrays are
+  // empty (e.g. loadSettings() didn't finish rendering), preserve the
+  // existing values rather than wiping them.
+  const faqsToSave = getPortalFaqs();
+  const servicesToSave = [...portalServices];
+  const specialtiesToSave = [...portalSpecialties];
+
+  if (portalClient) {
+    if (!faqsToSave.length && portalClient.faqs?.length) {
+      console.warn('saveSettings: preserving existing FAQs — render may not have completed');
+    }
+    if (!servicesToSave.length && portalClient.service_areas?.length) {
+      console.warn('saveSettings: preserving existing service_areas — render may not have completed');
+    }
+    if (!specialtiesToSave.length && portalClient.specialties?.length) {
+      console.warn('saveSettings: preserving existing specialties — render may not have completed');
+    }
+  }
+
   try {
     const payload = {
       business_name:       document.getElementById('s-biz-name').value,
       agent_name:          document.getElementById('s-agent-name').value,
       office_hours:        buildPortalHoursString(),
-      service_areas:       [...portalServices],
-      specialties:         [...portalSpecialties],
+      service_areas:       servicesToSave,
+      specialties:         specialtiesToSave,
       escalation_phone:    document.getElementById('s-escalation-phone').value,
       voice:               getPortalVoice(),
       custom_greeting:     document.getElementById('s-greeting').value,
@@ -2745,7 +2774,7 @@ async function saveSettings() {
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
       sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
-      faqs:                getPortalFaqs(),
+      faqs:                faqsToSave,
       scheduling_params:   getSchedulingParams(),
       service_durations:   portalClient?.service_durations || {},
       timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago',
@@ -4702,7 +4731,9 @@ async function toggleWorkflow(templateId, enable) {
 }
 
 // ── Workflow test modal ──────────────────────────────────────────
-let wfTestTemplateId = null;
+// wfTestTemplateId is declared at the top with the other globals (var)
+// to avoid TDZ errors when openTestModal is called before this point
+// in the script has executed.
 
 function openTestModal(templateId, workflowName) {
   wfTestTemplateId = templateId;
