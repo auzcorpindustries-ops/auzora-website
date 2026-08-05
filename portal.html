@@ -1334,6 +1334,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="stat-value" id="stat-leads-opted" style="color:#EF4444;">—</div>
           <div class="stat-sub">Never dialed again</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs Attention</div>
+          <div class="stat-value" id="stat-leads-attention" style="color:#f59e0b;">—</div>
+          <div class="stat-sub">AI flagged for follow-up</div>
+        </div>
       </div>
 
       <!-- Captured leads -->
@@ -3704,7 +3709,7 @@ function updateLeadStats(grouped) {
     if (el) el.textContent = val;
   };
 
-  let reached = 0, optedOut = 0, isNew = 0;
+  let reached = 0, optedOut = 0, isNew = 0, needsAttention = 0;
 
   for (const group of (grouped || [])) {
     const latest = Array.isArray(group) ? group[0] : group;
@@ -3715,6 +3720,8 @@ function updateLeadStats(grouped) {
       || latest.opt_out === true
       || latest.outbound_status === 'opted-out';
     if (isOptedOut) { optedOut++; continue; }
+
+    if (latest.needs_agent_attention === true) needsAttention++;
 
     const status = latest.outbound_status || 'new';
     if (status === 'reached') reached++;
@@ -3727,6 +3734,7 @@ function updateLeadStats(grouped) {
   set('stat-leads-new', isNew);
   set('stat-leads-reached', reached);
   set('stat-leads-opted', optedOut);
+  set('stat-leads-attention', needsAttention);
 }
 
 // Format elapsed time since an ISO timestamp — human-readable "3 minutes ago"
@@ -3847,6 +3855,15 @@ function renderObLeads() {
       ? `<span style="font-size:13px;color:var(--text);">${aiRec}</span>`
       : '<span style="color:var(--muted);">—</span>';
 
+    // Needs Attention badge — shown when AI escalated the conversation
+    const needsAttention = latest.needs_agent_attention === true;
+    const attentionBadge = needsAttention
+      ? `<span style="display:inline-block;background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px;cursor:help;" title="${latest.agent_attention_reason || 'AI flagged this lead for human follow-up'}">Needs Attention</span>`
+      : '';
+    const dismissBtn = needsAttention
+      ? `<button onclick="dismissAttention('${latest.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:6px;">Dismiss</button>`
+      : '';
+
     return `
     <tbody>
     <tr>
@@ -3856,7 +3873,7 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
-      <td><span class="${badgeClass}">${status}${attempts}</span></td>
+      <td><span class="${badgeClass}">${status}${attempts}</span>${attentionBadge}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -3864,7 +3881,7 @@ function renderObLeads() {
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
-      <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
+      <td style="text-align:right;white-space:nowrap;">${callBtn}${dismissBtn}</td>
     </tr>
     ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
@@ -3890,6 +3907,24 @@ function renderObLeads() {
 
 function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
 function obLeadsNext() { obLeadsPage++; renderObLeads(); }
+
+async function dismissAttention(leadId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Clearing…';
+  try {
+    const res = await fetch(`${API}/portal/leads/${leadId}/clear-attention`, {
+      method: 'PATCH',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Attention flag cleared', 'success');
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('dismissAttention error:', e.message);
+    showToast('Could not clear attention flag', 'error');
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
 
 async function callLead(leadId, btn) {
   if (!confirm('Have your AI agent call this lead now?')) return;
