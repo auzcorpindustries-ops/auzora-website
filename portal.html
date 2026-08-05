@@ -225,6 +225,16 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 }
 .nav-item.active .nav-icon { color: var(--purple); }
 .nav-icon { display: flex; width: 19px; height: 19px; flex-shrink: 0; }
+
+/* Conversations chat bubbles */
+.conv-bubble { max-width:75%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.4;word-wrap:break-word; }
+.conv-bubble.user { align-self:flex-start;background:#e8edf5;color:#1a1a2e;border-bottom-left-radius:4px; }
+.conv-bubble.ai { align-self:flex-end;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;border-bottom-right-radius:4px; }
+.conv-bubble.agent { align-self:flex-end;background:#22c55e;color:#fff;border-bottom-right-radius:4px; }
+.conv-sender-label { font-size:11px;color:var(--muted);margin-bottom:2px;padding:0 4px; }
+.conv-list-item { display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background 0.15s; }
+.conv-list-item:hover { background:rgba(59,130,246,0.05); }
+.conv-list-item.active-takeover { border-color:#f59e0b;background:rgba(245,158,11,0.05); }
 .nav-icon svg { width: 19px; height: 19px; }
 .nav-divider { height: 1px; background: rgba(16,24,38,0.08); margin: 12px 0; }
 .sidebar-footer { margin-top: auto; padding-top: 20px; }
@@ -607,6 +617,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon"><i data-lucide="bot"></i></span> AI Agent</div>
     <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon"><i data-lucide="contact-round"></i></span> Leads &amp; CRM</div>
+    <div class="nav-item" onclick="showPage('conversations')" id="nav-conversations"><span class="nav-icon"><i data-lucide="message-square"></i></span> Conversations</div>
     <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
     <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
     <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
@@ -1361,6 +1372,36 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
         <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS -->
+    <div class="page" id="page-conversations">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="message-square"></i> Active SMS Conversations</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+          View live SMS conversations between your AI agent and leads. Take over any conversation to respond personally — the AI will pause until you hand control back.
+        </div>
+        <div id="conv-list">Loading conversations...</div>
+      </div>
+
+      <!-- Conversation detail / chat view -->
+      <div class="card" id="conv-detail-card" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <div class="card-title" id="conv-detail-title" style="margin-bottom:4px;">Conversation</div>
+            <div style="font-size:13px;color:var(--muted);" id="conv-detail-phone"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button id="conv-takeover-btn" onclick="convTakeover()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">Take Over</button>
+            <button id="conv-resume-btn" onclick="convResumeAI()" style="background:#22c55e;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;display:none;">Resume AI</button>
+          </div>
+        </div>
+        <div id="conv-messages" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;padding:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="conv-send-input" placeholder="Type a message..." style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);" onkeydown="if(event.key==='Enter')convSendMessage()" />
+          <button onclick="convSendMessage()" style="background:#22c55e;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">Send</button>
+        </div>
       </div>
     </div>
 
@@ -2175,6 +2216,7 @@ function showPage(name) {
     dashboard: { title: 'Dashboard', sub: 'Your AI agent is live and handling calls' },
     settings: { title: 'AI Agent', sub: 'Customize how your AI phone agent sounds and behaves' },
     leads: { title: 'Leads & CRM', sub: 'Every lead your AI agent captured — call them back or export to your CRM' },
+    conversations: { title: 'Conversations', sub: 'Live SMS threads — take over from AI and respond personally' },
     campaigns: { title: 'Campaigns', sub: 'Bulk-dial and bulk-text your lead lists, with automatic retries' },
     automations: { title: 'Automations', sub: 'n8n follow-up workflows and your lead webhook' },
     analytics: { title: 'Analytics', sub: 'Performance across calls, bookings and campaigns' },
@@ -2190,6 +2232,7 @@ function showPage(name) {
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
+  if (name === 'conversations') loadConversations();
   if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
@@ -5248,6 +5291,169 @@ function closeLeadTimeline() {
 }
 </script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script>lucide.createIcons();</script>
+<script>lucide.createIcons();
+// ── CONVERSATIONS (MCH-003: Human SMS Takeover) ──────────────────────────────
+let convSelectedLeadId = null;
+
+async function loadConversations() {
+  const listEl = document.getElementById('conv-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="empty">Loading conversations...</div>';
+  document.getElementById('conv-detail-card').style.display = 'none';
+  convSelectedLeadId = null;
+  try {
+    const res = await fetch(`${API}/portal/conversations`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const convs = data.conversations || [];
+    if (!convs.length) {
+      listEl.innerHTML = '<div class="empty">No active SMS conversations. When a lead texts your Auzora number, the conversation will appear here.</div>';
+      return;
+    }
+    listEl.innerHTML = convs.map(c => {
+      const lastMsg = c.messages && c.messages.length ? c.messages[c.messages.length - 1] : null;
+      const preview = lastMsg ? (lastMsg.content || '').slice(0, 60) : 'No messages';
+      const timeAgo = formatTimeSinceLabel(c.lastActivity);
+      const takeoverBadge = c.humanTakeover ? '<span style="background:#f59e0b;color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600;margin-left:8px;">AI Paused</span>' : '';
+      return `<div class="conv-list-item ${c.humanTakeover ? 'active-takeover' : ''}" onclick="selectConversation('${c.phone}', '${c.leadId || ''}', ${c.humanTakeover ? 'true' : 'false'})">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:14px;">${escapeHtml(c.leadName)} ${takeoverBadge}</div>
+          <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:12px;">${timeAgo} · ${c.messageCount} msg</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('loadConversations error:', e.message);
+    listEl.innerHTML = '<div class="empty">Could not load conversations. <a href="#" onclick="loadConversations();return false;" style="color:var(--accent);">Retry</a></div>';
+  }
+}
+
+async function selectConversation(phone, leadId, isTakeover) {
+  convSelectedLeadId = leadId || null;
+  document.getElementById('conv-detail-card').style.display = '';
+  document.getElementById('conv-detail-title').textContent = 'Loading...';
+  document.getElementById('conv-detail-phone').textContent = '';
+  document.getElementById('conv-messages').innerHTML = '';
+
+  // Show/hide takeover vs resume buttons
+  document.getElementById('conv-takeover-btn').style.display = isTakeover ? 'none' : '';
+  document.getElementById('conv-resume-btn').style.display = isTakeover ? '' : 'none';
+
+  // Re-fetch conversations to get the message history
+  try {
+    const res = await fetch(`${API}/portal/conversations`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const convs = data.conversations || [];
+    const conv = convs.find(c => c.phone === phone);
+    if (!conv) {
+      document.getElementById('conv-detail-title').textContent = 'Conversation expired';
+      document.getElementById('conv-messages').innerHTML = '<div class="empty">This conversation has expired (30 min inactivity). Send a new message to start a fresh thread.</div>';
+      return;
+    }
+    document.getElementById('conv-detail-title').textContent = conv.leadName || 'Unknown';
+    document.getElementById('conv-detail-phone').textContent = conv.phone;
+    renderConvMessages(conv.messages || []);
+  } catch (e) {
+    console.error('selectConversation error:', e.message);
+    document.getElementById('conv-detail-title').textContent = 'Error loading conversation';
+  }
+}
+
+function renderConvMessages(messages) {
+  const container = document.getElementById('conv-messages');
+  if (!messages.length) {
+    container.innerHTML = '<div class="empty">No messages in this conversation yet.</div>';
+    return;
+  }
+  container.innerHTML = messages.map(m => {
+    const sender = m.sender || (m.role === 'user' ? 'user' : 'ai');
+    const label = sender === 'agent' ? 'You' : (sender === 'ai' ? 'AI' : 'Lead');
+    return `<div style="display:flex;flex-direction:column;align-items:${sender === 'user' ? 'flex-start' : 'flex-end'};">
+      <div class="conv-sender-label">${label}</div>
+      <div class="conv-bubble ${sender}">${escapeHtml(m.content || '')}</div>
+    </div>`;
+  }).join('');
+  // Scroll to bottom
+  container.scrollTop = container.scrollHeight;
+}
+
+async function convSendMessage() {
+  const input = document.getElementById('conv-send-input');
+  const msg = input.value.trim();
+  if (!msg || !convSelectedLeadId) return;
+  input.value = '';
+  input.disabled = true;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ message: msg }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Failed to send message');
+      return;
+    }
+    // Append the message locally
+    const container = document.getElementById('conv-messages');
+    const html = `<div style="display:flex;flex-direction:column;align-items:flex-end;">
+      <div class="conv-sender-label">You</div>
+      <div class="conv-bubble agent">${escapeHtml(msg)}</div>
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+    container.scrollTop = container.scrollHeight;
+  } catch (e) {
+    alert('Error sending message: ' + e.message);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+async function convTakeover() {
+  if (!convSelectedLeadId) return;
+  if (!confirm('Take over this conversation? The AI will stop responding until you resume it.')) return;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/takeover`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Failed'); return; }
+    document.getElementById('conv-takeover-btn').style.display = 'none';
+    document.getElementById('conv-resume-btn').style.display = '';
+    // Refresh list to show badge
+    loadConversations();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function convResumeAI() {
+  if (!convSelectedLeadId) return;
+  if (!confirm('Resume AI for this conversation? The AI will take over again.')) return;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/resume-ai`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Failed'); return; }
+    document.getElementById('conv-takeover-btn').style.display = '';
+    document.getElementById('conv-resume-btn').style.display = 'none';
+    loadConversations();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+</script>
 </body>
 </html>
