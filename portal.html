@@ -1483,6 +1483,50 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
+      <!-- Workflow test modal -->
+      <div id="wf-test-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeTestModal()">
+        <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+            <div>
+              <h2 style="margin:0;font-size:18px;">Test Workflow</h2>
+              <span id="wf-test-modal-name" style="font-size:13px;color:var(--muted);"></span>
+            </div>
+            <button onclick="closeTestModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+            Enter test values to trigger this workflow end-to-end. The payload mirrors the real production trigger — use a real phone number to test SMS or call workflows.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Phone Number *</label>
+              <input type="tel" id="wf-test-phone" placeholder="+1 (555) 123-4567" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Lead Name</label>
+              <input type="text" id="wf-test-name" placeholder="John Smith" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Intent / Service Interest</label>
+              <input type="text" id="wf-test-intent" placeholder="Pool cleaning inquiry" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Email (optional)</label>
+              <input type="email" id="wf-test-email" placeholder="john@example.com" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div id="wf-test-extra-fields" style="display:none;flex-direction:column;gap:14px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;align-items:center;">
+            <button id="wf-test-submit-btn" onclick="submitTestWorkflow()" style="background:#22c55e;border:none;border-radius:10px;padding:11px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+              Trigger Test
+            </button>
+            <button onclick="closeTestModal()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:11px 20px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">
+              Cancel
+            </button>
+            <span id="wf-test-status" style="font-size:13px;color:var(--muted);margin-left:auto;"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- SMS campaign panel -->
       <div id="cmp-sms-panel" style="display:none;flex-direction:column;gap:20px;">
         <div class="card">
@@ -4625,7 +4669,7 @@ async function loadWorkflows(page) {
                 ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
                 : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
               }
-              ${status === 'active' ? `<button onclick="testWorkflow(${id}, this)" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
+              ${status === 'active' ? `<button onclick="openTestModal(${id}, '${escapeHtmlAttr(meta.name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
               <button onclick="toggleWorkflowParams(${id})" id="wf-cfg-btn-${id}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
             </div>
           </div>
@@ -4657,26 +4701,94 @@ async function toggleWorkflow(templateId, enable) {
   }
 }
 
-async function testWorkflow(templateId, btn) {
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Sending…'; btn.style.opacity = '0.6';
+// ── Workflow test modal ──────────────────────────────────────────
+let wfTestTemplateId = null;
+
+function openTestModal(templateId, workflowName) {
+  wfTestTemplateId = templateId;
+  document.getElementById('wf-test-modal-name').textContent = workflowName;
+  document.getElementById('wf-test-status').textContent = '';
+  document.getElementById('wf-test-submit-btn').disabled = false;
+  document.getElementById('wf-test-submit-btn').textContent = 'Trigger Test';
+
+  // Pre-fill with portal client's phone if available
+  if (portalClient?.phone_number) {
+    document.getElementById('wf-test-phone').value = portalClient.phone_number;
+  } else {
+    document.getElementById('wf-test-phone').value = '';
+  }
+  document.getElementById('wf-test-name').value = '';
+  document.getElementById('wf-test-intent').value = '';
+  document.getElementById('wf-test-email').value = '';
+
+  const modal = document.getElementById('wf-test-modal');
+  modal.style.display = 'flex';
+  // Re-init lucide icons in case the modal was hidden
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeTestModal() {
+  document.getElementById('wf-test-modal').style.display = 'none';
+  wfTestTemplateId = null;
+}
+
+async function submitTestWorkflow() {
+  if (!wfTestTemplateId) return;
+  const phone = document.getElementById('wf-test-phone').value.trim();
+  if (!phone) {
+    document.getElementById('wf-test-status').textContent = 'Phone number is required.';
+    document.getElementById('wf-test-status').style.color = '#ef4444';
+    return;
+  }
+
+  const btn = document.getElementById('wf-test-submit-btn');
+  const status = document.getElementById('wf-test-status');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  btn.style.opacity = '0.6';
+  status.textContent = 'Triggering workflow…';
+  status.style.color = 'var(--muted)';
+
+  const payload = {
+    phone,
+    name: document.getElementById('wf-test-name').value.trim() || undefined,
+    intent: document.getElementById('wf-test-intent').value.trim() || undefined,
+    email: document.getElementById('wf-test-email').value.trim() || undefined,
+  };
+
+  // Remove undefined keys
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
   try {
-    const res = await fetch(`${API}/portal/workflows/${templateId}/test`, {
+    const res = await fetch(`${API}/portal/workflows/${wfTestTemplateId}/test`, {
       method: 'POST',
-      headers: { 'X-Portal-Token': portalToken },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portal-Token': portalToken,
+      },
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || 'Test failed');
+      status.textContent = data.error || 'Test failed';
+      status.style.color = '#ef4444';
+      btn.disabled = false;
+      btn.textContent = 'Trigger Test';
+      btn.style.opacity = '1';
       return;
     }
+    status.textContent = 'Triggered ✓ — check n8n execution history';
+    status.style.color = '#22c55e';
     btn.textContent = 'Sent ✓';
-    setTimeout(() => { btn.textContent = orig; }, 3000);
+    setTimeout(() => {
+      closeTestModal();
+    }, 2000);
   } catch (err) {
-    alert('Error testing workflow: ' + err.message);
-    btn.textContent = orig;
-  } finally {
-    btn.disabled = false; btn.style.opacity = '1';
+    status.textContent = 'Error: ' + err.message;
+    status.style.color = '#ef4444';
+    btn.disabled = false;
+    btn.textContent = 'Trigger Test';
+    btn.style.opacity = '1';
   }
 }
 
