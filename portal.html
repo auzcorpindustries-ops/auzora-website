@@ -850,6 +850,33 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
 
+          <!-- Voicemail Mode (AMD) -->
+          <div class="card collapsible-section" data-collapse-key="agent-voicemail-mode">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="voicemail"></i> Voicemail Mode
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                When the AI calls a lead and an answering machine picks up, what should it do?
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="message" onchange="setDirty()" style="accent-color:var(--accent);" checked />
+                  Leave a voicemail message
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="hangup" onchange="setDirty()" style="accent-color:var(--accent);" />
+                  Hang up immediately
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="ai" onchange="setDirty()" style="accent-color:var(--accent);" />
+                  Let AI attempt conversation
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- After Hours -->
           <div class="card collapsible-section" data-collapse-key="agent-after-hours">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
@@ -2373,6 +2400,12 @@ async function loadSettings() {
   document.getElementById('s-disclosure-enabled').checked = c.ai_disclosure_enabled !== false;
   document.getElementById('s-disclosure-text').value = c.ai_disclosure_text || '';
 
+  // Voicemail Mode (AMD)
+  const vmMode = c.voicemail_mode || 'message';
+  document.querySelectorAll('input[name="voicemail-mode"]').forEach(r => {
+    r.checked = r.value === vmMode;
+  });
+
   // Load ElevenLabs voices then render grid
   await loadVoices();
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
@@ -2616,6 +2649,7 @@ async function saveSettings() {
       after_hours_message: document.getElementById('s-ah-msg').value,
       ai_disclosure_enabled: document.getElementById('s-disclosure-enabled').checked,
       ai_disclosure_text: document.getElementById('s-disclosure-text').value,
+      voicemail_mode: document.querySelector('input[name="voicemail-mode"]:checked')?.value || 'message',
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
       sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
