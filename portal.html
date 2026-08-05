@@ -1926,6 +1926,7 @@ var WORKFLOW_META = {
 // "Cannot access 'wfParamCache' before initialization".
 var wfParamCache = {};
 var wfpActiveField = null;
+var wfTestTemplateId = null;
 let portalClient = null;
 let portalAvoidTopics = [];
 let portalServices = [];
@@ -4730,7 +4731,9 @@ async function toggleWorkflow(templateId, enable) {
 }
 
 // ── Workflow test modal ──────────────────────────────────────────
-let wfTestTemplateId = null;
+// wfTestTemplateId is declared at the top with the other globals (var)
+// to avoid TDZ errors when openTestModal is called before this point
+// in the script has executed.
 
 function openTestModal(templateId, workflowName) {
   wfTestTemplateId = templateId;
