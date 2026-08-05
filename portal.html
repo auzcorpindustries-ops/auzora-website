@@ -225,6 +225,16 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 }
 .nav-item.active .nav-icon { color: var(--purple); }
 .nav-icon { display: flex; width: 19px; height: 19px; flex-shrink: 0; }
+
+/* Conversations chat bubbles */
+.conv-bubble { max-width:75%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.4;word-wrap:break-word; }
+.conv-bubble.user { align-self:flex-start;background:#e8edf5;color:#1a1a2e;border-bottom-left-radius:4px; }
+.conv-bubble.ai { align-self:flex-end;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;border-bottom-right-radius:4px; }
+.conv-bubble.agent { align-self:flex-end;background:#22c55e;color:#fff;border-bottom-right-radius:4px; }
+.conv-sender-label { font-size:11px;color:var(--muted);margin-bottom:2px;padding:0 4px; }
+.conv-list-item { display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background 0.15s; }
+.conv-list-item:hover { background:rgba(59,130,246,0.05); }
+.conv-list-item.active-takeover { border-color:#f59e0b;background:rgba(245,158,11,0.05); }
 .nav-icon svg { width: 19px; height: 19px; }
 .nav-divider { height: 1px; background: rgba(16,24,38,0.08); margin: 12px 0; }
 .sidebar-footer { margin-top: auto; padding-top: 20px; }
@@ -273,6 +283,22 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
   color: var(--text); margin-bottom: 14px;
 }
 .card-title svg { width: 18px; height: 18px; color: var(--purple); }
+
+/* ── COLLAPSIBLE SECTIONS ───────────────────────────────────────────────── */
+.collapsible-section .collapsible-header {
+  cursor: pointer; user-select: none;
+}
+.collapsible-section .collapse-chevron {
+  margin-left: auto; flex-shrink: 0;
+  width: 18px; height: 18px; color: var(--muted);
+  transition: transform 0.2s ease;
+}
+.collapsible-section.collapsed .collapse-chevron {
+  transform: rotate(-90deg);
+}
+.collapsible-section.collapsed .collapsible-body {
+  display: none;
+}
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; }
 .stat-card {
   background: var(--surface); border: 1px solid var(--border);
@@ -591,6 +617,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon"><i data-lucide="bot"></i></span> AI Agent</div>
     <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon"><i data-lucide="contact-round"></i></span> Leads &amp; CRM</div>
+    <div class="nav-item" onclick="showPage('conversations')" id="nav-conversations"><span class="nav-icon"><i data-lucide="message-square"></i></span> Conversations</div>
     <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
     <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
     <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
@@ -669,52 +696,62 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;flex-direction:column;gap:20px;">
 
           <!-- Voice -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="mic"></i> Voice</div>
-            <div class="voice-grid" id="portal-voice-grid"></div>
+          <div class="card collapsible-section" data-collapse-key="agent-voice">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="mic"></i> Voice
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div class="voice-grid" id="portal-voice-grid"></div>
+            </div>
           </div>
 
           <!-- Business Info -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="building-2"></i> Business Info</div>
-            <div class="form-group">
-              <label>Business Name</label>
-              <input type="text" id="s-biz-name" oninput="setDirty()" />
+          <div class="card collapsible-section" data-collapse-key="agent-business-info">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="building-2"></i> Business Info
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Agent Name</label>
-              <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Escalation Phone</label>
-              <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-            </div>
-
-            <!-- Warm Transfer Toggle -->
-            <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                  <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
-                </div>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                  <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                  Enable
-                </label>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Business Name</label>
+                <input type="text" id="s-biz-name" oninput="setDirty()" />
               </div>
-            </div>
+              <div class="form-group">
+                <label>Agent Name</label>
+                <input type="text" id="s-agent-name" oninput="setDirty()" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Escalation Phone</label>
+                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
+              </div>
 
-            <!-- Appointment Reminders Toggle -->
-            <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                  <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+              <!-- Warm Transfer Toggle -->
+              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
                 </div>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                  <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                  Enable
-                </label>
+              </div>
+
+              <!-- Appointment Reminders Toggle -->
+              <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -725,109 +762,177 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;flex-direction:column;gap:20px;">
 
           <!-- Tone & Style -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="palette"></i> Tone &amp; Style</div>
-            <div class="form-group">
-              <label>Tone</label>
-              <select id="s-tone" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="friendly">Friendly — warm &amp; approachable</option>
-                <option value="professional">Professional — formal &amp; polished</option>
-                <option value="casual">Casual — relaxed &amp; easy-going</option>
-                <option value="empathetic">Empathetic — compassionate &amp; patient</option>
-                <option value="formal">Formal — respectful &amp; structured</option>
-                <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
-              </select>
+          <div class="card collapsible-section" data-collapse-key="agent-tone-style">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="palette"></i> Tone &amp; Style
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Speaking Pace</label>
-              <select id="s-pace" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="slow">Slow — clear &amp; deliberate</option>
-                <option value="normal">Normal — natural &amp; comfortable</option>
-                <option value="fast">Fast — concise &amp; snappy</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Language</label>
-              <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="pt">Portuguese</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="ja">Japanese</option>
-                <option value="zh">Mandarin Chinese</option>
-                <option value="ko">Korean</option>
-                <option value="ar">Arabic</option>
-                <option value="hi">Hindi</option>
-              </select>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Tone</label>
+                <select id="s-tone" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="friendly">Friendly — warm &amp; approachable</option>
+                  <option value="professional">Professional — formal &amp; polished</option>
+                  <option value="casual">Casual — relaxed &amp; easy-going</option>
+                  <option value="empathetic">Empathetic — compassionate &amp; patient</option>
+                  <option value="formal">Formal — respectful &amp; structured</option>
+                  <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Speaking Pace</label>
+                <select id="s-pace" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="slow">Slow — clear &amp; deliberate</option>
+                  <option value="normal">Normal — natural &amp; comfortable</option>
+                  <option value="fast">Fast — concise &amp; snappy</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Language</label>
+                <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="zh">Mandarin Chinese</option>
+                  <option value="ko">Korean</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hi">Hindi</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <!-- Call Script -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="phone"></i> Call Script</div>
-            <div class="form-group">
-              <label>Custom Greeting</label>
-              <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
+          <div class="card collapsible-section" data-collapse-key="agent-call-script">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="phone"></i> Call Script
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Escalation Rules</label>
-              <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Custom Greeting</label>
+                <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Rules</label>
+                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Lead Follow-up SMS Template</label>
+                <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Topics to Avoid</label>
+                <div class="tags-wrap" id="s-avoid-tags"></div>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
+                    style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
+                  <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Lead Follow-up SMS Template</label>
-              <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
-              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
+          </div>
+
+          <!-- AI Disclosure -->
+          <div class="card collapsible-section" data-collapse-key="agent-ai-disclosure">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+              <div class="card-title" style="margin:0;"><i data-lucide="shield-alert"></i> AI Disclosure
+                <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;" onclick="event.stopPropagation();">
+                <input type="checkbox" id="s-disclosure-enabled" onchange="toggleDisclosureBody();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" checked />
+                Enable
+              </label>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Topics to Avoid</label>
-              <div class="tags-wrap" id="s-avoid-tags"></div>
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
-                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
-                <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
+            <div class="collapsible-body">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                When enabled, the AI states it's an automated assistant at the start of every call — required for TCPA compliance.
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Disclosure Text (optional — leave blank for default)</label>
+                <textarea id="s-disclosure-text" rows="2" placeholder="Hi, I'm an automated assistant calling from [business name]." oninput="setDirty()"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Voicemail Mode (AMD) -->
+          <div class="card collapsible-section" data-collapse-key="agent-voicemail-mode">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="voicemail"></i> Voicemail Mode
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                When the AI calls a lead and an answering machine picks up, what should it do?
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="message" onchange="setDirty()" style="accent-color:var(--accent);" checked />
+                  Leave a voicemail message
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="hangup" onchange="setDirty()" style="accent-color:var(--accent);" />
+                  Hang up immediately
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                  <input type="radio" name="voicemail-mode" value="ai" onchange="setDirty()" style="accent-color:var(--accent);" />
+                  Let AI attempt conversation
+                </label>
               </div>
             </div>
           </div>
 
           <!-- After Hours -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;"><i data-lucide="moon"></i> After-Hours Mode</div>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <div class="card collapsible-section" data-collapse-key="agent-after-hours">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+              <div class="card-title" style="margin:0;"><i data-lucide="moon"></i> After-Hours Mode
+                <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;" onclick="event.stopPropagation();">
                 <input type="checkbox" id="s-ah" onchange="togglePortalAH();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
                 Enable
               </label>
             </div>
-            <div id="s-ah-body" style="display:none;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label>After-Hours Message</label>
-                <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
+            <div class="collapsible-body">
+              <div id="s-ah-body" style="display:none;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>After-Hours Message</label>
+                  <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
+                </div>
               </div>
+              <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
             </div>
-            <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
           </div>
 
           <!-- Services & Specialties -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="wrench"></i> Services & Specialties</div>
-            <div class="form-group">
-              <label>Services / Products Offered</label>
-              <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
-                <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
+          <div class="card collapsible-section" data-collapse-key="agent-services-specialties">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="wrench"></i> Services & Specialties
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Specialties / Highlights</label>
-              <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
-                <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Services / Products Offered</label>
+                <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
+                  <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
               </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Specialties / Highlights</label>
+                <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
+                  <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+              </div>
             </div>
           </div>
 
@@ -835,12 +940,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
 
       <!-- FAQs (full width) -->
-      <div class="card" style="margin-top:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="card-title" style="margin:0;"><i data-lucide="help-circle"></i> FAQs</div>
-          <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+      <div class="card collapsible-section" style="margin-top:20px;" data-collapse-key="agent-faqs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+          <div class="card-title" style="margin:0;"><i data-lucide="help-circle"></i> FAQs
+            <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <button onclick="event.stopPropagation();addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
         </div>
-        <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="collapsible-body">
+          <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
       </div>
 
       <div class="save-bar">
@@ -1225,6 +1334,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="stat-value" id="stat-leads-opted" style="color:#EF4444;">—</div>
           <div class="stat-sub">Never dialed again</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs Attention</div>
+          <div class="stat-value" id="stat-leads-attention" style="color:#f59e0b;">—</div>
+          <div class="stat-sub">AI flagged for follow-up</div>
+        </div>
       </div>
 
       <!-- Captured leads -->
@@ -1263,6 +1377,36 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
         <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS -->
+    <div class="page" id="page-conversations">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="message-square"></i> Active SMS Conversations</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+          View live SMS conversations between your AI agent and leads. Take over any conversation to respond personally — the AI will pause until you hand control back.
+        </div>
+        <div id="conv-list">Loading conversations...</div>
+      </div>
+
+      <!-- Conversation detail / chat view -->
+      <div class="card" id="conv-detail-card" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <div class="card-title" id="conv-detail-title" style="margin-bottom:4px;">Conversation</div>
+            <div style="font-size:13px;color:var(--muted);" id="conv-detail-phone"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button id="conv-takeover-btn" onclick="convTakeover()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">Take Over</button>
+            <button id="conv-resume-btn" onclick="convResumeAI()" style="background:#22c55e;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;display:none;">Resume AI</button>
+          </div>
+        </div>
+        <div id="conv-messages" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;padding:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="conv-send-input" placeholder="Type a message..." style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);" onkeydown="if(event.key==='Enter')convSendMessage()" />
+          <button onclick="convSendMessage()" style="background:#22c55e;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">Send</button>
+        </div>
       </div>
     </div>
 
@@ -1335,6 +1479,50 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div id="cmp-modal-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
             <div id="cmp-modal-leads"></div>
             <div id="cmp-modal-actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow test modal -->
+      <div id="wf-test-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeTestModal()">
+        <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+            <div>
+              <h2 style="margin:0;font-size:18px;">Test Workflow</h2>
+              <span id="wf-test-modal-name" style="font-size:13px;color:var(--muted);"></span>
+            </div>
+            <button onclick="closeTestModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+            Enter test values to trigger this workflow end-to-end. The payload mirrors the real production trigger — use a real phone number to test SMS or call workflows.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Phone Number *</label>
+              <input type="tel" id="wf-test-phone" placeholder="+1 (555) 123-4567" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Lead Name</label>
+              <input type="text" id="wf-test-name" placeholder="John Smith" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Intent / Service Interest</label>
+              <input type="text" id="wf-test-intent" placeholder="Pool cleaning inquiry" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:12px;font-weight:600;color:var(--muted);">Email (optional)</label>
+              <input type="email" id="wf-test-email" placeholder="john@example.com" style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            </div>
+            <div id="wf-test-extra-fields" style="display:none;flex-direction:column;gap:14px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;align-items:center;">
+            <button id="wf-test-submit-btn" onclick="submitTestWorkflow()" style="background:#22c55e;border:none;border-radius:10px;padding:11px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+              Trigger Test
+            </button>
+            <button onclick="closeTestModal()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:11px 20px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">
+              Cancel
+            </button>
+            <span id="wf-test-status" style="font-size:13px;color:var(--muted);margin-left:auto;"></span>
           </div>
         </div>
       </div>
@@ -2041,6 +2229,32 @@ function toggleSidebar() {
   overlay.classList.toggle('show', isOpen);
 }
 
+// ── COLLAPSIBLE SECTIONS (AI Agent page) ──────────────────────────────────
+// Toggle a section's collapsed state and persist it for the session.
+// State is stored in sessionStorage so it survives navigation between portal
+// pages but resets on a fresh browser tab — no stale state across sessions.
+function toggleCollapseSection(headerEl) {
+  const section = headerEl.closest('.collapsible-section');
+  if (!section) return;
+  const key = section.dataset.collapseKey;
+  const isCollapsed = section.classList.toggle('collapsed');
+  if (key) {
+    try { sessionStorage.setItem('collapse-' + key, isCollapsed ? '1' : '0'); } catch(e) {}
+  }
+}
+
+// Restore saved collapse states when the AI Agent page is shown.
+function restoreCollapseStates() {
+  document.querySelectorAll('.collapsible-section[data-collapse-key]').forEach(section => {
+    const key = section.dataset.collapseKey;
+    let saved = null;
+    try { saved = sessionStorage.getItem('collapse-' + key); } catch(e) {}
+    // Default: expanded. Only collapse if explicitly saved as '1'.
+    if (saved === '1') section.classList.add('collapsed');
+    else section.classList.remove('collapsed');
+  });
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2051,6 +2265,7 @@ function showPage(name) {
     dashboard: { title: 'Dashboard', sub: 'Your AI agent is live and handling calls' },
     settings: { title: 'AI Agent', sub: 'Customize how your AI phone agent sounds and behaves' },
     leads: { title: 'Leads & CRM', sub: 'Every lead your AI agent captured — call them back or export to your CRM' },
+    conversations: { title: 'Conversations', sub: 'Live SMS threads — take over from AI and respond personally' },
     campaigns: { title: 'Campaigns', sub: 'Bulk-dial and bulk-text your lead lists, with automatic retries' },
     automations: { title: 'Automations', sub: 'n8n follow-up workflows and your lead webhook' },
     analytics: { title: 'Analytics', sub: 'Performance across calls, bookings and campaigns' },
@@ -2062,10 +2277,11 @@ function showPage(name) {
   const meta = pageMeta[name] || { title: '', sub: '' };
   document.getElementById('topbar-title').textContent = meta.title;
   document.getElementById('topbar-sub').textContent = meta.sub;
-  if (name === 'settings') loadSettings();
+  if (name === 'settings') { restoreCollapseStates(); loadSettings(); }
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
+  if (name === 'conversations') loadConversations();
   if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
@@ -2272,6 +2488,16 @@ async function loadSettings() {
   document.getElementById('s-ah-msg').value = c.after_hours_message || '';
   togglePortalAH();
 
+  // AI Disclosure
+  document.getElementById('s-disclosure-enabled').checked = c.ai_disclosure_enabled !== false;
+  document.getElementById('s-disclosure-text').value = c.ai_disclosure_text || '';
+
+  // Voicemail Mode (AMD)
+  const vmMode = c.voicemail_mode || 'message';
+  document.querySelectorAll('input[name="voicemail-mode"]').forEach(r => {
+    r.checked = r.value === vmMode;
+  });
+
   // Load ElevenLabs voices then render grid
   await loadVoices();
   renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
@@ -2294,6 +2520,11 @@ function togglePortalAH() {
   const on = document.getElementById('s-ah').checked;
   document.getElementById('s-ah-body').style.display = on ? 'block' : 'none';
   document.getElementById('s-ah-off').style.display = on ? 'none' : 'block';
+}
+
+function toggleDisclosureBody() {
+  // No body to show/hide — the text textarea is always visible.
+  // This function exists so the checkbox onchange doesn't throw.
 }
 
 // Voice grid
@@ -2508,6 +2739,9 @@ async function saveSettings() {
       topics_to_avoid:     portalAvoidTopics,
       after_hours_enabled: document.getElementById('s-ah').checked,
       after_hours_message: document.getElementById('s-ah-msg').value,
+      ai_disclosure_enabled: document.getElementById('s-disclosure-enabled').checked,
+      ai_disclosure_text: document.getElementById('s-disclosure-text').value,
+      voicemail_mode: document.querySelector('input[name="voicemail-mode"]:checked')?.value || 'message',
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
       sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
@@ -3519,7 +3753,7 @@ function updateLeadStats(grouped) {
     if (el) el.textContent = val;
   };
 
-  let reached = 0, optedOut = 0, isNew = 0;
+  let reached = 0, optedOut = 0, isNew = 0, needsAttention = 0;
 
   for (const group of (grouped || [])) {
     const latest = Array.isArray(group) ? group[0] : group;
@@ -3530,6 +3764,8 @@ function updateLeadStats(grouped) {
       || latest.opt_out === true
       || latest.outbound_status === 'opted-out';
     if (isOptedOut) { optedOut++; continue; }
+
+    if (latest.needs_agent_attention === true) needsAttention++;
 
     const status = latest.outbound_status || 'new';
     if (status === 'reached') reached++;
@@ -3542,6 +3778,7 @@ function updateLeadStats(grouped) {
   set('stat-leads-new', isNew);
   set('stat-leads-reached', reached);
   set('stat-leads-opted', optedOut);
+  set('stat-leads-attention', needsAttention);
 }
 
 // Format elapsed time since an ISO timestamp — human-readable "3 minutes ago"
@@ -3662,6 +3899,15 @@ function renderObLeads() {
       ? `<span style="font-size:13px;color:var(--text);">${aiRec}</span>`
       : '<span style="color:var(--muted);">—</span>';
 
+    // Needs Attention badge — shown when AI escalated the conversation
+    const needsAttention = latest.needs_agent_attention === true;
+    const attentionBadge = needsAttention
+      ? `<span style="display:inline-block;background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px;cursor:help;" title="${latest.agent_attention_reason || 'AI flagged this lead for human follow-up'}">Needs Attention</span>`
+      : '';
+    const dismissBtn = needsAttention
+      ? `<button onclick="dismissAttention('${latest.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:6px;">Dismiss</button>`
+      : '';
+
     return `
     <tbody>
     <tr>
@@ -3671,7 +3917,7 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
-      <td><span class="${badgeClass}">${status}${attempts}</span></td>
+      <td><span class="${badgeClass}">${status}${attempts}</span>${attentionBadge}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -3679,7 +3925,7 @@ function renderObLeads() {
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
-      <td style="text-align:right;white-space:nowrap;">${callBtn}</td>
+      <td style="text-align:right;white-space:nowrap;">${callBtn}${dismissBtn}</td>
     </tr>
     ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
@@ -3705,6 +3951,24 @@ function renderObLeads() {
 
 function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
 function obLeadsNext() { obLeadsPage++; renderObLeads(); }
+
+async function dismissAttention(leadId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Clearing…';
+  try {
+    const res = await fetch(`${API}/portal/leads/${leadId}/clear-attention`, {
+      method: 'PATCH',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Attention flag cleared', 'success');
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('dismissAttention error:', e.message);
+    showToast('Could not clear attention flag', 'error');
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
 
 async function callLead(leadId, btn) {
   if (!confirm('Have your AI agent call this lead now?')) return;
@@ -4405,7 +4669,7 @@ async function loadWorkflows(page) {
                 ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
                 : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
               }
-              ${status === 'active' ? `<button onclick="testWorkflow(${id}, this)" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
+              ${status === 'active' ? `<button onclick="openTestModal(${id}, '${escapeHtmlAttr(meta.name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
               <button onclick="toggleWorkflowParams(${id})" id="wf-cfg-btn-${id}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
             </div>
           </div>
@@ -4437,26 +4701,94 @@ async function toggleWorkflow(templateId, enable) {
   }
 }
 
-async function testWorkflow(templateId, btn) {
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Sending…'; btn.style.opacity = '0.6';
+// ── Workflow test modal ──────────────────────────────────────────
+let wfTestTemplateId = null;
+
+function openTestModal(templateId, workflowName) {
+  wfTestTemplateId = templateId;
+  document.getElementById('wf-test-modal-name').textContent = workflowName;
+  document.getElementById('wf-test-status').textContent = '';
+  document.getElementById('wf-test-submit-btn').disabled = false;
+  document.getElementById('wf-test-submit-btn').textContent = 'Trigger Test';
+
+  // Pre-fill with portal client's phone if available
+  if (portalClient?.phone_number) {
+    document.getElementById('wf-test-phone').value = portalClient.phone_number;
+  } else {
+    document.getElementById('wf-test-phone').value = '';
+  }
+  document.getElementById('wf-test-name').value = '';
+  document.getElementById('wf-test-intent').value = '';
+  document.getElementById('wf-test-email').value = '';
+
+  const modal = document.getElementById('wf-test-modal');
+  modal.style.display = 'flex';
+  // Re-init lucide icons in case the modal was hidden
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeTestModal() {
+  document.getElementById('wf-test-modal').style.display = 'none';
+  wfTestTemplateId = null;
+}
+
+async function submitTestWorkflow() {
+  if (!wfTestTemplateId) return;
+  const phone = document.getElementById('wf-test-phone').value.trim();
+  if (!phone) {
+    document.getElementById('wf-test-status').textContent = 'Phone number is required.';
+    document.getElementById('wf-test-status').style.color = '#ef4444';
+    return;
+  }
+
+  const btn = document.getElementById('wf-test-submit-btn');
+  const status = document.getElementById('wf-test-status');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  btn.style.opacity = '0.6';
+  status.textContent = 'Triggering workflow…';
+  status.style.color = 'var(--muted)';
+
+  const payload = {
+    phone,
+    name: document.getElementById('wf-test-name').value.trim() || undefined,
+    intent: document.getElementById('wf-test-intent').value.trim() || undefined,
+    email: document.getElementById('wf-test-email').value.trim() || undefined,
+  };
+
+  // Remove undefined keys
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
   try {
-    const res = await fetch(`${API}/portal/workflows/${templateId}/test`, {
+    const res = await fetch(`${API}/portal/workflows/${wfTestTemplateId}/test`, {
       method: 'POST',
-      headers: { 'X-Portal-Token': portalToken },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portal-Token': portalToken,
+      },
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || 'Test failed');
+      status.textContent = data.error || 'Test failed';
+      status.style.color = '#ef4444';
+      btn.disabled = false;
+      btn.textContent = 'Trigger Test';
+      btn.style.opacity = '1';
       return;
     }
+    status.textContent = 'Triggered ✓ — check n8n execution history';
+    status.style.color = '#22c55e';
     btn.textContent = 'Sent ✓';
-    setTimeout(() => { btn.textContent = orig; }, 3000);
+    setTimeout(() => {
+      closeTestModal();
+    }, 2000);
   } catch (err) {
-    alert('Error testing workflow: ' + err.message);
-    btn.textContent = orig;
-  } finally {
-    btn.disabled = false; btn.style.opacity = '1';
+    status.textContent = 'Error: ' + err.message;
+    status.style.color = '#ef4444';
+    btn.disabled = false;
+    btn.textContent = 'Trigger Test';
+    btn.style.opacity = '1';
   }
 }
 
@@ -5106,6 +5438,169 @@ function closeLeadTimeline() {
 }
 </script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script>lucide.createIcons();</script>
+<script>lucide.createIcons();
+// ── CONVERSATIONS (MCH-003: Human SMS Takeover) ──────────────────────────────
+let convSelectedLeadId = null;
+
+async function loadConversations() {
+  const listEl = document.getElementById('conv-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="empty">Loading conversations...</div>';
+  document.getElementById('conv-detail-card').style.display = 'none';
+  convSelectedLeadId = null;
+  try {
+    const res = await fetch(`${API}/portal/conversations`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const convs = data.conversations || [];
+    if (!convs.length) {
+      listEl.innerHTML = '<div class="empty">No active SMS conversations. When a lead texts your Auzora number, the conversation will appear here.</div>';
+      return;
+    }
+    listEl.innerHTML = convs.map(c => {
+      const lastMsg = c.messages && c.messages.length ? c.messages[c.messages.length - 1] : null;
+      const preview = lastMsg ? (lastMsg.content || '').slice(0, 60) : 'No messages';
+      const timeAgo = formatTimeSinceLabel(c.lastActivity);
+      const takeoverBadge = c.humanTakeover ? '<span style="background:#f59e0b;color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600;margin-left:8px;">AI Paused</span>' : '';
+      return `<div class="conv-list-item ${c.humanTakeover ? 'active-takeover' : ''}" onclick="selectConversation('${c.phone}', '${c.leadId || ''}', ${c.humanTakeover ? 'true' : 'false'})">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:14px;">${escapeHtml(c.leadName)} ${takeoverBadge}</div>
+          <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:12px;">${timeAgo} · ${c.messageCount} msg</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('loadConversations error:', e.message);
+    listEl.innerHTML = '<div class="empty">Could not load conversations. <a href="#" onclick="loadConversations();return false;" style="color:var(--accent);">Retry</a></div>';
+  }
+}
+
+async function selectConversation(phone, leadId, isTakeover) {
+  convSelectedLeadId = leadId || null;
+  document.getElementById('conv-detail-card').style.display = '';
+  document.getElementById('conv-detail-title').textContent = 'Loading...';
+  document.getElementById('conv-detail-phone').textContent = '';
+  document.getElementById('conv-messages').innerHTML = '';
+
+  // Show/hide takeover vs resume buttons
+  document.getElementById('conv-takeover-btn').style.display = isTakeover ? 'none' : '';
+  document.getElementById('conv-resume-btn').style.display = isTakeover ? '' : 'none';
+
+  // Re-fetch conversations to get the message history
+  try {
+    const res = await fetch(`${API}/portal/conversations`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const convs = data.conversations || [];
+    const conv = convs.find(c => c.phone === phone);
+    if (!conv) {
+      document.getElementById('conv-detail-title').textContent = 'Conversation expired';
+      document.getElementById('conv-messages').innerHTML = '<div class="empty">This conversation has expired (30 min inactivity). Send a new message to start a fresh thread.</div>';
+      return;
+    }
+    document.getElementById('conv-detail-title').textContent = conv.leadName || 'Unknown';
+    document.getElementById('conv-detail-phone').textContent = conv.phone;
+    renderConvMessages(conv.messages || []);
+  } catch (e) {
+    console.error('selectConversation error:', e.message);
+    document.getElementById('conv-detail-title').textContent = 'Error loading conversation';
+  }
+}
+
+function renderConvMessages(messages) {
+  const container = document.getElementById('conv-messages');
+  if (!messages.length) {
+    container.innerHTML = '<div class="empty">No messages in this conversation yet.</div>';
+    return;
+  }
+  container.innerHTML = messages.map(m => {
+    const sender = m.sender || (m.role === 'user' ? 'user' : 'ai');
+    const label = sender === 'agent' ? 'You' : (sender === 'ai' ? 'AI' : 'Lead');
+    return `<div style="display:flex;flex-direction:column;align-items:${sender === 'user' ? 'flex-start' : 'flex-end'};">
+      <div class="conv-sender-label">${label}</div>
+      <div class="conv-bubble ${sender}">${escapeHtml(m.content || '')}</div>
+    </div>`;
+  }).join('');
+  // Scroll to bottom
+  container.scrollTop = container.scrollHeight;
+}
+
+async function convSendMessage() {
+  const input = document.getElementById('conv-send-input');
+  const msg = input.value.trim();
+  if (!msg || !convSelectedLeadId) return;
+  input.value = '';
+  input.disabled = true;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ message: msg }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Failed to send message');
+      return;
+    }
+    // Append the message locally
+    const container = document.getElementById('conv-messages');
+    const html = `<div style="display:flex;flex-direction:column;align-items:flex-end;">
+      <div class="conv-sender-label">You</div>
+      <div class="conv-bubble agent">${escapeHtml(msg)}</div>
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+    container.scrollTop = container.scrollHeight;
+  } catch (e) {
+    alert('Error sending message: ' + e.message);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+async function convTakeover() {
+  if (!convSelectedLeadId) return;
+  if (!confirm('Take over this conversation? The AI will stop responding until you resume it.')) return;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/takeover`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Failed'); return; }
+    document.getElementById('conv-takeover-btn').style.display = 'none';
+    document.getElementById('conv-resume-btn').style.display = '';
+    // Refresh list to show badge
+    loadConversations();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function convResumeAI() {
+  if (!convSelectedLeadId) return;
+  if (!confirm('Resume AI for this conversation? The AI will take over again.')) return;
+  try {
+    const res = await fetch(`${API}/portal/conversations/${convSelectedLeadId}/resume-ai`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Failed'); return; }
+    document.getElementById('conv-takeover-btn').style.display = '';
+    document.getElementById('conv-resume-btn').style.display = 'none';
+    loadConversations();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+</script>
 </body>
 </html>
