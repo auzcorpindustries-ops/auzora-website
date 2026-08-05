@@ -273,6 +273,22 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
   color: var(--text); margin-bottom: 14px;
 }
 .card-title svg { width: 18px; height: 18px; color: var(--purple); }
+
+/* ── COLLAPSIBLE SECTIONS ───────────────────────────────────────────────── */
+.collapsible-section .collapsible-header {
+  cursor: pointer; user-select: none;
+}
+.collapsible-section .collapse-chevron {
+  margin-left: auto; flex-shrink: 0;
+  width: 18px; height: 18px; color: var(--muted);
+  transition: transform 0.2s ease;
+}
+.collapsible-section.collapsed .collapse-chevron {
+  transform: rotate(-90deg);
+}
+.collapsible-section.collapsed .collapsible-body {
+  display: none;
+}
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; }
 .stat-card {
   background: var(--surface); border: 1px solid var(--border);
@@ -669,52 +685,62 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;flex-direction:column;gap:20px;">
 
           <!-- Voice -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="mic"></i> Voice</div>
-            <div class="voice-grid" id="portal-voice-grid"></div>
+          <div class="card collapsible-section" data-collapse-key="agent-voice">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="mic"></i> Voice
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div class="voice-grid" id="portal-voice-grid"></div>
+            </div>
           </div>
 
           <!-- Business Info -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="building-2"></i> Business Info</div>
-            <div class="form-group">
-              <label>Business Name</label>
-              <input type="text" id="s-biz-name" oninput="setDirty()" />
+          <div class="card collapsible-section" data-collapse-key="agent-business-info">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="building-2"></i> Business Info
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Agent Name</label>
-              <input type="text" id="s-agent-name" oninput="setDirty()" />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Escalation Phone</label>
-              <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-            </div>
-
-            <!-- Warm Transfer Toggle -->
-            <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                  <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
-                </div>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                  <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                  Enable
-                </label>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Business Name</label>
+                <input type="text" id="s-biz-name" oninput="setDirty()" />
               </div>
-            </div>
+              <div class="form-group">
+                <label>Agent Name</label>
+                <input type="text" id="s-agent-name" oninput="setDirty()" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Escalation Phone</label>
+                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
+              </div>
 
-            <!-- Appointment Reminders Toggle -->
-            <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                  <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+              <!-- Warm Transfer Toggle -->
+              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
                 </div>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                  <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                  Enable
-                </label>
+              </div>
+
+              <!-- Appointment Reminders Toggle -->
+              <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Appointment Reminders</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">Send an SMS reminder 24 hours before each appointment.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -725,109 +751,128 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;flex-direction:column;gap:20px;">
 
           <!-- Tone & Style -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="palette"></i> Tone &amp; Style</div>
-            <div class="form-group">
-              <label>Tone</label>
-              <select id="s-tone" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="friendly">Friendly — warm &amp; approachable</option>
-                <option value="professional">Professional — formal &amp; polished</option>
-                <option value="casual">Casual — relaxed &amp; easy-going</option>
-                <option value="empathetic">Empathetic — compassionate &amp; patient</option>
-                <option value="formal">Formal — respectful &amp; structured</option>
-                <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
-              </select>
+          <div class="card collapsible-section" data-collapse-key="agent-tone-style">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="palette"></i> Tone &amp; Style
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Speaking Pace</label>
-              <select id="s-pace" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="slow">Slow — clear &amp; deliberate</option>
-                <option value="normal">Normal — natural &amp; comfortable</option>
-                <option value="fast">Fast — concise &amp; snappy</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Language</label>
-              <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="pt">Portuguese</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="ja">Japanese</option>
-                <option value="zh">Mandarin Chinese</option>
-                <option value="ko">Korean</option>
-                <option value="ar">Arabic</option>
-                <option value="hi">Hindi</option>
-              </select>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Tone</label>
+                <select id="s-tone" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="friendly">Friendly — warm &amp; approachable</option>
+                  <option value="professional">Professional — formal &amp; polished</option>
+                  <option value="casual">Casual — relaxed &amp; easy-going</option>
+                  <option value="empathetic">Empathetic — compassionate &amp; patient</option>
+                  <option value="formal">Formal — respectful &amp; structured</option>
+                  <option value="energetic">Energetic — upbeat &amp; enthusiastic</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Speaking Pace</label>
+                <select id="s-pace" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="slow">Slow — clear &amp; deliberate</option>
+                  <option value="normal">Normal — natural &amp; comfortable</option>
+                  <option value="fast">Fast — concise &amp; snappy</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Language</label>
+                <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="zh">Mandarin Chinese</option>
+                  <option value="ko">Korean</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hi">Hindi</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <!-- Call Script -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="phone"></i> Call Script</div>
-            <div class="form-group">
-              <label>Custom Greeting</label>
-              <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
+          <div class="card collapsible-section" data-collapse-key="agent-call-script">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="phone"></i> Call Script
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group">
-              <label>Escalation Rules</label>
-              <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Lead Follow-up SMS Template</label>
-              <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
-              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Topics to Avoid</label>
-              <div class="tags-wrap" id="s-avoid-tags"></div>
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
-                  style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
-                <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Custom Greeting</label>
+                <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Rules</label>
+                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Lead Follow-up SMS Template</label>
+                <textarea id="s-lead-template" rows="2" placeholder="Leave blank for default: Hi {name}! Thanks for reaching out to {business_name}..." oninput="setDirty()"></textarea>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Variables: {{name}}, {{service}}, {{business_name}}</div>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Topics to Avoid</label>
+                <div class="tags-wrap" id="s-avoid-tags"></div>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="s-avoid-input" placeholder="Add topic, press Enter"
+                    style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addPortalAvoidTag();}" />
+                  <button onclick="addPortalAvoidTag()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add</button>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- After Hours -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div class="card-title" style="margin:0;"><i data-lucide="moon"></i> After-Hours Mode</div>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <div class="card collapsible-section" data-collapse-key="agent-after-hours">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+              <div class="card-title" style="margin:0;"><i data-lucide="moon"></i> After-Hours Mode
+                <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;" onclick="event.stopPropagation();">
                 <input type="checkbox" id="s-ah" onchange="togglePortalAH();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
                 Enable
               </label>
             </div>
-            <div id="s-ah-body" style="display:none;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label>After-Hours Message</label>
-                <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
+            <div class="collapsible-body">
+              <div id="s-ah-body" style="display:none;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>After-Hours Message</label>
+                  <textarea id="s-ah-msg" rows="3" oninput="setDirty()"></textarea>
+                </div>
               </div>
+              <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
             </div>
-            <div id="s-ah-off" style="font-size:13px;color:var(--muted);">Deliver a custom message when called outside office hours.</div>
           </div>
 
           <!-- Services & Specialties -->
-          <div class="card">
-            <div class="card-title"><i data-lucide="wrench"></i> Services & Specialties</div>
-            <div class="form-group">
-              <label>Services / Products Offered</label>
-              <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
-                <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
+          <div class="card collapsible-section" data-collapse-key="agent-services-specialties">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="wrench"></i> Services & Specialties
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>Specialties / Highlights</label>
-              <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
-                <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
-                  onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Services / Products Offered</label>
+                <div class="s-tags-wrap" id="s-services-tags" onclick="document.getElementById('s-services-input').focus()">
+                  <input class="s-tags-input" id="s-services-input" placeholder="Type a service and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addServiceTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">Press Enter after each service. e.g. &quot;Pool Cleaning&quot;, &quot;Equipment Repair&quot;</div>
               </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Specialties / Highlights</label>
+                <div class="s-tags-wrap" id="s-specialty-tags" onclick="document.getElementById('s-specialty-input').focus()">
+                  <input class="s-tags-input" id="s-specialty-input" placeholder="Type a specialty and press Enter…"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addSpecialtyTag();}" />
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">What sets you apart? e.g. &quot;Free consultations&quot;, &quot;Same-day service&quot;</div>
+              </div>
             </div>
           </div>
 
@@ -835,12 +880,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
 
       <!-- FAQs (full width) -->
-      <div class="card" style="margin-top:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="card-title" style="margin:0;"><i data-lucide="help-circle"></i> FAQs</div>
-          <button onclick="addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
+      <div class="card collapsible-section" style="margin-top:20px;" data-collapse-key="agent-faqs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+          <div class="card-title" style="margin:0;"><i data-lucide="help-circle"></i> FAQs
+            <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <button onclick="event.stopPropagation();addPortalFaq()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
         </div>
-        <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="collapsible-body">
+          <div id="s-faq-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
       </div>
 
       <div class="save-bar">
@@ -2041,6 +2090,32 @@ function toggleSidebar() {
   overlay.classList.toggle('show', isOpen);
 }
 
+// ── COLLAPSIBLE SECTIONS (AI Agent page) ──────────────────────────────────
+// Toggle a section's collapsed state and persist it for the session.
+// State is stored in sessionStorage so it survives navigation between portal
+// pages but resets on a fresh browser tab — no stale state across sessions.
+function toggleCollapseSection(headerEl) {
+  const section = headerEl.closest('.collapsible-section');
+  if (!section) return;
+  const key = section.dataset.collapseKey;
+  const isCollapsed = section.classList.toggle('collapsed');
+  if (key) {
+    try { sessionStorage.setItem('collapse-' + key, isCollapsed ? '1' : '0'); } catch(e) {}
+  }
+}
+
+// Restore saved collapse states when the AI Agent page is shown.
+function restoreCollapseStates() {
+  document.querySelectorAll('.collapsible-section[data-collapse-key]').forEach(section => {
+    const key = section.dataset.collapseKey;
+    let saved = null;
+    try { saved = sessionStorage.getItem('collapse-' + key); } catch(e) {}
+    // Default: expanded. Only collapse if explicitly saved as '1'.
+    if (saved === '1') section.classList.add('collapsed');
+    else section.classList.remove('collapsed');
+  });
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2062,7 +2137,7 @@ function showPage(name) {
   const meta = pageMeta[name] || { title: '', sub: '' };
   document.getElementById('topbar-title').textContent = meta.title;
   document.getElementById('topbar-sub').textContent = meta.sub;
-  if (name === 'settings') loadSettings();
+  if (name === 'settings') { restoreCollapseStates(); loadSettings(); }
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
