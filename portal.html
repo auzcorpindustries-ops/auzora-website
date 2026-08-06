@@ -1887,6 +1887,7 @@ var wfParamCache = {};
 var wfpActiveField = null;
 var wfTestTemplateId = null;
 let portalClient = null;
+let portalEntitlements = null; // tier-based feature flags, fetched at login
 let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
@@ -2156,7 +2157,7 @@ function handleGoogleRedirect() {
 
 function logout() {
   sessionStorage.clear();
-  portalToken = null; portalClient = null;
+  portalToken = null; portalClient = null; portalEntitlements = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-email').value = '';
@@ -2177,7 +2178,55 @@ function launchApp() {
   // Apply profile photo if one is saved
   acProfilePhoto = portalClient.profile_photo || null;
   if (acProfilePhoto) applyProfilePhotoToPortal();
+  // Fetch tier entitlements and apply nav visibility
+  fetchEntitlements();
   loadDashboard();
+}
+
+// ── TIER VISIBILITY ───────────────────────────────────────────────────────────
+// Fetches the client's entitlements from the backend and gates nav items
+// based on their plan. Entitlements are cached in portalEntitlements so
+// showPage() can check them without an extra API call.
+async function fetchEntitlements() {
+  if (!portalToken) return;
+  try {
+    const res = await fetch(`${API}/portal/entitlements`, {
+      headers: { 'X-Portal-Token': portalToken }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    portalEntitlements = data.entitlements || null;
+    sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
+    applyTierVisibility();
+  } catch(e) {
+    // Non-blocking — fall back to hiding nothing (all nav visible)
+  }
+}
+
+// Apply tier-based visibility to sidebar nav items.
+// Campaigns nav is hidden unless the client's plan includes bulk SMS or
+// bulk call campaigns (both are Premium-only features).
+function applyTierVisibility() {
+  const navCampaigns = document.getElementById('nav-campaigns');
+  if (!navCampaigns) return;
+
+  // Restore from session storage if not yet loaded (e.g. session restore)
+  if (!portalEntitlements) {
+    const saved = sessionStorage.getItem('atlas_entitlements');
+    if (saved) {
+      try { portalEntitlements = JSON.parse(saved); } catch(e) { portalEntitlements = null; }
+    }
+  }
+
+  const hasCampaigns =
+    portalEntitlements?.bulkSmsCampaigns ||
+    portalEntitlements?.bulkCallCampaigns;
+
+  if (hasCampaigns) {
+    navCampaigns.style.display = '';
+  } else {
+    navCampaigns.style.display = 'none';
+  }
 }
 
 function toggleSidebar() {
@@ -2216,6 +2265,20 @@ function restoreCollapseStates() {
 }
 
 function showPage(name) {
+  // Tier gate: redirect Campaigns page to Dashboard for non-Premium clients
+  if (name === 'campaigns') {
+    if (!portalEntitlements) {
+      const saved = sessionStorage.getItem('atlas_entitlements');
+      if (saved) { try { portalEntitlements = JSON.parse(saved); } catch(e) {} }
+    }
+    const hasCampaigns =
+      portalEntitlements?.bulkSmsCampaigns ||
+      portalEntitlements?.bulkCallCampaigns;
+    if (!hasCampaigns) {
+      showPage('dashboard');
+      return;
+    }
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -3120,6 +3183,10 @@ if (savedToken && savedClient) {
   portalToken  = savedToken;
   portalClient = JSON.parse(savedClient);
   launchApp();
+  // Restore cached entitlements immediately (fetchEntitlements will refresh)
+  const savedEnt = sessionStorage.getItem('atlas_entitlements');
+  if (savedEnt) { try { portalEntitlements = JSON.parse(savedEnt); } catch(e) {} }
+  applyTierVisibility();
 }
 
 // ── LEAD WEBHOOK ─────────────────────────────────────────────────────────────
