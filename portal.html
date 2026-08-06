@@ -1354,13 +1354,17 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <div class="table-wrap" style="margin-bottom:20px;">
         <div class="table-header">
           <h2>Captured Leads</h2>
-          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+            <button id="ob-export-csv-btn" onclick="exportLeads('csv')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export CSV</button>
+            <button id="ob-export-json-btn" onclick="exportLeads('json')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export JSON</button>
+          </div>
         </div>
         <div id="ob-lead-list"></div>
       </div>
 
       <!-- Call a Lead -->
-      <div class="card" style="margin-bottom:20px;">
+      <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
           Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
@@ -1386,6 +1390,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
         <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+
+      <!-- Call a Lead — Locked (Premium only) -->
+      <div class="card" id="quick-call-locked" style="display:none;margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
+        <div style="text-align:center;padding:32px 16px;">
+          <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px;">Manual outbound calls are a Premium feature</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Upgrade to Premium to have your AI agent dial leads directly from the portal — including booking appointments during the call.</div>
+          <a href="mailto:ahoward@auzora.io?subject=Upgrade%20to%20Premium" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:14px;font-weight:600;padding:10px 24px;border-radius:10px;text-decoration:none;">Upgrade to Premium</a>
+        </div>
       </div>
     </div>
 
@@ -2254,6 +2268,20 @@ function applyTierVisibility() {
   } else {
     navCampaigns.style.display = 'none';
   }
+
+  // Gate lead export buttons by externalCrmIntegration entitlement (Pro+)
+  const canExportCrm = portalEntitlements?.externalCrmIntegration === true;
+  const exportCsvBtn = document.getElementById('ob-export-csv-btn');
+  const exportJsonBtn = document.getElementById('ob-export-json-btn');
+  if (exportCsvBtn) exportCsvBtn.style.display = canExportCrm ? '' : 'none';
+  if (exportJsonBtn) exportJsonBtn.style.display = canExportCrm ? '' : 'none';
+
+  // Gate Quick Call section by manualOutboundCalls entitlement (Premium only)
+  const canManualCall = portalEntitlements?.manualOutboundCalls === true;
+  const quickCallCard = document.getElementById('quick-call-card');
+  const quickCallLocked = document.getElementById('quick-call-locked');
+  if (quickCallCard) quickCallCard.style.display = canManualCall ? '' : 'none';
+  if (quickCallLocked) quickCallLocked.style.display = canManualCall ? 'none' : '';
 }
 
 function toggleSidebar() {
@@ -3930,11 +3958,14 @@ function renderObLeads() {
     const lastDate = latest.captured_at ? new Date(latest.captured_at).toLocaleString() : '—';
     const intent = latest.intent || latest.lead_context || '—';
 
+    const canManualCall = portalEntitlements?.manualOutboundCalls === true;
     const callBtn = optedOut
       ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
-      : (latest.phone
-          ? `<button onclick="callLead('${latest.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
-          : '<span style="font-size:11px;color:var(--muted);">No phone</span>');
+      : (!canManualCall
+          ? '<span style="font-size:11px;color:var(--muted);">Premium</span>'
+          : (latest.phone
+              ? `<button onclick="callLead('${latest.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
+              : '<span style="font-size:11px;color:var(--muted);">No phone</span>'));
 
     // Build history items (skip the first since it's shown as the main row)
     const historyItems = group.slice(1);
@@ -3993,7 +4024,8 @@ function renderObLeads() {
     const attentionBadge = needsAttention
       ? `<span style="display:inline-block;background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px;cursor:help;" title="${latest.agent_attention_reason || 'AI flagged this lead for human follow-up'}">Needs Attention</span>`
       : '';
-    const dismissBtn = needsAttention
+    const canInternalCrm = portalEntitlements?.internalCrm === true;
+    const dismissBtn = (needsAttention && canInternalCrm)
       ? `<button onclick="dismissAttention('${latest.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:6px;">Dismiss</button>`
       : '';
 
@@ -4078,6 +4110,34 @@ async function callLead(leadId, btn) {
   }
   btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
   setTimeout(loadOutbound, 1500);
+}
+
+async function exportLeads(format) {
+  try {
+    const res = await fetch(`${API}/portal/leads/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ format })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    // Download the response as a file
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ext = format === 'json' ? 'json' : 'csv';
+    a.download = `auzora-leads-${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Leads exported as ${format.toUpperCase()}`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Export failed', 'error');
+  }
 }
 
 async function startOutboundCall(isTest) {
