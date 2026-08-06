@@ -430,6 +430,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   letter-spacing: .4px; text-transform: uppercase;
   color: var(--purple); background: rgba(124,58,237,.10); border: 1px solid rgba(124,58,237,.24);
 }
+.voice-badge-locked {
+  color: #f59e0b; background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.30);
+}
+.voice-locked {
+  opacity: 0.55; cursor: not-allowed; pointer-events: none;
+}
+.voice-locked .play-btn { opacity: 0.4; cursor: not-allowed; }
 .play-btn {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
   width: 22px; height: 22px; cursor: pointer;
@@ -1894,6 +1901,8 @@ let portalSpecialties = [];
 let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from ElevenLabs API
+let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
@@ -1904,19 +1913,31 @@ async function loadVoices() {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
+    DEFAULT_VOICE_ID = data.default_voice_id || null;
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      preview_url: v.preview_url
+      preview_url: v.preview_url,
+      isDefault: v.is_default === true || v.isDefault === true
     }));
     return VOICES;
   } catch (e) {
     console.error('Failed to load voices:', e);
     return [];
   }
+}
+
+// Check if a voice is locked for the current tier (Starter = default only)
+function isVoiceLocked(voiceId) {
+  if (!portalTierVoices) return false; // no tier info loaded = show all (fallback)
+  if (portalTierVoices.access && portalTierVoices.access.includes('all')) return false;
+  // 'default' only — lock everything except the default voice
+  const defaultId = portalTierVoices.defaultVoiceId || DEFAULT_VOICE_ID;
+  if (defaultId && voiceId === defaultId) return false;
+  return true;
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -2157,7 +2178,7 @@ function handleGoogleRedirect() {
 
 function logout() {
   sessionStorage.clear();
-  portalToken = null; portalClient = null; portalEntitlements = null;
+  portalToken = null; portalClient = null; portalEntitlements = null; portalTierVoices = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-email').value = '';
@@ -2196,8 +2217,14 @@ async function fetchEntitlements() {
     if (!res.ok) return;
     const data = await res.json();
     portalEntitlements = data.entitlements || null;
+    portalTierVoices = data.tierVoices || null;
     sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
+    sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     applyTierVisibility();
+    // Re-render voice grid if it's currently visible, to apply tier gating
+    if (currentPortalVoiceId) {
+      renderPortalVoiceGrid(currentPortalVoiceId);
+    }
   } catch(e) {
     // Non-blocking — fall back to hiding nothing (all nav visible)
   }
@@ -2598,24 +2625,29 @@ function renderPortalVoiceGrid(selected) {
   const rightVoices = VOICES.filter(v => v.gender === 'male');
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
-      ${voices.map(v => `
-        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
+      ${voices.map(v => {
+        const locked = isVoiceLocked(v.id);
+        return `
+        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''} ${locked?'voice-locked':''}" id="pvc-${v.id}" ${locked?'':`onclick="selectPortalVoice('${v.id}')"`} style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
           <div class="voice-card-top">
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+              ${locked ? '<span class="voice-badge voice-badge-locked">Upgrade</span>' : ''}
             </div>
-            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
+            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" ${locked?'disabled':''}>▶</button>
           </div>
           ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function selectPortalVoice(id) {
+  // Tier gate: prevent selecting a locked voice
+  if (isVoiceLocked(id)) return;
   currentPortalVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
@@ -3186,6 +3218,8 @@ if (savedToken && savedClient) {
   // Restore cached entitlements immediately (fetchEntitlements will refresh)
   const savedEnt = sessionStorage.getItem('atlas_entitlements');
   if (savedEnt) { try { portalEntitlements = JSON.parse(savedEnt); } catch(e) {} }
+  const savedTierVoices = sessionStorage.getItem('atlas_tier_voices');
+  if (savedTierVoices) { try { portalTierVoices = JSON.parse(savedTierVoices); } catch(e) {} }
   applyTierVisibility();
 }
 
