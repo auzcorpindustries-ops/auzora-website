@@ -498,9 +498,9 @@ tr:hover td { background: var(--tint); }
           <div class="form-group">
             <label>Plan</label>
             <select id="new-plan">
-              <option value="starter">Starter</option>
-              <option value="growth">Growth</option>
-              <option value="full">Full Suite</option>
+              <option value="starter">Starter — $199/mo</option>
+              <option value="pro">Pro — $299/mo</option>
+              <option value="premium">Premium — $499/mo</option>
             </select>
           </div>
           <div class="form-group">
@@ -1411,8 +1411,8 @@ function renderStats() {
 
 function planBadge(plan) {
   if (!plan) return '';
-  const cls = plan === 'full' ? 'badge-full' : plan === 'growth' ? 'badge-growth' : 'badge-starter';
-  const label = plan === 'full' ? 'Full Suite' : plan.charAt(0).toUpperCase() + plan.slice(1);
+  const cls = plan === 'premium' ? 'badge-full' : plan === 'pro' ? 'badge-growth' : 'badge-starter';
+  const label = plan.charAt(0).toUpperCase() + plan.slice(1);
   return `<span class="badge ${cls}">${label}</span>`;
 }
 function statusBadge(status) {
@@ -1478,6 +1478,9 @@ async function openDetail(clientId) {
   document.getElementById('modal-title').textContent = c.business_name || c.businessName;
   document.getElementById('detail-modal').style.display = 'flex';
 
+  // Load entitlements for the tier management section
+  loadClientEntitlements(clientId);
+
   document.getElementById('modal-body').innerHTML = `
     <div class="detail-grid">
       <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(c.status)}</div></div>
@@ -1518,6 +1521,46 @@ async function openDetail(clientId) {
         <label>Notes</label>
         <textarea id="edit-notes">${c.notes||''}</textarea>
       </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Tier &amp; Entitlements</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Plan</label>
+            <select id="edit-plan">
+              <option value="starter" ${c.plan==='starter'?'selected':''}>Starter — $199/mo</option>
+              <option value="pro" ${c.plan==='pro'?'selected':''}>Pro — $299/mo</option>
+              <option value="premium" ${c.plan==='premium'?'selected':''}>Premium — $499/mo</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:end;gap:8px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="edit-override-toggle" onchange="toggleOverrideControls(this.checked)" style="cursor:pointer;" />
+              Override entitlements
+            </label>
+          </div>
+        </div>
+        <div id="entitlements-grid" style="display:none;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;">
+          ${[
+            ['inboundCallAnswering','Inbound call answering'],
+            ['calendarBooking','Calendar booking'],
+            ['customGreetingFaqs','Custom greeting & FAQs'],
+            ['clientPortal','Client portal'],
+            ['externalCrmIntegration','External CRM integration'],
+            ['internalCrm','Internal CRM'],
+            ['aiFollowUpCalls','AI follow-up calls'],
+            ['aiFollowUpSms','AI follow-up SMS'],
+            ['bulkSmsCampaigns','Bulk SMS campaigns'],
+            ['bulkCallCampaigns','Bulk call campaigns'],
+            ['manualOutboundCalls','Manual outbound calls'],
+            ['prioritySupport','Priority support'],
+          ].map(([key,label]) => `
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" class="entitlement-toggle" data-key="${key}" style="cursor:pointer;" />
+              ${label}
+            </label>
+          `).join('')}
+        </div>
+      </div>
     </div>
   `;
 }
@@ -1527,14 +1570,63 @@ function closeModal() {
   editingClientId = null;
 }
 
+function toggleOverrideControls(checked) {
+  const grid = document.getElementById('entitlements-grid');
+  if (!grid) return;
+  grid.style.display = checked ? 'grid' : 'none';
+}
+
+async function loadClientEntitlements(clientId) {
+  try {
+    const res = await fetch(`${API}/clients/${clientId}/entitlements`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Set plan dropdown
+    const planSelect = document.getElementById('edit-plan');
+    if (planSelect) planSelect.value = data.plan || 'starter';
+
+    // Set override toggle + grid
+    const toggle = document.getElementById('edit-override-toggle');
+    const grid = document.getElementById('entitlements-grid');
+    if (!toggle || !grid) return;
+
+    const hasOverride = data.override && Object.keys(data.override).length > 0;
+    toggle.checked = hasOverride;
+    grid.style.display = hasOverride ? 'grid' : 'none';
+
+    // Populate checkboxes with effective values (or override values if set)
+    const values = hasOverride ? { ...data.tierDefaults, ...data.override } : data.effective;
+    document.querySelectorAll('.entitlement-toggle').forEach(cb => {
+      cb.checked = !!values[cb.dataset.key];
+    });
+  } catch (e) {
+    console.error('Failed to load entitlements:', e);
+  }
+}
+
 async function saveClientEdit() {
   if (!editingClientId) return;
   const updates = {
     status: document.getElementById('edit-status').value,
     n8nConfigured: document.getElementById('edit-n8n').value === 'true',
     twilio_number: document.getElementById('edit-twilio-number').value.trim() || null,
-    notes: document.getElementById('edit-notes').value
+    notes: document.getElementById('edit-notes').value,
+    plan: document.getElementById('edit-plan').value,
   };
+
+  // Include entitlements override if toggle is on
+  const overrideToggle = document.getElementById('edit-override-toggle');
+  if (overrideToggle && overrideToggle.checked) {
+    const overrides = {};
+    document.querySelectorAll('.entitlement-toggle').forEach(cb => {
+      overrides[cb.dataset.key] = cb.checked;
+    });
+    updates.entitlements_override = overrides;
+  } else {
+    updates.entitlements_override = null;
+  }
+
   try {
     const res = await fetch(`${API}/clients/${editingClientId}`, {
       method: 'PATCH',
