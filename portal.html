@@ -2269,6 +2269,24 @@ function applyTierVisibility() {
     navCampaigns.style.display = 'none';
   }
 
+  // Gate campaign sub-tabs by entitlement
+  // Call campaigns tab requires bulkCallCampaigns, SMS campaigns tab requires bulkSmsCampaigns
+  const canCallCampaigns = portalEntitlements?.bulkCallCampaigns === true;
+  const canSmsCampaigns = portalEntitlements?.bulkSmsCampaigns === true;
+  const callTab = document.querySelector('.cmp-tab[data-tab="call"]');
+  const smsTab = document.querySelector('.cmp-tab[data-tab="sms"]');
+  if (callTab) callTab.style.display = canCallCampaigns ? '' : 'none';
+  if (smsTab) smsTab.style.display = canSmsCampaigns ? '' : 'none';
+
+  // If the active tab is now hidden, switch to the first visible one
+  if (canCallCampaigns || canSmsCampaigns) {
+    const activeTab = document.querySelector('.cmp-tab.active');
+    if (activeTab && activeTab.style.display === 'none') {
+      const firstVisible = document.querySelector('.cmp-tab:not([style*="display: none"])');
+      if (firstVisible) switchCampaignTab(firstVisible.dataset.tab);
+    }
+  }
+
   // Gate lead export buttons by externalCrmIntegration entitlement (Pro+)
   const canExportCrm = portalEntitlements?.externalCrmIntegration === true;
   const exportCsvBtn = document.getElementById('ob-export-csv-btn');
@@ -2360,7 +2378,11 @@ function showPage(name) {
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
   if (name === 'conversations') loadConversations();
-  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
+  if (name === 'campaigns')   {
+    // Ensure the correct tab is visible based on entitlements
+    applyTierVisibility();
+    loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity();
+  }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
