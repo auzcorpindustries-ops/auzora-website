@@ -5485,7 +5485,7 @@ async function resetWorkflowParams(templateId, btn) {
   }
 }
 
-// Rewrite the "SMS → wait 5m → AI call" summary line so it reflects the
+// Rewrite the "SMS → wait 15m → AI call" summary line so it reflects the
 // client's configured intervals instead of the template defaults.
 function updateWorkflowStepSummary(templateId) {
   const line = document.getElementById(`wf-steps-${templateId}`);
