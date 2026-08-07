@@ -1888,15 +1888,14 @@ const OB_LEADS_PER_PAGE = 25;
 // n8n workflow constants — declared early so loadWorkflows() can use them
 // before the rest of the script finishes executing.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
-var OB_WORKFLOW_IDS = [3, 4, 6, 7];
+var OB_WORKFLOW_IDS = [3, 4, 6];
 var WORKFLOW_META = {
-  1: { name: 'Inbound Lead Follow-Up', summary: 'Re-engages warm leads who stopped responding with a mix of SMS and AI calls.', desc: 'SMS → wait 5m → AI call → wait 2h → SMS → wait 24h → final SMS' },
+  1: { name: 'Inbound Lead Follow-Up', summary: 'Re-engages warm leads who stopped responding with a mix of SMS and AI calls.', desc: 'SMS → wait 15m → AI call → wait 2h → SMS → wait 24h → final SMS' },
   2: { name: 'After Hours Lead Follow-Up', summary: 'Captures after-hours leads and follows up first thing the next morning.', desc: '"We\'re closed" SMS → wait 9h → AI call next morning → wait 1h → follow-up SMS' },
-  3: { name: 'Unresponsive Warm Lead', summary: 'Re-engages leads who went quiet with a multi-day SMS and call sequence.', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
-  4: { name: 'Outbound Campaign Follow-Up', summary: 'Follows up on outreach campaigns with recap texts and retry calls.', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
+  3: { name: 'Unresponsive Leads', summary: 'Re-engages leads who went quiet with a multi-day SMS and call sequence.', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
+  4: { name: 'Outreach Campaign Follow Up', summary: 'Follows up on outreach campaigns with recap texts and retry calls.', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
   5: { name: 'Missed Call Auto SMS', summary: 'Instantly texts back anyone whose call was missed, then follows up.', desc: 'Instant SMS → wait 30m → follow-up SMS → wait 2h → final SMS' },
   6: { name: 'Missed Call Auto Callback', summary: 'Automatically calls back missed callers within minutes and follows up by text.', desc: 'Instant SMS → wait 2m → AI callback → wait 10m → post-call SMS' },
-  7: { name: 'Outbound No Answer Follow-Up', summary: 'Keeps trying to reach leads who didn\'t pick up, with escalating follow-ups.', desc: 'SMS → wait 1h → retry AI call → wait 1h → final SMS' },
 };
 // Workflow parameter state — declared early (with `var`, like the constants
 // above) because a restored session can run showPage('automations') →
@@ -4797,9 +4796,8 @@ function switchCampaignTab(tab) {
 // Templates that require entitlements beyond the base Starter plan.
 // Keys not listed here are available to all tiers.
 var WORKFLOW_TEMPLATE_ENTITLEMENTS = {
-  3: 'aiFollowUpCalls',     // Unresponsive Warm Lead
-  4: 'bulkCallCampaigns',   // Outbound Campaign Follow-Up
-  7: 'aiFollowUpCalls',     // Outbound No Answer Follow-Up
+  3: 'aiFollowUpCalls',     // Unresponsive Leads
+  4: 'bulkCallCampaigns',   // Outreach Campaign Follow Up
 };
 
 async function loadWorkflows(page) {
