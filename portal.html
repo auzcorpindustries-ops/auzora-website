@@ -1888,15 +1888,14 @@ const OB_LEADS_PER_PAGE = 25;
 // n8n workflow constants — declared early so loadWorkflows() can use them
 // before the rest of the script finishes executing.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
-var OB_WORKFLOW_IDS = [3, 4, 6, 7];
+var OB_WORKFLOW_IDS = [3, 4, 6];
 var WORKFLOW_META = {
-  1: { name: 'Inbound Lead Follow-Up', summary: 'Re-engages warm leads who stopped responding with a mix of SMS and AI calls.', desc: 'SMS → wait 5m → AI call → wait 2h → SMS → wait 24h → final SMS' },
+  1: { name: 'Inbound Lead Follow-Up', summary: 'Re-engages warm leads who stopped responding with a mix of SMS and AI calls.', desc: 'SMS → wait 15m → AI call → wait 2h → SMS → wait 24h → final SMS' },
   2: { name: 'After Hours Lead Follow-Up', summary: 'Captures after-hours leads and follows up first thing the next morning.', desc: '"We\'re closed" SMS → wait 9h → AI call next morning → wait 1h → follow-up SMS' },
-  3: { name: 'Unresponsive Warm Lead', summary: 'Re-engages leads who went quiet with a multi-day SMS and call sequence.', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
-  4: { name: 'Outbound Campaign Follow-Up', summary: 'Follows up on outreach campaigns with recap texts and retry calls.', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
+  3: { name: 'Unresponsive Leads', summary: 'Re-engages leads who went quiet with a multi-day SMS and call sequence.', desc: 'Wait 3d → re-engagement SMS → wait 2d → AI call → wait 2d → final SMS → mark cold' },
+  4: { name: 'Outreach Campaign Follow Up', summary: 'Follows up on outreach campaigns with recap texts and retry calls.', desc: 'If reached: recap SMS with booking link. If no-answer: SMS → wait 1h → retry call' },
   5: { name: 'Missed Call Auto SMS', summary: 'Instantly texts back anyone whose call was missed, then follows up.', desc: 'Instant SMS → wait 30m → follow-up SMS → wait 2h → final SMS' },
   6: { name: 'Missed Call Auto Callback', summary: 'Automatically calls back missed callers within minutes and follows up by text.', desc: 'Instant SMS → wait 2m → AI callback → wait 10m → post-call SMS' },
-  7: { name: 'Outbound No Answer Follow-Up', summary: 'Keeps trying to reach leads who didn\'t pick up, with escalating follow-ups.', desc: 'SMS → wait 1h → retry AI call → wait 1h → final SMS' },
 };
 // Workflow parameter state — declared early (with `var`, like the constants
 // above) because a restored session can run showPage('automations') →
@@ -4797,9 +4796,8 @@ function switchCampaignTab(tab) {
 // Templates that require entitlements beyond the base Starter plan.
 // Keys not listed here are available to all tiers.
 var WORKFLOW_TEMPLATE_ENTITLEMENTS = {
-  3: 'aiFollowUpCalls',     // Unresponsive Warm Lead
-  4: 'bulkCallCampaigns',   // Outbound Campaign Follow-Up
-  7: 'aiFollowUpCalls',     // Outbound No Answer Follow-Up
+  3: 'aiFollowUpCalls',     // Unresponsive Leads
+  4: 'bulkCallCampaigns',   // Outreach Campaign Follow Up
 };
 
 async function loadWorkflows(page) {
@@ -5074,93 +5072,311 @@ function renderWorkflowParams(templateId, data) {
 
   const units = data.wait_units || ['minutes', 'hours', 'days'];
   const timezones = data.timezones || [];
-
-  // ── Wait steps ──
-  // Two shapes: a relative interval (number + unit), or a wall-clock time
-  // (HH:MM + timezone). The backend catalog decides which — a step like
-  // "call next morning at 9 AM" is wall-clock, because a relative +9h fires at
-  // 11am for a 2am lead and 5am for an 8pm lead.
-  const waitRows = (data.waits || []).map(w => {
-    if (w.mode === 'specificTime') return renderSpecificTimeRow(templateId, w, timezones, data);
-    const opts = units.map(u =>
-      `<option value="${u}"${u === w.unit ? ' selected' : ''}>${u}</option>`
-    ).join('');
-    const max = (data.max_wait_by_unit || {})[w.unit] || 9999;
-    return `
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;">
-        <div style="flex:1;min-width:150px;font-size:13px;">${escapeHtmlAttr(w.label)}</div>
-        <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
-               value="${w.value}" min="1" max="${max}" step="1"
-               oninput="updateWaitHint(${templateId}, '${w.key}')"
-               style="width:80px;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
-        <select id="wfp-${templateId}-wait-${w.key}-unit"
-                onchange="updateWaitHint(${templateId}, '${w.key}')"
-                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
-          ${opts}
-        </select>
-        <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11px;color:var(--muted);min-width:120px;">default ${w.default.value} ${w.default.unit}</span>
-      </div>`;
-  }).join('');
+  const meta = WORKFLOW_META[templateId] || {};
 
   // ── Merge field reference chips ──
   const chips = (data.merge_fields || []).map(f =>
     `<button type="button" onclick="insertMergeField(${templateId}, '${f.token}')"
        title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
-       style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-family:monospace;color:var(--text);cursor:pointer;">{{${f.token}}}</button>`
+       style="background:rgba(16,24,38,0.04);border:1px solid rgba(16,24,38,0.08);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:#101826;cursor:pointer;">{{${f.token}}}</button>`
   ).join(' ');
 
-  // ── Message templates ──
-  const tplRows = (data.templates || []).map(t => {
-    const isVoice = t.channel === 'voice';
-    const chanBadge = isVoice
-      ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(59,130,246,0.12);color:#3B82F6;">VOICE</span>'
-      : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(236,72,153,0.12);color:#EC4899;">SMS</span>';
-    return `
-      <div style="padding:12px 0;border-top:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:13px;font-weight:600;">${escapeHtmlAttr(t.label)}</span>
-          ${chanBadge}
-          <span id="wfp-${templateId}-tpl-${t.key}-count" style="margin-left:auto;font-size:11px;color:var(--muted);"></span>
-        </div>
+  // ── Build interleaved step list ──
+  // Derive execution order from WORKFLOW_META[templateId].desc, which encodes
+  // the sequence (e.g. "SMS → wait 15m → AI call → wait 2h → SMS"). We parse
+  // the desc to get the channel/kind sequence, then map waits and templates
+  // into those slots in order. Fall back to all-waits-then-all-templates.
+  const steps = buildWorkflowSteps(templateId, data, meta);
+
+  // ── Node + badge config per step kind ──
+  const nodeFor = {
+    trigger: { icon: 'play', ring: 'box-shadow:0 0 0 1px rgba(34,197,94,0.35)', iconColor: 'color:#16a34a' },
+    sms:     { icon: 'message-square', ring: 'box-shadow:0 0 0 1px rgba(236,72,153,0.35)', iconColor: 'color:#EC4899' },
+    voice:   { icon: 'phone-call', ring: 'box-shadow:0 0 0 1px rgba(59,130,246,0.35)', iconColor: 'color:#3B82F6' },
+    wait:    { icon: 'clock', ring: 'box-shadow:0 0 0 1px rgba(16,24,38,0.14)', iconColor: 'color:#9aa3b2' },
+  };
+  const chanFor = {
+    trigger: { label: 'START', style: 'color:#16a34a;background:rgba(34,197,94,0.12)' },
+    sms:     { label: 'SMS', style: 'color:#EC4899;background:rgba(236,72,153,0.12)' },
+    voice:   { label: 'VOICE', style: 'color:#3B82F6;background:rgba(59,130,246,0.12)' },
+    wait:    { label: '', style: 'display:none' },
+  };
+
+  // Track open/collapse state per step index (client-side only)
+  if (!panel._wfpOpen) panel._wfpOpen = {};
+  const openState = panel._wfpOpen;
+
+  // Default: first two steps open
+  if (Object.keys(openState).length === 0) {
+    openState[0] = true;
+    openState[1] = true;
+  }
+
+  // ── Render each step as a timeline node + card ──
+  const stepHtml = steps.map((s, i) => {
+    const n = nodeFor[s.kind];
+    const c = chanFor[s.kind];
+    const open = !!openState[i];
+    const isWait = s.kind === 'wait';
+    const isMsg = s.kind === 'sms' || s.kind === 'voice';
+    const isTrigger = s.kind === 'trigger';
+
+    // Card title: for waits, include value inline ("Wait 5 minutes")
+    const title = isWait && s.wait
+      ? `Wait ${s.wait.value} ${s.wait.unit}`
+      : escapeHtmlAttr(s.title || '');
+
+    // Collapsed summary (right side of header)
+    let summary = '';
+    if (isWait && s.wait) summary = `${s.wait.value} ${s.wait.unit}`;
+    else if (isTrigger) summary = s.triggerLabel || '';
+
+    // ── Wait body ──
+    let waitBody = '';
+    if (isWait && s.wait) {
+      const w = s.wait;
+      if (w.mode === 'specificTime') {
+        // Wall-clock wait: time + timezone controls inside the card
+        const clientTz = data.client_timezone || '';
+        const tzOpts = [
+          `<option value=""${!w.timezone ? ' selected' : ''}>Use my business timezone${clientTz ? ' (' + escapeHtmlAttr(tzLabel(clientTz)) + ')' : ''}</option>`,
+        ].concat(timezones.map(tz =>
+          `<option value="${escapeHtmlAttr(tz)}"${tz === w.timezone ? ' selected' : ''}>${escapeHtmlAttr(tzLabel(tz))}</option>`
+        )).join('');
+        waitBody = `
+          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
+                   value="${escapeHtmlAttr(w.at || '09:00')}"
+                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+            <select id="wfp-${templateId}-wait-${w.key}-tz"
+                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;max-width:200px;">
+              ${tzOpts}
+            </select>
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(124,58,237,0.12);color:var(--accent2);">TIME OF DAY</span>
+          </div>
+          <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;margin-top:7px;"></div>`;
+      } else {
+        // Relative interval wait: number + unit select
+        const opts = units.map(u =>
+          `<option value="${u}"${u === w.unit ? ' selected' : ''}>${u}</option>`
+        ).join('');
+        const max = (data.max_wait_by_unit || {})[w.unit] || 9999;
+        waitBody = `
+          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
+                   value="${w.value}" min="1" max="${max}" step="1"
+                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   style="width:88px;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+            <select id="wfp-${templateId}-wait-${w.key}-unit"
+                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 12px;font-size:13.5px;color:#101826;outline:none;">
+              ${opts}
+            </select>
+            <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;">default ${w.default.value} ${w.default.unit}</span>
+          </div>`;
+      }
+    }
+
+    // ── Message body ──
+    let msgBody = '';
+    if (isMsg && s.tpl) {
+      const t = s.tpl;
+      const isVoice = t.channel === 'voice';
+      const msgHint = isVoice
+        ? 'Read aloud by your AI agent — keep it conversational. Links are spoken as "the link we just texted you".'
+        : 'Unknown values are left out cleanly rather than showing a placeholder.';
+      msgBody = `
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${chips}</div>
         <textarea id="wfp-${templateId}-tpl-${t.key}" rows="3" maxlength="${t.max_chars}"
                   data-channel="${t.channel}"
                   oninput="updateTemplateCount(${templateId}, '${t.key}')"
                   onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
-                  style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--text);outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
-        ${isVoice ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Read aloud by your AI agent — keep it conversational. Links are spoken as "the link we just texted you".</div>' : ''}
+                  style="width:100%;box-sizing:border-box;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#101826;outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-top:7px;">
+          <span style="font-size:11.5px;color:#5f687a;flex:1 1 auto;min-width:0;line-height:1.5;">${msgHint}</span>
+          <span id="wfp-${templateId}-tpl-${t.key}-count" style="font-size:11.5px;color:#5f687a;white-space:nowrap;"></span>
+        </div>`;
+    }
+
+    // ── Trigger body ──
+    const triggerBody = isTrigger
+      ? `<div style="font-size:13px;color:#5f687a;line-height:1.55;">${escapeHtmlAttr(s.plain || '')}</div>`
+      : '';
+
+    return `
+      <div style="display:flex;gap:14px;align-items:flex-start;position:relative;">
+        <div style="width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;margin-top:6px;z-index:1;${n.ring}">
+          <i data-lucide="${n.icon}" style="width:14px;height:14px;${n.iconColor}"></i>
+        </div>
+        <div style="flex:1;min-width:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;background:#fbfbfc;overflow:hidden;">
+          <div onclick="toggleWfpStep(${templateId}, this, ${i})"
+               style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;"
+               onmouseover="this.style.background='rgba(16,24,38,0.02)'"
+               onmouseout="this.style.background='transparent'">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:14.5px;font-weight:600;color:#101826;">${title}</span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.4px;padding:2px 7px;border-radius:5px;white-space:nowrap;${c.style}">${c.label}</span>
+              </div>
+            </div>
+            <span style="font-size:12.5px;color:#5f687a;white-space:nowrap;flex-shrink:0;">${escapeHtmlAttr(summary)}</span>
+            <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" style="width:16px;height:16px;color:#9aa3b2;flex-shrink:0;"></i>
+          </div>
+          <div class="wfp-step-body" data-step="${i}" style="padding:0 16px 16px;${open ? '' : 'display:none;'}">
+            <div style="border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#fff;padding:14px 16px;">
+              ${waitBody}
+              ${msgBody}
+              ${triggerBody}
+            </div>
+          </div>
+        </div>
       </div>`;
   }).join('');
 
   panel.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:4px;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Wait Times</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">How long this workflow pauses before each step.</div>
-      ${waitRows || '<div style="font-size:12px;color:var(--muted);">No wait steps in this workflow.</div>'}
-
-      <div style="font-size:13px;font-weight:700;margin-top:16px;">Message Templates</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
-        Click a field below to insert it. Values are filled in automatically when the message sends —
-        if a value is unknown, it's left out cleanly rather than showing a placeholder.
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:16px;">
+        <span style="font-size:14px;font-weight:700;color:#101826;">Workflow steps</span>
+        <span style="font-size:12.5px;color:#5f687a;">Each step runs in order. Expand one to edit its wait or message.</span>
+        <span onclick="collapseAllWfpSteps(${templateId}, this)"
+              style="margin-left:auto;font-size:12.5px;font-weight:600;color:#5f687a;cursor:pointer;white-space:nowrap;"
+              onmouseover="this.style.color='#7C3AED'"
+              onmouseout="this.style.color='#5f687a'">Collapse all</span>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">${chips}</div>
-      ${tplRows}
 
-      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--tint);"></div>
+      <div style="position:relative;">
+        <div style="position:absolute;left:15px;top:16px;bottom:16px;width:0;border-left:1px dashed rgba(16,24,38,0.18);"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${stepHtml}
+        </div>
+      </div>
+
+      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#f7f8fa;"></div>
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap;">
         <button onclick="saveWorkflowParams(${templateId}, this)"
-                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:none;cursor:pointer;">Save Settings</button>
+                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:#3B82F6;color:#fff;border:none;cursor:pointer;">Save Settings</button>
         <button onclick="previewWorkflowParams(${templateId}, this)"
-                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Preview</button>
+                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid #3B82F6;color:#3B82F6;cursor:pointer;">Preview</button>
         <button onclick="resetWorkflowParams(${templateId}, this)"
-                style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">Reset to Defaults</button>
+                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid rgba(16,24,38,0.14);color:#5f687a;cursor:pointer;">Reset to Defaults</button>
       </div>
     </div>`;
 
   // Initialize the live hints/counters
   (data.waits || []).forEach(w => updateWaitHint(templateId, w.key));
   (data.templates || []).forEach(t => updateTemplateCount(templateId, t.key));
+
+  // Re-render lucide icons
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── Toggle a single timeline step's expand/collapse ──
+function toggleWfpStep(templateId, headerEl, stepIdx) {
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  if (!panel) return;
+  const body = panel.querySelector(`.wfp-step-body[data-step="${stepIdx}"]`);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  // Update chevron icon
+  const chevron = headerEl.querySelector('[data-lucide]');
+  if (chevron) {
+    chevron.setAttribute('data-lucide', open ? 'chevron-down' : 'chevron-up');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+  // Persist state
+  if (!panel._wfpOpen) panel._wfpOpen = {};
+  panel._wfpOpen[stepIdx] = !open;
+}
+
+// ── Collapse all timeline steps ──
+function collapseAllWfpSteps(templateId, linkEl) {
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  if (!panel) return;
+  const bodies = panel.querySelectorAll('.wfp-step-body');
+  bodies.forEach((body, i) => {
+    body.style.display = 'none';
+    const header = body.previousElementSibling;
+    if (header) {
+      const chevron = header.querySelector('[data-lucide]');
+      if (chevron) {
+        chevron.setAttribute('data-lucide', 'chevron-down');
+      }
+    }
+  });
+  if (panel._wfpOpen) panel._wfpOpen = {};
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── Build interleaved step list from waits + templates ──
+// Parses WORKFLOW_META[id].desc to derive execution order, then maps
+// data.waits[] and data.templates[] into those slots. Falls back to
+// all-waits-then-all-templates if parsing fails.
+function buildWorkflowSteps(templateId, data, meta) {
+  const waits = data.waits || [];
+  const templates = data.templates || [];
+  const steps = [];
+
+  // Try to parse the desc string for ordering
+  // e.g. "SMS → wait 15m → AI call → wait 2h → SMS → wait 24h → final SMS"
+  const desc = meta.desc || '';
+  const tokens = desc.split('→').map(s => s.trim()).filter(Boolean);
+
+  let waitIdx = 0;
+  let tplIdx = 0;
+  let parsed = false;
+
+  if (tokens.length > 0) {
+    for (const token of tokens) {
+      const lower = token.toLowerCase();
+      if (lower.startsWith('wait') || lower.match(/^\d/)) {
+        // Wait step
+        if (waitIdx < waits.length) {
+          steps.push({ kind: 'wait', wait: waits[waitIdx], title: waits[waitIdx].label || 'Wait' });
+          waitIdx++;
+          parsed = true;
+        }
+      } else if (lower.includes('sms') || lower.includes('text') || lower.includes('ai call') || lower.includes('call') || lower.includes('recap') || lower.includes('re-engagement') || lower.includes('follow-up') || lower.includes('final') || lower.includes('instant') || lower.includes('"we')) {
+        // Message step — determine channel
+        const tpl = templates[tplIdx];
+        if (tpl) {
+          const kind = tpl.channel === 'voice' ? 'voice' : 'sms';
+          steps.push({ kind, tpl, title: tpl.label });
+          tplIdx++;
+          parsed = true;
+        }
+      }
+    }
+  }
+
+  // Fallback: all waits then all templates (if parsing didn't consume everything)
+  if (!parsed || waitIdx < waits.length || tplIdx < templates.length) {
+    steps.length = 0; // reset
+    // Prepend trigger
+    if (meta.summary) {
+      steps.push({ kind: 'trigger', title: 'Workflow trigger', plain: meta.summary, triggerLabel: 'Trigger' });
+    }
+    // All waits then all templates
+    waits.forEach(w => steps.push({ kind: 'wait', wait: w, title: w.label || 'Wait' }));
+    templates.forEach(t => {
+      const kind = t.channel === 'voice' ? 'voice' : 'sms';
+      steps.push({ kind, tpl: t, title: t.label });
+    });
+    return steps;
+  }
+
+  // Prepend trigger step
+  if (meta.summary) {
+    steps.unshift({ kind: 'trigger', title: 'Workflow trigger', plain: meta.summary, triggerLabel: 'Trigger' });
+  }
+
+  return steps;
 }
 
 // Render a wall-clock wait step: time-of-day input + timezone select.
@@ -5487,7 +5703,7 @@ async function resetWorkflowParams(templateId, btn) {
   }
 }
 
-// Rewrite the "SMS → wait 5m → AI call" summary line so it reflects the
+// Rewrite the "SMS → wait 15m → AI call" summary line so it reflects the
 // client's configured intervals instead of the template defaults.
 function updateWorkflowStepSummary(templateId) {
   const line = document.getElementById(`wf-steps-${templateId}`);
