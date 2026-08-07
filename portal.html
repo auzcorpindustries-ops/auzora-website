@@ -139,7 +139,7 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .shell {
   width: 100%; background: var(--surface);
   border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: var(--shadow); overflow: hidden; display: flex; align-items: stretch;
+  box-shadow: var(--shadow); overflow: clip; display: flex; align-items: stretch;
 }
 
 /* ── HEADER (replaces .topbar) ─────────────────────────────────────────── */
@@ -195,6 +195,8 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
   flex: 1 1 262px; max-width: 290px; min-width: 0;
   border-right: 1px solid var(--border);
   padding: 24px 18px 28px; display: flex; flex-direction: column;
+  position: sticky; top: 8px; height: calc(100vh - 16px);
+  overflow-y: auto; overflow-x: hidden;
 }
 .sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 22px; }
 .sidebar-brand img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
@@ -428,6 +430,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   letter-spacing: .4px; text-transform: uppercase;
   color: var(--purple); background: rgba(124,58,237,.10); border: 1px solid rgba(124,58,237,.24);
 }
+.voice-badge-locked {
+  color: #f59e0b; background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.30);
+}
+.voice-locked {
+  opacity: 0.55; cursor: not-allowed; pointer-events: none;
+}
+.voice-locked .play-btn { opacity: 0.4; cursor: not-allowed; }
 .play-btn {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
   width: 22px; height: 22px; cursor: pointer;
@@ -535,7 +544,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .hamburger { display: flex; }
-  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 110; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); background: var(--panel); }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; height: auto; overflow-y: auto; z-index: 110; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); background: var(--panel); }
   .sidebar.open { transform: translateX(0); }
   .shell { flex-direction: column; }
   .main-content { padding: 18px 20px 32px; }
@@ -1345,13 +1354,17 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <div class="table-wrap" style="margin-bottom:20px;">
         <div class="table-header">
           <h2>Captured Leads</h2>
-          <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+            <button id="ob-export-csv-btn" onclick="exportLeads('csv')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export CSV</button>
+            <button id="ob-export-json-btn" onclick="exportLeads('json')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export JSON</button>
+          </div>
         </div>
         <div id="ob-lead-list"></div>
       </div>
 
       <!-- Call a Lead -->
-      <div class="card" style="margin-bottom:20px;">
+      <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
           Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
@@ -1377,6 +1390,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <button class="btn-save" id="ob-call-btn" onclick="startOutboundCall()" style="background:#22c55e;">Start AI Call</button>
         <button id="ob-test-btn" onclick="startOutboundCall(true)" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-left:8px;">Test Call (any time)</button>
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+      </div>
+
+      <!-- Call a Lead — Locked (Premium only) -->
+      <div class="card" id="quick-call-locked" style="display:none;margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
+        <div style="text-align:center;padding:32px 16px;">
+          <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px;">Manual outbound calls are a Premium feature</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Upgrade to Premium to have your AI agent dial leads directly from the portal — including booking appointments during the call.</div>
+          <a href="mailto:ahoward@auzora.io?subject=Upgrade%20to%20Premium" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:14px;font-weight:600;padding:10px 24px;border-radius:10px;text-decoration:none;">Upgrade to Premium</a>
+        </div>
       </div>
     </div>
 
@@ -1885,12 +1908,15 @@ var wfParamCache = {};
 var wfpActiveField = null;
 var wfTestTemplateId = null;
 let portalClient = null;
+let portalEntitlements = null; // tier-based feature flags, fetched at login
 let portalAvoidTopics = [];
 let portalServices = [];
 let portalSpecialties = [];
 let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from ElevenLabs API
+let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
@@ -1901,19 +1927,31 @@ async function loadVoices() {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
+    DEFAULT_VOICE_ID = data.default_voice_id || null;
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      preview_url: v.preview_url
+      preview_url: v.preview_url,
+      isDefault: v.is_default === true || v.isDefault === true
     }));
     return VOICES;
   } catch (e) {
     console.error('Failed to load voices:', e);
     return [];
   }
+}
+
+// Check if a voice is locked for the current tier (Starter = default only)
+function isVoiceLocked(voiceId) {
+  if (!portalTierVoices) return false; // no tier info loaded = show all (fallback)
+  if (portalTierVoices.access && portalTierVoices.access.includes('all')) return false;
+  // 'default' only — lock everything except the default voice
+  const defaultId = portalTierVoices.defaultVoiceId || DEFAULT_VOICE_ID;
+  if (defaultId && voiceId === defaultId) return false;
+  return true;
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -2154,7 +2192,7 @@ function handleGoogleRedirect() {
 
 function logout() {
   sessionStorage.clear();
-  portalToken = null; portalClient = null;
+  portalToken = null; portalClient = null; portalEntitlements = null; portalTierVoices = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-email').value = '';
@@ -2175,7 +2213,93 @@ function launchApp() {
   // Apply profile photo if one is saved
   acProfilePhoto = portalClient.profile_photo || null;
   if (acProfilePhoto) applyProfilePhotoToPortal();
+  // Fetch tier entitlements and apply nav visibility
+  fetchEntitlements();
   loadDashboard();
+}
+
+// ── TIER VISIBILITY ───────────────────────────────────────────────────────────
+// Fetches the client's entitlements from the backend and gates nav items
+// based on their plan. Entitlements are cached in portalEntitlements so
+// showPage() can check them without an extra API call.
+async function fetchEntitlements() {
+  if (!portalToken) return;
+  try {
+    const res = await fetch(`${API}/portal/entitlements`, {
+      headers: { 'X-Portal-Token': portalToken }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    portalEntitlements = data.entitlements || null;
+    portalTierVoices = data.tierVoices || null;
+    sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
+    sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
+    applyTierVisibility();
+    // Re-render voice grid if it's currently visible, to apply tier gating
+    if (currentPortalVoiceId) {
+      renderPortalVoiceGrid(currentPortalVoiceId);
+    }
+  } catch(e) {
+    // Non-blocking — fall back to hiding nothing (all nav visible)
+  }
+}
+
+// Apply tier-based visibility to sidebar nav items.
+// Campaigns nav is hidden unless the client's plan includes bulk SMS or
+// bulk call campaigns (both are Premium-only features).
+function applyTierVisibility() {
+  const navCampaigns = document.getElementById('nav-campaigns');
+  if (!navCampaigns) return;
+
+  // Restore from session storage if not yet loaded (e.g. session restore)
+  if (!portalEntitlements) {
+    const saved = sessionStorage.getItem('atlas_entitlements');
+    if (saved) {
+      try { portalEntitlements = JSON.parse(saved); } catch(e) { portalEntitlements = null; }
+    }
+  }
+
+  const hasCampaigns =
+    portalEntitlements?.bulkSmsCampaigns ||
+    portalEntitlements?.bulkCallCampaigns;
+
+  if (hasCampaigns) {
+    navCampaigns.style.display = '';
+  } else {
+    navCampaigns.style.display = 'none';
+  }
+
+  // Gate campaign sub-tabs by entitlement
+  // Call campaigns tab requires bulkCallCampaigns, SMS campaigns tab requires bulkSmsCampaigns
+  const canCallCampaigns = portalEntitlements?.bulkCallCampaigns === true;
+  const canSmsCampaigns = portalEntitlements?.bulkSmsCampaigns === true;
+  const callTab = document.querySelector('.cmp-tab[data-tab="call"]');
+  const smsTab = document.querySelector('.cmp-tab[data-tab="sms"]');
+  if (callTab) callTab.style.display = canCallCampaigns ? '' : 'none';
+  if (smsTab) smsTab.style.display = canSmsCampaigns ? '' : 'none';
+
+  // If the active tab is now hidden, switch to the first visible one
+  if (canCallCampaigns || canSmsCampaigns) {
+    const activeTab = document.querySelector('.cmp-tab.active');
+    if (activeTab && activeTab.style.display === 'none') {
+      const firstVisible = document.querySelector('.cmp-tab:not([style*="display: none"])');
+      if (firstVisible) switchCampaignTab(firstVisible.dataset.tab);
+    }
+  }
+
+  // Gate lead export buttons by externalCrmIntegration entitlement (Pro+)
+  const canExportCrm = portalEntitlements?.externalCrmIntegration === true;
+  const exportCsvBtn = document.getElementById('ob-export-csv-btn');
+  const exportJsonBtn = document.getElementById('ob-export-json-btn');
+  if (exportCsvBtn) exportCsvBtn.style.display = canExportCrm ? '' : 'none';
+  if (exportJsonBtn) exportJsonBtn.style.display = canExportCrm ? '' : 'none';
+
+  // Gate Quick Call section by manualOutboundCalls entitlement (Premium only)
+  const canManualCall = portalEntitlements?.manualOutboundCalls === true;
+  const quickCallCard = document.getElementById('quick-call-card');
+  const quickCallLocked = document.getElementById('quick-call-locked');
+  if (quickCallCard) quickCallCard.style.display = canManualCall ? '' : 'none';
+  if (quickCallLocked) quickCallLocked.style.display = canManualCall ? 'none' : '';
 }
 
 function toggleSidebar() {
@@ -2214,6 +2338,20 @@ function restoreCollapseStates() {
 }
 
 function showPage(name) {
+  // Tier gate: redirect Campaigns page to Dashboard for non-Premium clients
+  if (name === 'campaigns') {
+    if (!portalEntitlements) {
+      const saved = sessionStorage.getItem('atlas_entitlements');
+      if (saved) { try { portalEntitlements = JSON.parse(saved); } catch(e) {} }
+    }
+    const hasCampaigns =
+      portalEntitlements?.bulkSmsCampaigns ||
+      portalEntitlements?.bulkCallCampaigns;
+    if (!hasCampaigns) {
+      showPage('dashboard');
+      return;
+    }
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -2240,7 +2378,11 @@ function showPage(name) {
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       loadOutbound();
   if (name === 'conversations') loadConversations();
-  if (name === 'campaigns')   { loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity(); }
+  if (name === 'campaigns')   {
+    // Ensure the correct tab is visible based on entitlements
+    applyTierVisibility();
+    loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity();
+  }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
@@ -2533,24 +2675,29 @@ function renderPortalVoiceGrid(selected) {
   const rightVoices = VOICES.filter(v => v.gender === 'male');
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
-      ${voices.map(v => `
-        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''}" id="pvc-${v.id}" onclick="selectPortalVoice('${v.id}')" style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
+      ${voices.map(v => {
+        const locked = isVoiceLocked(v.id);
+        return `
+        <div class="voice-card voice-tone-${tone} ${v.id===activeVoiceId?'selected':''} ${locked?'voice-locked':''}" id="pvc-${v.id}" ${locked?'':`onclick="selectPortalVoice('${v.id}')"`} style="--voice-accent:${tone === 'left' ? 'var(--accent2)' : 'var(--accent)'};">
           <div class="voice-card-top">
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+              ${locked ? '<span class="voice-badge voice-badge-locked">Upgrade</span>' : ''}
             </div>
-            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')">▶</button>
+            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" ${locked?'disabled':''}>▶</button>
           </div>
           ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function selectPortalVoice(id) {
+  // Tier gate: prevent selecting a locked voice
+  if (isVoiceLocked(id)) return;
   currentPortalVoiceId = id;
   VOICES.forEach(v => {
     const card = document.getElementById(`pvc-${v.id}`);
@@ -3118,6 +3265,12 @@ if (savedToken && savedClient) {
   portalToken  = savedToken;
   portalClient = JSON.parse(savedClient);
   launchApp();
+  // Restore cached entitlements immediately (fetchEntitlements will refresh)
+  const savedEnt = sessionStorage.getItem('atlas_entitlements');
+  if (savedEnt) { try { portalEntitlements = JSON.parse(savedEnt); } catch(e) {} }
+  const savedTierVoices = sessionStorage.getItem('atlas_tier_voices');
+  if (savedTierVoices) { try { portalTierVoices = JSON.parse(savedTierVoices); } catch(e) {} }
+  applyTierVisibility();
 }
 
 // ── LEAD WEBHOOK ─────────────────────────────────────────────────────────────
@@ -3827,11 +3980,14 @@ function renderObLeads() {
     const lastDate = latest.captured_at ? new Date(latest.captured_at).toLocaleString() : '—';
     const intent = latest.intent || latest.lead_context || '—';
 
+    const canManualCall = portalEntitlements?.manualOutboundCalls === true;
     const callBtn = optedOut
       ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
-      : (latest.phone
-          ? `<button onclick="callLead('${latest.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
-          : '<span style="font-size:11px;color:var(--muted);">No phone</span>');
+      : (!canManualCall
+          ? '<span style="font-size:11px;color:var(--muted);">Premium</span>'
+          : (latest.phone
+              ? `<button onclick="callLead('${latest.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
+              : '<span style="font-size:11px;color:var(--muted);">No phone</span>'));
 
     // Build history items (skip the first since it's shown as the main row)
     const historyItems = group.slice(1);
@@ -3890,7 +4046,8 @@ function renderObLeads() {
     const attentionBadge = needsAttention
       ? `<span style="display:inline-block;background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:6px;cursor:help;" title="${latest.agent_attention_reason || 'AI flagged this lead for human follow-up'}">Needs Attention</span>`
       : '';
-    const dismissBtn = needsAttention
+    const canInternalCrm = portalEntitlements?.internalCrm === true;
+    const dismissBtn = (needsAttention && canInternalCrm)
       ? `<button onclick="dismissAttention('${latest.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:6px;">Dismiss</button>`
       : '';
 
@@ -3975,6 +4132,34 @@ async function callLead(leadId, btn) {
   }
   btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
   setTimeout(loadOutbound, 1500);
+}
+
+async function exportLeads(format) {
+  try {
+    const res = await fetch(`${API}/portal/leads/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ format })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    // Download the response as a file
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ext = format === 'json' ? 'json' : 'csv';
+    a.download = `auzora-leads-${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Leads exported as ${format.toUpperCase()}`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Export failed', 'error');
+  }
 }
 
 async function startOutboundCall(isTest) {
@@ -4609,11 +4794,25 @@ function switchCampaignTab(tab) {
 // ── n8n WORKFLOW MANAGEMENT ────────────────────────────────────
 // (Constants moved to top of script — see SMS_WORKFLOW_IDS etc.)
 
+// Templates that require entitlements beyond the base Starter plan.
+// Keys not listed here are available to all tiers.
+var WORKFLOW_TEMPLATE_ENTITLEMENTS = {
+  3: 'aiFollowUpCalls',     // Unresponsive Warm Lead
+  4: 'bulkCallCampaigns',   // Outbound Campaign Follow-Up
+  7: 'aiFollowUpCalls',     // Outbound No Answer Follow-Up
+};
+
 async function loadWorkflows(page) {
   const containerId = page === 'sms' ? 'sms-workflow-list' : 'ob-workflow-list';
   const container = document.getElementById(containerId);
   if (!container) return;
   const ids = page === 'sms' ? SMS_WORKFLOW_IDS : OB_WORKFLOW_IDS;
+
+  // Restore entitlements from sessionStorage if not yet loaded
+  if (!portalEntitlements) {
+    const saved = sessionStorage.getItem('atlas_entitlements');
+    if (saved) { try { portalEntitlements = JSON.parse(saved); } catch(e) {} }
+  }
 
   try {
     const res = await fetch(`${API}/portal/workflows`, { headers: { 'X-Portal-Token': portalToken } });
@@ -4627,6 +4826,17 @@ async function loadWorkflows(page) {
       const wf = wfMap[id];
       const status = wf?.status || 'off';
       const rejectionReason = wf?.rejection_reason;
+
+      // ── TIER-005: Check if this template requires a higher tier ──
+      const requiredEntitlement = WORKFLOW_TEMPLATE_ENTITLEMENTS[id];
+      const hasEntitlement = !requiredEntitlement ||
+        (portalEntitlements && portalEntitlements[requiredEntitlement]);
+      const isLocked = !hasEntitlement;
+
+      // If the workflow is already active (grandfathered from a previous tier),
+      // show it as active even if the current tier wouldn't allow it.
+      const isGrandfathered = isLocked && status === 'active';
+
       const badgeColor = {
         off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
         rejected: '#ef4444', cancelled: 'var(--muted)', failed: '#ef4444',
@@ -4640,11 +4850,37 @@ async function loadWorkflows(page) {
         ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${rejectionReason}</div>`
         : '';
 
+      // ── Locked template rendering (tier-gated, not grandfathered) ──
+      if (isLocked && !isGrandfathered) {
+        const requiredTier = requiredEntitlement === 'bulkCallCampaigns' ? 'Premium' : 'Pro';
+        return `
+        <div style="border:1px solid var(--border);border-radius:12px;opacity:0.65;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;">${meta.name}
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">${requiredTier}</span>
+              </div>
+              ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
+              <div style="color:var(--muted);font-size:12px;margin-top:4px;">${meta.desc}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;">Locked</span>
+              <button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">Upgrade to ${requiredTier}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      // ── Normal (unlocked or grandfathered) rendering ──
+      const lockedBadge = isGrandfathered
+        ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(245,158,11,.12);color:#f59e0b;margin-left:6px;vertical-align:middle;" title="This automation is active from a previous plan. Disabling it will require an upgrade to re-enable.">Grandfathered</span>`
+        : '';
+
       return `
         <div style="border:1px solid var(--border);border-radius:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
             <div style="flex:1;">
-              <div style="font-weight:600;font-size:14px;">${meta.name}</div>
+              <div style="font-weight:600;font-size:14px;">${meta.name}${lockedBadge}</div>
               ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
               <div style="color:var(--muted);font-size:12px;margin-top:4px;" id="wf-steps-${id}">${meta.desc}</div>
               ${reasonBanner}
