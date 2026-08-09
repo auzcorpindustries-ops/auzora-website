@@ -2496,9 +2496,186 @@ function editForm(formId) {
   openFormBuilder(formId);
 }
 
-function openEmbedModal(formId) {
-  showToast('Embed code generation coming soon', 'success');
-  // Future: open embed code modal
+async function openEmbedModal(formId) {
+  try {
+    const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const forms = await res.json();
+    const form = forms.find(f => f.form_id === formId);
+    if (!form) { showToast('Form not found', 'error'); return; }
+
+    const isPaused = form.status === 'paused';
+    const embedToken = form.embed_token || '';
+    const formName = escapeHtml(form.name || 'Untitled Form');
+    const baseUrl = 'https://atlas.6845165.xyz';
+
+    const jsCode = `<!-- Auzora Form: ${form.name || 'Untitled Form'} -->
+<div id="atlas-form-${formId}"></div>
+<script src="${baseUrl}/js/form-widget.js"
+        data-form-id="${formId}"
+        data-token="${embedToken}"
+        async></script>`;
+
+    const iframeCode = `<iframe
+  src="${baseUrl}/forms/${formId}/embed?token=${embedToken}"
+  width="100%"
+  height="600"
+  frameborder="0"
+  title="${form.name || 'Contact Form'}"></iframe>`;
+
+    // Remove any existing modal
+    const existing = document.getElementById('embed-modal-overlay');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'embed-modal-overlay';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:rgba(124,58,237,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="code-2" style="width:18px;height:18px;color:#7C3AED;"></i>
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:700;">Embed Form</div>
+              <div style="font-size:13px;color:var(--muted);">${formName}</div>
+            </div>
+          </div>
+          <button onclick="this.closest('#embed-modal-overlay').remove()" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:var(--muted);">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:20px 24px;max-height:70vh;overflow-y:auto;">
+
+          ${isPaused ? `
+          <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:12px 14px;margin-bottom:18px;">
+            <i data-lucide="alert-triangle" style="width:17px;height:17px;color:#d97706;flex-shrink:0;margin-top:1px;"></i>
+            <span style="font-size:13px;color:#92400e;line-height:1.5;">This form is currently <strong>paused</strong>. Embedded forms will display a "form unavailable" message to visitors until you resume it.</span>
+          </div>
+          ` : ''}
+
+          <!-- JS Embed -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:14px;font-weight:700;">JavaScript Embed</span>
+                <span style="font-size:11px;font-weight:600;color:#7C3AED;background:rgba(124,58,237,0.1);padding:2px 8px;border-radius:20px;">Recommended</span>
+              </div>
+              <button onclick="copyEmbedCode('js')" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">
+                <i data-lucide="copy" style="width:14px;height:14px;"></i> Copy
+              </button>
+            </div>
+            <pre id="embed-code-js" style="background:#0d1117;color:#e6edf3;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6;overflow-x:auto;margin:0;font-family:'SF Mono',Monaco,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">${escapeHtml(jsCode)}</pre>
+          </div>
+
+          <!-- iframe Embed -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:14px;font-weight:700;">iframe Embed</span>
+                <span style="font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:20px;">Fallback</span>
+              </div>
+              <button onclick="copyEmbedCode('iframe')" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">
+                <i data-lucide="copy" style="width:14px;height:14px;"></i> Copy
+              </button>
+            </div>
+            <pre id="embed-code-iframe" style="background:#0d1117;color:#e6edf3;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6;overflow-x:auto;margin:0;font-family:'SF Mono',Monaco,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">${escapeHtml(iframeCode)}</pre>
+          </div>
+
+          <!-- Integration Instructions -->
+          <div style="border-top:1px solid var(--border);padding-top:16px;">
+            <button onclick="const c=document.getElementById('embed-instructions');const i=this.querySelector('i');if(c.style.display==='none'){c.style.display='block';i.style.transform='rotate(90deg)'}else{c.style.display='none';i.style.transform='rotate(0)'}" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);width:100%;text-align:left;padding:4px 0;">
+              <i data-lucide="chevron-right" style="width:16px;height:16px;transition:transform 0.2s;color:var(--muted);"></i>
+              How to embed on your website
+            </button>
+            <div id="embed-instructions" style="display:none;margin-top:12px;font-size:13px;line-height:1.7;color:var(--text);">
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">General (any website)</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Copy the JavaScript embed code above</li>
+                  <li>Paste it into your website's HTML where you want the form to appear</li>
+                  <li>The form will load automatically — no additional setup needed</li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">WordPress</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Edit the page or post where you want the form</li>
+                  <li>Add a <strong>Custom HTML</strong> block</li>
+                  <li>Paste the embed code and click <strong>Update</strong></li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">Squarespace</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Edit the page and click <strong>Add Section → Code</strong></li>
+                  <li>Paste the embed code into the code block</li>
+                  <li>Save and publish your changes</li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">Wix</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Open the Wix Editor and click <strong>+ Add Elements → Embed Code → Embed HTML</strong></li>
+                  <li>Select "Code" and paste the embed code</li>
+                  <li>Click <strong>Update</strong> to publish</li>
+                </ol>
+              </div>
+              <div>
+                <div style="font-weight:700;margin-bottom:4px;">Using the iframe method</div>
+                <div style="color:var(--muted);">Use the iframe embed if your website doesn't allow external JavaScript (some CMS platforms restrict scripts). The iframe renders the form in a self-contained frame — less flexible but works everywhere.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons();
+
+    // Store codes globally for copyEmbedCode()
+    window._embedCodes = { js: jsCode, iframe: iframeCode };
+
+  } catch (err) {
+    showToast('Failed to load form: ' + err.message, 'error');
+  }
+}
+
+function copyEmbedCode(type) {
+  const code = window._embedCodes ? window._embedCodes[type] : '';
+  if (!code) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast('Embed code copied to clipboard', 'success');
+    }).catch(() => {
+      fallbackCopy(code);
+    });
+  } else {
+    fallbackCopy(code);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('Embed code copied to clipboard', 'success');
+  } catch (e) {
+    showToast('Could not copy — please select and copy manually', 'error');
+  }
+  document.body.removeChild(ta);
 }
 
 // ── FORM BUILDER ──────────────────────────────────────────────────────────────
