@@ -2515,10 +2515,13 @@ async function loadForms() {
             </div>
           </div>
           <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
-            <span><i data-lucide="inbox" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${subCount} submission${subCount !== 1 ? 's' : ''}</span>
+            <span><i data-lucide="inbox" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${subCount} sub${subCount !== 1 ? 's' : ''}</span>
+            <span><i data-lucide="eye" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${f.view_count || 0} views</span>
+            ${(f.view_count > 0 && subCount > 0) ? `<span style="color:#16a34a;font-weight:600;"><i data-lucide="trending-up" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${Math.round((subCount / f.view_count) * 100)}%</span>` : ''}
             ${updated ? `<span><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${updated}</span>` : ''}
           </div>
           <div style="display:flex;gap:8px;margin-top:auto;">
+            <button class="btn-secondary" onclick="openAnalyticsModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Analytics</button>
             <button class="btn-secondary" onclick="openEmbedModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Embed</button>
             <button class="btn-secondary" onclick="editForm('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Edit</button>
             <button class="btn-secondary" onclick="confirmDeleteForm('${f.form_id}','${escapeHtml(f.name || 'Untitled Form')}')" style="font-size:13px;padding:8px 12px;color:#ef4444;border-color:rgba(239,68,68,0.3);">Delete</button>
@@ -2540,6 +2543,142 @@ function showFormBuilder() {
 
 function editForm(formId) {
   openFormBuilder(formId);
+}
+
+async function openAnalyticsModal(formId) {
+  try {
+    // Fetch analytics + submissions in parallel
+    const [analyticsRes, submissionsRes] = await Promise.all([
+      fetch(`${API}/portal/forms/${formId}/analytics`, { headers: { 'X-Portal-Token': portalToken } }),
+      fetch(`${API}/portal/forms/${formId}/submissions?limit=10`, { headers: { 'X-Portal-Token': portalToken } }),
+    ]);
+
+    if (!analyticsRes.ok) throw new Error(`HTTP ${analyticsRes.status}`);
+    const analytics = await analyticsRes.json();
+    const submissionsData = submissionsRes.ok ? await submissionsRes.json() : { submissions: [] };
+
+    // Build trend chart (pure CSS bars)
+    const maxCount = Math.max(...analytics.trend.map(t => t.count), 1);
+    const trendBars = analytics.trend.map(t => {
+      const heightPct = (t.count / maxCount) * 100;
+      const hasData = t.count > 0;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;">
+        <div style="font-size:9px;color:${hasData ? 'var(--text)' : 'var(--muted)'};font-weight:600;">${hasData ? t.count : ''}</div>
+        <div style="width:100%;max-width:12px;height:${Math.max(heightPct, 2)}%;min-height:2px;background:${hasData ? 'var(--accent)' : 'var(--border)'};border-radius:2px 2px 0 0;"></div>
+      </div>`;
+    }).join('');
+
+    // Build submissions table
+    const submissionsRows = (submissionsData.submissions || []).map(s => {
+      const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const smsIcon = s.sms_sent ? '<span style="color:#16a34a;" title="SMS sent">SMS</span>' : '<span style="color:var(--muted);">—</span>';
+      const callIcon = s.call_triggered ? '<span style="color:#3B82F6;" title="Call triggered">Call</span>' : '<span style="color:var(--muted);">—</span>';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px 10px;font-size:13px;color:var(--text);font-weight:500;">${escapeHtml(s.name)}</td>
+        <td style="padding:8px 10px;font-size:13px;color:var(--muted);">***-***-${s.phone || '****'}</td>
+        <td style="padding:8px 10px;font-size:12px;color:var(--muted);">${date}</td>
+        <td style="padding:8px 10px;font-size:11px;font-weight:600;">${smsIcon}</td>
+        <td style="padding:8px 10px;font-size:11px;font-weight:600;">${callIcon}</td>
+      </tr>`;
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'analytics-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+    overlay.setAttribute('data-modal', '');
+
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="bar-chart-3" style="width:18px;height:18px;color:#3B82F6;"></i>
+            </div>
+            <div style="font-size:17px;font-weight:700;">Form Analytics</div>
+          </div>
+          <button onclick="document.getElementById('analytics-modal-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
+
+        <div style="padding:20px 24px;max-height:70vh;overflow-y:auto;">
+          <!-- Stats row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;">
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Views</div>
+              <div style="font-size:22px;font-weight:700;color:var(--text);">${analytics.views}</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Submissions</div>
+              <div style="font-size:22px;font-weight:700;color:var(--text);">${analytics.submissions}</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Conversion</div>
+              <div style="font-size:22px;font-weight:700;color:#16a34a;">${analytics.conversion_rate}%</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Spam Blocked</div>
+              <div style="font-size:22px;font-weight:700;color:#ef4444;">${analytics.spam_blocked}</div>
+            </div>
+          </div>
+
+          <!-- Trend chart -->
+          <div style="margin-bottom:24px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">30-Day Submission Trend</div>
+            ${analytics.submissions > 0 ? `
+              <div style="display:flex;align-items:flex-end;gap:1px;height:80px;background:var(--surface2);border-radius:8px;padding:8px 4px;">
+                ${trendBars}
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">
+                <span>30 days ago</span><span>Today</span>
+              </div>
+            ` : '<div style="text-align:center;color:var(--muted);font-size:14px;padding:24px;border:2px dashed var(--border);border-radius:8px;">No submissions yet</div>'}
+          </div>
+
+          <!-- Outcome breakdown -->
+          ${analytics.total_leads > 0 ? `
+          <div style="display:flex;gap:10px;margin-bottom:24px;">
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+              <i data-lucide="message-square" style="width:18px;height:18px;color:#16a34a;"></i>
+              <div><div style="font-size:18px;font-weight:700;">${analytics.sms_sent}</div><div style="font-size:11px;color:var(--muted);">SMS Sent</div></div>
+            </div>
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+              <i data-lucide="phone" style="width:18px;height:18px;color:#3B82F6;"></i>
+              <div><div style="font-size:18px;font-weight:700;">${analytics.call_triggered}</div><div style="font-size:11px;color:var(--muted);">Calls Triggered</div></div>
+            </div>
+          </div>` : ''}
+
+          <!-- Recent submissions -->
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Recent Submissions</div>
+            ${(submissionsData.submissions || []).length > 0 ? `
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--border);">
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Name</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Phone</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Date</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">SMS</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Call</th>
+                  </tr>
+                </thead>
+                <tbody>${submissionsRows}</tbody>
+              </table>
+            ` : '<div style="text-align:center;color:var(--muted);font-size:14px;padding:24px;border:2px dashed var(--border);border-radius:8px;">No submissions yet</div>'}
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;padding:14px 24px;border-top:1px solid var(--border);">
+          <button class="btn-secondary" onclick="document.getElementById('analytics-modal-overlay').remove()" style="font-size:14px;padding:10px 18px;">Close</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    if (window.lucide) lucide.createIcons();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  } catch (err) {
+    showToast('Failed to load analytics: ' + err.message, 'error');
+  }
 }
 
 async function openEmbedModal(formId) {
