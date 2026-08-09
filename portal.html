@@ -2489,18 +2489,468 @@ async function loadForms() {
 }
 
 function showFormBuilder() {
-  showToast('Form builder coming soon — form CRUD is ready on the backend', 'success');
-  // Future: open form builder modal/panel
+  openFormBuilder(null);
 }
 
 function editForm(formId) {
-  showToast('Form editor coming soon', 'success');
-  // Future: open form builder in edit mode
+  openFormBuilder(formId);
 }
 
 function openEmbedModal(formId) {
   showToast('Embed code generation coming soon', 'success');
   // Future: open embed code modal
+}
+
+// ── FORM BUILDER ──────────────────────────────────────────────────────────────
+let currentForm = null; // { form_id, name, fields: [], field_mapping: {}, status, styling, spam_protection }
+
+function openFormBuilder(formId) {
+  if (formId) {
+    // Edit mode — fetch the form
+    fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } })
+      .then(r => r.json())
+      .then(data => {
+        const forms = Array.isArray(data) ? data : (data.forms || []);
+        const form = forms.find(f => f.form_id === formId);
+        if (!form) { showToast('Form not found', 'error'); return; }
+        currentForm = JSON.parse(JSON.stringify(form));
+        if (!currentForm.fields) currentForm.fields = [];
+        if (!currentForm.field_mapping) currentForm.field_mapping = {};
+        renderFormBuilder();
+      })
+      .catch(err => showToast('Failed to load form: ' + err.message, 'error'));
+  } else {
+    // New form
+    currentForm = {
+      name: '',
+      fields: [],
+      field_mapping: {},
+      status: 'active',
+    };
+    renderFormBuilder();
+  }
+}
+
+const FIELD_TYPES = [
+  { type: 'text',     label: 'Text',     icon: 'type' },
+  { type: 'email',    label: 'Email',    icon: 'mail' },
+  { type: 'tel',      label: 'Phone',    icon: 'phone' },
+  { type: 'textarea', label: 'Long Text',icon: 'align-left' },
+  { type: 'select',   label: 'Dropdown', icon: 'chevron-down' },
+  { type: 'checkbox', label: 'Checkbox', icon: 'check-square' },
+  { type: 'date',     label: 'Date',     icon: 'calendar' },
+];
+
+const MAPS_TO_OPTIONS = ['', 'name', 'phone', 'email', 'service', 'notes'];
+const MAPS_TO_LABELS = { '': 'Custom', name: 'Name', phone: 'Phone', email: 'Email', service: 'Service', notes: 'Notes' };
+
+function renderFormBuilder() {
+  // Remove existing builder if any
+  const existing = document.getElementById('form-builder-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'form-builder-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  overlay.setAttribute('data-modal', '');
+
+  const isEditing = !!currentForm.form_id;
+  const maxFields = 20;
+  const canAddMore = currentForm.fields.length < maxFields;
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="file-input" style="width:18px;height:18px;color:#3B82F6;"></i>
+          </div>
+          <div style="font-size:17px;font-weight:700;">${isEditing ? 'Edit Form' : 'Create New Form'}</div>
+        </div>
+        <button onclick="document.getElementById('form-builder-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:20px 24px;max-height:60vh;overflow-y:auto;">
+        <!-- Form name -->
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Form Name</label>
+          <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
+            oninput="currentForm.name = this.value; updateFbSaveButton();"
+            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        </div>
+
+        <!-- Fields -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Fields (${currentForm.fields.length}/${maxFields})</label>
+          </div>
+          <div id="fb-fields" style="display:flex;flex-direction:column;gap:10px;">
+            ${currentForm.fields.length === 0 ? '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>' : ''}
+          </div>
+        </div>
+
+        <!-- Add field dropdown -->
+        <div id="fb-add-field-wrap" style="${canAddMore ? '' : 'display:none;'}">
+          <div style="position:relative;">
+            <button id="fb-add-field-btn" onclick="toggleFieldDropdown()"
+              style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
+            </button>
+            <div id="fb-field-dropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
+              ${FIELD_TYPES.map(ft => `
+                <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+                  <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
+                  ${ft.label}
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);">
+        <button class="btn-secondary" onclick="document.getElementById('form-builder-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+        <button id="fb-save-btn" onclick="saveFormBuilder()" ${currentForm.name ? '' : 'disabled'}
+          style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#22c55e;${currentForm.name ? '' : 'opacity:0.5;cursor:not-allowed;'}">
+          ${isEditing ? 'Save Changes' : 'Create Form'}
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+
+  // Close on backdrop click
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Render existing fields
+  renderFieldCards();
+}
+
+function toggleFieldDropdown() {
+  const dd = document.getElementById('fb-field-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function addField(type) {
+  const ft = FIELD_TYPES.find(f => f.type === type);
+  if (!ft) return;
+  const fieldId = 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newField = {
+    id: fieldId,
+    type: type,
+    label: ft.label,
+    placeholder: '',
+    required: false,
+    maps_to: '',
+  };
+  if (type === 'select') {
+    newField.options = ['Option 1'];
+  }
+  currentForm.fields.push(newField);
+  document.getElementById('fb-field-dropdown').style.display = 'none';
+
+  // Update field count and add-field visibility
+  updateFieldCount();
+  renderFieldCards();
+
+  // Hide add button if at max
+  if (currentForm.fields.length >= 20) {
+    document.getElementById('fb-add-field-wrap').style.display = 'none';
+  }
+}
+
+function removeField(fieldId) {
+  currentForm.fields = currentForm.fields.filter(f => f.id !== fieldId);
+  // Clean up field_mapping
+  for (const key of Object.keys(currentForm.field_mapping)) {
+    if (currentForm.field_mapping[key] === fieldId) {
+      delete currentForm.field_mapping[key];
+    }
+  }
+  updateFieldCount();
+  renderFieldCards();
+  // Show add button if under max
+  if (currentForm.fields.length < 20) {
+    const w = document.getElementById('fb-add-field-wrap');
+    if (w) w.style.display = '';
+  }
+}
+
+function moveField(fieldId, direction) {
+  const idx = currentForm.fields.findIndex(f => f.id === fieldId);
+  if (idx < 0) return;
+  if (direction === 'up' && idx > 0) {
+    [currentForm.fields[idx], currentForm.fields[idx - 1]] = [currentForm.fields[idx - 1], currentForm.fields[idx]];
+  } else if (direction === 'down' && idx < currentForm.fields.length - 1) {
+    [currentForm.fields[idx], currentForm.fields[idx + 1]] = [currentForm.fields[idx + 1], currentForm.fields[idx]];
+  }
+  renderFieldCards();
+}
+
+function updateField(fieldId, prop, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  field[prop] = value;
+}
+
+function updateMapsTo(fieldId, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  field.maps_to = value;
+  // Update field_mapping: only one field per standard field
+  for (const key of Object.keys(currentForm.field_mapping)) {
+    if (currentForm.field_mapping[key] === fieldId) {
+      delete currentForm.field_mapping[key];
+    }
+  }
+  if (value && value !== '') {
+    currentForm.field_mapping[value] = fieldId;
+  }
+}
+
+function addSelectOption(fieldId) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options.push('New Option');
+  renderFieldCards();
+}
+
+function removeSelectOption(fieldId, optIdx) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options.splice(optIdx, 1);
+  renderFieldCards();
+}
+
+function updateSelectOption(fieldId, optIdx, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options[optIdx] = value;
+}
+
+function toggleFieldExpand(fieldId) {
+  const card = document.getElementById(`fb-card-${fieldId}`);
+  const config = document.getElementById(`fb-config-${fieldId}`);
+  if (config) {
+    const isHidden = config.style.display === 'none';
+    config.style.display = isHidden ? 'block' : 'none';
+    const chevron = card.querySelector('.fb-chevron');
+    if (chevron) {
+      chevron.setAttribute('data-lucide', isHidden ? 'chevron-down' : 'chevron-right');
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function updateFieldCount() {
+  const countLabel = document.querySelector('#fb-fields').previousElementSibling.querySelector('label');
+  if (countLabel) {
+    countLabel.textContent = `Fields (${currentForm.fields.length}/20)`;
+  }
+}
+
+function renderFieldCards() {
+  const container = document.getElementById('fb-fields');
+  if (!container) return;
+
+  if (currentForm.fields.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>';
+    return;
+  }
+
+  container.innerHTML = currentForm.fields.map((f, idx) => {
+    const ft = FIELD_TYPES.find(t => t.type === f.type) || FIELD_TYPES[0];
+    const isExpanded = false; // collapsed by default
+    const hasOptions = f.type === 'select';
+    const mapsToVal = f.maps_to || '';
+    // Find what standard field this maps to (check field_mapping)
+    for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
+      if (v === f.id) { mapsToVal_read = k; break; }
+    }
+    let mapsToVal_read = mapsToVal;
+    for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
+      if (v === f.id) { mapsToVal_read = k; break; }
+    }
+
+    return `
+    <div id="fb-card-${f.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <!-- Collapsed header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;" onclick="toggleFieldExpand('${f.id}')">
+        <i data-lucide="grip-vertical" class="fb-drag" style="width:15px;height:15px;color:var(--muted);cursor:grab;flex-shrink:0;"></i>
+        <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:#3B82F6;flex-shrink:0;"></i>
+        <span style="flex:1;font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.label || 'Untitled')}</span>
+        ${f.required ? '<span style="font-size:10px;font-weight:700;color:#fff;background:#ef4444;padding:2px 7px;border-radius:10px;flex-shrink:0;">Required</span>' : ''}
+        ${mapsToVal_read ? `<span style="font-size:10px;font-weight:700;color:#3B82F6;background:rgba(59,130,246,0.1);padding:2px 7px;border-radius:10px;flex-shrink:0;">Maps: ${MAPS_TO_LABELS[mapsToVal_read] || mapsToVal_read}</span>` : ''}
+        <i data-lucide="chevron-down" class="fb-chevron" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"></i>
+      </div>
+      <!-- Config panel (hidden by default) -->
+      <div id="fb-config-${f.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border);">
+        <div style="padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+          <!-- Label -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Label</label>
+            <input type="text" value="${escapeHtml(f.label)}" placeholder="Field label" oninput="updateField('${f.id}', 'label', this.value); updateFieldCardHeader('${f.id}');"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+          </div>
+          <!-- Placeholder -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Placeholder</label>
+            <input type="text" value="${escapeHtml(f.placeholder || '')}" placeholder="Placeholder text" oninput="updateField('${f.id}', 'placeholder', this.value);"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+          </div>
+          <!-- Required toggle + Maps to -->
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="fb-req-${f.id}" ${f.required ? 'checked' : ''} onchange="updateField('${f.id}', 'required', this.checked); renderFieldCards();"
+                style="width:16px;height:16px;cursor:pointer;" />
+              <label for="fb-req-${f.id}" style="font-size:13px;color:var(--text);cursor:pointer;user-select:none;">Required</label>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Maps to</label>
+              <select onchange="updateMapsTo('${f.id}', this.value); renderFieldCards();"
+                style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;">
+                ${MAPS_TO_OPTIONS.map(opt => `<option value="${opt}" ${mapsToVal_read === opt ? 'selected' : ''}>${MAPS_TO_LABELS[opt]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <!-- Select options editor -->
+          ${hasOptions ? `
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Options</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${(f.options || []).map((opt, i) => `
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <input type="text" value="${escapeHtml(opt)}" oninput="updateSelectOption('${f.id}', ${i}, this.value);"
+                    style="flex:1;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+                  <button onclick="removeSelectOption('${f.id}', ${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:4px;">
+                    <i data-lucide="x" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>`).join('')}
+            </div>
+            <button onclick="addSelectOption('${f.id}')" style="margin-top:6px;display:flex;align-items:center;gap:6px;background:none;border:none;color:#3B82F6;font-size:13px;font-weight:600;cursor:pointer;">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i> Add Option
+            </button>
+          </div>` : ''}
+          <!-- Actions: reorder + delete -->
+          <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+            <button onclick="moveField('${f.id}', 'up')" ${idx === 0 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === 0 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+              <i data-lucide="chevron-up" style="width:14px;height:14px;"></i>
+            </button>
+            <button onclick="moveField('${f.id}', 'down')" ${idx === currentForm.fields.length - 1 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === currentForm.fields.length - 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+              <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+            </button>
+            <button onclick="if(confirm('Delete this field?')) removeField('${f.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 10px;cursor:pointer;color:#ef4444;">
+              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function updateFieldCardHeader(fieldId) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  const card = document.getElementById(`fb-card-${fieldId}`);
+  if (!card) return;
+  const labelSpan = card.querySelector('div > span');
+  if (labelSpan) labelSpan.textContent = field.label || 'Untitled';
+}
+
+function updateFbSaveButton() {
+  const btn = document.getElementById('fb-save-btn');
+  if (!btn) return;
+  if (currentForm.name && currentForm.name.trim()) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+async function saveFormBuilder() {
+  const btn = document.getElementById('fb-save-btn');
+  if (!btn) return;
+  if (!currentForm.name || !currentForm.name.trim()) {
+    showToast('Form name is required', 'error');
+    return;
+  }
+  if (currentForm.fields.length === 0) {
+    showToast('Add at least one field', 'error');
+    return;
+  }
+
+  // Build payload — match the API's expected shape
+  const payload = {
+    name: currentForm.name.trim(),
+    fields: currentForm.fields.map(f => {
+      const field = {
+        id: f.id,
+        type: f.type,
+        label: f.label || '',
+        required: !!f.required,
+      };
+      if (f.placeholder) field.placeholder = f.placeholder;
+      if (f.maps_to) field.maps_to = f.maps_to;
+      if (f.type === 'select' && f.options) field.options = f.options;
+      return field;
+    }),
+    field_mapping: currentForm.field_mapping || {},
+  };
+
+  // Add styling and spam_protection if editing and they exist
+  if (currentForm.form_id) {
+    if (currentForm.styling) payload.styling = currentForm.styling;
+    if (currentForm.spam_protection) payload.spam_protection = currentForm.spam_protection;
+    if (currentForm.status) payload.status = currentForm.status;
+  }
+
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  try {
+    const isEditing = !!currentForm.form_id;
+    const url = isEditing
+      ? `${API}/portal/forms/${currentForm.form_id}`
+      : `${API}/portal/forms`;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portal-Token': portalToken,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    document.getElementById('form-builder-overlay').remove();
+    showToast(isEditing ? 'Form updated successfully' : 'Form created successfully', 'success');
+    loadForms();
+  } catch (err) {
+    showToast(`Save failed: ${err.message}`, 'error');
+    const isEditing = !!currentForm.form_id;
+    btn.textContent = isEditing ? 'Save Changes' : 'Create Form';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
 }
 
 function confirmDeleteForm(formId, formName) {
