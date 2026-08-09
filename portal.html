@@ -2783,63 +2783,89 @@ function renderFormBuilder() {
   const canAddMore = currentForm.fields.length < maxFields;
 
   overlay.innerHTML = `
-    <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
+    <div style="background:var(--surface);border-radius:16px;max-width:1100px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;display:flex;flex-direction:column;max-height:90vh;">
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
             <i data-lucide="file-input" style="width:18px;height:18px;color:#3B82F6;"></i>
           </div>
           <div style="font-size:17px;font-weight:700;">${isEditing ? 'Edit Form' : 'Create New Form'}</div>
         </div>
-        <button onclick="document.getElementById('form-builder-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
-          <i data-lucide="x" style="width:20px;height:20px;"></i>
-        </button>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <!-- Preview viewport toggle -->
+          <div id="fb-viewport-toggle" style="display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;">
+            <button onclick="setPreviewViewport('desktop')" id="fb-vp-desktop" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;">Desktop</button>
+            <button onclick="setPreviewViewport('mobile')" id="fb-vp-mobile" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);">Mobile</button>
+          </div>
+          <button onclick="document.getElementById('form-builder-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Body -->
-      <div style="padding:20px 24px;max-height:60vh;overflow-y:auto;">
-        <!-- Form name -->
-        <div style="margin-bottom:20px;">
-          <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Form Name</label>
-          <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
-            oninput="currentForm.name = this.value; updateFbSaveButton();"
-            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      <!-- Body: two-column layout -->
+      <div style="display:flex;gap:0;flex:1;overflow:hidden;">
+        <!-- Left: Config -->
+        <div style="flex:1;min-width:0;padding:20px;overflow-y:auto;">
+          <!-- Form name -->
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Form Name</label>
+            <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
+              oninput="currentForm.name = this.value; updateFbSaveButton();"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+          </div>
+
+          <!-- Fields -->
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Fields (${currentForm.fields.length}/${maxFields})</label>
+            </div>
+            <div id="fb-fields" style="display:flex;flex-direction:column;gap:10px;">
+              ${currentForm.fields.length === 0 ? '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>' : ''}
+            </div>
+          </div>
+
+          <!-- Add field dropdown -->
+          <div id="fb-add-field-wrap" style="${canAddMore ? '' : 'display:none;'}">
+            <div style="position:relative;">
+              <button id="fb-add-field-btn" onclick="toggleFieldDropdown()"
+                style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+                <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
+              </button>
+              <div id="fb-field-dropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
+                ${FIELD_TYPES.map(ft => `
+                  <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+                    <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
+                    ${ft.label}
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Style section -->
+          ${renderStyleSection()}
         </div>
 
-        <!-- Fields -->
-        <div style="margin-bottom:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Fields (${currentForm.fields.length}/${maxFields})</label>
+        <!-- Right: Live Preview -->
+        <div style="width:420px;flex-shrink:0;border-left:1px solid var(--border);background:var(--field);display:flex;flex-direction:column;">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Live Preview</span>
+            <span id="fb-preview-width" style="font-size:11px;color:var(--muted);">100%</span>
           </div>
-          <div id="fb-fields" style="display:flex;flex-direction:column;gap:10px;">
-            ${currentForm.fields.length === 0 ? '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>' : ''}
-          </div>
-        </div>
-
-        <!-- Add field dropdown -->
-        <div id="fb-add-field-wrap" style="${canAddMore ? '' : 'display:none;'}">
-          <div style="position:relative;">
-            <button id="fb-add-field-btn" onclick="toggleFieldDropdown()"
-              style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
-              <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
-            </button>
-            <div id="fb-field-dropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
-              ${FIELD_TYPES.map(ft => `
-                <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-                  <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
-                  ${ft.label}
-                </div>`).join('')}
+          <div style="flex:1;overflow-y:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start;">
+            <div id="fb-preview-wrap" style="width:100%;transition:width 0.2s;">
+              <iframe id="fb-preview-iframe"
+                style="width:100%;border:none;border-radius:8px;background:#fff;min-height:400px;"
+                sandbox="allow-same-origin"
+                title="Form Preview"></iframe>
             </div>
           </div>
         </div>
-
-        <!-- Style section -->
-        ${renderStyleSection()}
       </div>
 
       <!-- Footer -->
-      <div style="display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);">
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;">
         <button class="btn-secondary" onclick="document.getElementById('form-builder-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
         <button id="fb-save-btn" onclick="saveFormBuilder()" ${currentForm.name ? '' : 'disabled'}
           style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#22c55e;${currentForm.name ? '' : 'opacity:0.5;cursor:not-allowed;'}">
@@ -2856,6 +2882,9 @@ function renderFormBuilder() {
 
   // Render existing fields
   renderFieldCards();
+
+  // Initial preview render
+  setTimeout(renderFormPreview, 50);
 }
 
 // ── Style customization ─────────────────────────────────────────────────────
@@ -3047,8 +3076,115 @@ function applyThemePreset(name) {
 }
 
 function updateFormPreview() {
-  // If live preview exists (separate ticket), update it here
-  // For now, this is a no-op that the preview feature will hook into
+  clearTimeout(window._fbPreviewDebounce);
+  window._fbPreviewDebounce = setTimeout(renderFormPreview, 200);
+}
+
+function renderFormPreview() {
+  const iframe = document.getElementById('fb-preview-iframe');
+  if (!iframe || !currentForm) return;
+
+  const s = currentForm.styling || {};
+  const fields = currentForm.fields || [];
+  const fontStack = s.font_family && s.font_family !== 'inherit'
+    ? `'${s.font_family}', sans-serif`
+    : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const radius = s.border_radius || '8px';
+  const submitLabel = escapeHtml(s.submit_label || 'Submit');
+  const submitWidth = s.submit_full_width === false ? 'auto' : '100%';
+
+  // Build field HTML
+  const fieldsHTML = fields.map(f => {
+    const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
+    const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
+    const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
+    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:#fff;color:${s.text_color || '#1a1a1a'};`;
+
+    let input = '';
+    switch (f.type) {
+      case 'textarea':
+        input = `<textarea ${ph} rows="3" style="${inputStyle}resize:vertical;"></textarea>`;
+        break;
+      case 'select':
+        input = `<select style="${inputStyle}appearance:none;">
+          ${(f.options || ['Option 1']).map(o => `<option>${escapeHtml(o)}</option>`).join('')}
+        </select>`;
+        break;
+      case 'checkbox':
+        input = `<div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" style="width:18px;height:18px;accent-color:${s.accent_color || '#22c55e'};" /> <span style="font-size:14px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.placeholder || 'Check this box')}</span></div>`;
+        break;
+      case 'date':
+        input = `<input type="date" style="${inputStyle}" />`;
+        break;
+      default:
+        input = `<input type="${f.type || 'text'}" ${ph} style="${inputStyle}" />`;
+    }
+
+    return `<div style="margin-bottom:14px;">${label}${input}</div>`;
+  }).join('');
+
+  // Build full HTML document
+  const googleFonts = s.font_family && s.font_family !== 'inherit'
+    ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(s.font_family)}:wght@400;500;600;700&display=swap" rel="stylesheet">`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${googleFonts}
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: ${fontStack}; background: ${s.background_color || '#ffffff'}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
+  .az-form-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: ${s.text_color || '#1a1a1a'}; }
+  .az-submit-btn {
+    ${submitWidth === 'auto' ? '' : 'width: 100%;'}
+    padding: 12px 24px;
+    background: ${s.accent_color || '#22c55e'};
+    color: #fff;
+    border: none;
+    border-radius: ${radius};
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: ${fontStack};
+    transition: opacity 0.15s;
+  }
+  .az-submit-btn:hover { opacity: 0.9; }
+  ${s.custom_css || ''}
+</style>
+</head>
+<body>
+  ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
+  <form onsubmit="event.preventDefault();">
+    ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
+    <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
+  </form>
+</body>
+</html>`;
+
+  iframe.srcdoc = html;
+}
+
+function setPreviewViewport(size) {
+  const wrap = document.getElementById('fb-preview-wrap');
+  const desktopBtn = document.getElementById('fb-vp-desktop');
+  const mobileBtn = document.getElementById('fb-vp-mobile');
+  const widthLabel = document.getElementById('fb-preview-width');
+  if (!wrap) return;
+
+  if (size === 'mobile') {
+    wrap.style.width = '375px';
+    if (desktopBtn) desktopBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);';
+    if (mobileBtn) mobileBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;';
+    if (widthLabel) widthLabel.textContent = '375px';
+  } else {
+    wrap.style.width = '100%';
+    if (desktopBtn) desktopBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;';
+    if (mobileBtn) mobileBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);';
+    if (widthLabel) widthLabel.textContent = '100%';
+  }
 }
 
 function toggleFieldDropdown() {
@@ -3274,6 +3410,9 @@ function renderFieldCards() {
   }).join('');
 
   if (window.lucide) lucide.createIcons();
+
+  // Update live preview after field changes
+  updateFormPreview();
 }
 
 function updateFieldCardHeader(fieldId) {
