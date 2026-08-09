@@ -2749,6 +2749,7 @@ function openFormBuilder(formId) {
       fields: [],
       field_mapping: {},
       status: 'active',
+      styling: {},
     };
     renderFormBuilder();
   }
@@ -2832,6 +2833,9 @@ function renderFormBuilder() {
             </div>
           </div>
         </div>
+
+        <!-- Style section -->
+        ${renderStyleSection()}
       </div>
 
       <!-- Footer -->
@@ -2852,6 +2856,199 @@ function renderFormBuilder() {
 
   // Render existing fields
   renderFieldCards();
+}
+
+// ── Style customization ─────────────────────────────────────────────────────
+
+const THEME_PRESETS = {
+  minimal: { accent_color: '#333333', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '4px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
+  modern:  { accent_color: '#7C3AED', background_color: '#f8fafc', text_color: '#1e293b', input_border: '#e2e8f0', border_radius: '12px', font_family: 'Inter', submit_label: 'Send Message', submit_full_width: true },
+  bold:    { accent_color: '#1e293b', background_color: '#0f172a', text_color: '#f8fafc', input_border: '#334155', border_radius: '16px', font_family: 'Montserrat', submit_label: 'Get Started', submit_full_width: true },
+  auzora:  { accent_color: '#22c55e', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '8px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
+};
+
+const FONT_OPTIONS = [
+  { value: 'inherit', label: 'System UI' },
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Montserrat', label: 'Montserrat' },
+];
+
+function renderStyleSection() {
+  if (!currentForm.styling) currentForm.styling = {};
+  const s = currentForm.styling;
+  if (!s.accent_color) s.accent_color = '#22c55e';
+  if (!s.background_color) s.background_color = '#ffffff';
+  if (!s.text_color) s.text_color = '#1a1a1a';
+  if (!s.input_border) s.input_border = '#d1d5db';
+  if (!s.border_radius) s.border_radius = '8px';
+  if (!s.font_family) s.font_family = 'inherit';
+  if (!s.submit_label) s.submit_label = 'Submit';
+  if (s.submit_full_width === undefined) s.submit_full_width = true;
+
+  const radiusVal = parseInt(s.border_radius) || 8;
+
+  return `
+    <div data-style-section style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
+      <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:block;">Style</label>
+
+      <!-- Theme presets -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+        ${Object.entries(THEME_PRESETS).map(([key, preset]) => `
+          <button onclick="applyThemePreset('${key}')"
+            style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:border-color 0.15s;"
+            onmouseover="this.style.borderColor='var(--accent)'"
+            onmouseout="this.style.borderColor='var(--border)'">
+            <span style="width:14px;height:14px;border-radius:${preset.border_radius};background:${preset.accent_color};border:1px solid ${preset.input_border};"></span>
+            ${key.charAt(0).toUpperCase() + key.slice(1)}
+          </button>`).join('')}
+      </div>
+
+      <!-- Color pickers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        ${renderColorPicker('accent_color', 'Button Color', s.accent_color)}
+        ${renderColorPicker('background_color', 'Background', s.background_color)}
+        ${renderColorPicker('text_color', 'Text Color', s.text_color)}
+        ${renderColorPicker('input_border', 'Input Border', s.input_border)}
+      </div>
+
+      <!-- Font family -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Font Family</label>
+        <select id="fb-font" onchange="updateStyling('font_family', this.value)"
+          style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;">
+          ${FONT_OPTIONS.map(f => `<option value="${f.value}" ${s.font_family === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
+          <option value="custom" ${!FONT_OPTIONS.some(f => f.value === s.font_family) && s.font_family !== 'inherit' ? 'selected' : ''}>Custom...</option>
+        </select>
+        <input type="text" id="fb-font-custom" placeholder="e.g. 'Comic Sans MS', sans-serif"
+          value="${FONT_OPTIONS.some(f => f.value === s.font_family) || s.font_family === 'inherit' ? '' : escapeHtml(s.font_family)}"
+          oninput="updateStyling('font_family', this.value)"
+          style="display:none;width:100%;margin-top:6px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      </div>
+
+      <!-- Border radius slider -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text);">Border Radius</label>
+          <span id="fb-radius-val" style="font-size:12px;color:var(--muted);font-weight:600;">${radiusVal}px</span>
+        </div>
+        <input type="range" min="0" max="20" value="${radiusVal}" oninput="updateBorderRadius(this.value)"
+          style="width:100%;accent-color:var(--accent);" />
+      </div>
+
+      <!-- Button options -->
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Text</label>
+          <input type="text" id="fb-submit-label" value="${escapeHtml(s.submit_label)}" oninput="updateStyling('submit_label', this.value)"
+            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        </div>
+        <div style="min-width:140px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Width</label>
+          <div style="display:flex;gap:6px;">
+            <button onclick="updateStyling('submit_full_width', true)" id="fb-btn-full"
+              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Full</button>
+            <button onclick="updateStyling('submit_full_width', false)" id="fb-btn-auto"
+              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Auto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom CSS (collapsible) -->
+      <details style="margin-top:8px;">
+        <summary style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;padding:8px 0;list-style:none;">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i>
+          Custom CSS (advanced)
+        </summary>
+        <textarea id="fb-custom-css" placeholder="/* Add custom CSS here */" rows="4"
+          oninput="updateStyling('custom_css', this.value)"
+          style="width:100%;margin-top:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:'Courier New',monospace;resize:vertical;">${escapeHtml(s.custom_css || '')}</textarea>
+      </details>
+    </div>`;
+}
+
+function renderColorPicker(key, label, value) {
+  return `
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">${label}</label>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:6px 10px;">
+        <input type="color" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
+          style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;" />
+        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.querySelector('input[type=color][oninput*=${key}]')?.click()"
+          style="flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;" />
+      </div>
+    </div>`;
+}
+
+function updateStyling(key, value) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = value;
+
+  // Handle font custom toggle
+  if (key === 'font_family') {
+    const select = document.getElementById('fb-font');
+    const customInput = document.getElementById('fb-font-custom');
+    if (select && customInput) {
+      if (!FONT_OPTIONS.some(f => f.value === value) && value !== 'inherit') {
+        select.value = 'custom';
+        customInput.style.display = 'block';
+        customInput.value = value;
+      } else {
+        customInput.style.display = 'none';
+      }
+    }
+  }
+
+  // Update button width toggle visuals
+  if (key === 'submit_full_width') {
+    const fullBtn = document.getElementById('fb-btn-full');
+    const autoBtn = document.getElementById('fb-btn-auto');
+    if (fullBtn && autoBtn) {
+      if (value) {
+        fullBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+        autoBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+      } else {
+        fullBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+        autoBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+      }
+    }
+  }
+
+  updateFormPreview();
+}
+
+function updateBorderRadius(val) {
+  const px = val + 'px';
+  currentForm.styling.border_radius = px;
+  const display = document.getElementById('fb-radius-val');
+  if (display) display.textContent = px;
+  updateFormPreview();
+}
+
+function applyThemePreset(name) {
+  const preset = THEME_PRESETS[name];
+  if (!preset) return;
+  if (!currentForm.styling) currentForm.styling = {};
+  Object.assign(currentForm.styling, preset);
+
+  // Re-render the style section to reflect new values
+  const builder = document.getElementById('form-builder-overlay');
+  if (builder) {
+    // Find the style section and replace it
+    const styleSection = builder.querySelector('[data-style-section]');
+    if (styleSection) {
+      styleSection.outerHTML = renderStyleSection();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  updateFormPreview();
+}
+
+function updateFormPreview() {
+  // If live preview exists (separate ticket), update it here
+  // For now, this is a no-op that the preview feature will hook into
 }
 
 function toggleFieldDropdown() {
@@ -3132,10 +3329,10 @@ async function saveFormBuilder() {
     field_mapping: currentForm.field_mapping || {},
   };
 
-  // Add styling and spam_protection if editing and they exist
+  // Add styling and spam_protection
+  if (currentForm.styling) payload.styling = currentForm.styling;
+  if (currentForm.spam_protection) payload.spam_protection = currentForm.spam_protection;
   if (currentForm.form_id) {
-    if (currentForm.styling) payload.styling = currentForm.styling;
-    if (currentForm.spam_protection) payload.spam_protection = currentForm.spam_protection;
     if (currentForm.status) payload.status = currentForm.status;
   }
 
