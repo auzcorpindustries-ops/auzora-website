@@ -628,7 +628,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon"><i data-lucide="contact-round"></i></span> Leads &amp; CRM</div>
     <div class="nav-item" onclick="showPage('conversations')" id="nav-conversations"><span class="nav-icon"><i data-lucide="message-square"></i></span> Conversations</div>
     <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
-    <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
+    <div class="nav-item" onclick="showPage('forms')" id="nav-forms"><span class="nav-icon"><i data-lucide="file-input"></i></span> Forms</div>
+     <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
     <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
     <div class="sidebar-footer">
       <div class="nav-divider"></div>
@@ -1596,6 +1597,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div>
 
     <!-- AUTOMATIONS -->
+    <div class="page" id="page-forms">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;">Forms</div>
+          <div style="font-size:13.5px;color:var(--muted);margin-top:2px;">Embeddable contact forms for your website — submissions create leads instantly.</div>
+        </div>
+        <button class="btn-call" onclick="showFormBuilder()" style="display:inline-flex;align-items:center;gap:8px;">
+          <i data-lucide="plus" style="width:16px;height:16px;"></i> Create New Form
+        </button>
+      </div>
+
+      <!-- Empty state (shown when no forms) -->
+      <div id="forms-empty" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="width:64px;height:64px;margin:0 auto 16px;background:var(--surface2);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="file-input" style="width:28px;height:28px;color:var(--muted);"></i>
+        </div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px;">No forms yet</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:20px;">Create your first embeddable form to capture leads from your website.</div>
+        <button class="btn-call" onclick="showFormBuilder()" style="display:inline-flex;align-items:center;gap:8px;">
+          <i data-lucide="plus" style="width:16px;height:16px;"></i> Create your first form
+        </button>
+      </div>
+
+      <!-- Form list grid -->
+      <div id="forms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;"></div>
+    </div>
+
     <div class="page" id="page-automations">
       <!-- Info callout -->
       <div style="display:flex;gap:12px;border:1px solid rgba(59,130,246,0.22);background:rgba(59,130,246,0.05);border-radius:12px;padding:14px 16px;margin-bottom:20px;">
@@ -2368,6 +2397,7 @@ function showPage(name) {
     integrations: { title: 'Integrations', sub: 'Connect your calendars and lead destinations' },
     account: { title: 'Account', sub: 'Profile, security, notifications and connected integrations' },
     docs: { title: 'Docs', sub: 'Guides for getting the most out of your agent' },
+    forms: { title: 'Forms', sub: 'Embeddable contact forms for your website' },
   };
   const meta = pageMeta[name] || { title: '', sub: '' };
   document.getElementById('topbar-title').textContent = meta.title;
@@ -2386,9 +2416,144 @@ function showPage(name) {
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
+  if (name === 'forms') loadForms();
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
+}
+
+// ── FORMS ───────────────────────────────────────────────────────────────────
+async function loadForms() {
+  const grid = document.getElementById('forms-grid');
+  const empty = document.getElementById('forms-empty');
+  if (!grid) return;
+
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px;">Loading forms…</div>';
+  empty.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const forms = await res.json();
+
+    if (!forms || forms.length === 0) {
+      grid.innerHTML = '';
+      grid.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+
+    // Sort by updated_at descending
+    forms.sort((a, b) => {
+      const da = new Date(a.updated_at || a.created_at || 0);
+      const db = new Date(b.updated_at || b.created_at || 0);
+      return db - da;
+    });
+
+    grid.innerHTML = forms.map(f => {
+      const isActive = f.status === 'active';
+      const statusBadge = isActive
+        ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#16a34a;background:rgba(22,163,74,0.1);padding:3px 10px;border-radius:20px;">● Active</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#d97706;background:rgba(217,119,6,0.1);padding:3px 10px;border-radius:20px;">● Paused</span>';
+      const subCount = f.submission_count || 0;
+      const updated = f.updated_at ? new Date(f.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      return `
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.name || 'Untitled Form')}</div>
+              <div style="margin-top:4px;">${statusBadge}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
+            <span><i data-lucide="inbox" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${subCount} submission${subCount !== 1 ? 's' : ''}</span>
+            ${updated ? `<span><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${updated}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto;">
+            <button class="btn-secondary" onclick="openEmbedModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Embed</button>
+            <button class="btn-secondary" onclick="editForm('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Edit</button>
+            <button class="btn-secondary" onclick="confirmDeleteForm('${f.form_id}','${escapeHtml(f.name || 'Untitled Form')}')" style="font-size:13px;padding:8px 12px;color:#ef4444;border-color:rgba(239,68,68,0.3);">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Re-render Lucide icons
+    if (window.lucide) lucide.createIcons();
+
+  } catch (err) {
+    grid.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;font-size:14px;">Failed to load forms. ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function showFormBuilder() {
+  showToast('Form builder coming soon — form CRUD is ready on the backend', 'success');
+  // Future: open form builder modal/panel
+}
+
+function editForm(formId) {
+  showToast('Form editor coming soon', 'success');
+  // Future: open form builder in edit mode
+}
+
+function openEmbedModal(formId) {
+  showToast('Embed code generation coming soon', 'success');
+  // Future: open embed code modal
+}
+
+function confirmDeleteForm(formId, formName) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:36px;height:36px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="trash-2" style="width:18px;height:18px;color:#ef4444;"></i>
+        </div>
+        <div style="font-size:17px;font-weight:700;">Delete form?</div>
+      </div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">
+        Delete <strong style="color:var(--text);">${escapeHtml(formName)}</strong>? This cannot be undone. Embedded forms will stop working immediately.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="this.closest('[data-modal]').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+        <button id="confirm-delete-btn" style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#ef4444;">Delete</button>
+      </div>
+    </div>`;
+  modal.setAttribute('data-modal', '');
+  document.body.appendChild(modal);
+  if (window.lucide) lucide.createIcons();
+
+  // Cancel on backdrop click
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  // Confirm delete
+  modal.querySelector('#confirm-delete-btn').addEventListener('click', async () => {
+    const btn = modal.querySelector('#confirm-delete-btn');
+    btn.textContent = 'Deleting…';
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/portal/forms/${formId}`, {
+        method: 'DELETE',
+        headers: { 'X-Portal-Token': portalToken },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      modal.remove();
+      showToast('Form deleted', 'success');
+      loadForms();
+    } catch (err) {
+      showToast(`Delete failed: ${err.message}`, 'error');
+      btn.textContent = 'Delete';
+      btn.disabled = false;
+    }
+  });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
