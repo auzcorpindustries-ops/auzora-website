@@ -628,7 +628,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon"><i data-lucide="contact-round"></i></span> Leads &amp; CRM</div>
     <div class="nav-item" onclick="showPage('conversations')" id="nav-conversations"><span class="nav-icon"><i data-lucide="message-square"></i></span> Conversations</div>
     <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
-    <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
+    <div class="nav-item" onclick="showPage('forms')" id="nav-forms"><span class="nav-icon"><i data-lucide="file-input"></i></span> Forms</div>
+     <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
     <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
     <div class="sidebar-footer">
       <div class="nav-divider"></div>
@@ -1596,6 +1597,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div>
 
     <!-- AUTOMATIONS -->
+    <div class="page" id="page-forms">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;">Forms</div>
+          <div style="font-size:13.5px;color:var(--muted);margin-top:2px;">Embeddable contact forms for your website — submissions create leads instantly.</div>
+        </div>
+        <button class="btn-call" onclick="showFormBuilder()" style="display:inline-flex;align-items:center;gap:8px;">
+          <i data-lucide="plus" style="width:16px;height:16px;"></i> Create New Form
+        </button>
+      </div>
+
+      <!-- Empty state (shown when no forms) -->
+      <div id="forms-empty" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="width:64px;height:64px;margin:0 auto 16px;background:var(--surface2);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="file-input" style="width:28px;height:28px;color:var(--muted);"></i>
+        </div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px;">No forms yet</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:20px;">Create your first embeddable form to capture leads from your website.</div>
+        <button class="btn-call" onclick="showFormBuilder()" style="display:inline-flex;align-items:center;gap:8px;">
+          <i data-lucide="plus" style="width:16px;height:16px;"></i> Create your first form
+        </button>
+      </div>
+
+      <!-- Form list grid -->
+      <div id="forms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;"></div>
+    </div>
+
     <div class="page" id="page-automations">
       <!-- Info callout -->
       <div style="display:flex;gap:12px;border:1px solid rgba(59,130,246,0.22);background:rgba(59,130,246,0.05);border-radius:12px;padding:14px 16px;margin-bottom:20px;">
@@ -1879,6 +1908,52 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
+
+// ── Session expiry detection ─────────────────────────────────────────────────
+// When the portal token expires or is revoked, API calls return 401. Instead of
+// each loadX() function needing its own 401 handler, we intercept fetch globally
+// and redirect to the login screen on any 401. This fixes the bug where leaving
+// the portal idle caused Analytics and Automations to silently fail.
+const _originalFetch = window.fetch;
+window.fetch = function(...args) {
+  return _originalFetch.apply(this, args).then(res => {
+    if (res.status === 401 && portalToken) {
+      // Token expired or revoked — force re-login
+      console.warn('[Auzora] Session expired (401), redirecting to login');
+      portalToken = null;
+      sessionStorage.removeItem('atlas_token');
+      sessionStorage.removeItem('atlas_client');
+      const app = document.getElementById('app');
+      const login = document.getElementById('login-screen');
+      if (app) app.style.display = 'none';
+      if (login) login.style.display = 'flex';
+      // Show expired message on login screen
+      const errEl = document.getElementById('login-error') || document.querySelector('.login-error');
+      if (errEl) errEl.textContent = 'Your session expired. Please sign in again.';
+    }
+    return res;
+  });
+};
+
+// ── Reload data when tab becomes visible after being idle ────────────────────
+// When the user returns to an idle tab, the displayed data may be stale. Refresh
+// the current page's data on visibility change.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && portalToken) {
+    // Tab became visible — reload current page data
+    const active = document.querySelector('.page.active');
+    if (active) {
+      const pageName = active.id.replace('page-', '');
+      // Debounce slightly to avoid double-firing
+      clearTimeout(window._visibilityReload);
+      window._visibilityReload = setTimeout(() => {
+        if (portalToken && document.visibilityState === 'visible') {
+          showPage(pageName);
+        }
+      }, 200);
+    }
+  }
+});
 
 // Outbound leads state — declared early to avoid temporal dead zone issues
 let obLeadsAll = [];
@@ -2368,6 +2443,7 @@ function showPage(name) {
     integrations: { title: 'Integrations', sub: 'Connect your calendars and lead destinations' },
     account: { title: 'Account', sub: 'Profile, security, notifications and connected integrations' },
     docs: { title: 'Docs', sub: 'Guides for getting the most out of your agent' },
+    forms: { title: 'Forms', sub: 'Embeddable contact forms for your website' },
   };
   const meta = pageMeta[name] || { title: '', sub: '' };
   document.getElementById('topbar-title').textContent = meta.title;
@@ -2386,9 +2462,1246 @@ function showPage(name) {
   if (name === 'analytics') loadActivity();
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
+  if (name === 'forms') loadForms();
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
   if (sidebar.classList.contains('open')) toggleSidebar();
+}
+
+// ── FORMS ───────────────────────────────────────────────────────────────────
+async function loadForms() {
+  const grid = document.getElementById('forms-grid');
+  const empty = document.getElementById('forms-empty');
+  if (!grid) return;
+
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px;">Loading forms…</div>';
+  empty.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const forms = await res.json();
+
+    if (!forms || forms.length === 0) {
+      grid.innerHTML = '';
+      grid.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+
+    // Sort by updated_at descending
+    forms.sort((a, b) => {
+      const da = new Date(a.updated_at || a.created_at || 0);
+      const db = new Date(b.updated_at || b.created_at || 0);
+      return db - da;
+    });
+
+    grid.innerHTML = forms.map(f => {
+      const isActive = f.status === 'active';
+      const statusBadge = isActive
+        ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#16a34a;background:rgba(22,163,74,0.1);padding:3px 10px;border-radius:20px;">● Active</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#d97706;background:rgba(217,119,6,0.1);padding:3px 10px;border-radius:20px;">● Paused</span>';
+      const subCount = f.submission_count || 0;
+      const updated = f.updated_at ? new Date(f.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      return `
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.name || 'Untitled Form')}</div>
+              <div style="margin-top:4px;">${statusBadge}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
+            <span><i data-lucide="inbox" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${subCount} sub${subCount !== 1 ? 's' : ''}</span>
+            <span><i data-lucide="eye" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${f.view_count || 0} views</span>
+            ${(f.view_count > 0 && subCount > 0) ? `<span style="color:#16a34a;font-weight:600;"><i data-lucide="trending-up" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${Math.round((subCount / f.view_count) * 100)}%</span>` : ''}
+            ${updated ? `<span><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${updated}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto;">
+            <button class="btn-secondary" onclick="openAnalyticsModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Analytics</button>
+            <button class="btn-secondary" onclick="openEmbedModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Embed</button>
+            <button class="btn-secondary" onclick="editForm('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Edit</button>
+            <button class="btn-secondary" onclick="confirmDeleteForm('${f.form_id}','${escapeHtml(f.name || 'Untitled Form')}')" style="font-size:13px;padding:8px 12px;color:#ef4444;border-color:rgba(239,68,68,0.3);">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Re-render Lucide icons
+    if (window.lucide) lucide.createIcons();
+
+  } catch (err) {
+    grid.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;font-size:14px;">Failed to load forms. ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function showFormBuilder() {
+  openFormBuilder(null);
+}
+
+function editForm(formId) {
+  openFormBuilder(formId);
+}
+
+async function openAnalyticsModal(formId) {
+  try {
+    // Fetch analytics + submissions in parallel
+    const [analyticsRes, submissionsRes] = await Promise.all([
+      fetch(`${API}/portal/forms/${formId}/analytics`, { headers: { 'X-Portal-Token': portalToken } }),
+      fetch(`${API}/portal/forms/${formId}/submissions?limit=10`, { headers: { 'X-Portal-Token': portalToken } }),
+    ]);
+
+    if (!analyticsRes.ok) throw new Error(`HTTP ${analyticsRes.status}`);
+    const analytics = await analyticsRes.json();
+    const submissionsData = submissionsRes.ok ? await submissionsRes.json() : { submissions: [] };
+
+    // Build trend chart (pure CSS bars)
+    const maxCount = Math.max(...analytics.trend.map(t => t.count), 1);
+    const trendBars = analytics.trend.map(t => {
+      const heightPct = (t.count / maxCount) * 100;
+      const hasData = t.count > 0;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;">
+        <div style="font-size:9px;color:${hasData ? 'var(--text)' : 'var(--muted)'};font-weight:600;">${hasData ? t.count : ''}</div>
+        <div style="width:100%;max-width:12px;height:${Math.max(heightPct, 2)}%;min-height:2px;background:${hasData ? 'var(--accent)' : 'var(--border)'};border-radius:2px 2px 0 0;"></div>
+      </div>`;
+    }).join('');
+
+    // Build submissions table
+    const submissionsRows = (submissionsData.submissions || []).map(s => {
+      const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const smsIcon = s.sms_sent ? '<span style="color:#16a34a;" title="SMS sent">SMS</span>' : '<span style="color:var(--muted);">—</span>';
+      const callIcon = s.call_triggered ? '<span style="color:#3B82F6;" title="Call triggered">Call</span>' : '<span style="color:var(--muted);">—</span>';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px 10px;font-size:13px;color:var(--text);font-weight:500;">${escapeHtml(s.name)}</td>
+        <td style="padding:8px 10px;font-size:13px;color:var(--muted);">***-***-${s.phone || '****'}</td>
+        <td style="padding:8px 10px;font-size:12px;color:var(--muted);">${date}</td>
+        <td style="padding:8px 10px;font-size:11px;font-weight:600;">${smsIcon}</td>
+        <td style="padding:8px 10px;font-size:11px;font-weight:600;">${callIcon}</td>
+      </tr>`;
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'analytics-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+    overlay.setAttribute('data-modal', '');
+
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="bar-chart-3" style="width:18px;height:18px;color:#3B82F6;"></i>
+            </div>
+            <div style="font-size:17px;font-weight:700;">Form Analytics</div>
+          </div>
+          <button onclick="document.getElementById('analytics-modal-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
+
+        <div style="padding:20px 24px;max-height:70vh;overflow-y:auto;">
+          <!-- Stats row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;">
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Views</div>
+              <div style="font-size:22px;font-weight:700;color:var(--text);">${analytics.views}</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Submissions</div>
+              <div style="font-size:22px;font-weight:700;color:var(--text);">${analytics.submissions}</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Conversion</div>
+              <div style="font-size:22px;font-weight:700;color:#16a34a;">${analytics.conversion_rate}%</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Spam Blocked</div>
+              <div style="font-size:22px;font-weight:700;color:#ef4444;">${analytics.spam_blocked}</div>
+            </div>
+          </div>
+
+          <!-- Trend chart -->
+          <div style="margin-bottom:24px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">30-Day Submission Trend</div>
+            ${analytics.submissions > 0 ? `
+              <div style="display:flex;align-items:flex-end;gap:1px;height:80px;background:var(--surface2);border-radius:8px;padding:8px 4px;">
+                ${trendBars}
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">
+                <span>30 days ago</span><span>Today</span>
+              </div>
+            ` : '<div style="text-align:center;color:var(--muted);font-size:14px;padding:24px;border:2px dashed var(--border);border-radius:8px;">No submissions yet</div>'}
+          </div>
+
+          <!-- Outcome breakdown -->
+          ${analytics.total_leads > 0 ? `
+          <div style="display:flex;gap:10px;margin-bottom:24px;">
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+              <i data-lucide="message-square" style="width:18px;height:18px;color:#16a34a;"></i>
+              <div><div style="font-size:18px;font-weight:700;">${analytics.sms_sent}</div><div style="font-size:11px;color:var(--muted);">SMS Sent</div></div>
+            </div>
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+              <i data-lucide="phone" style="width:18px;height:18px;color:#3B82F6;"></i>
+              <div><div style="font-size:18px;font-weight:700;">${analytics.call_triggered}</div><div style="font-size:11px;color:var(--muted);">Calls Triggered</div></div>
+            </div>
+          </div>` : ''}
+
+          <!-- Recent submissions -->
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Recent Submissions</div>
+            ${(submissionsData.submissions || []).length > 0 ? `
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--border);">
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Name</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Phone</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Date</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">SMS</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Call</th>
+                  </tr>
+                </thead>
+                <tbody>${submissionsRows}</tbody>
+              </table>
+            ` : '<div style="text-align:center;color:var(--muted);font-size:14px;padding:24px;border:2px dashed var(--border);border-radius:8px;">No submissions yet</div>'}
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;padding:14px 24px;border-top:1px solid var(--border);">
+          <button class="btn-secondary" onclick="document.getElementById('analytics-modal-overlay').remove()" style="font-size:14px;padding:10px 18px;">Close</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    if (window.lucide) lucide.createIcons();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  } catch (err) {
+    showToast('Failed to load analytics: ' + err.message, 'error');
+  }
+}
+
+async function openEmbedModal(formId) {
+  try {
+    const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const forms = await res.json();
+    const form = forms.find(f => f.form_id === formId);
+    if (!form) { showToast('Form not found', 'error'); return; }
+
+    const isPaused = form.status === 'paused';
+    const embedToken = form.embed_token || '';
+    const formName = escapeHtml(form.name || 'Untitled Form');
+    const baseUrl = 'https://atlas.6845165.xyz';
+
+    const jsCode = `<!-- Auzora Form: ${form.name || 'Untitled Form'} -->
+<div id="atlas-form-${formId}"></div>
+<script src="${baseUrl}/js/form-widget.js"
+        data-form-id="${formId}"
+        data-token="${embedToken}"
+        async><\/script>`;
+
+    const iframeCode = `<iframe
+  src="${baseUrl}/forms/${formId}/embed?token=${embedToken}"
+  width="100%"
+  height="600"
+  frameborder="0"
+  title="${form.name || 'Contact Form'}"></iframe>`;
+
+    // Remove any existing modal
+    const existing = document.getElementById('embed-modal-overlay');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'embed-modal-overlay';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:rgba(124,58,237,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="code-2" style="width:18px;height:18px;color:#7C3AED;"></i>
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:700;">Embed Form</div>
+              <div style="font-size:13px;color:var(--muted);">${formName}</div>
+            </div>
+          </div>
+          <button onclick="this.closest('#embed-modal-overlay').remove()" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:var(--muted);">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:20px 24px;max-height:70vh;overflow-y:auto;">
+
+          ${isPaused ? `
+          <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:12px 14px;margin-bottom:18px;">
+            <i data-lucide="alert-triangle" style="width:17px;height:17px;color:#d97706;flex-shrink:0;margin-top:1px;"></i>
+            <span style="font-size:13px;color:#92400e;line-height:1.5;">This form is currently <strong>paused</strong>. Embedded forms will display a "form unavailable" message to visitors until you resume it.</span>
+          </div>
+          ` : ''}
+
+          <!-- JS Embed -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:14px;font-weight:700;">JavaScript Embed</span>
+                <span style="font-size:11px;font-weight:600;color:#7C3AED;background:rgba(124,58,237,0.1);padding:2px 8px;border-radius:20px;">Recommended</span>
+              </div>
+              <button onclick="copyEmbedCode('js')" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">
+                <i data-lucide="copy" style="width:14px;height:14px;"></i> Copy
+              </button>
+            </div>
+            <pre id="embed-code-js" style="background:#0d1117;color:#e6edf3;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6;overflow-x:auto;margin:0;font-family:'SF Mono',Monaco,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">${escapeHtml(jsCode)}</pre>
+          </div>
+
+          <!-- iframe Embed -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:14px;font-weight:700;">iframe Embed</span>
+                <span style="font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:20px;">Fallback</span>
+              </div>
+              <button onclick="copyEmbedCode('iframe')" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">
+                <i data-lucide="copy" style="width:14px;height:14px;"></i> Copy
+              </button>
+            </div>
+            <pre id="embed-code-iframe" style="background:#0d1117;color:#e6edf3;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6;overflow-x:auto;margin:0;font-family:'SF Mono',Monaco,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">${escapeHtml(iframeCode)}</pre>
+          </div>
+
+          <!-- Integration Instructions -->
+          <div style="border-top:1px solid var(--border);padding-top:16px;">
+            <button onclick="const c=document.getElementById('embed-instructions');const i=this.querySelector('i');if(c.style.display==='none'){c.style.display='block';i.style.transform='rotate(90deg)'}else{c.style.display='none';i.style.transform='rotate(0)'}" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);width:100%;text-align:left;padding:4px 0;">
+              <i data-lucide="chevron-right" style="width:16px;height:16px;transition:transform 0.2s;color:var(--muted);"></i>
+              How to embed on your website
+            </button>
+            <div id="embed-instructions" style="display:none;margin-top:12px;font-size:13px;line-height:1.7;color:var(--text);">
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">General (any website)</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Copy the JavaScript embed code above</li>
+                  <li>Paste it into your website's HTML where you want the form to appear</li>
+                  <li>The form will load automatically — no additional setup needed</li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">WordPress</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Edit the page or post where you want the form</li>
+                  <li>Add a <strong>Custom HTML</strong> block</li>
+                  <li>Paste the embed code and click <strong>Update</strong></li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">Squarespace</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Edit the page and click <strong>Add Section → Code</strong></li>
+                  <li>Paste the embed code into the code block</li>
+                  <li>Save and publish your changes</li>
+                </ol>
+              </div>
+              <div style="margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:4px;">Wix</div>
+                <ol style="margin:0;padding-left:20px;color:var(--muted);">
+                  <li>Open the Wix Editor and click <strong>+ Add Elements → Embed Code → Embed HTML</strong></li>
+                  <li>Select "Code" and paste the embed code</li>
+                  <li>Click <strong>Update</strong> to publish</li>
+                </ol>
+              </div>
+              <div>
+                <div style="font-weight:700;margin-bottom:4px;">Using the iframe method</div>
+                <div style="color:var(--muted);">Use the iframe embed if your website doesn't allow external JavaScript (some CMS platforms restrict scripts). The iframe renders the form in a self-contained frame — less flexible but works everywhere.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons();
+
+    // Store codes globally for copyEmbedCode()
+    window._embedCodes = { js: jsCode, iframe: iframeCode };
+
+  } catch (err) {
+    showToast('Failed to load form: ' + err.message, 'error');
+  }
+}
+
+function copyEmbedCode(type) {
+  const code = window._embedCodes ? window._embedCodes[type] : '';
+  if (!code) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast('Embed code copied to clipboard', 'success');
+    }).catch(() => {
+      fallbackCopy(code);
+    });
+  } else {
+    fallbackCopy(code);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('Embed code copied to clipboard', 'success');
+  } catch (e) {
+    showToast('Could not copy — please select and copy manually', 'error');
+  }
+  document.body.removeChild(ta);
+}
+
+// ── FORM BUILDER ──────────────────────────────────────────────────────────────
+let currentForm = null; // { form_id, name, fields: [], field_mapping: {}, status, styling, spam_protection }
+
+function openFormBuilder(formId) {
+  if (formId) {
+    // Edit mode — fetch the form
+    fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } })
+      .then(r => r.json())
+      .then(data => {
+        const forms = Array.isArray(data) ? data : (data.forms || []);
+        const form = forms.find(f => f.form_id === formId);
+        if (!form) { showToast('Form not found', 'error'); return; }
+        currentForm = JSON.parse(JSON.stringify(form));
+        if (!currentForm.fields) currentForm.fields = [];
+        if (!currentForm.field_mapping) currentForm.field_mapping = {};
+        renderFormBuilder();
+      })
+      .catch(err => showToast('Failed to load form: ' + err.message, 'error'));
+  } else {
+    // New form
+    currentForm = {
+      name: '',
+      fields: [],
+      field_mapping: {},
+      status: 'active',
+      styling: {},
+    };
+    renderFormBuilder();
+  }
+}
+
+const FIELD_TYPES = [
+  { type: 'text',     label: 'Text',     icon: 'type' },
+  { type: 'email',    label: 'Email',    icon: 'mail' },
+  { type: 'tel',      label: 'Phone',    icon: 'phone' },
+  { type: 'textarea', label: 'Long Text',icon: 'align-left' },
+  { type: 'select',   label: 'Dropdown', icon: 'chevron-down' },
+  { type: 'checkbox', label: 'Checkbox', icon: 'check-square' },
+  { type: 'date',     label: 'Date',     icon: 'calendar' },
+];
+
+const MAPS_TO_OPTIONS = ['', 'name', 'phone', 'email', 'service', 'notes'];
+const MAPS_TO_LABELS = { '': 'Custom', name: 'Name', phone: 'Phone', email: 'Email', service: 'Service', notes: 'Notes' };
+
+function renderFormBuilder() {
+  // Remove existing builder if any
+  const existing = document.getElementById('form-builder-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'form-builder-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  overlay.setAttribute('data-modal', '');
+
+  const isEditing = !!currentForm.form_id;
+  const maxFields = 20;
+  const canAddMore = currentForm.fields.length < maxFields;
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;max-width:1100px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;display:flex;flex-direction:column;max-height:90vh;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="file-input" style="width:18px;height:18px;color:#3B82F6;"></i>
+          </div>
+          <div style="font-size:17px;font-weight:700;">${isEditing ? 'Edit Form' : 'Create New Form'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <!-- Preview viewport toggle -->
+          <div id="fb-viewport-toggle" style="display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;">
+            <button onclick="setPreviewViewport('desktop')" id="fb-vp-desktop" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;">Desktop</button>
+            <button onclick="setPreviewViewport('mobile')" id="fb-vp-mobile" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);">Mobile</button>
+          </div>
+          <button onclick="document.getElementById('form-builder-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Body: two-column layout -->
+      <div style="display:flex;gap:0;flex:1;overflow:hidden;">
+        <!-- Left: Config -->
+        <div style="flex:1;min-width:0;padding:20px;overflow-y:auto;">
+          <!-- Form name -->
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Form Name</label>
+            <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
+              oninput="currentForm.name = this.value; updateFbSaveButton();"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+          </div>
+
+          <!-- Fields -->
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Fields (${currentForm.fields.length}/${maxFields})</label>
+            </div>
+            <div id="fb-fields" style="display:flex;flex-direction:column;gap:10px;">
+              ${currentForm.fields.length === 0 ? '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>' : ''}
+            </div>
+          </div>
+
+          <!-- Add field dropdown -->
+          <div id="fb-add-field-wrap" style="${canAddMore ? '' : 'display:none;'}">
+            <div style="position:relative;">
+              <button id="fb-add-field-btn" onclick="toggleFieldDropdown()"
+                style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+                <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
+              </button>
+              <div id="fb-field-dropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
+                ${FIELD_TYPES.map(ft => `
+                  <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+                    <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
+                    ${ft.label}
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Style section -->
+          ${renderStyleSection()}
+        </div>
+
+        <!-- Right: Live Preview -->
+        <div style="width:420px;flex-shrink:0;border-left:1px solid var(--border);background:var(--field);display:flex;flex-direction:column;">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Live Preview</span>
+            <span id="fb-preview-width" style="font-size:11px;color:var(--muted);">100%</span>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start;">
+            <div id="fb-preview-wrap" style="width:100%;transition:width 0.2s;">
+              <iframe id="fb-preview-iframe"
+                style="width:100%;border:none;border-radius:8px;background:#fff;min-height:400px;"
+                sandbox="allow-same-origin"
+                title="Form Preview"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;">
+        <button class="btn-secondary" onclick="document.getElementById('form-builder-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+        <button id="fb-save-btn" onclick="saveFormBuilder()" ${currentForm.name ? '' : 'disabled'}
+          style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#22c55e;${currentForm.name ? '' : 'opacity:0.5;cursor:not-allowed;'}">
+          ${isEditing ? 'Save Changes' : 'Create Form'}
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+
+  // Close on backdrop click
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Render existing fields
+  renderFieldCards();
+
+  // Initial preview render
+  setTimeout(renderFormPreview, 50);
+}
+
+// ── Style customization ─────────────────────────────────────────────────────
+
+const THEME_PRESETS = {
+  minimal: { accent_color: '#333333', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '4px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
+  modern:  { accent_color: '#7C3AED', background_color: '#f8fafc', text_color: '#1e293b', input_border: '#e2e8f0', border_radius: '12px', font_family: 'Inter', submit_label: 'Send Message', submit_full_width: true },
+  bold:    { accent_color: '#1e293b', background_color: '#0f172a', text_color: '#f8fafc', input_border: '#334155', border_radius: '16px', font_family: 'Montserrat', submit_label: 'Get Started', submit_full_width: true },
+  auzora:  { accent_color: '#22c55e', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '8px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
+};
+
+const FONT_OPTIONS = [
+  { value: 'inherit', label: 'System UI' },
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Montserrat', label: 'Montserrat' },
+];
+
+function renderStyleSection() {
+  if (!currentForm.styling) currentForm.styling = {};
+  const s = currentForm.styling;
+  if (!s.accent_color) s.accent_color = '#22c55e';
+  if (!s.background_color) s.background_color = '#ffffff';
+  if (!s.text_color) s.text_color = '#1a1a1a';
+  if (!s.input_border) s.input_border = '#d1d5db';
+  if (!s.border_radius) s.border_radius = '8px';
+  if (!s.font_family) s.font_family = 'inherit';
+  if (!s.submit_label) s.submit_label = 'Submit';
+  if (s.submit_full_width === undefined) s.submit_full_width = true;
+
+  const radiusVal = parseInt(s.border_radius) || 8;
+
+  return `
+    <div data-style-section style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
+      <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:block;">Style</label>
+
+      <!-- Theme presets -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+        ${Object.entries(THEME_PRESETS).map(([key, preset]) => `
+          <button onclick="applyThemePreset('${key}')"
+            style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:border-color 0.15s;"
+            onmouseover="this.style.borderColor='var(--accent)'"
+            onmouseout="this.style.borderColor='var(--border)'">
+            <span style="width:14px;height:14px;border-radius:${preset.border_radius};background:${preset.accent_color};border:1px solid ${preset.input_border};"></span>
+            ${key.charAt(0).toUpperCase() + key.slice(1)}
+          </button>`).join('')}
+      </div>
+
+      <!-- Color pickers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        ${renderColorPicker('accent_color', 'Button Color', s.accent_color)}
+        ${renderColorPicker('background_color', 'Background', s.background_color)}
+        ${renderColorPicker('text_color', 'Text Color', s.text_color)}
+        ${renderColorPicker('input_border', 'Input Border', s.input_border)}
+      </div>
+
+      <!-- Font family -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Font Family</label>
+        <select id="fb-font" onchange="updateStyling('font_family', this.value)"
+          style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;">
+          ${FONT_OPTIONS.map(f => `<option value="${f.value}" ${s.font_family === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
+          <option value="custom" ${!FONT_OPTIONS.some(f => f.value === s.font_family) && s.font_family !== 'inherit' ? 'selected' : ''}>Custom...</option>
+        </select>
+        <input type="text" id="fb-font-custom" placeholder="e.g. 'Comic Sans MS', sans-serif"
+          value="${FONT_OPTIONS.some(f => f.value === s.font_family) || s.font_family === 'inherit' ? '' : escapeHtml(s.font_family)}"
+          oninput="updateStyling('font_family', this.value)"
+          style="display:none;width:100%;margin-top:6px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      </div>
+
+      <!-- Border radius slider -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text);">Border Radius</label>
+          <span id="fb-radius-val" style="font-size:12px;color:var(--muted);font-weight:600;">${radiusVal}px</span>
+        </div>
+        <input type="range" min="0" max="20" value="${radiusVal}" oninput="updateBorderRadius(this.value)"
+          style="width:100%;accent-color:var(--accent);" />
+      </div>
+
+      <!-- Button options -->
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Text</label>
+          <input type="text" id="fb-submit-label" value="${escapeHtml(s.submit_label)}" oninput="updateStyling('submit_label', this.value)"
+            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        </div>
+        <div style="min-width:140px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Width</label>
+          <div style="display:flex;gap:6px;">
+            <button onclick="updateStyling('submit_full_width', true)" id="fb-btn-full"
+              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Full</button>
+            <button onclick="updateStyling('submit_full_width', false)" id="fb-btn-auto"
+              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Auto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom CSS (collapsible) -->
+      <details style="margin-top:8px;">
+        <summary style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;padding:8px 0;list-style:none;">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i>
+          Custom CSS (advanced)
+        </summary>
+        <textarea id="fb-custom-css" placeholder="/* Add custom CSS here */" rows="4"
+          oninput="updateStyling('custom_css', this.value)"
+          style="width:100%;margin-top:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:'Courier New',monospace;resize:vertical;">${escapeHtml(s.custom_css || '')}</textarea>
+      </details>
+    </div>`;
+}
+
+function renderColorPicker(key, label, value) {
+  return `
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">${label}</label>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:6px 10px;">
+        <input type="color" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
+          style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;" />
+        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.querySelector('input[type=color][oninput*=${key}]')?.click()"
+          style="flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;" />
+      </div>
+    </div>`;
+}
+
+function updateStyling(key, value) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = value;
+
+  // Handle font custom toggle
+  if (key === 'font_family') {
+    const select = document.getElementById('fb-font');
+    const customInput = document.getElementById('fb-font-custom');
+    if (select && customInput) {
+      if (!FONT_OPTIONS.some(f => f.value === value) && value !== 'inherit') {
+        select.value = 'custom';
+        customInput.style.display = 'block';
+        customInput.value = value;
+      } else {
+        customInput.style.display = 'none';
+      }
+    }
+  }
+
+  // Update button width toggle visuals
+  if (key === 'submit_full_width') {
+    const fullBtn = document.getElementById('fb-btn-full');
+    const autoBtn = document.getElementById('fb-btn-auto');
+    if (fullBtn && autoBtn) {
+      if (value) {
+        fullBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+        autoBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+      } else {
+        fullBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+        autoBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+      }
+    }
+  }
+
+  updateFormPreview();
+}
+
+function updateBorderRadius(val) {
+  const px = val + 'px';
+  currentForm.styling.border_radius = px;
+  const display = document.getElementById('fb-radius-val');
+  if (display) display.textContent = px;
+  updateFormPreview();
+}
+
+function applyThemePreset(name) {
+  const preset = THEME_PRESETS[name];
+  if (!preset) return;
+  if (!currentForm.styling) currentForm.styling = {};
+  Object.assign(currentForm.styling, preset);
+
+  // Re-render the style section to reflect new values
+  const builder = document.getElementById('form-builder-overlay');
+  if (builder) {
+    // Find the style section and replace it
+    const styleSection = builder.querySelector('[data-style-section]');
+    if (styleSection) {
+      styleSection.outerHTML = renderStyleSection();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  updateFormPreview();
+}
+
+function updateFormPreview() {
+  clearTimeout(window._fbPreviewDebounce);
+  window._fbPreviewDebounce = setTimeout(renderFormPreview, 200);
+}
+
+function renderFormPreview() {
+  const iframe = document.getElementById('fb-preview-iframe');
+  if (!iframe || !currentForm) return;
+
+  const s = currentForm.styling || {};
+  const fields = currentForm.fields || [];
+  const fontStack = s.font_family && s.font_family !== 'inherit'
+    ? `'${s.font_family}', sans-serif`
+    : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const radius = s.border_radius || '8px';
+  const submitLabel = escapeHtml(s.submit_label || 'Submit');
+  const submitWidth = s.submit_full_width === false ? 'auto' : '100%';
+
+  // Build field HTML
+  const fieldsHTML = fields.map(f => {
+    const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
+    const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
+    const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
+    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:#fff;color:${s.text_color || '#1a1a1a'};`;
+
+    let input = '';
+    switch (f.type) {
+      case 'textarea':
+        input = `<textarea ${ph} rows="3" style="${inputStyle}resize:vertical;"></textarea>`;
+        break;
+      case 'select':
+        input = `<select style="${inputStyle}appearance:none;">
+          ${(f.options || ['Option 1']).map(o => `<option>${escapeHtml(o)}</option>`).join('')}
+        </select>`;
+        break;
+      case 'checkbox':
+        input = `<div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" style="width:18px;height:18px;accent-color:${s.accent_color || '#22c55e'};" /> <span style="font-size:14px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.placeholder || 'Check this box')}</span></div>`;
+        break;
+      case 'date':
+        input = `<input type="date" style="${inputStyle}" />`;
+        break;
+      default:
+        input = `<input type="${f.type || 'text'}" ${ph} style="${inputStyle}" />`;
+    }
+
+    return `<div style="margin-bottom:14px;">${label}${input}</div>`;
+  }).join('');
+
+  // Build full HTML document
+  const googleFonts = s.font_family && s.font_family !== 'inherit'
+    ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(s.font_family)}:wght@400;500;600;700&display=swap" rel="stylesheet">`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${googleFonts}
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: ${fontStack}; background: ${s.background_color || '#ffffff'}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
+  .az-form-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: ${s.text_color || '#1a1a1a'}; }
+  .az-submit-btn {
+    ${submitWidth === 'auto' ? '' : 'width: 100%;'}
+    padding: 12px 24px;
+    background: ${s.accent_color || '#22c55e'};
+    color: #fff;
+    border: none;
+    border-radius: ${radius};
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: ${fontStack};
+    transition: opacity 0.15s;
+  }
+  .az-submit-btn:hover { opacity: 0.9; }
+  ${s.custom_css || ''}
+</style>
+</head>
+<body>
+  ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
+  <form onsubmit="event.preventDefault();">
+    ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
+    <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
+  </form>
+</body>
+</html>`;
+
+  iframe.srcdoc = html;
+}
+
+function setPreviewViewport(size) {
+  const wrap = document.getElementById('fb-preview-wrap');
+  const desktopBtn = document.getElementById('fb-vp-desktop');
+  const mobileBtn = document.getElementById('fb-vp-mobile');
+  const widthLabel = document.getElementById('fb-preview-width');
+  if (!wrap) return;
+
+  if (size === 'mobile') {
+    wrap.style.width = '375px';
+    if (desktopBtn) desktopBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);';
+    if (mobileBtn) mobileBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;';
+    if (widthLabel) widthLabel.textContent = '375px';
+  } else {
+    wrap.style.width = '100%';
+    if (desktopBtn) desktopBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;';
+    if (mobileBtn) mobileBtn.style.cssText = 'padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);';
+    if (widthLabel) widthLabel.textContent = '100%';
+  }
+}
+
+function toggleFieldDropdown() {
+  const dd = document.getElementById('fb-field-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function addField(type) {
+  const ft = FIELD_TYPES.find(f => f.type === type);
+  if (!ft) return;
+  const fieldId = 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newField = {
+    id: fieldId,
+    type: type,
+    label: ft.label,
+    placeholder: '',
+    required: false,
+    maps_to: '',
+  };
+  if (type === 'select') {
+    newField.options = ['Option 1'];
+  }
+  currentForm.fields.push(newField);
+  document.getElementById('fb-field-dropdown').style.display = 'none';
+
+  // Update field count and add-field visibility
+  updateFieldCount();
+  renderFieldCards();
+
+  // Hide add button if at max
+  if (currentForm.fields.length >= 20) {
+    document.getElementById('fb-add-field-wrap').style.display = 'none';
+  }
+}
+
+function removeField(fieldId) {
+  currentForm.fields = currentForm.fields.filter(f => f.id !== fieldId);
+  // Clean up field_mapping
+  for (const key of Object.keys(currentForm.field_mapping)) {
+    if (currentForm.field_mapping[key] === fieldId) {
+      delete currentForm.field_mapping[key];
+    }
+  }
+  updateFieldCount();
+  renderFieldCards();
+  // Show add button if under max
+  if (currentForm.fields.length < 20) {
+    const w = document.getElementById('fb-add-field-wrap');
+    if (w) w.style.display = '';
+  }
+}
+
+function moveField(fieldId, direction) {
+  const idx = currentForm.fields.findIndex(f => f.id === fieldId);
+  if (idx < 0) return;
+  if (direction === 'up' && idx > 0) {
+    [currentForm.fields[idx], currentForm.fields[idx - 1]] = [currentForm.fields[idx - 1], currentForm.fields[idx]];
+  } else if (direction === 'down' && idx < currentForm.fields.length - 1) {
+    [currentForm.fields[idx], currentForm.fields[idx + 1]] = [currentForm.fields[idx + 1], currentForm.fields[idx]];
+  }
+  renderFieldCards();
+}
+
+function updateField(fieldId, prop, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  field[prop] = value;
+}
+
+function updateMapsTo(fieldId, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  field.maps_to = value;
+  // Update field_mapping: only one field per standard field
+  for (const key of Object.keys(currentForm.field_mapping)) {
+    if (currentForm.field_mapping[key] === fieldId) {
+      delete currentForm.field_mapping[key];
+    }
+  }
+  if (value && value !== '') {
+    currentForm.field_mapping[value] = fieldId;
+  }
+}
+
+function addSelectOption(fieldId) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options.push('New Option');
+  renderFieldCards();
+}
+
+function removeSelectOption(fieldId, optIdx) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options.splice(optIdx, 1);
+  renderFieldCards();
+}
+
+function updateSelectOption(fieldId, optIdx, value) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field || !field.options) return;
+  field.options[optIdx] = value;
+}
+
+function toggleFieldExpand(fieldId) {
+  const card = document.getElementById(`fb-card-${fieldId}`);
+  const config = document.getElementById(`fb-config-${fieldId}`);
+  if (config) {
+    const isHidden = config.style.display === 'none';
+    config.style.display = isHidden ? 'block' : 'none';
+    const chevron = card.querySelector('.fb-chevron');
+    if (chevron) {
+      chevron.setAttribute('data-lucide', isHidden ? 'chevron-down' : 'chevron-right');
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function updateFieldCount() {
+  const countLabel = document.querySelector('#fb-fields').previousElementSibling.querySelector('label');
+  if (countLabel) {
+    countLabel.textContent = `Fields (${currentForm.fields.length}/20)`;
+  }
+}
+
+function renderFieldCards() {
+  const container = document.getElementById('fb-fields');
+  if (!container) return;
+
+  if (currentForm.fields.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>';
+    return;
+  }
+
+  container.innerHTML = currentForm.fields.map((f, idx) => {
+    const ft = FIELD_TYPES.find(t => t.type === f.type) || FIELD_TYPES[0];
+    const isExpanded = false; // collapsed by default
+    const hasOptions = f.type === 'select';
+    const mapsToVal = f.maps_to || '';
+    // Find what standard field this maps to (check field_mapping)
+    for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
+      if (v === f.id) { mapsToVal_read = k; break; }
+    }
+    let mapsToVal_read = mapsToVal;
+    for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
+      if (v === f.id) { mapsToVal_read = k; break; }
+    }
+
+    return `
+    <div id="fb-card-${f.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <!-- Collapsed header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;" onclick="toggleFieldExpand('${f.id}')">
+        <i data-lucide="grip-vertical" class="fb-drag" style="width:15px;height:15px;color:var(--muted);cursor:grab;flex-shrink:0;"></i>
+        <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:#3B82F6;flex-shrink:0;"></i>
+        <span style="flex:1;font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.label || 'Untitled')}</span>
+        ${f.required ? '<span style="font-size:10px;font-weight:700;color:#fff;background:#ef4444;padding:2px 7px;border-radius:10px;flex-shrink:0;">Required</span>' : ''}
+        ${mapsToVal_read ? `<span style="font-size:10px;font-weight:700;color:#3B82F6;background:rgba(59,130,246,0.1);padding:2px 7px;border-radius:10px;flex-shrink:0;">Maps: ${MAPS_TO_LABELS[mapsToVal_read] || mapsToVal_read}</span>` : ''}
+        <i data-lucide="chevron-down" class="fb-chevron" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"></i>
+      </div>
+      <!-- Config panel (hidden by default) -->
+      <div id="fb-config-${f.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border);">
+        <div style="padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+          <!-- Label -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Label</label>
+            <input type="text" value="${escapeHtml(f.label)}" placeholder="Field label" oninput="updateField('${f.id}', 'label', this.value); updateFieldCardHeader('${f.id}');"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+          </div>
+          <!-- Placeholder -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Placeholder</label>
+            <input type="text" value="${escapeHtml(f.placeholder || '')}" placeholder="Placeholder text" oninput="updateField('${f.id}', 'placeholder', this.value);"
+              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+          </div>
+          <!-- Required toggle + Maps to -->
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="fb-req-${f.id}" ${f.required ? 'checked' : ''} onchange="updateField('${f.id}', 'required', this.checked); renderFieldCards();"
+                style="width:16px;height:16px;cursor:pointer;" />
+              <label for="fb-req-${f.id}" style="font-size:13px;color:var(--text);cursor:pointer;user-select:none;">Required</label>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Maps to</label>
+              <select onchange="updateMapsTo('${f.id}', this.value); renderFieldCards();"
+                style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;">
+                ${MAPS_TO_OPTIONS.map(opt => `<option value="${opt}" ${mapsToVal_read === opt ? 'selected' : ''}>${MAPS_TO_LABELS[opt]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <!-- Select options editor -->
+          ${hasOptions ? `
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Options</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${(f.options || []).map((opt, i) => `
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <input type="text" value="${escapeHtml(opt)}" oninput="updateSelectOption('${f.id}', ${i}, this.value);"
+                    style="flex:1;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+                  <button onclick="removeSelectOption('${f.id}', ${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:4px;">
+                    <i data-lucide="x" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>`).join('')}
+            </div>
+            <button onclick="addSelectOption('${f.id}')" style="margin-top:6px;display:flex;align-items:center;gap:6px;background:none;border:none;color:#3B82F6;font-size:13px;font-weight:600;cursor:pointer;">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i> Add Option
+            </button>
+          </div>` : ''}
+          <!-- Actions: reorder + delete -->
+          <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+            <button onclick="moveField('${f.id}', 'up')" ${idx === 0 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === 0 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+              <i data-lucide="chevron-up" style="width:14px;height:14px;"></i>
+            </button>
+            <button onclick="moveField('${f.id}', 'down')" ${idx === currentForm.fields.length - 1 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === currentForm.fields.length - 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+              <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+            </button>
+            <button onclick="if(confirm('Delete this field?')) removeField('${f.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 10px;cursor:pointer;color:#ef4444;">
+              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+
+  // Update live preview after field changes
+  updateFormPreview();
+}
+
+function updateFieldCardHeader(fieldId) {
+  const field = currentForm.fields.find(f => f.id === fieldId);
+  if (!field) return;
+  const card = document.getElementById(`fb-card-${fieldId}`);
+  if (!card) return;
+  const labelSpan = card.querySelector('div > span');
+  if (labelSpan) labelSpan.textContent = field.label || 'Untitled';
+}
+
+function updateFbSaveButton() {
+  const btn = document.getElementById('fb-save-btn');
+  if (!btn) return;
+  if (currentForm.name && currentForm.name.trim()) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+async function saveFormBuilder() {
+  const btn = document.getElementById('fb-save-btn');
+  if (!btn) return;
+  if (!currentForm.name || !currentForm.name.trim()) {
+    showToast('Form name is required', 'error');
+    return;
+  }
+  if (currentForm.fields.length === 0) {
+    showToast('Add at least one field', 'error');
+    return;
+  }
+
+  // Build payload — match the API's expected shape
+  const payload = {
+    name: currentForm.name.trim(),
+    fields: currentForm.fields.map(f => {
+      const field = {
+        id: f.id,
+        type: f.type,
+        label: f.label || '',
+        required: !!f.required,
+      };
+      if (f.placeholder) field.placeholder = f.placeholder;
+      if (f.maps_to) field.maps_to = f.maps_to;
+      if (f.type === 'select' && f.options) field.options = f.options;
+      return field;
+    }),
+    field_mapping: currentForm.field_mapping || {},
+  };
+
+  // Add styling and spam_protection
+  if (currentForm.styling) payload.styling = currentForm.styling;
+  if (currentForm.spam_protection) payload.spam_protection = currentForm.spam_protection;
+  if (currentForm.form_id) {
+    if (currentForm.status) payload.status = currentForm.status;
+  }
+
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  try {
+    const isEditing = !!currentForm.form_id;
+    const url = isEditing
+      ? `${API}/portal/forms/${currentForm.form_id}`
+      : `${API}/portal/forms`;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Portal-Token': portalToken,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    document.getElementById('form-builder-overlay').remove();
+    showToast(isEditing ? 'Form updated successfully' : 'Form created successfully', 'success');
+    loadForms();
+  } catch (err) {
+    showToast(`Save failed: ${err.message}`, 'error');
+    const isEditing = !!currentForm.form_id;
+    btn.textContent = isEditing ? 'Save Changes' : 'Create Form';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
+function confirmDeleteForm(formId, formName) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:36px;height:36px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="trash-2" style="width:18px;height:18px;color:#ef4444;"></i>
+        </div>
+        <div style="font-size:17px;font-weight:700;">Delete form?</div>
+      </div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">
+        Delete <strong style="color:var(--text);">${escapeHtml(formName)}</strong>? This cannot be undone. Embedded forms will stop working immediately.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="this.closest('[data-modal]').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+        <button id="confirm-delete-btn" style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#ef4444;">Delete</button>
+      </div>
+    </div>`;
+  modal.setAttribute('data-modal', '');
+  document.body.appendChild(modal);
+  if (window.lucide) lucide.createIcons();
+
+  // Cancel on backdrop click
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  // Confirm delete
+  modal.querySelector('#confirm-delete-btn').addEventListener('click', async () => {
+    const btn = modal.querySelector('#confirm-delete-btn');
+    btn.textContent = 'Deleting…';
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/portal/forms/${formId}`, {
+        method: 'DELETE',
+        headers: { 'X-Portal-Token': portalToken },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      modal.remove();
+      showToast('Form deleted', 'success');
+      loadForms();
+    } catch (err) {
+      showToast(`Delete failed: ${err.message}`, 'error');
+      btn.textContent = 'Delete';
+      btn.disabled = false;
+    }
+  });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
