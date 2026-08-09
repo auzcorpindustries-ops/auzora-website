@@ -1909,6 +1909,52 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
 
+// ── Session expiry detection ─────────────────────────────────────────────────
+// When the portal token expires or is revoked, API calls return 401. Instead of
+// each loadX() function needing its own 401 handler, we intercept fetch globally
+// and redirect to the login screen on any 401. This fixes the bug where leaving
+// the portal idle caused Analytics and Automations to silently fail.
+const _originalFetch = window.fetch;
+window.fetch = function(...args) {
+  return _originalFetch.apply(this, args).then(res => {
+    if (res.status === 401 && portalToken) {
+      // Token expired or revoked — force re-login
+      console.warn('[Auzora] Session expired (401), redirecting to login');
+      portalToken = null;
+      sessionStorage.removeItem('atlas_token');
+      sessionStorage.removeItem('atlas_client');
+      const app = document.getElementById('app');
+      const login = document.getElementById('login-screen');
+      if (app) app.style.display = 'none';
+      if (login) login.style.display = 'flex';
+      // Show expired message on login screen
+      const errEl = document.getElementById('login-error') || document.querySelector('.login-error');
+      if (errEl) errEl.textContent = 'Your session expired. Please sign in again.';
+    }
+    return res;
+  });
+};
+
+// ── Reload data when tab becomes visible after being idle ────────────────────
+// When the user returns to an idle tab, the displayed data may be stale. Refresh
+// the current page's data on visibility change.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && portalToken) {
+    // Tab became visible — reload current page data
+    const active = document.querySelector('.page.active');
+    if (active) {
+      const pageName = active.id.replace('page-', '');
+      // Debounce slightly to avoid double-firing
+      clearTimeout(window._visibilityReload);
+      window._visibilityReload = setTimeout(() => {
+        if (portalToken && document.visibilityState === 'visible') {
+          showPage(pageName);
+        }
+      }, 200);
+    }
+  }
+});
+
 // Outbound leads state — declared early to avoid temporal dead zone issues
 let obLeadsAll = [];
 let obLeadsPage = 0;
