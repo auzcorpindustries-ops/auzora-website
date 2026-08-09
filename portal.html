@@ -2767,12 +2767,8 @@ function renderFieldCards() {
     const ft = FIELD_TYPES.find(t => t.type === f.type) || FIELD_TYPES[0];
     const isExpanded = false; // collapsed by default
     const hasOptions = f.type === 'select';
-    const mapsToVal = f.maps_to || '';
+    let mapsToVal_read = f.maps_to || '';
     // Find what standard field this maps to (check field_mapping)
-    for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
-      if (v === f.id) { mapsToVal_read = k; break; }
-    }
-    let mapsToVal_read = mapsToVal;
     for (const [k, v] of Object.entries(currentForm.field_mapping || {})) {
       if (v === f.id) { mapsToVal_read = k; break; }
     }
