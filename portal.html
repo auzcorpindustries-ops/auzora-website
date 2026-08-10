@@ -2480,7 +2480,9 @@ async function loadForms() {
   try {
     const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const forms = await res.json();
+    const data = await res.json();
+    // API returns { forms: [...] } — tolerate a bare array for backwards compatibility
+    const forms = Array.isArray(data) ? data : (data.forms || []);
 
     if (!forms || forms.length === 0) {
       grid.innerHTML = '';
@@ -2685,7 +2687,9 @@ async function openEmbedModal(formId) {
   try {
     const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const forms = await res.json();
+    const data = await res.json();
+    // API returns { forms: [...] } — tolerate a bare array for backwards compatibility
+    const forms = Array.isArray(data) ? data : (data.forms || []);
     const form = forms.find(f => f.form_id === formId);
     if (!form) { showToast('Form not found', 'error'); return; }
 
