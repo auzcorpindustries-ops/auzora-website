@@ -1589,7 +1589,9 @@ function toggleOverrideControls(checked) {
 
 async function loadClientEntitlements(clientId) {
   try {
-    const res = await fetch(`${API}/clients/${clientId}/entitlements`);
+    const res = await fetch(`${API}/clients/${clientId}/entitlements`, {
+      headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
+    });
     if (!res.ok) return;
     const data = await res.json();
 
@@ -1641,7 +1643,7 @@ async function saveClientEdit() {
   try {
     const res = await fetch(`${API}/clients/${editingClientId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('atlas_admin_key') || '' },
       body: JSON.stringify(updates)
     });
     if (!res.ok) throw new Error('Update failed');
@@ -2264,7 +2266,7 @@ async function createClient() {
   try {
     const res = await fetch(`${API}/clients`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('atlas_admin_key') || '' },
       body: JSON.stringify(body)
     });
     if (!res.ok) throw new Error();
