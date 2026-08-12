@@ -5523,6 +5523,17 @@ function renderObLeads() {
     const lastDate = latest.captured_at ? new Date(latest.captured_at).toLocaleString() : '—';
     const intent = latest.intent || latest.lead_context || '—';
 
+    // SMS consent badge
+    const smsConsent = latest.sms_consent !== false; // default true if undefined
+    const smsBadge = smsConsent
+      ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px;">SMS On</span>'
+      : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px;">SMS Off</span>';
+
+    // SMS opt-out/opt-in toggle button
+    const smsToggleBtn = smsConsent
+      ? `<button onclick="toggleSmsConsent('${latest.lead_id}', false, this)" style="background:none;border:1px solid #ef444440;border-radius:6px;padding:3px 10px;font-size:11px;color:#ef4444;cursor:pointer;margin-left:4px;">Opt Out SMS</button>`
+      : `<button onclick="toggleSmsConsent('${latest.lead_id}', true, this)" style="background:none;border:1px solid #22c55e40;border-radius:6px;padding:3px 10px;font-size:11px;color:#16a34a;cursor:pointer;margin-left:4px;">Opt In SMS</button>`;
+
     const canManualCall = portalEntitlements?.manualOutboundCalls === true;
     const callBtn = optedOut
       ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
@@ -5603,7 +5614,7 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
-      <td><span class="${badgeClass}">${status}${attempts}</span>${attentionBadge}</td>
+      <td><span class="${badgeClass}">${status}${attempts}</span>${attentionBadge}${smsBadge}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -5611,7 +5622,7 @@ function renderObLeads() {
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
-      <td style="text-align:right;white-space:nowrap;">${callBtn}${dismissBtn}</td>
+      <td style="text-align:right;white-space:nowrap;">${callBtn}${dismissBtn}${smsToggleBtn}</td>
     </tr>
     ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
@@ -5637,6 +5648,25 @@ function renderObLeads() {
 
 function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
 function obLeadsNext() { obLeadsPage++; renderObLeads(); }
+
+async function toggleSmsConsent(leadId, optIn, btn) {
+  const endpoint = optIn ? 'opt-in' : 'opt-out';
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Updating…';
+  try {
+    const res = await fetch(`${API}/portal/leads/${leadId}/${endpoint}`, {
+      method: 'PATCH',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast(optIn ? 'SMS re-enabled for this lead' : 'Lead opted out of SMS', 'success');
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('toggleSmsConsent error:', e.message);
+    showToast('Could not update SMS consent', 'error');
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
 
 async function dismissAttention(leadId, btn) {
   const orig = btn.textContent;
@@ -7404,7 +7434,8 @@ async function showLeadTimeline(leadId) {
     const timeline = data.timeline || [];
 
     nameEl.textContent = lead.name || lead.email || lead.phone || 'Unknown Lead';
-    metaEl.textContent = [lead.phone, lead.email, lead.source && lead.source.replace(/_/g, ' ')].filter(Boolean).join(' · ');
+    const smsStatus = lead.sms_consent === false ? 'SMS Off' : 'SMS On';
+    metaEl.textContent = [lead.phone, lead.email, lead.source && lead.source.replace(/_/g, ' '), smsStatus].filter(Boolean).join(' · ');
 
     if (!timeline.length) {
       content.innerHTML = '<div class="empty">No activity recorded for this lead yet.</div>';
