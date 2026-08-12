@@ -4045,26 +4045,115 @@ async function loadCalendarEvents() {
       return;
     }
 
-    eventsDiv.innerHTML = events.map(ev => {
-      const start = ev.start ? new Date(ev.start).toLocaleString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-      }) : '—';
-      const summary = ev.summary || '(No title)';
-      const loc = ev.location ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📍 ${ev.location}</div>` : '';
-      return `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;">
-        <div style="font-size:20px;">📅</div>
-        <div style="flex:1;">
-          <div style="font-weight:600;font-size:13px;">${summary}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${start}</div>
-          ${loc}
-        </div>
-      </div>`;
-    }).join('');
+    eventsDiv.innerHTML = renderCalendarMonth(events, new Date());
   } catch (err) {
     console.error('[Auzora] Calendar events error:', err.message);
     loading.style.display = 'none';
     errorDiv.style.display = 'block';
   }
+}
+
+/**
+ * Render a month-grid calendar view from Google Calendar events.
+ * Shows the current month with event dots on days that have events.
+ * Clicking a day shows the events for that day in a detail panel below.
+ */
+function renderCalendarMonth(events, viewDate) {
+  var calState = { events: events, viewDate: new Date(viewDate), selectedDate: null };
+  if (!window._calState) window._calState = calState;
+  window._calState = calState;
+
+  function eventsForDay(day) {
+    return events.filter(function(ev) {
+      if (!ev.start) return false;
+      var d = new Date(ev.start);
+      return d.getFullYear() === day.getFullYear() &&
+             d.getMonth() === day.getMonth() &&
+             d.getDate() === day.getDate();
+    });
+  }
+
+  function buildGrid() {
+    var year = calState.viewDate.getFullYear();
+    var month = calState.viewDate.getMonth();
+    var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    var firstDay = new Date(year, month, 1);
+    var startDay = firstDay.getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var today = new Date();
+
+    var rows = '';
+    for (var w = 0; w < 6; w++) {
+      var cells = '';
+      for (var d = 0; d < 7; d++) {
+        var cellDay = w * 7 + d - startDay + 1;
+        if (cellDay < 1 || cellDay > daysInMonth) {
+          cells += '<div style="min-height:72px;border:1px solid var(--border);padding:4px;background:var(--field);opacity:0.4;"></div>';
+        } else {
+          var cellDate = new Date(year, month, cellDay);
+          var isToday = cellDate.toDateString() === today.toDateString();
+          var dayEvents = eventsForDay(cellDate);
+          var isSelected = calState.selectedDate && cellDate.toDateString() === calState.selectedDate.toDateString();
+
+          var dots = dayEvents.map(function(ev) {
+            var timeStr = ev.start ? new Date(ev.start).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '';
+            return '<div style="font-size:10px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;cursor:pointer;" onclick="window._calState.selectedDate=new Date(' + year + ',' + month + ',' + cellDay + ');window._calState.render();">' + timeStr + ' ' + (ev.summary||'') + '</div>';
+          }).join('');
+
+          var bg = isSelected ? 'var(--accent)' : (isToday ? 'var(--accent)15' : 'var(--surface)');
+          var fg = isSelected ? '#fff' : 'var(--text)';
+
+          cells += '<div style="min-height:72px;border:1px solid var(--border);padding:4px;background:' + bg + ';cursor:pointer;" onclick="window._calState.selectedDate=new Date(' + year + ',' + month + ',' + cellDay + ');window._calState.render();">' +
+            '<div style="font-size:12px;font-weight:' + (isToday ? '700' : '400') + ';color:' + fg + ';' + (isToday && !isSelected ? 'background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;' : '') + '">' + cellDay + '</div>' +
+            dots +
+          '</div>';
+        }
+      }
+      rows += '<div style="display:grid;grid-template-columns:repeat(7,1fr);">' + cells + '</div>';
+    }
+
+    var selectedHtml = '';
+    if (calState.selectedDate) {
+      var selEvents = eventsForDay(calState.selectedDate);
+      var dateLabel = calState.selectedDate.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric'});
+      selectedHtml = '<div style="margin-top:12px;padding:12px;background:var(--field);border-radius:8px;">' +
+        '<div style="font-weight:600;font-size:13px;margin-bottom:8px;">' + dateLabel + (selEvents.length ? ' — ' + selEvents.length + ' event' + (selEvents.length>1?'s':'') : ' — No events') + '</div>' +
+        (selEvents.length ? selEvents.map(function(ev) {
+          var time = ev.start ? new Date(ev.start).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '—';
+          var end = ev.end ? ' – ' + new Date(ev.end).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '';
+          var loc = ev.location ? ' · ' + ev.location : '';
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);"><div style="font-weight:600;font-size:13px;">' + (ev.summary||'(No title)') + '</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">' + time + end + loc + '</div></div>';
+        }).join('') : '<div style="color:var(--muted);font-size:13px;">No events scheduled.</div>') +
+      '</div>';
+    }
+
+    var prevMonth = 'window._calState.viewDate=new Date(' + year + ',' + (month-1) + ',1);window._calState.render();';
+    var nextMonth = 'window._calState.viewDate=new Date(' + year + ',' + (month+1) + ',1);window._calState.render();';
+    var goToday = 'window._calState.viewDate=new Date();window._calState.selectedDate=new Date();window._calState.render();';
+
+    return '<div style="font-size:13px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<button onclick="' + prevMonth + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text);font-size:14px;">‹</button>' +
+        '<div style="font-weight:700;font-size:15px;">' + monthNames[month] + ' ' + year + '</div>' +
+        '<button onclick="' + nextMonth + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text);font-size:14px;">›</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;">' +
+        dayNames.map(function(d) { return '<div style="text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;">' + d + '</div>'; }).join('') +
+      '</div>' +
+      rows +
+      '<div style="margin-top:8px;text-align:center;"><button onclick="' + goToday + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;color:var(--accent);font-size:12px;">Today</button></div>' +
+      selectedHtml +
+    '</div>';
+  }
+
+  calState.render = function() {
+    var el = document.getElementById('scheduling-cal-events');
+    if (el) el.innerHTML = buildGrid();
+  };
+
+  return buildGrid();
 }
 
 function setSchedDirty() {
