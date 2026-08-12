@@ -1954,6 +1954,7 @@ let portalToken = null;
 const _originalFetch = window.fetch;
 window.fetch = function(...args) {
   return _originalFetch.apply(this, args).then(res => {
+    // Only trigger session-expired logout if we HAD a token (not pre-login calls)
     if (res.status === 401 && portalToken) {
       // Token expired or revoked — force re-login
       console.warn('[Auzora] Session expired (401), redirecting to login');
@@ -2327,6 +2328,8 @@ function launchApp() {
   // Fetch tier entitlements and apply nav visibility
   fetchEntitlements();
   loadDashboard();
+  loadSquareStatus();
+  loadLeadIntakeToken();
 }
 
 // ── TIER VISIBILITY ───────────────────────────────────────────────────────────
@@ -4422,9 +4425,6 @@ function loadIntegrations() {
     document.getElementById('ocal-badge').style.display = 'none';
   }
 }
-
-  loadSquareStatus();
-  loadLeadIntakeToken();
 
 function showGcalSetup() {
   document.getElementById('gcal-cta').style.display = 'none';
