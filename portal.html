@@ -3023,7 +3023,7 @@ function renderFormBuilder() {
                 style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
                 <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
               </button>
-              <div id="fb-field-dropdown" style="display:none;position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
+              <div id="fb-field-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
                 ${FIELD_TYPES.map(ft => `
                   <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
                     <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
