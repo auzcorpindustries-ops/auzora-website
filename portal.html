@@ -1952,6 +1952,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
+let acProfilePhoto = null;
 
 // ── Session expiry detection ─────────────────────────────────────────────────
 // When the portal token expires or is revoked, API calls return 401. Instead of
@@ -4923,7 +4924,7 @@ const acNotifPrefs = [
 function setAcDirty() { acDirty = true; }
 
 // ── PROFILE PHOTO ──────────────────────────────────────────────
-let acProfilePhoto = null;
+// acProfilePhoto declared at top of script with other globals
 
 function updatePhotoPreview() {
   const preview = document.getElementById('ac-photo-preview');
