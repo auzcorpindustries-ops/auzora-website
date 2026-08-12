@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="/logo.png" />
 <title>Client Portal — Auzora</title>
 <style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* ─────────────────────────────────────────────────────────────────────────────
    AUZORA PORTAL — v2 light-first theme
    Light is default; .dark class adds dark overrides.
@@ -997,14 +998,20 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- Google Calendar Embed -->
+      <!-- Google Calendar — native event list (no iframe, no third-party cookies) -->
       <div class="card" style="margin-bottom:20px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div class="card-title" style="margin:0;">📅 Google Calendar</div>
           <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Connect your calendar in Integrations</span>
         </div>
-        <div id="scheduling-cal-embed" style="border-radius:10px;overflow:hidden;display:none;">
-          <iframe id="gcal-iframe" style="border:0;width:100%;height:500px;" frameborder="0" scrolling="no"></iframe>
+        <div id="scheduling-cal-embed" style="display:none;">
+          <div id="scheduling-cal-loading" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;">
+            <span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> Loading upcoming events…
+          </div>
+          <div id="scheduling-cal-events" style="max-height:500px;overflow-y:auto;"></div>
+          <div id="scheduling-cal-error" style="display:none;text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;">
+            ⚠️ Could not load calendar events. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="loadCalendarEvents()">Retry</span>
+          </div>
         </div>
         <div id="scheduling-cal-placeholder" style="text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;">
           📭 No Google Calendar connected. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect one here →</span>
@@ -3750,10 +3757,19 @@ function escapeHtml(str) {
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
-  const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
-  const data = await res.json();
-  const appts = data.appointments || [];
-  const now = new Date();
+  try {
+    const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
+    if (res.status === 401) {
+      console.warn('[Auzora] Dashboard: session expired (401)');
+      return; // 401 interceptor will handle redirect
+    }
+    if (!res.ok) {
+      console.error('[Auzora] Dashboard: fetch failed', { status: res.status, statusText: res.statusText });
+      return;
+    }
+    const data = await res.json();
+    const appts = data.appointments || [];
+    const now = new Date();
 
   // Stat: total appointments (all time)
   document.getElementById('stat-appts').textContent = appts.length;
@@ -3788,6 +3804,9 @@ async function loadDashboard() {
   document.getElementById('dash-appt-list').innerHTML = recent.length
     ? apptTableRows(recent, true)
     : '<div class="empty">No appointments in the last 14 days.</div>';
+  } catch (e) {
+    console.error('[Auzora] Dashboard load error:', e.message);
+  }
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
@@ -3969,20 +3988,17 @@ function loadScheduling() {
     tzSelect.value = tz;
   }
 
-  // Embed Google Calendar if connected
+  // Load Google Calendar events natively (no iframe — avoids third-party cookie loop)
   const calId = c.google_calendar_id;
   const embedDiv = document.getElementById('scheduling-cal-embed');
   const placeholder = document.getElementById('scheduling-cal-placeholder');
   const status = document.getElementById('scheduling-cal-status');
   if (calId) {
-    // Google Calendar iframe uses Google's own theme — can't force light/dark.
-    // The embed auto-adapts based on the viewer's Google account settings.
-    const src = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(document.getElementById('s-timezone')?.value || c.timezone || 'America/Chicago')}&showPrint=0&showTabs=1&showCalendars=0&showTz=1&height=500`;
-    document.getElementById('gcal-iframe').src = src;
     embedDiv.style.display = 'block';
     placeholder.style.display = 'none';
     status.textContent = calId;
     status.style.color = 'var(--green)';
+    loadCalendarEvents();
   } else {
     embedDiv.style.display = 'none';
     placeholder.style.display = 'block';
@@ -3996,6 +4012,62 @@ function loadScheduling() {
   // Ensure services are loaded for the durations card
   portalServices = [...(c.service_areas || [])];
   renderServiceDurations();
+}
+
+/**
+ * Fetch and render upcoming Google Calendar events natively.
+ * Replaces the old iframe embed which required third-party cookies
+ * and caused a cookie consent loop in modern browsers.
+ */
+async function loadCalendarEvents() {
+  const loading = document.getElementById('scheduling-cal-loading');
+  const eventsDiv = document.getElementById('scheduling-cal-events');
+  const errorDiv = document.getElementById('scheduling-cal-error');
+  if (!eventsDiv) return;
+
+  loading.style.display = 'block';
+  eventsDiv.innerHTML = '';
+  errorDiv.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/portal/calendar/events?limit=15`, {
+      headers: { 'X-Portal-Token': portalToken }
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      console.error('[Auzora] Calendar events fetch failed:', res.status, errBody);
+      throw new Error(errBody.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const events = data.events || [];
+
+    loading.style.display = 'none';
+
+    if (events.length === 0) {
+      eventsDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;">No upcoming events.</div>';
+      return;
+    }
+
+    eventsDiv.innerHTML = events.map(ev => {
+      const start = ev.start ? new Date(ev.start).toLocaleString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+      }) : '—';
+      const summary = ev.summary || '(No title)';
+      const loc = ev.location ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📍 ${ev.location}</div>` : '';
+      return `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;">
+        <div style="font-size:20px;">📅</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13px;">${summary}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${start}</div>
+          ${loc}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('[Auzora] Calendar events error:', err.message);
+    loading.style.display = 'none';
+    errorDiv.style.display = 'block';
+  }
 }
 
 function setSchedDirty() {
@@ -6281,6 +6353,17 @@ async function loadWorkflows(page) {
   if (!container) return;
   const ids = page === 'sms' ? SMS_WORKFLOW_IDS : OB_WORKFLOW_IDS;
 
+  // Guard: if portalToken is null (session expired or not yet restored), don't
+  // attempt the fetch. The global 401 interceptor handles redirecting to login
+  // when a token expires; if we get here with no token, the session was already
+  // cleared. Showing "Unable to load workflows" in this state is misleading —
+  // the user should see the login screen, not a broken automations page.
+  if (!portalToken) {
+    console.warn('[Auzora] loadWorkflows skipped — no portalToken (session expired or not restored)');
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Session expired. Please sign in again.</div>';
+    return;
+  }
+
   // Restore entitlements from sessionStorage if not yet loaded
   if (!portalEntitlements) {
     const saved = sessionStorage.getItem('atlas_entitlements');
@@ -6289,7 +6372,13 @@ async function loadWorkflows(page) {
 
   try {
     const res = await fetch(`${API}/portal/workflows`, { headers: { 'X-Portal-Token': portalToken } });
-    if (!res.ok) throw new Error('Failed to load workflows');
+    // 401 is handled by the global fetch interceptor (redirects to login).
+    // Don't show "Unable to load workflows" — the user is being logged out.
+    if (res.status === 401) {
+      console.warn('[Auzora] loadWorkflows received 401 — session expired, interceptor will redirect to login');
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText || 'Failed to load workflows'}`);
     const data = await res.json();
     const wfMap = {};
     (data.workflows || []).forEach(w => { wfMap[w.templateId] = w; });
@@ -6372,7 +6461,8 @@ async function loadWorkflows(page) {
         </div>`;
     }).join('');
   } catch (err) {
-    container.innerHTML = `<p style="color:var(--muted);font-size:13px;">Unable to load workflows.</p>`;
+    console.error('[Auzora] loadWorkflows failed:', { page, error: err.message, endpoint: `${API}/portal/workflows`, hasToken: !!portalToken });
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Unable to load workflows. <a href="#" onclick="loadWorkflows('${page}');return false;" style="color:var(--accent);text-decoration:underline;">Retry</a></div>`;
   }
 }
 
@@ -6384,14 +6474,16 @@ async function toggleWorkflow(templateId, enable) {
       headers: { 'X-Portal-Token': portalToken },
     });
     if (!res.ok) {
-      const err = await res.json();
-      alert(err.error || 'Failed to update workflow');
+      const errBody = await res.json().catch(() => ({}));
+      console.error('[Auzora] toggleWorkflow failed:', { templateId, endpoint, status: res.status, error: errBody.error });
+      alert(errBody.error || 'Failed to update workflow');
       return;
     }
     // Reload both lists to keep state in sync
     loadWorkflows('sms');
     loadWorkflows('ob');
   } catch (err) {
+    console.error('[Auzora] toggleWorkflow error:', { templateId, enable, error: err.message });
     alert('Error updating workflow: ' + err.message);
   }
 }
@@ -6537,6 +6629,7 @@ async function loadWorkflowParams(templateId) {
     wfParamCache[templateId] = data;
     renderWorkflowParams(templateId, data);
   } catch (err) {
+    console.error('[Auzora] loadWorkflowParams failed:', { templateId, error: err.message });
     panel.innerHTML = `<div style="color:#ef4444;font-size:13px;">Unable to load settings: ${escapeHtmlAttr(err.message)}</div>`;
   }
 }
