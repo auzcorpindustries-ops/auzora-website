@@ -1864,6 +1864,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
+      <!-- Card 4.5: Help & Onboarding -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="graduation-cap"></i> Help &amp; Onboarding</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">New to the portal? Replay the interactive tutorial to learn about each section.</div>
+        <button onclick="startTutorial()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;cursor:pointer;">Replay Tutorial</button>
+      </div>
+
       <!-- Card 5: Danger Zone -->
       <div class="card" style="margin-bottom:20px;border:1px solid #ef4444;">
         <div class="card-title" style="color:#ef4444;"><i data-lucide="alert-triangle"></i> Danger Zone</div>
@@ -1895,6 +1902,22 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div><!-- /shell -->
   </div><!-- /shell-wrap -->
 </div><!-- /app -->
+
+<!-- Tutorial Overlay -->
+<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
+<div id="tutorial-tooltip" style="display:none;position:fixed;z-index:10001;max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+  <div id="tutorial-step-num" style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;"></div>
+  <div id="tutorial-title" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
+  <div id="tutorial-text" style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px;"></div>
+  <div id="tutorial-dots" style="display:flex;gap:6px;margin-bottom:14px;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <button onclick="skipTutorial()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;">Skip Tutorial</button>
+    <div style="display:flex;gap:8px;">
+      <button id="tutorial-back-btn" onclick="tutorialBack()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;cursor:pointer;">Back</button>
+      <button id="tutorial-next-btn" onclick="tutorialNext()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 18px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Next</button>
+    </div>
+  </div>
+</div>
 
 <!-- Lead Timeline Modal -->
 <div id="lead-timeline-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeLeadTimeline()">
@@ -2320,6 +2343,138 @@ function logout() {
 }
 
 // ── APP INIT ──────────────────────────────────────────────────────────────────
+// ── TUTORIAL SYSTEM ────────────────────────────────────────────────────────
+const TUTORIAL_STEPS = [
+  { page: 'dashboard',     target: '#nav-dashboard',     title: 'Dashboard',       text: 'Your command center. See calls, leads, and appointments at a glance.' },
+  { page: 'settings',      target: '#nav-settings',      title: 'AI Agent',        text: "Configure your agent's name, voice, greeting, FAQs, and call script here." },
+  { page: 'leads',         target: '#nav-leads',         title: 'Leads & CRM',     text: 'Every lead your AI captures appears here. Call, dismiss, or export them.' },
+  { page: 'conversations', target: '#nav-conversations', title: 'Conversations',   text: 'Live SMS threads. Take over from AI and respond to leads directly.' },
+  { page: 'scheduling',    target: '#nav-scheduling',    title: 'Scheduling',      text: 'View your calendar, set office hours, and define booking requirements.' },
+  { page: 'forms',         target: '#nav-forms',         title: 'Forms',           text: 'Create embeddable lead capture forms for your website.' },
+  { page: 'integrations',  target: '#nav-integrations',  title: 'Integrations',    text: 'Connect Google Calendar, Outlook, Square, and webhooks.' },
+  { page: 'automations',   target: '#nav-automations',   title: 'Automations',     text: 'Set up n8n follow-up workflows and lead webhooks.' },
+  { page: 'analytics',     target: '#nav-analytics',     title: 'Analytics',       text: 'Track performance across calls, bookings, and campaigns.' },
+  { page: 'account',       target: '#nav-account',       title: 'Account',         text: 'Manage your profile, security, and billing.' },
+];
+
+let tutorialStep = 0;
+
+function startTutorial() {
+  tutorialStep = 0;
+  document.getElementById('tutorial-overlay').style.display = 'block';
+  document.getElementById('tutorial-tooltip').style.display = 'block';
+  renderTutorialStep();
+}
+
+function renderTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if (!step) return;
+
+  // Navigate to the page
+  showPage(step.page);
+
+  // Wait for DOM to settle, then position tooltip
+  setTimeout(() => {
+    // Remove previous highlight
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+      el.classList.remove('tutorial-highlight');
+      el.style.zIndex = '';
+      el.style.boxShadow = '';
+      el.style.position = '';
+    });
+
+    // Highlight target
+    const target = document.querySelector(step.target);
+    if (target) {
+      target.classList.add('tutorial-highlight');
+      target.style.position = 'relative';
+      target.style.zIndex = '10000';
+      target.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.5)';
+      target.style.borderRadius = '8px';
+
+      // Position tooltip near target
+      const rect = target.getBoundingClientRect();
+      const tooltip = document.getElementById('tutorial-tooltip');
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      let top = rect.bottom + 12;
+      let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+      // Keep tooltip on screen
+      if (left < 10) left = 10;
+      if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
+      if (top + tooltipRect.height > window.innerHeight - 10) top = rect.top - tooltipRect.height - 12;
+      if (top < 10) top = 10;
+
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+    }
+
+    // Update content
+    document.getElementById('tutorial-step-num').textContent = `Step ${tutorialStep + 1} of ${TUTORIAL_STEPS.length}`;
+    document.getElementById('tutorial-title').textContent = step.title;
+    document.getElementById('tutorial-text').textContent = step.text;
+
+    // Progress dots
+    const dotsDiv = document.getElementById('tutorial-dots');
+    dotsDiv.innerHTML = TUTORIAL_STEPS.map((_, i) => {
+      const color = i === tutorialStep ? 'var(--accent)' : (i < tutorialStep ? 'var(--accent)' : 'var(--border)');
+      const size = i === tutorialStep ? '8px' : '6px';
+      return `<div style="width:${size};height:${size};border-radius:50%;background:${color};transition:all 0.2s;"></div>`;
+    }).join('');
+
+    // Button states
+    document.getElementById('tutorial-back-btn').style.display = tutorialStep === 0 ? 'none' : 'block';
+    document.getElementById('tutorial-next-btn').textContent = tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Finish' : 'Next';
+  }, 100);
+}
+
+function tutorialNext() {
+  if (tutorialStep < TUTORIAL_STEPS.length - 1) {
+    tutorialStep++;
+    renderTutorialStep();
+  } else {
+    completeTutorial();
+  }
+}
+
+function tutorialBack() {
+  if (tutorialStep > 0) {
+    tutorialStep--;
+    renderTutorialStep();
+  }
+}
+
+function skipTutorial() {
+  completeTutorial();
+}
+
+function completeTutorial() {
+  document.getElementById('tutorial-overlay').style.display = 'none';
+  document.getElementById('tutorial-tooltip').style.display = 'none';
+  document.querySelectorAll('.tutorial-highlight').forEach(el => {
+    el.classList.remove('tutorial-highlight');
+    el.style.zIndex = '';
+    el.style.boxShadow = '';
+    el.style.position = '';
+  });
+
+  // Persist to server
+  if (portalToken) {
+    fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ tutorial_completed: true })
+    }).catch(err => console.error('[Auzora] Failed to save tutorial completion:', err));
+  }
+
+  // Update local state
+  if (portalClient) portalClient.tutorial_completed = true;
+
+  // Return to dashboard
+  showPage('dashboard');
+}
+
 function launchApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -2338,6 +2493,11 @@ function launchApp() {
   loadDashboard();
   loadSquareStatus();
   loadLeadIntakeToken();
+
+  // Start tutorial for first-time users
+  if (!portalClient.tutorial_completed) {
+    setTimeout(() => startTutorial(), 1200);
+  }
 }
 
 // ── TIER VISIBILITY ───────────────────────────────────────────────────────────
