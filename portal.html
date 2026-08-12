@@ -3757,10 +3757,19 @@ function escapeHtml(str) {
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
-  const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
-  const data = await res.json();
-  const appts = data.appointments || [];
-  const now = new Date();
+  try {
+    const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
+    if (res.status === 401) {
+      console.warn('[Auzora] Dashboard: session expired (401)');
+      return; // 401 interceptor will handle redirect
+    }
+    if (!res.ok) {
+      console.error('[Auzora] Dashboard: fetch failed', { status: res.status, statusText: res.statusText });
+      return;
+    }
+    const data = await res.json();
+    const appts = data.appointments || [];
+    const now = new Date();
 
   // Stat: total appointments (all time)
   document.getElementById('stat-appts').textContent = appts.length;
@@ -3795,6 +3804,9 @@ async function loadDashboard() {
   document.getElementById('dash-appt-list').innerHTML = recent.length
     ? apptTableRows(recent, true)
     : '<div class="empty">No appointments in the last 14 days.</div>';
+  } catch (e) {
+    console.error('[Auzora] Dashboard load error:', e.message);
+  }
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
