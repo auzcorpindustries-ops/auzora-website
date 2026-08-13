@@ -516,7 +516,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .native-cal-chip.is-google { background: rgba(34,197,94,0.15); color: var(--green); }
+.native-cal-chip.is-unconfirmed { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
 .native-cal-more { font-size: 10px; color: var(--muted); }
+.native-cal-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-top: 10px; }
+.native-cal-key-item { display: flex; align-items: center; gap: 5px; }
+.native-cal-key-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 .hours-row { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 10px; align-items: center; }
 .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
@@ -717,6 +721,14 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <span style="font-size:12px;color:var(--muted);" id="dash-appt-count"></span>
         </div>
         <div id="dash-appt-list"></div>
+      </div>
+
+      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;">
+        <div class="table-header">
+          <h2 style="color:var(--red);">⚠ Unconfirmed Appointments</h2>
+          <span style="font-size:12px;color:var(--muted);" id="dash-unconfirmed-count"></span>
+        </div>
+        <div id="dash-unconfirmed-list"></div>
       </div>
     </div>
 
@@ -1053,6 +1065,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
         <!-- Month grid -->
         <div id="native-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+
+        <!-- Calendar key -->
+        <div class="native-cal-key">
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(99,102,241,0.15);"></div> Confirmed</div>
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);"></div> Unconfirmed</div>
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(34,197,94,0.15);"></div> Google</div>
+        </div>
 
         <!-- Selected day detail -->
         <div id="native-cal-day-detail" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
@@ -4081,6 +4100,89 @@ async function loadDashboard() {
   } catch (e) {
     console.error('[Auzora] Dashboard load error:', e.message);
   }
+
+  // Load unconfirmed appointments for the dashboard section
+  loadUnconfirmedAppointments();
+}
+
+// ── UNCONFIRMED APPOINTMENTS (dashboard) ───────────────────────────────────
+async function loadUnconfirmedAppointments() {
+  const wrap = document.getElementById('dash-unconfirmed-wrap');
+  const listEl = document.getElementById('dash-unconfirmed-list');
+  const countEl = document.getElementById('dash-unconfirmed-count');
+  if (!wrap || !listEl) return;
+
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/unconfirmed`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) { wrap.style.display = 'none'; return; }
+    const data = await res.json();
+    const events = data.events || [];
+
+    if (events.length === 0) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    wrap.style.display = '';
+    countEl.textContent = events.length + ' pending';
+
+    const tz = portalClient?.timezone || 'America/Chicago';
+    const rows = events.map(ev => {
+      const time = ev.start_utc
+        ? new Date(ev.start_utc).toLocaleString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz,
+          })
+        : '—';
+      const who = ev.caller_name ? escapeHtml(ev.caller_name) : 'Unknown';
+      const service = ev.service ? escapeHtml(ev.service) : (ev.title ? escapeHtml(ev.title) : 'Appointment');
+      const phone = ev.caller_phone ? ` · ${escapeHtml(ev.caller_phone)}` : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${who} <span style="color:var(--accent2);font-weight:400;">· ${service}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${time}${phone}</div>
+        </div>
+        <button onclick="confirmNativeEvent('${ev.event_id}')" style="background:#16a34a;border:none;border-radius:6px;padding:7px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;">✓ Confirm</button>
+      </div>`;
+    }).join('');
+
+    listEl.innerHTML = rows;
+  } catch (e) {
+    console.error('[Auzora] Unconfirmed load error:', e.message);
+    wrap.style.display = 'none';
+  }
+}
+
+// Confirm a native calendar event — works from both the dashboard and the calendar day detail.
+async function confirmNativeEvent(eventId) {
+  if (!eventId) return;
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/events/${encodeURIComponent(eventId)}/confirm`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Failed to confirm appointment.', 'error');
+      return;
+    }
+    showToast('Appointment confirmed.', 'success');
+
+    // Update the local event data so the calendar re-renders with confirmed styling
+    const ev = nativeCalEvents.find(e => e.event_id === eventId);
+    if (ev) ev.status = 'confirmed';
+
+    // Re-render the calendar grid + day detail to reflect the status change
+    renderNativeCalendar();
+
+    // Reload the dashboard unconfirmed section
+    loadUnconfirmedAppointments();
+  } catch (e) {
+    console.error('[Auzora] Confirm error:', e.message);
+    showToast('Failed to confirm appointment.', 'error');
+  }
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
@@ -4416,8 +4518,10 @@ async function renderNativeCalendar() {
     // Show at most 2 chips, then a "+N more" hint.
     const chips = dayEvents.slice(0, 2).map(ev => {
       const isGoogle = ev.source === 'google';
+      const isUnconfirmed = ev.status === 'unconfirmed';
+      const chipClass = isGoogle ? ' is-google' : (isUnconfirmed ? ' is-unconfirmed' : '');
       const text = `${nativeCalEventTimeLabel(ev)} ${ev.service || ev.caller_name || ev.title || 'Event'}`;
-      return `<div class="native-cal-chip${isGoogle ? ' is-google' : ''}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
+      return `<div class="native-cal-chip${chipClass}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
     }).join('');
     const more = dayEvents.length > 2
       ? `<div class="native-cal-more">+${dayEvents.length - 2} more</div>` : '';
@@ -4470,22 +4574,30 @@ function renderNativeCalDayDetail(dateKey) {
     const who = ev.caller_name ? ` · ${escapeHtml(ev.caller_name)}` : '';
     const phone = ev.caller_phone ? ` · ${escapeHtml(ev.caller_phone)}` : '';
     const isGoogle = ev.source === 'google';
+    const isUnconfirmed = ev.status === 'unconfirmed';
     const badge = isGoogle
       ? '<span style="font-size:10px;background:rgba(34,197,94,0.15);color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px;">Google</span>'
       : (ev.source === 'ai'
           ? '<span style="font-size:10px;background:rgba(99,102,241,0.15);color:var(--accent);border-radius:4px;padding:2px 6px;margin-left:6px;">AI booked</span>'
           : '');
+    const statusBadge = isUnconfirmed
+      ? '<span style="font-size:10px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:4px;padding:2px 6px;margin-left:6px;">⚠ Unconfirmed</span>'
+      : (!isGoogle ? '<span style="font-size:10px;background:rgba(34,197,94,0.12);color:#16a34a;border-radius:4px;padding:2px 6px;margin-left:6px;">✓ Confirmed</span>' : '');
 
     // Google-sourced blocks are mirrors of external events — edit them in Google.
+    const confirmBtn = isUnconfirmed
+      ? `<button onclick="confirmNativeEvent('${ev.event_id}')" style="background:none;border:1px solid #16a34a;border-radius:6px;padding:5px 10px;color:#16a34a;font-size:12px;cursor:pointer;margin-right:4px;">✓ Confirm</button>`
+      : '';
     const actions = isGoogle ? '' : `
       <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${confirmBtn}
         <button onclick="openNativeEventModal('${ev.event_id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:12px;cursor:pointer;">Edit</button>
         <button onclick="cancelNativeEvent('${ev.event_id}')" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:5px 10px;color:var(--red);font-size:12px;cursor:pointer;">Cancel</button>
       </div>`;
 
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <div style="min-width:0;">
-        <div style="font-size:13px;font-weight:600;">${escapeHtml(time)}${endTime ? ' – ' + escapeHtml(endTime) : ''}${badge}</div>
+        <div style="font-size:13px;font-weight:600;">${escapeHtml(time)}${endTime ? ' – ' + escapeHtml(endTime) : ''}${badge}${statusBadge}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escapeHtml(ev.service || ev.title || 'Appointment')}${who}${phone}</div>
       </div>
       ${actions}
