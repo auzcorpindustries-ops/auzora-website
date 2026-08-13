@@ -492,6 +492,32 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 /* ── HOURS ─────────────────────────────────────────────────────────────── */
 .hours-grid { display: grid; gap: 8px; }
+
+/* ── Native calendar (scheduling page) ───────────────────────────────────── */
+.native-cal-dow {
+  text-align: center; font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0;
+}
+.native-cal-day {
+  min-height: 74px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; cursor: pointer; background: var(--surface2);
+  display: flex; flex-direction: column; gap: 3px; transition: border-color .15s, background .15s;
+}
+.native-cal-day:hover { border-color: var(--accent); }
+.native-cal-day.is-empty { background: transparent; border-color: transparent; cursor: default; }
+.native-cal-day.is-empty:hover { border-color: transparent; }
+.native-cal-day.is-today { border-color: var(--accent); }
+.native-cal-day.is-selected { background: rgba(99,102,241,0.10); border-color: var(--accent); }
+.native-cal-day.is-closed { opacity: 0.45; }
+.native-cal-daynum { font-size: 12px; font-weight: 700; color: var(--text); }
+.native-cal-chip {
+  font-size: 10px; line-height: 1.3; padding: 2px 5px; border-radius: 4px;
+  background: rgba(99,102,241,0.15); color: var(--accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.native-cal-chip.is-google { background: rgba(34,197,94,0.15); color: var(--green); }
+.native-cal-more { font-size: 10px; color: var(--muted); }
+
 .hours-row { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 10px; align-items: center; }
 .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .hours-day input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--purple); flex-shrink: 0; cursor: pointer; }
@@ -998,17 +1024,63 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- Google Calendar — upcoming events from API -->
+      <!-- Native Calendar — Auzora's own calendar, the default for every account -->
       <div class="card" style="margin-bottom:20px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="card-title" style="margin:0;">📅 Google Calendar</div>
-          <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Connect your calendar in Integrations</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="card-title" style="margin:0;"><i data-lucide="calendar-days"></i> Calendar</div>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.5px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.3);border-radius:999px;padding:3px 8px;">DEFAULT</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="native-cal-sync-status" style="font-size:12px;color:var(--muted);"></span>
+            <button onclick="openNativeEventModal()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ New Appointment</button>
+          </div>
+        </div>
+
+        <!-- Month navigation -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button onclick="nativeCalPrevMonth()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:14px;cursor:pointer;">‹</button>
+          <div id="native-cal-month-label" style="font-size:15px;font-weight:700;"></div>
+          <button onclick="nativeCalNextMonth()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:14px;cursor:pointer;">›</button>
+        </div>
+
+        <!-- Day-of-week header -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">
+          <div class="native-cal-dow">Sun</div><div class="native-cal-dow">Mon</div><div class="native-cal-dow">Tue</div>
+          <div class="native-cal-dow">Wed</div><div class="native-cal-dow">Thu</div><div class="native-cal-dow">Fri</div>
+          <div class="native-cal-dow">Sat</div>
+        </div>
+
+        <!-- Month grid -->
+        <div id="native-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+
+        <!-- Selected day detail -->
+        <div id="native-cal-day-detail" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+          <div style="font-size:13px;color:var(--muted);">Select a day to see its appointments.</div>
+        </div>
+      </div>
+
+      <!-- Google Calendar overlay — optional, secondary to the native calendar -->
+      <div class="card" style="margin-bottom:20px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div class="card-title" style="margin:0;">📅 Google Calendar <span style="font-size:11px;font-weight:500;color:var(--muted);">(optional overlay)</span></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Two-way sync. Your Auzora calendar stays the source of truth.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Not connected</span>
+            <button id="native-cal-sync-btn" onclick="syncGoogleToNative()" style="display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;cursor:pointer;">⟲ Sync now</button>
+          </div>
         </div>
         <div id="scheduling-cal-embed" style="display:none;">
-          <div id="scheduling-cal-events" style="max-height:500px;overflow-y:auto;"></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="google-sync-toggle" onchange="toggleGoogleSync(this.checked)" />
+            <span>Keep Google Calendar in sync with my Auzora calendar</span>
+          </label>
+          <div id="scheduling-cal-events" style="max-height:400px;overflow-y:auto;"></div>
         </div>
-        <div id="scheduling-cal-placeholder" style="text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;">
-          📭 No Google Calendar connected. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect one here →</span>
+        <div id="scheduling-cal-placeholder" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;">
+          Your Auzora calendar is active and handling bookings. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect Google Calendar →</span>
         </div>
       </div>
 
@@ -1928,6 +2000,57 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 </div>
 
 <div id="toast"></div>
+
+<!-- Native Calendar Appointment Modal (create / edit) -->
+<div id="native-event-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeNativeEventModal()">
+  <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
+      <h2 id="native-event-title" style="margin:0;font-size:20px;">New Appointment</h2>
+      <button onclick="closeNativeEventModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);">×</button>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Date &amp; Time</label>
+      <input type="text" id="native-event-datetime" placeholder="e.g. next Wednesday at 2pm" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+      <span style="font-size:11px;color:var(--muted);">Natural language works — "tomorrow at 3pm", "Sep 12 10:30am".</span>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:200px;margin-bottom:16px;">
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Service</label>
+        <select id="native-event-service" onchange="onNativeServiceChange()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;"></select>
+      </div>
+      <div class="form-group" style="width:130px;margin-bottom:16px;">
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Duration</label>
+        <input type="number" id="native-event-duration" min="5" step="5" value="60" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+        <span style="font-size:11px;color:var(--muted);">minutes</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:200px;margin-bottom:16px;">
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Customer Name</label>
+        <input type="text" id="native-event-name" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+      </div>
+      <div class="form-group" style="flex:1;min-width:200px;margin-bottom:16px;">
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Phone</label>
+        <input type="tel" id="native-event-phone" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Notes</label>
+      <textarea id="native-event-notes" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font);"></textarea>
+    </div>
+
+    <div id="native-event-error" style="display:none;background:#fef2f2;border:1px solid #ef4444;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:13px;color:#ef4444;"></div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeNativeEventModal()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:10px 18px;color:var(--muted);font-size:14px;cursor:pointer;">Cancel</button>
+      <button id="native-event-save" onclick="saveNativeEvent()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Save Appointment</button>
+    </div>
+  </div>
+</div>
 
 <!-- Reschedule Modal -->
 <div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeRescheduleModal()">
@@ -4164,6 +4287,424 @@ function loadScheduling() {
   // Ensure services are loaded for the durations card
   portalServices = [...(c.service_areas || [])];
   renderServiceDurations();
+
+  // Native calendar — the default scheduling surface for every account.
+  nativeCalTimezone = c.timezone || 'America/Chicago';
+  nativeCalServiceDurations = c.service_durations || {};
+  loadNativeCalendarStatus();
+  renderNativeCalendar();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * NATIVE CALENDAR
+ *
+ * Auzora's own calendar — the default backend for every account, backed by
+ * /portal/native-calendar/* on the API. Google Calendar, when connected, is an
+ * optional overlay rendered separately below; the native calendar always
+ * remains the source of truth.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+let nativeCalMonth = new Date();          // any date inside the displayed month
+let nativeCalEvents = [];                 // events for the displayed month
+let nativeCalSelectedDate = null;         // 'YYYY-MM-DD'
+let nativeCalTimezone = 'America/Chicago';
+let nativeCalServiceDurations = {};
+let nativeCalEditingId = null;            // set while editing an existing event
+
+const NATIVE_CAL_MONTHS = ['January','February','March','April','May','June',
+                           'July','August','September','October','November','December'];
+
+/** Local YYYY-MM-DD for a Date (never use toISOString — that shifts to UTC). */
+function nativeCalDateKey(d) {
+  return d.getFullYear() + '-' +
+         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
+
+/** The day an event falls on, expressed in the business's timezone. */
+function nativeCalEventDayKey(ev) {
+  // Prefer the stored wall-clock local time; fall back to converting the UTC
+  // instant into the business timezone.
+  if (ev.start_local) return ev.start_local.slice(0, 10);
+  try {
+    const parts = new Date(ev.start_utc).toLocaleDateString('en-CA', { timeZone: nativeCalTimezone });
+    return parts;
+  } catch {
+    return String(ev.start_utc || '').slice(0, 10);
+  }
+}
+
+function nativeCalEventTimeLabel(ev) {
+  try {
+    return new Date(ev.start_utc).toLocaleTimeString('en-US', {
+      timeZone: nativeCalTimezone, hour: 'numeric', minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function nativeCalPrevMonth() {
+  nativeCalMonth = new Date(nativeCalMonth.getFullYear(), nativeCalMonth.getMonth() - 1, 1);
+  renderNativeCalendar();
+}
+
+function nativeCalNextMonth() {
+  nativeCalMonth = new Date(nativeCalMonth.getFullYear(), nativeCalMonth.getMonth() + 1, 1);
+  renderNativeCalendar();
+}
+
+/** Fetch the displayed month's events and paint the grid. */
+async function renderNativeCalendar() {
+  const grid = document.getElementById('native-cal-grid');
+  const label = document.getElementById('native-cal-month-label');
+  if (!grid || !label) return;
+
+  const year = nativeCalMonth.getFullYear();
+  const month = nativeCalMonth.getMonth();
+  label.textContent = `${NATIVE_CAL_MONTHS[month]} ${year}`;
+
+  // Pad the query by a day on each side so timezone conversion can't drop an
+  // event that sits right on a month boundary.
+  const rangeStart = new Date(year, month, 1);
+  rangeStart.setDate(rangeStart.getDate() - 1);
+  const rangeEnd = new Date(year, month + 1, 0);
+  rangeEnd.setDate(rangeEnd.getDate() + 2);
+
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px;">Loading calendar…</div>';
+
+  try {
+    const res = await fetch(
+      `${API}/portal/native-calendar/events?start=${encodeURIComponent(rangeStart.toISOString())}&end=${encodeURIComponent(rangeEnd.toISOString())}`,
+      { headers: { 'X-Portal-Token': portalToken } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    nativeCalEvents = data.events || [];
+    if (data.timezone) nativeCalTimezone = data.timezone;
+  } catch (e) {
+    console.error('[Auzora] Native calendar load failed:', e);
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px;">Could not load the calendar. Please refresh.</div>';
+    return;
+  }
+
+  // Bucket events by local day for O(1) lookup while painting.
+  const byDay = {};
+  for (const ev of nativeCalEvents) {
+    const key = nativeCalEventDayKey(ev);
+    (byDay[key] = byDay[key] || []).push(ev);
+  }
+
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayKey = nativeCalDateKey(new Date());
+
+  let html = '';
+  for (let i = 0; i < firstDow; i++) {
+    html += '<div class="native-cal-day is-empty"></div>';
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = nativeCalDateKey(new Date(year, month, day));
+    const dayEvents = (byDay[key] || []).sort((a, b) =>
+      String(a.start_utc).localeCompare(String(b.start_utc)));
+
+    const classes = ['native-cal-day'];
+    if (key === todayKey) classes.push('is-today');
+    if (key === nativeCalSelectedDate) classes.push('is-selected');
+
+    // Show at most 2 chips, then a "+N more" hint.
+    const chips = dayEvents.slice(0, 2).map(ev => {
+      const isGoogle = ev.source === 'google';
+      const text = `${nativeCalEventTimeLabel(ev)} ${ev.service || ev.caller_name || ev.title || 'Event'}`;
+      return `<div class="native-cal-chip${isGoogle ? ' is-google' : ''}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
+    }).join('');
+    const more = dayEvents.length > 2
+      ? `<div class="native-cal-more">+${dayEvents.length - 2} more</div>` : '';
+
+    html += `<div class="${classes.join(' ')}" onclick="selectNativeCalDay('${key}')">
+      <div class="native-cal-daynum">${day}</div>${chips}${more}</div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // Keep the detail pane in sync with whatever day is selected.
+  if (nativeCalSelectedDate) renderNativeCalDayDetail(nativeCalSelectedDate);
+}
+
+function selectNativeCalDay(dateKey) {
+  nativeCalSelectedDate = dateKey;
+  renderNativeCalendar();
+  renderNativeCalDayDetail(dateKey);
+}
+
+/** Render the list of appointments for the selected day. */
+function renderNativeCalDayDetail(dateKey) {
+  const el = document.getElementById('native-cal-day-detail');
+  if (!el) return;
+
+  const dayEvents = nativeCalEvents
+    .filter(ev => nativeCalEventDayKey(ev) === dateKey)
+    .sort((a, b) => String(a.start_utc).localeCompare(String(b.start_utc)));
+
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const heading = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  });
+
+  if (dayEvents.length === 0) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div style="font-size:14px;font-weight:700;">${escapeHtml(heading)}</div>
+        <button onclick="openNativeEventModal(null,'${dateKey}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--accent);font-size:12px;cursor:pointer;">+ Add appointment</button>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:10px;">No appointments scheduled.</div>`;
+    return;
+  }
+
+  const rows = dayEvents.map(ev => {
+    const time = nativeCalEventTimeLabel(ev);
+    const endTime = ev.end_utc ? new Date(ev.end_utc).toLocaleTimeString('en-US', {
+      timeZone: nativeCalTimezone, hour: 'numeric', minute: '2-digit',
+    }) : '';
+    const who = ev.caller_name ? ` · ${escapeHtml(ev.caller_name)}` : '';
+    const phone = ev.caller_phone ? ` · ${escapeHtml(ev.caller_phone)}` : '';
+    const isGoogle = ev.source === 'google';
+    const badge = isGoogle
+      ? '<span style="font-size:10px;background:rgba(34,197,94,0.15);color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px;">Google</span>'
+      : (ev.source === 'ai'
+          ? '<span style="font-size:10px;background:rgba(99,102,241,0.15);color:var(--accent);border-radius:4px;padding:2px 6px;margin-left:6px;">AI booked</span>'
+          : '');
+
+    // Google-sourced blocks are mirrors of external events — edit them in Google.
+    const actions = isGoogle ? '' : `
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="openNativeEventModal('${ev.event_id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:12px;cursor:pointer;">Edit</button>
+        <button onclick="cancelNativeEvent('${ev.event_id}')" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:5px 10px;color:var(--red);font-size:12px;cursor:pointer;">Cancel</button>
+      </div>`;
+
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="min-width:0;">
+        <div style="font-size:13px;font-weight:600;">${escapeHtml(time)}${endTime ? ' – ' + escapeHtml(endTime) : ''}${badge}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escapeHtml(ev.service || ev.title || 'Appointment')}${who}${phone}</div>
+      </div>
+      ${actions}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="font-size:14px;font-weight:700;">${escapeHtml(heading)}</div>
+      <button onclick="openNativeEventModal(null,'${dateKey}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--accent);font-size:12px;cursor:pointer;">+ Add appointment</button>
+    </div>${rows}`;
+}
+
+/** Open the create/edit modal. Pass an eventId to edit, or a dateKey to prefill. */
+function openNativeEventModal(eventId, dateKey) {
+  nativeCalEditingId = eventId || null;
+
+  const titleEl = document.getElementById('native-event-title');
+  const errEl = document.getElementById('native-event-error');
+  errEl.style.display = 'none';
+
+  // Populate the service dropdown from configured services.
+  const serviceSelect = document.getElementById('native-event-service');
+  const services = Object.keys(nativeCalServiceDurations || {});
+  serviceSelect.innerHTML = '<option value="">— Select a service —</option>' +
+    services.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+  if (eventId) {
+    const ev = nativeCalEvents.find(e => e.event_id === eventId);
+    if (!ev) return;
+    titleEl.textContent = 'Edit Appointment';
+    // Show the stored wall-clock time so the business edits what it sees.
+    document.getElementById('native-event-datetime').value =
+      ev.start_local ? ev.start_local.replace('T', ' ').slice(0, 16) : '';
+    document.getElementById('native-event-service').value = ev.service || '';
+    document.getElementById('native-event-duration').value = ev.duration_minutes || 60;
+    document.getElementById('native-event-name').value = ev.caller_name || '';
+    document.getElementById('native-event-phone').value = ev.caller_phone || '';
+    document.getElementById('native-event-notes').value = ev.notes || '';
+  } else {
+    titleEl.textContent = 'New Appointment';
+    document.getElementById('native-event-datetime').value = dateKey ? `${dateKey} ` : '';
+    document.getElementById('native-event-service').value = '';
+    document.getElementById('native-event-duration').value = 60;
+    document.getElementById('native-event-name').value = '';
+    document.getElementById('native-event-phone').value = '';
+    document.getElementById('native-event-notes').value = '';
+  }
+
+  document.getElementById('native-event-modal').style.display = 'flex';
+}
+
+function closeNativeEventModal() {
+  document.getElementById('native-event-modal').style.display = 'none';
+  nativeCalEditingId = null;
+}
+
+/** Auto-fill duration from the selected service's configured length. */
+function onNativeServiceChange() {
+  const service = document.getElementById('native-event-service').value;
+  const configured = nativeCalServiceDurations[service];
+  if (configured) document.getElementById('native-event-duration').value = configured;
+}
+
+/** Create or update an appointment on the native calendar. */
+async function saveNativeEvent() {
+  const btn = document.getElementById('native-event-save');
+  const errEl = document.getElementById('native-event-error');
+  errEl.style.display = 'none';
+
+  const datetime = document.getElementById('native-event-datetime').value.trim();
+  if (!datetime) {
+    errEl.textContent = 'Please enter a date and time.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const payload = {
+    datetime,
+    service: document.getElementById('native-event-service').value || null,
+    duration_minutes: parseInt(document.getElementById('native-event-duration').value, 10) || 60,
+    caller_name: document.getElementById('native-event-name').value.trim() || null,
+    caller_phone: document.getElementById('native-event-phone').value.trim() || null,
+    notes: document.getElementById('native-event-notes').value.trim() || null,
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const editing = !!nativeCalEditingId;
+    const res = await fetch(
+      editing
+        ? `${API}/portal/native-calendar/events/${encodeURIComponent(nativeCalEditingId)}`
+        : `${API}/portal/native-calendar/events`,
+      {
+        method: editing ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      // 409 = conflict; the API includes the earliest free slot in the message.
+      errEl.textContent = data.error || 'Could not save the appointment.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    showToast(editing ? 'Appointment updated' : 'Appointment created');
+    closeNativeEventModal();
+    renderNativeCalendar();
+  } catch (e) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Appointment';
+  }
+}
+
+/** Cancel an appointment on the native calendar. */
+async function cancelNativeEvent(eventId) {
+  if (!confirm('Cancel this appointment? The customer will need to be notified separately.')) return;
+
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/events/${encodeURIComponent(eventId)}`, {
+      method: 'DELETE',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showToast(data.error || 'Could not cancel the appointment', 'error');
+      return;
+    }
+    showToast('Appointment cancelled');
+    renderNativeCalendar();
+  } catch (e) {
+    showToast('Network error. Please try again.', 'error');
+  }
+}
+
+/** Read provider + Google overlay state and paint the sync controls. */
+async function loadNativeCalendarStatus() {
+  const statusEl = document.getElementById('native-cal-sync-status');
+  const syncBtn = document.getElementById('native-cal-sync-btn');
+  const toggle = document.getElementById('google-sync-toggle');
+
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/status`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data.timezone) nativeCalTimezone = data.timezone;
+
+    if (data.google && data.google.connected) {
+      if (statusEl) {
+        statusEl.textContent = data.google.syncEnabled ? 'Google sync on' : 'Google sync off';
+        statusEl.style.color = data.google.syncEnabled ? 'var(--green)' : 'var(--muted)';
+      }
+      if (syncBtn) syncBtn.style.display = 'inline-block';
+      if (toggle) toggle.checked = !!data.google.syncEnabled;
+    } else {
+      if (statusEl) {
+        statusEl.textContent = 'Auzora calendar';
+        statusEl.style.color = 'var(--muted)';
+      }
+      if (syncBtn) syncBtn.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('[Auzora] Native calendar status failed:', e);
+  }
+}
+
+/** Turn the optional Google overlay on/off without disconnecting the account. */
+async function toggleGoogleSync(enabled) {
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/sync-settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ google_sync_enabled: enabled }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showToast(data.error || 'Could not update sync setting', 'error');
+      return;
+    }
+    showToast(enabled ? 'Google Calendar sync enabled' : 'Google Calendar sync disabled');
+    loadNativeCalendarStatus();
+  } catch (e) {
+    showToast('Network error. Please try again.', 'error');
+  }
+}
+
+/** Pull Google events into the native calendar (inbound half of two-way sync). */
+async function syncGoogleToNative() {
+  const btn = document.getElementById('native-cal-sync-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/sync`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showToast(data.error || 'Sync failed', 'error');
+      return;
+    }
+    showToast(`Synced — ${data.imported} event${data.imported === 1 ? '' : 's'} imported`);
+    renderNativeCalendar();
+  } catch (e) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟲ Sync now'; }
+  }
 }
 
 /**
