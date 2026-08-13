@@ -516,7 +516,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .native-cal-chip.is-google { background: rgba(34,197,94,0.15); color: var(--green); }
+.native-cal-chip.is-unconfirmed { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
 .native-cal-more { font-size: 10px; color: var(--muted); }
+.native-cal-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-top: 10px; }
+.native-cal-key-item { display: flex; align-items: center; gap: 5px; }
+.native-cal-key-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 .hours-row { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 10px; align-items: center; }
 .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
@@ -717,6 +721,14 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <span style="font-size:12px;color:var(--muted);" id="dash-appt-count"></span>
         </div>
         <div id="dash-appt-list"></div>
+      </div>
+
+      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;">
+        <div class="table-header">
+          <h2 style="color:var(--red);">⚠ Unconfirmed Appointments</h2>
+          <span style="font-size:12px;color:var(--muted);" id="dash-unconfirmed-count"></span>
+        </div>
+        <div id="dash-unconfirmed-list"></div>
       </div>
     </div>
 
@@ -1053,6 +1065,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
         <!-- Month grid -->
         <div id="native-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+
+        <!-- Calendar key -->
+        <div class="native-cal-key">
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(99,102,241,0.15);"></div> Confirmed</div>
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);"></div> Unconfirmed</div>
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(34,197,94,0.15);"></div> Google</div>
+        </div>
 
         <!-- Selected day detail -->
         <div id="native-cal-day-detail" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
@@ -2010,9 +2029,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div>
 
     <div class="form-group" style="margin-bottom:16px;">
-      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Date &amp; Time</label>
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Date &amp; Time <span style="color:var(--red);">*</span></label>
       <input type="text" id="native-event-datetime" placeholder="e.g. next Wednesday at 2pm" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
-      <span style="font-size:11px;color:var(--muted);">Natural language works — "tomorrow at 3pm", "Sep 12 10:30am".</span>
+      <span id="native-event-datetime-hint" style="font-size:11px;color:var(--muted);">Natural language works — "tomorrow at 3pm", "Sep 12 10:30am".</span>
+      <span id="native-event-datetime-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Time Zone <span style="color:var(--red);">*</span></label>
+      <input type="text" id="native-event-timezone" placeholder="America/Chicago" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+      <span style="font-size:11px;color:var(--muted);">IANA timezone, e.g. America/New_York, America/Los_Angeles.</span>
+      <span id="native-event-timezone-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
+    </div>
+
+    <!-- Earliest available slot banner -->
+    <div id="native-event-earliest" style="display:none;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#16a34a;display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="native-event-earliest-text"></span>
+      <button onclick="useEarliestSlot()" style="background:none;border:1px solid #16a34a;border-radius:6px;padding:3px 10px;color:#16a34a;font-size:12px;cursor:pointer;margin-left:auto;">Use this slot</button>
     </div>
 
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -2033,8 +2067,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <input type="text" id="native-event-name" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
       </div>
       <div class="form-group" style="flex:1;min-width:200px;margin-bottom:16px;">
-        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Phone</label>
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Phone <span style="color:var(--red);">*</span></label>
         <input type="tel" id="native-event-phone" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+        <span id="native-event-phone-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
       </div>
     </div>
 
@@ -4081,6 +4116,89 @@ async function loadDashboard() {
   } catch (e) {
     console.error('[Auzora] Dashboard load error:', e.message);
   }
+
+  // Load unconfirmed appointments for the dashboard section
+  loadUnconfirmedAppointments();
+}
+
+// ── UNCONFIRMED APPOINTMENTS (dashboard) ───────────────────────────────────
+async function loadUnconfirmedAppointments() {
+  const wrap = document.getElementById('dash-unconfirmed-wrap');
+  const listEl = document.getElementById('dash-unconfirmed-list');
+  const countEl = document.getElementById('dash-unconfirmed-count');
+  if (!wrap || !listEl) return;
+
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/unconfirmed`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) { wrap.style.display = 'none'; return; }
+    const data = await res.json();
+    const events = data.events || [];
+
+    if (events.length === 0) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    wrap.style.display = '';
+    countEl.textContent = events.length + ' pending';
+
+    const tz = portalClient?.timezone || 'America/Chicago';
+    const rows = events.map(ev => {
+      const time = ev.start_utc
+        ? new Date(ev.start_utc).toLocaleString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz,
+          })
+        : '—';
+      const who = ev.caller_name ? escapeHtml(ev.caller_name) : 'Unknown';
+      const service = ev.service ? escapeHtml(ev.service) : (ev.title ? escapeHtml(ev.title) : 'Appointment');
+      const phone = ev.caller_phone ? ` · ${escapeHtml(ev.caller_phone)}` : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${who} <span style="color:var(--accent2);font-weight:400;">· ${service}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${time}${phone}</div>
+        </div>
+        <button onclick="confirmNativeEvent('${ev.event_id}')" style="background:#16a34a;border:none;border-radius:6px;padding:7px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;">✓ Confirm</button>
+      </div>`;
+    }).join('');
+
+    listEl.innerHTML = rows;
+  } catch (e) {
+    console.error('[Auzora] Unconfirmed load error:', e.message);
+    wrap.style.display = 'none';
+  }
+}
+
+// Confirm a native calendar event — works from both the dashboard and the calendar day detail.
+async function confirmNativeEvent(eventId) {
+  if (!eventId) return;
+  try {
+    const res = await fetch(`${API}/portal/native-calendar/events/${encodeURIComponent(eventId)}/confirm`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Failed to confirm appointment.', 'error');
+      return;
+    }
+    showToast('Appointment confirmed.', 'success');
+
+    // Update the local event data so the calendar re-renders with confirmed styling
+    const ev = nativeCalEvents.find(e => e.event_id === eventId);
+    if (ev) ev.status = 'confirmed';
+
+    // Re-render the calendar grid + day detail to reflect the status change
+    renderNativeCalendar();
+
+    // Reload the dashboard unconfirmed section
+    loadUnconfirmedAppointments();
+  } catch (e) {
+    console.error('[Auzora] Confirm error:', e.message);
+    showToast('Failed to confirm appointment.', 'error');
+  }
 }
 
 // ── APPOINTMENTS ──────────────────────────────────────────────────────────────
@@ -4416,8 +4534,10 @@ async function renderNativeCalendar() {
     // Show at most 2 chips, then a "+N more" hint.
     const chips = dayEvents.slice(0, 2).map(ev => {
       const isGoogle = ev.source === 'google';
+      const isUnconfirmed = ev.status === 'unconfirmed';
+      const chipClass = isGoogle ? ' is-google' : (isUnconfirmed ? ' is-unconfirmed' : '');
       const text = `${nativeCalEventTimeLabel(ev)} ${ev.service || ev.caller_name || ev.title || 'Event'}`;
-      return `<div class="native-cal-chip${isGoogle ? ' is-google' : ''}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
+      return `<div class="native-cal-chip${chipClass}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
     }).join('');
     const more = dayEvents.length > 2
       ? `<div class="native-cal-more">+${dayEvents.length - 2} more</div>` : '';
@@ -4470,22 +4590,30 @@ function renderNativeCalDayDetail(dateKey) {
     const who = ev.caller_name ? ` · ${escapeHtml(ev.caller_name)}` : '';
     const phone = ev.caller_phone ? ` · ${escapeHtml(ev.caller_phone)}` : '';
     const isGoogle = ev.source === 'google';
+    const isUnconfirmed = ev.status === 'unconfirmed';
     const badge = isGoogle
       ? '<span style="font-size:10px;background:rgba(34,197,94,0.15);color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px;">Google</span>'
       : (ev.source === 'ai'
           ? '<span style="font-size:10px;background:rgba(99,102,241,0.15);color:var(--accent);border-radius:4px;padding:2px 6px;margin-left:6px;">AI booked</span>'
           : '');
+    const statusBadge = isUnconfirmed
+      ? '<span style="font-size:10px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:4px;padding:2px 6px;margin-left:6px;">⚠ Unconfirmed</span>'
+      : (!isGoogle ? '<span style="font-size:10px;background:rgba(34,197,94,0.12);color:#16a34a;border-radius:4px;padding:2px 6px;margin-left:6px;">✓ Confirmed</span>' : '');
 
     // Google-sourced blocks are mirrors of external events — edit them in Google.
+    const confirmBtn = isUnconfirmed
+      ? `<button onclick="confirmNativeEvent('${ev.event_id}')" style="background:none;border:1px solid #16a34a;border-radius:6px;padding:5px 10px;color:#16a34a;font-size:12px;cursor:pointer;margin-right:4px;">✓ Confirm</button>`
+      : '';
     const actions = isGoogle ? '' : `
       <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${confirmBtn}
         <button onclick="openNativeEventModal('${ev.event_id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:12px;cursor:pointer;">Edit</button>
         <button onclick="cancelNativeEvent('${ev.event_id}')" style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:5px 10px;color:var(--red);font-size:12px;cursor:pointer;">Cancel</button>
       </div>`;
 
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <div style="min-width:0;">
-        <div style="font-size:13px;font-weight:600;">${escapeHtml(time)}${endTime ? ' – ' + escapeHtml(endTime) : ''}${badge}</div>
+        <div style="font-size:13px;font-weight:600;">${escapeHtml(time)}${endTime ? ' – ' + escapeHtml(endTime) : ''}${badge}${statusBadge}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escapeHtml(ev.service || ev.title || 'Appointment')}${who}${phone}</div>
       </div>
       ${actions}
@@ -4507,11 +4635,22 @@ function openNativeEventModal(eventId, dateKey) {
   const errEl = document.getElementById('native-event-error');
   errEl.style.display = 'none';
 
+  // Clear all inline field errors
+  ['datetime', 'timezone', 'phone'].forEach(f => {
+    const e = document.getElementById(`native-event-${f}-err`);
+    if (e) { e.style.display = 'none'; e.textContent = ''; }
+    const inp = document.getElementById(`native-event-${f}`);
+    if (inp) inp.style.borderColor = 'var(--border)';
+  });
+
   // Populate the service dropdown from configured services.
   const serviceSelect = document.getElementById('native-event-service');
   const services = Object.keys(nativeCalServiceDurations || {});
   serviceSelect.innerHTML = '<option value="">— Select a service —</option>' +
     services.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+  // Timezone defaults to the user's saved setting.
+  const tzInput = document.getElementById('native-event-timezone');
 
   if (eventId) {
     const ev = nativeCalEvents.find(e => e.event_id === eventId);
@@ -4525,6 +4664,7 @@ function openNativeEventModal(eventId, dateKey) {
     document.getElementById('native-event-name').value = ev.caller_name || '';
     document.getElementById('native-event-phone').value = ev.caller_phone || '';
     document.getElementById('native-event-notes').value = ev.notes || '';
+    tzInput.value = ev.timezone || portalClient?.timezone || nativeCalTimezone || 'America/Chicago';
   } else {
     titleEl.textContent = 'New Appointment';
     document.getElementById('native-event-datetime').value = dateKey ? `${dateKey} ` : '';
@@ -4533,9 +4673,14 @@ function openNativeEventModal(eventId, dateKey) {
     document.getElementById('native-event-name').value = '';
     document.getElementById('native-event-phone').value = '';
     document.getElementById('native-event-notes').value = '';
+    tzInput.value = portalClient?.timezone || nativeCalTimezone || 'America/Chicago';
   }
 
   document.getElementById('native-event-modal').style.display = 'flex';
+
+  // Load earliest available slot for display (only for new appointments).
+  if (!eventId) loadEarliestSlot();
+  else document.getElementById('native-event-earliest').style.display = 'none';
 }
 
 function closeNativeEventModal() {
@@ -4548,6 +4693,46 @@ function onNativeServiceChange() {
   const service = document.getElementById('native-event-service').value;
   const configured = nativeCalServiceDurations[service];
   if (configured) document.getElementById('native-event-duration').value = configured;
+  // Reload earliest slot with the new duration.
+  if (!nativeCalEditingId) loadEarliestSlot();
+}
+
+/** Fetch the earliest available slot and display it in the modal. */
+async function loadEarliestSlot() {
+  const banner = document.getElementById('native-event-earliest');
+  const textEl = document.getElementById('native-event-earliest-text');
+  if (!banner) return;
+
+  const service = document.getElementById('native-event-service').value;
+  const duration = parseInt(document.getElementById('native-event-duration').value, 10) || 60;
+
+  banner.style.display = 'none';
+  try {
+    const params = new URLSearchParams({ duration: String(duration) });
+    if (service) params.set('service', service);
+    const res = await fetch(`${API}/portal/native-calendar/earliest-slot?${params}`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.slot && data.slot.suggestion) {
+      textEl.textContent = `Earliest opening: ${data.slot.suggestion}`;
+      banner.style.display = 'flex';
+    }
+  } catch { /* best-effort */ }
+}
+
+/** Fill the datetime field with the earliest suggested slot. */
+function useEarliestSlot() {
+  const textEl = document.getElementById('native-event-earliest-text');
+  // The suggestion is a human-readable string like "Friday, August 14th at 9:30 AM".
+  // Set it directly — the backend parses natural language.
+  const match = textEl.textContent.match(/Earliest opening: (.+)/);
+  if (match) {
+    document.getElementById('native-event-datetime').value = match[1];
+    document.getElementById('native-event-datetime').style.borderColor = 'var(--border)';
+    document.getElementById('native-event-datetime-err').style.display = 'none';
+  }
 }
 
 /** Create or update an appointment on the native calendar. */
@@ -4556,19 +4741,48 @@ async function saveNativeEvent() {
   const errEl = document.getElementById('native-event-error');
   errEl.style.display = 'none';
 
+  // ── Inline validation ──────────────────────────────────────────────
   const datetime = document.getElementById('native-event-datetime').value.trim();
+  const timezone = document.getElementById('native-event-timezone').value.trim();
+  const phone    = document.getElementById('native-event-phone').value.trim();
+
+  let hasErrors = false;
+
+  // Clear previous errors
+  ['datetime', 'timezone', 'phone'].forEach(f => {
+    const e = document.getElementById(`native-event-${f}-err`);
+    if (e) { e.style.display = 'none'; e.textContent = ''; }
+    const inp = document.getElementById(`native-event-${f}`);
+    if (inp) inp.style.borderColor = 'var(--border)';
+  });
+
   if (!datetime) {
-    errEl.textContent = 'Please enter a date and time.';
-    errEl.style.display = 'block';
-    return;
+    showFieldError('datetime', 'Date and time are required.');
+    hasErrors = true;
   }
+
+  if (!timezone) {
+    showFieldError('timezone', 'Time zone is required.');
+    hasErrors = true;
+  }
+
+  if (!phone) {
+    showFieldError('phone', 'Phone number is required.');
+    hasErrors = true;
+  } else if (phone.replace(/\D/g, '').length < 7) {
+    showFieldError('phone', 'Phone number is too short.');
+    hasErrors = true;
+  }
+
+  if (hasErrors) return;
 
   const payload = {
     datetime,
+    timezone,
     service: document.getElementById('native-event-service').value || null,
     duration_minutes: parseInt(document.getElementById('native-event-duration').value, 10) || 60,
     caller_name: document.getElementById('native-event-name').value.trim() || null,
-    caller_phone: document.getElementById('native-event-phone').value.trim() || null,
+    caller_phone: phone,
     notes: document.getElementById('native-event-notes').value.trim() || null,
   };
 
@@ -4590,9 +4804,15 @@ async function saveNativeEvent() {
     const data = await res.json();
 
     if (!res.ok || data.error) {
-      // 409 = conflict; the API includes the earliest free slot in the message.
-      errEl.textContent = data.error || 'Could not save the appointment.';
-      errEl.style.display = 'block';
+      // Show inline field errors if the server returned them
+      if (data.validationErrors && Array.isArray(data.validationErrors)) {
+        data.validationErrors.forEach(ve => {
+          if (ve.field) showFieldError(ve.field, ve.message);
+        });
+      } else {
+        errEl.textContent = data.error || 'Could not save the appointment.';
+        errEl.style.display = 'block';
+      }
       return;
     }
 
@@ -4605,6 +4825,19 @@ async function saveNativeEvent() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save Appointment';
+  }
+}
+
+/** Show an inline error for a specific field. */
+function showFieldError(field, message) {
+  const errSpan = document.getElementById(`native-event-${field}-err`);
+  const input = document.getElementById(`native-event-${field}`);
+  if (errSpan) {
+    errSpan.textContent = message;
+    errSpan.style.display = 'block';
+  }
+  if (input) {
+    input.style.borderColor = 'var(--red)';
   }
 }
 
