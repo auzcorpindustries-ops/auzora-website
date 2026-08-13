@@ -2029,9 +2029,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div>
 
     <div class="form-group" style="margin-bottom:16px;">
-      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Date &amp; Time</label>
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Date &amp; Time <span style="color:var(--red);">*</span></label>
       <input type="text" id="native-event-datetime" placeholder="e.g. next Wednesday at 2pm" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
-      <span style="font-size:11px;color:var(--muted);">Natural language works — "tomorrow at 3pm", "Sep 12 10:30am".</span>
+      <span id="native-event-datetime-hint" style="font-size:11px;color:var(--muted);">Natural language works — "tomorrow at 3pm", "Sep 12 10:30am".</span>
+      <span id="native-event-datetime-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Time Zone <span style="color:var(--red);">*</span></label>
+      <input type="text" id="native-event-timezone" placeholder="America/Chicago" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+      <span style="font-size:11px;color:var(--muted);">IANA timezone, e.g. America/New_York, America/Los_Angeles.</span>
+      <span id="native-event-timezone-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
+    </div>
+
+    <!-- Earliest available slot banner -->
+    <div id="native-event-earliest" style="display:none;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#16a34a;display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="native-event-earliest-text"></span>
+      <button onclick="useEarliestSlot()" style="background:none;border:1px solid #16a34a;border-radius:6px;padding:3px 10px;color:#16a34a;font-size:12px;cursor:pointer;margin-left:auto;">Use this slot</button>
     </div>
 
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -2052,8 +2067,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <input type="text" id="native-event-name" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
       </div>
       <div class="form-group" style="flex:1;min-width:200px;margin-bottom:16px;">
-        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Phone</label>
+        <label style="font-weight:600;font-size:14px;margin-bottom:6px;display:block;">Phone <span style="color:var(--red);">*</span></label>
         <input type="tel" id="native-event-phone" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+        <span id="native-event-phone-err" style="display:none;font-size:12px;color:var(--red);margin-top:4px;"></span>
       </div>
     </div>
 
@@ -4619,11 +4635,22 @@ function openNativeEventModal(eventId, dateKey) {
   const errEl = document.getElementById('native-event-error');
   errEl.style.display = 'none';
 
+  // Clear all inline field errors
+  ['datetime', 'timezone', 'phone'].forEach(f => {
+    const e = document.getElementById(`native-event-${f}-err`);
+    if (e) { e.style.display = 'none'; e.textContent = ''; }
+    const inp = document.getElementById(`native-event-${f}`);
+    if (inp) inp.style.borderColor = 'var(--border)';
+  });
+
   // Populate the service dropdown from configured services.
   const serviceSelect = document.getElementById('native-event-service');
   const services = Object.keys(nativeCalServiceDurations || {});
   serviceSelect.innerHTML = '<option value="">— Select a service —</option>' +
     services.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+  // Timezone defaults to the user's saved setting.
+  const tzInput = document.getElementById('native-event-timezone');
 
   if (eventId) {
     const ev = nativeCalEvents.find(e => e.event_id === eventId);
@@ -4637,6 +4664,7 @@ function openNativeEventModal(eventId, dateKey) {
     document.getElementById('native-event-name').value = ev.caller_name || '';
     document.getElementById('native-event-phone').value = ev.caller_phone || '';
     document.getElementById('native-event-notes').value = ev.notes || '';
+    tzInput.value = ev.timezone || portalClient?.timezone || nativeCalTimezone || 'America/Chicago';
   } else {
     titleEl.textContent = 'New Appointment';
     document.getElementById('native-event-datetime').value = dateKey ? `${dateKey} ` : '';
@@ -4645,9 +4673,14 @@ function openNativeEventModal(eventId, dateKey) {
     document.getElementById('native-event-name').value = '';
     document.getElementById('native-event-phone').value = '';
     document.getElementById('native-event-notes').value = '';
+    tzInput.value = portalClient?.timezone || nativeCalTimezone || 'America/Chicago';
   }
 
   document.getElementById('native-event-modal').style.display = 'flex';
+
+  // Load earliest available slot for display (only for new appointments).
+  if (!eventId) loadEarliestSlot();
+  else document.getElementById('native-event-earliest').style.display = 'none';
 }
 
 function closeNativeEventModal() {
@@ -4660,6 +4693,46 @@ function onNativeServiceChange() {
   const service = document.getElementById('native-event-service').value;
   const configured = nativeCalServiceDurations[service];
   if (configured) document.getElementById('native-event-duration').value = configured;
+  // Reload earliest slot with the new duration.
+  if (!nativeCalEditingId) loadEarliestSlot();
+}
+
+/** Fetch the earliest available slot and display it in the modal. */
+async function loadEarliestSlot() {
+  const banner = document.getElementById('native-event-earliest');
+  const textEl = document.getElementById('native-event-earliest-text');
+  if (!banner) return;
+
+  const service = document.getElementById('native-event-service').value;
+  const duration = parseInt(document.getElementById('native-event-duration').value, 10) || 60;
+
+  banner.style.display = 'none';
+  try {
+    const params = new URLSearchParams({ duration: String(duration) });
+    if (service) params.set('service', service);
+    const res = await fetch(`${API}/portal/native-calendar/earliest-slot?${params}`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.slot && data.slot.suggestion) {
+      textEl.textContent = `Earliest opening: ${data.slot.suggestion}`;
+      banner.style.display = 'flex';
+    }
+  } catch { /* best-effort */ }
+}
+
+/** Fill the datetime field with the earliest suggested slot. */
+function useEarliestSlot() {
+  const textEl = document.getElementById('native-event-earliest-text');
+  // The suggestion is a human-readable string like "Friday, August 14th at 9:30 AM".
+  // Set it directly — the backend parses natural language.
+  const match = textEl.textContent.match(/Earliest opening: (.+)/);
+  if (match) {
+    document.getElementById('native-event-datetime').value = match[1];
+    document.getElementById('native-event-datetime').style.borderColor = 'var(--border)';
+    document.getElementById('native-event-datetime-err').style.display = 'none';
+  }
 }
 
 /** Create or update an appointment on the native calendar. */
@@ -4668,19 +4741,48 @@ async function saveNativeEvent() {
   const errEl = document.getElementById('native-event-error');
   errEl.style.display = 'none';
 
+  // ── Inline validation ──────────────────────────────────────────────
   const datetime = document.getElementById('native-event-datetime').value.trim();
+  const timezone = document.getElementById('native-event-timezone').value.trim();
+  const phone    = document.getElementById('native-event-phone').value.trim();
+
+  let hasErrors = false;
+
+  // Clear previous errors
+  ['datetime', 'timezone', 'phone'].forEach(f => {
+    const e = document.getElementById(`native-event-${f}-err`);
+    if (e) { e.style.display = 'none'; e.textContent = ''; }
+    const inp = document.getElementById(`native-event-${f}`);
+    if (inp) inp.style.borderColor = 'var(--border)';
+  });
+
   if (!datetime) {
-    errEl.textContent = 'Please enter a date and time.';
-    errEl.style.display = 'block';
-    return;
+    showFieldError('datetime', 'Date and time are required.');
+    hasErrors = true;
   }
+
+  if (!timezone) {
+    showFieldError('timezone', 'Time zone is required.');
+    hasErrors = true;
+  }
+
+  if (!phone) {
+    showFieldError('phone', 'Phone number is required.');
+    hasErrors = true;
+  } else if (phone.replace(/\D/g, '').length < 7) {
+    showFieldError('phone', 'Phone number is too short.');
+    hasErrors = true;
+  }
+
+  if (hasErrors) return;
 
   const payload = {
     datetime,
+    timezone,
     service: document.getElementById('native-event-service').value || null,
     duration_minutes: parseInt(document.getElementById('native-event-duration').value, 10) || 60,
     caller_name: document.getElementById('native-event-name').value.trim() || null,
-    caller_phone: document.getElementById('native-event-phone').value.trim() || null,
+    caller_phone: phone,
     notes: document.getElementById('native-event-notes').value.trim() || null,
   };
 
@@ -4702,9 +4804,15 @@ async function saveNativeEvent() {
     const data = await res.json();
 
     if (!res.ok || data.error) {
-      // 409 = conflict; the API includes the earliest free slot in the message.
-      errEl.textContent = data.error || 'Could not save the appointment.';
-      errEl.style.display = 'block';
+      // Show inline field errors if the server returned them
+      if (data.validationErrors && Array.isArray(data.validationErrors)) {
+        data.validationErrors.forEach(ve => {
+          if (ve.field) showFieldError(ve.field, ve.message);
+        });
+      } else {
+        errEl.textContent = data.error || 'Could not save the appointment.';
+        errEl.style.display = 'block';
+      }
       return;
     }
 
@@ -4717,6 +4825,19 @@ async function saveNativeEvent() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save Appointment';
+  }
+}
+
+/** Show an inline error for a specific field. */
+function showFieldError(field, message) {
+  const errSpan = document.getElementById(`native-event-${field}-err`);
+  const input = document.getElementById(`native-event-${field}`);
+  if (errSpan) {
+    errSpan.textContent = message;
+    errSpan.style.display = 'block';
+  }
+  if (input) {
+    input.style.borderColor = 'var(--red)';
   }
 }
 
