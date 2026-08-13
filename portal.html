@@ -5863,7 +5863,9 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
-      <td><span class="${badgeClass}">${status}${attempts}</span>${attentionBadge}${smsBadge}</td>
+      <td>${smsConsent
+        ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
+        : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}${attentionBadge}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -5881,7 +5883,7 @@ function renderObLeads() {
     <thead><tr>
       <th style="width:40px;">#</th>
       <th>Lead</th>
-      <th>Status</th>
+      <th>SMS</th>
       <th>Score</th>
       <th>Intent</th>
       <th>Source</th>
