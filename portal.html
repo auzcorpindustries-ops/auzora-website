@@ -1864,6 +1864,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
+      <!-- Card 4.5: Help & Onboarding -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><i data-lucide="graduation-cap"></i> Help &amp; Onboarding</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">New to the portal? Replay the interactive tutorial to learn about each section.</div>
+        <button onclick="startTutorial()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;cursor:pointer;">Replay Tutorial</button>
+      </div>
+
       <!-- Card 5: Danger Zone -->
       <div class="card" style="margin-bottom:20px;border:1px solid #ef4444;">
         <div class="card-title" style="color:#ef4444;"><i data-lucide="alert-triangle"></i> Danger Zone</div>
@@ -1895,6 +1902,22 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     </div><!-- /shell -->
   </div><!-- /shell-wrap -->
 </div><!-- /app -->
+
+<!-- Tutorial Overlay -->
+<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
+<div id="tutorial-tooltip" style="display:none;position:fixed;z-index:10001;max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+  <div id="tutorial-step-num" style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;"></div>
+  <div id="tutorial-title" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
+  <div id="tutorial-text" style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px;"></div>
+  <div id="tutorial-dots" style="display:flex;gap:6px;margin-bottom:14px;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <button onclick="skipTutorial()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;">Skip Tutorial</button>
+    <div style="display:flex;gap:8px;">
+      <button id="tutorial-back-btn" onclick="tutorialBack()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;cursor:pointer;">Back</button>
+      <button id="tutorial-next-btn" onclick="tutorialNext()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 18px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Next</button>
+    </div>
+  </div>
+</div>
 
 <!-- Lead Timeline Modal -->
 <div id="lead-timeline-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeLeadTimeline()">
@@ -2320,6 +2343,138 @@ function logout() {
 }
 
 // ── APP INIT ──────────────────────────────────────────────────────────────────
+// ── TUTORIAL SYSTEM ────────────────────────────────────────────────────────
+const TUTORIAL_STEPS = [
+  { page: 'dashboard',     target: '#nav-dashboard',     title: 'Dashboard',       text: 'Your command center. See calls, leads, and appointments at a glance.' },
+  { page: 'settings',      target: '#nav-settings',      title: 'AI Agent',        text: "Configure your agent's name, voice, greeting, FAQs, and call script here." },
+  { page: 'leads',         target: '#nav-leads',         title: 'Leads & CRM',     text: 'Every lead your AI captures appears here. Call, dismiss, or export them.' },
+  { page: 'conversations', target: '#nav-conversations', title: 'Conversations',   text: 'Live SMS threads. Take over from AI and respond to leads directly.' },
+  { page: 'scheduling',    target: '#nav-scheduling',    title: 'Scheduling',      text: 'View your calendar, set office hours, and define booking requirements.' },
+  { page: 'forms',         target: '#nav-forms',         title: 'Forms',           text: 'Create embeddable lead capture forms for your website.' },
+  { page: 'integrations',  target: '#nav-integrations',  title: 'Integrations',    text: 'Connect Google Calendar, Outlook, Square, and webhooks.' },
+  { page: 'automations',   target: '#nav-automations',   title: 'Automations',     text: 'Set up n8n follow-up workflows and lead webhooks.' },
+  { page: 'analytics',     target: '#nav-analytics',     title: 'Analytics',       text: 'Track performance across calls, bookings, and campaigns.' },
+  { page: 'account',       target: '#nav-account',       title: 'Account',         text: 'Manage your profile, security, and billing.' },
+];
+
+let tutorialStep = 0;
+
+function startTutorial() {
+  tutorialStep = 0;
+  document.getElementById('tutorial-overlay').style.display = 'block';
+  document.getElementById('tutorial-tooltip').style.display = 'block';
+  renderTutorialStep();
+}
+
+function renderTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if (!step) return;
+
+  // Navigate to the page
+  showPage(step.page);
+
+  // Wait for DOM to settle, then position tooltip
+  setTimeout(() => {
+    // Remove previous highlight
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+      el.classList.remove('tutorial-highlight');
+      el.style.zIndex = '';
+      el.style.boxShadow = '';
+      el.style.position = '';
+    });
+
+    // Highlight target
+    const target = document.querySelector(step.target);
+    if (target) {
+      target.classList.add('tutorial-highlight');
+      target.style.position = 'relative';
+      target.style.zIndex = '10000';
+      target.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.5)';
+      target.style.borderRadius = '8px';
+
+      // Position tooltip near target
+      const rect = target.getBoundingClientRect();
+      const tooltip = document.getElementById('tutorial-tooltip');
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      let top = rect.bottom + 12;
+      let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+      // Keep tooltip on screen
+      if (left < 10) left = 10;
+      if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
+      if (top + tooltipRect.height > window.innerHeight - 10) top = rect.top - tooltipRect.height - 12;
+      if (top < 10) top = 10;
+
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+    }
+
+    // Update content
+    document.getElementById('tutorial-step-num').textContent = `Step ${tutorialStep + 1} of ${TUTORIAL_STEPS.length}`;
+    document.getElementById('tutorial-title').textContent = step.title;
+    document.getElementById('tutorial-text').textContent = step.text;
+
+    // Progress dots
+    const dotsDiv = document.getElementById('tutorial-dots');
+    dotsDiv.innerHTML = TUTORIAL_STEPS.map((_, i) => {
+      const color = i === tutorialStep ? 'var(--accent)' : (i < tutorialStep ? 'var(--accent)' : 'var(--border)');
+      const size = i === tutorialStep ? '8px' : '6px';
+      return `<div style="width:${size};height:${size};border-radius:50%;background:${color};transition:all 0.2s;"></div>`;
+    }).join('');
+
+    // Button states
+    document.getElementById('tutorial-back-btn').style.display = tutorialStep === 0 ? 'none' : 'block';
+    document.getElementById('tutorial-next-btn').textContent = tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Finish' : 'Next';
+  }, 100);
+}
+
+function tutorialNext() {
+  if (tutorialStep < TUTORIAL_STEPS.length - 1) {
+    tutorialStep++;
+    renderTutorialStep();
+  } else {
+    completeTutorial();
+  }
+}
+
+function tutorialBack() {
+  if (tutorialStep > 0) {
+    tutorialStep--;
+    renderTutorialStep();
+  }
+}
+
+function skipTutorial() {
+  completeTutorial();
+}
+
+function completeTutorial() {
+  document.getElementById('tutorial-overlay').style.display = 'none';
+  document.getElementById('tutorial-tooltip').style.display = 'none';
+  document.querySelectorAll('.tutorial-highlight').forEach(el => {
+    el.classList.remove('tutorial-highlight');
+    el.style.zIndex = '';
+    el.style.boxShadow = '';
+    el.style.position = '';
+  });
+
+  // Persist to server
+  if (portalToken) {
+    fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ tutorial_completed: true })
+    }).catch(err => console.error('[Auzora] Failed to save tutorial completion:', err));
+  }
+
+  // Update local state
+  if (portalClient) portalClient.tutorial_completed = true;
+
+  // Return to dashboard
+  showPage('dashboard');
+}
+
 function launchApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -2338,6 +2493,11 @@ function launchApp() {
   loadDashboard();
   loadSquareStatus();
   loadLeadIntakeToken();
+
+  // Start tutorial for first-time users
+  if (!portalClient.tutorial_completed) {
+    setTimeout(() => startTutorial(), 1200);
+  }
 }
 
 // ── TIER VISIBILITY ───────────────────────────────────────────────────────────
@@ -4045,26 +4205,115 @@ async function loadCalendarEvents() {
       return;
     }
 
-    eventsDiv.innerHTML = events.map(ev => {
-      const start = ev.start ? new Date(ev.start).toLocaleString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-      }) : '—';
-      const summary = ev.summary || '(No title)';
-      const loc = ev.location ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📍 ${ev.location}</div>` : '';
-      return `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;">
-        <div style="font-size:20px;">📅</div>
-        <div style="flex:1;">
-          <div style="font-weight:600;font-size:13px;">${summary}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${start}</div>
-          ${loc}
-        </div>
-      </div>`;
-    }).join('');
+    eventsDiv.innerHTML = renderCalendarMonth(events, new Date());
   } catch (err) {
     console.error('[Auzora] Calendar events error:', err.message);
     loading.style.display = 'none';
     errorDiv.style.display = 'block';
   }
+}
+
+/**
+ * Render a month-grid calendar view from Google Calendar events.
+ * Shows the current month with event dots on days that have events.
+ * Clicking a day shows the events for that day in a detail panel below.
+ */
+function renderCalendarMonth(events, viewDate) {
+  var calState = { events: events, viewDate: new Date(viewDate), selectedDate: null };
+  if (!window._calState) window._calState = calState;
+  window._calState = calState;
+
+  function eventsForDay(day) {
+    return events.filter(function(ev) {
+      if (!ev.start) return false;
+      var d = new Date(ev.start);
+      return d.getFullYear() === day.getFullYear() &&
+             d.getMonth() === day.getMonth() &&
+             d.getDate() === day.getDate();
+    });
+  }
+
+  function buildGrid() {
+    var year = calState.viewDate.getFullYear();
+    var month = calState.viewDate.getMonth();
+    var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    var firstDay = new Date(year, month, 1);
+    var startDay = firstDay.getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var today = new Date();
+
+    var rows = '';
+    for (var w = 0; w < 6; w++) {
+      var cells = '';
+      for (var d = 0; d < 7; d++) {
+        var cellDay = w * 7 + d - startDay + 1;
+        if (cellDay < 1 || cellDay > daysInMonth) {
+          cells += '<div style="min-height:72px;border:1px solid var(--border);padding:4px;background:var(--field);opacity:0.4;"></div>';
+        } else {
+          var cellDate = new Date(year, month, cellDay);
+          var isToday = cellDate.toDateString() === today.toDateString();
+          var dayEvents = eventsForDay(cellDate);
+          var isSelected = calState.selectedDate && cellDate.toDateString() === calState.selectedDate.toDateString();
+
+          var dots = dayEvents.map(function(ev) {
+            var timeStr = ev.start ? new Date(ev.start).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '';
+            return '<div style="font-size:10px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;cursor:pointer;" onclick="window._calState.selectedDate=new Date(' + year + ',' + month + ',' + cellDay + ');window._calState.render();">' + timeStr + ' ' + (ev.summary||'') + '</div>';
+          }).join('');
+
+          var bg = isSelected ? 'var(--accent)' : (isToday ? 'var(--accent)15' : 'var(--surface)');
+          var fg = isSelected ? '#fff' : 'var(--text)';
+
+          cells += '<div style="min-height:72px;border:1px solid var(--border);padding:4px;background:' + bg + ';cursor:pointer;" onclick="window._calState.selectedDate=new Date(' + year + ',' + month + ',' + cellDay + ');window._calState.render();">' +
+            '<div style="font-size:12px;font-weight:' + (isToday ? '700' : '400') + ';color:' + fg + ';' + (isToday && !isSelected ? 'background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;' : '') + '">' + cellDay + '</div>' +
+            dots +
+          '</div>';
+        }
+      }
+      rows += '<div style="display:grid;grid-template-columns:repeat(7,1fr);">' + cells + '</div>';
+    }
+
+    var selectedHtml = '';
+    if (calState.selectedDate) {
+      var selEvents = eventsForDay(calState.selectedDate);
+      var dateLabel = calState.selectedDate.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric'});
+      selectedHtml = '<div style="margin-top:12px;padding:12px;background:var(--field);border-radius:8px;">' +
+        '<div style="font-weight:600;font-size:13px;margin-bottom:8px;">' + dateLabel + (selEvents.length ? ' — ' + selEvents.length + ' event' + (selEvents.length>1?'s':'') : ' — No events') + '</div>' +
+        (selEvents.length ? selEvents.map(function(ev) {
+          var time = ev.start ? new Date(ev.start).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '—';
+          var end = ev.end ? ' – ' + new Date(ev.end).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) : '';
+          var loc = ev.location ? ' · ' + ev.location : '';
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);"><div style="font-weight:600;font-size:13px;">' + (ev.summary||'(No title)') + '</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">' + time + end + loc + '</div></div>';
+        }).join('') : '<div style="color:var(--muted);font-size:13px;">No events scheduled.</div>') +
+      '</div>';
+    }
+
+    var prevMonth = 'window._calState.viewDate=new Date(' + year + ',' + (month-1) + ',1);window._calState.render();';
+    var nextMonth = 'window._calState.viewDate=new Date(' + year + ',' + (month+1) + ',1);window._calState.render();';
+    var goToday = 'window._calState.viewDate=new Date();window._calState.selectedDate=new Date();window._calState.render();';
+
+    return '<div style="font-size:13px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<button onclick="' + prevMonth + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text);font-size:14px;">‹</button>' +
+        '<div style="font-weight:700;font-size:15px;">' + monthNames[month] + ' ' + year + '</div>' +
+        '<button onclick="' + nextMonth + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text);font-size:14px;">›</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;">' +
+        dayNames.map(function(d) { return '<div style="text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;">' + d + '</div>'; }).join('') +
+      '</div>' +
+      rows +
+      '<div style="margin-top:8px;text-align:center;"><button onclick="' + goToday + '" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;color:var(--accent);font-size:12px;">Today</button></div>' +
+      selectedHtml +
+    '</div>';
+  }
+
+  calState.render = function() {
+    var el = document.getElementById('scheduling-cal-events');
+    if (el) el.innerHTML = buildGrid();
+  };
+
+  return buildGrid();
 }
 
 function setSchedDirty() {
