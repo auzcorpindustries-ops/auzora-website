@@ -2226,6 +2226,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
 let acProfilePhoto = null;
+let acProfilePhotoDirty = false; // true when user explicitly uploaded/removed photo
 
 // ── Session expiry detection ─────────────────────────────────────────────────
 // When the portal token expires or is revoked, API calls return 401. Instead of
@@ -6448,6 +6449,7 @@ function handlePhotoSelect(event) {
       const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
       const dataUrl = canvas.toDataURL(mimeType, 0.85);
       acProfilePhoto = dataUrl;
+      acProfilePhotoDirty = true;
       updatePhotoPreview();
       status.textContent = 'Photo ready — click Save Profile to upload.';
       status.style.color = 'var(--green)';
@@ -6465,6 +6467,7 @@ function handlePhotoSelect(event) {
 
 function removeProfilePhoto() {
   acProfilePhoto = null;
+  acProfilePhotoDirty = true;
   updatePhotoPreview();
   document.getElementById('ac-photo-status').textContent = 'Photo will be removed on save.';
   document.getElementById('ac-photo-status').style.color = 'var(--muted)';
@@ -6494,6 +6497,7 @@ async function loadAccount() {
 
     // Profile Photo
     acProfilePhoto = acct.profile_photo || null;
+    acProfilePhotoDirty = false; // reset — this is a load, not a user change
     updatePhotoPreview();
 
     // Security
@@ -6563,17 +6567,25 @@ async function saveProfile() {
   const status = document.getElementById('ac-profile-status');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
+    // Build payload — only include profile_photo when the user explicitly
+    // changed it (uploaded a new one or removed it). Without this guard,
+    // sending `profile_photo: null` when acProfilePhoto hasn't been loaded
+    // yet would wipe the existing photo from DynamoDB.
+    const payload = {
+      business_name: document.getElementById('ac-business-name').value,
+      email: document.getElementById('ac-email').value,
+      phone: document.getElementById('ac-phone').value,
+      industry: document.getElementById('ac-industry').value,
+      timezone: document.getElementById('ac-timezone').value,
+    };
+    if (acProfilePhotoDirty) {
+      payload.profile_photo = acProfilePhoto || null;
+      acProfilePhotoDirty = false;
+    }
     const res = await fetch(`${API}/portal/account`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({
-        business_name: document.getElementById('ac-business-name').value,
-        email: document.getElementById('ac-email').value,
-        phone: document.getElementById('ac-phone').value,
-        industry: document.getElementById('ac-industry').value,
-        timezone: document.getElementById('ac-timezone').value,
-        profile_photo: acProfilePhoto || null,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
@@ -7070,7 +7082,7 @@ function renderObLeads() {
       </td>
       <td>${smsConsent
         ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
-        : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}${attentionBadge}</td>
+        : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -7078,9 +7090,8 @@ function renderObLeads() {
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
-      <td style="text-align:right;white-space:nowrap;">${callBtn}${dismissBtn}${smsToggleBtn}</td>
     </tr>
-    ${showExpand ? `<tr><td colspan="11" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    ${showExpand ? `<tr><td colspan="10" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
   }).join('');
 
@@ -7096,7 +7107,6 @@ function renderObLeads() {
       <th>Time Elapsed</th>
       <th>Next Action</th>
       <th>AI Recommendation</th>
-      <th style="text-align:right;">Action</th>
     </tr></thead>
     ${rows}
   </table></div>`;
@@ -7117,6 +7127,11 @@ async function toggleSmsConsent(leadId, optIn, btn) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     showToast(optIn ? 'SMS re-enabled for this lead' : 'Lead opted out of SMS', 'success');
     loadOutbound(); // refresh the table
+    // If the lead modal is open, refresh it to reflect the change
+    const overlay = document.getElementById('lead-timeline-overlay');
+    if (overlay && overlay.style.display === 'flex') {
+      showLeadTimeline(leadId);
+    }
   } catch (e) {
     console.error('toggleSmsConsent error:', e.message);
     showToast('Could not update SMS consent', 'error');
@@ -7135,6 +7150,11 @@ async function dismissAttention(leadId, btn) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     showToast('Attention flag cleared', 'success');
     loadOutbound(); // refresh the table
+    // If the lead modal is open, refresh it to reflect the change
+    const overlay = document.getElementById('lead-timeline-overlay');
+    if (overlay && overlay.style.display === 'flex') {
+      showLeadTimeline(leadId);
+    }
   } catch (e) {
     console.error('dismissAttention error:', e.message);
     showToast('Could not clear attention flag', 'error');
@@ -8893,14 +8913,46 @@ async function showLeadTimeline(leadId) {
     const smsStatus = lead.sms_consent === false ? 'SMS Off' : 'SMS On';
     metaEl.textContent = [lead.phone, lead.email, lead.source && lead.source.replace(/_/g, ' '), smsStatus].filter(Boolean).join(' · ');
 
+    // ── Action buttons (moved from table into modal) ────────────────────
+    const optedOut = lead.outbound_opted_out === true || lead.opt_out === true || lead.outbound_status === 'opted-out';
+    const smsConsent = lead.sms_consent !== false;
+    const canManualCall = portalEntitlements?.manualOutboundCalls === true;
+    const canInternalCrm = portalEntitlements?.internalCrm === true;
+    const needsAttention = lead.needs_agent_attention === true;
+
+    let actionsHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">';
+
+    // Call button
+    if (optedOut) {
+      actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">Do not call</span>';
+    } else if (!canManualCall) {
+      actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">Premium</span>';
+    } else if (lead.phone) {
+      actionsHtml += `<button onclick="callLead('${lead.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Call</button>`;
+    } else {
+      actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">No phone</span>';
+    }
+
+    // SMS opt-in/out toggle
+    actionsHtml += smsConsent
+      ? `<button onclick="toggleSmsConsent('${lead.lead_id}', false, this)" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;">Opt Out SMS</button>`
+      : `<button onclick="toggleSmsConsent('${lead.lead_id}', true, this)" style="background:none;border:1px solid #22c55e40;border-radius:8px;padding:8px 16px;font-size:13px;color:#16a34a;cursor:pointer;">Opt In SMS</button>`;
+
+    // Dismiss attention flag
+    if (needsAttention && canInternalCrm) {
+      actionsHtml += `<button onclick="dismissAttention('${lead.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--muted);cursor:pointer;">Dismiss</button>`;
+    }
+
+    actionsHtml += '</div>';
+
     if (!timeline.length) {
-      content.innerHTML = '<div class="empty">No activity recorded for this lead yet.</div>';
+      content.innerHTML = actionsHtml + '<div class="empty">No activity recorded for this lead yet.</div>';
       return;
     }
 
     const statusColors = { success: '#22c55e', failed: '#ef4444', pending: '#f59e0b', info: '#3B82F6' };
 
-    content.innerHTML = `<div style="position:relative;padding-left:20px;">
+    content.innerHTML = actionsHtml + `<div style="position:relative;padding-left:20px;">
       <div style="position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:var(--border);"></div>
       ${timeline.map(log => {
         const time = new Date(log.timestamp).toLocaleString();
