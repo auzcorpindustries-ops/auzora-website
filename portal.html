@@ -509,6 +509,10 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .native-cal-day.is-today { border-color: var(--accent); }
 .native-cal-day.is-selected { background: rgba(99,102,241,0.10); border-color: var(--accent); }
 .native-cal-day.is-closed { opacity: 0.45; }
+.native-cal-day.is-blackout { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); opacity: 0.5; cursor: not-allowed; position: relative; }
+.native-cal-day.is-blackout:hover { border-color: rgba(239,68,68,0.5); }
+.native-cal-day.is-blackout::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #ef4444; }
+.native-cal-day.is-blackout .native-cal-daynum { color: #ef4444; }
 .native-cal-daynum { font-size: 12px; font-weight: 700; color: var(--text); }
 .native-cal-chip {
   font-size: 10px; line-height: 1.3; padding: 2px 5px; border-radius: 4px;
@@ -1001,10 +1005,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <div class="save-bar">
-        <span class="unsaved" id="s-unsaved">● Unsaved changes</span>
-        <button class="btn-save" id="s-save-btn" onclick="saveSettings()">💾 Save & Apply</button>
-      </div>
     </div>
 
     <!-- SCHEDULING -->
@@ -1071,6 +1071,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(99,102,241,0.15);"></div> Confirmed</div>
           <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);"></div> Unconfirmed</div>
           <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(34,197,94,0.15);"></div> Google</div>
+          <div class="native-cal-key-item"><div class="native-cal-key-dot" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);"></div> Blackout</div>
         </div>
 
         <!-- Selected day detail -->
@@ -1162,11 +1163,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <i data-lucide="globe" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
                 <span style="font-weight:600;color:var(--text);">Timezone</span>
                 <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
-                <i data-lucide="mail" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
-                <span style="font-weight:600;color:var(--text);">Email Address</span>
-                <span style="font-size:10px;font-weight:700;color:var(--muted);margin-left:auto;">OPTIONAL</span>
               </div>
             </div>
           </div>
@@ -1269,10 +1265,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <div class="save-bar">
-        <span class="unsaved" id="s-unsaved-sched">● Unsaved changes</span>
-        <button class="btn-save" onclick="saveSettings()">💾 Save &amp; Apply</button>
-      </div>
     </div>
 
     <!-- INTEGRATIONS -->
@@ -4884,6 +4876,30 @@ async function renderNativeCalendar() {
     (byDay[key] = byDay[key] || []).push(ev);
   }
 
+  // Build a set of blackout date keys (YYYY-MM-DD) for the displayed month.
+  const blackoutDays = new Set();
+  const blackoutLabels = {};
+  const clientBlackouts = portalClient?.blackout_dates || [];
+  for (const blk of clientBlackouts) {
+    if (!blk.startDate) continue;
+    const start = new Date(blk.startDate + 'T00:00:00');
+    const end = blk.endDate ? new Date(blk.endDate + 'T00:00:00') : start;
+    // Walk each day from start to end (inclusive)
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth();
+      const d = cursor.getDate();
+      // Only add if the day falls in the displayed month
+      if (y === year && m === month) {
+        const key = nativeCalDateKey(new Date(y, m, d));
+        blackoutDays.add(key);
+        if (blk.label) blackoutLabels[key] = blk.label;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
   const firstDow = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayKey = nativeCalDateKey(new Date());
@@ -4901,15 +4917,21 @@ async function renderNativeCalendar() {
     const classes = ['native-cal-day'];
     if (key === todayKey) classes.push('is-today');
     if (key === nativeCalSelectedDate) classes.push('is-selected');
+    if (blackoutDays.has(key)) classes.push('is-blackout');
 
     // Show at most 2 chips, then a "+N more" hint.
-    const chips = dayEvents.slice(0, 2).map(ev => {
+    let chips = dayEvents.slice(0, 2).map(ev => {
       const isGoogle = ev.source === 'google';
       const isUnconfirmed = ev.status === 'unconfirmed';
       const chipClass = isGoogle ? ' is-google' : (isUnconfirmed ? ' is-unconfirmed' : '');
       const text = `${nativeCalEventTimeLabel(ev)} ${ev.service || ev.caller_name || ev.title || 'Event'}`;
       return `<div class="native-cal-chip${chipClass}" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
     }).join('');
+    // Add a blackout chip if this day is blacked out
+    if (blackoutDays.has(key)) {
+      const blkLabel = blackoutLabels[key] || 'Blackout';
+      chips = `<div class="native-cal-chip is-unconfirmed" title="${escapeHtml(blkLabel)}" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25);">${escapeHtml(blkLabel)}</div>` + chips;
+    }
     const more = dayEvents.length > 2
       ? `<div class="native-cal-more">+${dayEvents.length - 2} more</div>` : '';
 
@@ -4924,6 +4946,24 @@ async function renderNativeCalendar() {
 }
 
 function selectNativeCalDay(dateKey) {
+  // Check if this day is a blackout date
+  const clientBlackouts = portalClient?.blackout_dates || [];
+  for (const blk of clientBlackouts) {
+    if (!blk.startDate) continue;
+    const start = blk.startDate;
+    const end = blk.endDate || blk.startDate;
+    if (dateKey >= start && dateKey <= end) {
+      const label = blk.label || 'Blackout date';
+      const detail = document.getElementById('native-cal-day-detail');
+      if (detail) {
+        const [y, m, d] = dateKey.split('-').map(Number);
+        const heading = new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        detail.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:4px;">${heading}</div><div style="display:flex;align-items:center;gap:8px;padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;"><i data-lucide="ban" style="width:16px;height:16px;color:#ef4444;flex-shrink:0;"></i><span style="font-size:13px;color:#ef4444;font-weight:600;">${escapeHtml(label)}</span><span style="font-size:12px;color:var(--muted);">— unavailable for booking</span></div>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+      return;
+    }
+  }
   nativeCalSelectedDate = dateKey;
   renderNativeCalendar();
   renderNativeCalDayDetail(dateKey);
@@ -5465,8 +5505,7 @@ function renderCalendarMonth(events, viewDate) {
 }
 
 function setSchedDirty() {
-  const el = document.getElementById('s-unsaved-sched');
-  if (el) el.style.display = 'inline';
+  setDirty();
 }
 
 function renderServiceDurations() {
@@ -5559,12 +5598,34 @@ async function loadSettings() {
   }).catch(() => {});
 
   settingsDirty = false;
-  document.getElementById('s-unsaved').style.display = 'none';
+  hideFloatingFooter();
 }
 
 function setDirty() {
   settingsDirty = true;
-  document.getElementById('s-unsaved').style.display = 'inline';
+  showFloatingFooter();
+}
+
+function showFloatingFooter() {
+  const footer = document.getElementById('floating-save-footer');
+  if (footer) footer.style.display = 'block';
+}
+
+function hideFloatingFooter() {
+  const footer = document.getElementById('floating-save-footer');
+  if (footer) footer.style.display = 'none';
+}
+
+function cancelSettings() {
+  if (!confirm('Discard all unsaved changes?')) return;
+  // Reload settings from portalClient to revert any edits
+  if (portalClient) {
+    loadSettings();
+    if (typeof loadScheduling === 'function') loadScheduling();
+  }
+  settingsDirty = false;
+  hideFloatingFooter();
+  showToast('Changes discarded', 'info');
 }
 
 function togglePortalAH() {
@@ -5856,8 +5917,8 @@ function convertBlackoutToRange(i) {
 
 // Save
 async function saveSettings() {
-  const btn = document.getElementById('s-save-btn');
-  btn.textContent = 'Saving...'; btn.disabled = true;
+  const btn = document.getElementById('floating-save-btn');
+  if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
 
   // ── Defensive guard: don't overwrite existing data with empties ────────
   // If portalClient had FAQs/services/specialties but the local arrays are
@@ -5923,15 +5984,16 @@ async function saveSettings() {
     if (data.client) {
       portalClient = data.client;
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
-      settingsDirty = false;
-      document.getElementById('s-unsaved').style.display = 'none';
-      const schedUnsaved = document.getElementById('s-unsaved-sched');
-      if (schedUnsaved) schedUnsaved.style.display = 'none';
       showToast('Settings saved — live on next call ✓', 'success');
+      // Re-render the native calendar so blackout dates appear immediately
+      if (typeof renderNativeCalendar === 'function') renderNativeCalendar();
+      settingsDirty = false;
+      hideFloatingFooter();
     } else throw new Error(data.error || 'Save failed');
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
 
-  btn.textContent = '💾 Save & Apply'; btn.disabled = false;
+  const fbtn = document.getElementById('floating-save-btn');
+  if (fbtn) { fbtn.disabled = false; fbtn.textContent = 'Save and Apply'; }
 }
 
 // ── TEST BOOKING HARNESS ─────────────────────────────────────────────────────
@@ -9704,6 +9766,20 @@ function escapeHtml(str) {
         Cancel
       </button>
       <span id="wf-test-status" style="font-size:13px;color:var(--muted);margin-left:auto;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Floating save footer — appears on unsaved changes -->
+<div id="floating-save-footer" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 10px rgba(0,0,0,0.08);padding:12px 24px;transition:transform 0.2s,opacity 0.2s;">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <span style="font-size:13px;font-weight:600;color:var(--orange);display:flex;align-items:center;gap:6px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--orange);"></span>
+      Unsaved changes
+    </span>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelSettings()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="saveSettings()" id="floating-save-btn" style="background:var(--accent);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Save and Apply</button>
     </div>
   </div>
 </div>
