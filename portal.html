@@ -1129,6 +1129,50 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <button onclick="addSchedulingParam()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add</button>
           </div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Define the information your AI must collect before booking an appointment. Required fields will always be asked; optional fields are collected if mentioned.</div>
+
+          <!-- Built-in defaults (read-only) -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);">Built-in defaults</span>
+              <span style="font-size:10px;font-weight:700;letter-spacing:.5px;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.3);border-radius:999px;padding:2px 8px;">ALWAYS COLLECTED</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Your AI agent already collects these automatically during every booking — no need to add them below.</div>
+            <div style="display:grid;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="user" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Caller Name</span>
+                <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="phone" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Phone Number</span>
+                <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="wrench" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Service Type</span>
+                <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="calendar" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Preferred Date &amp; Time</span>
+                <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="globe" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Timezone</span>
+                <span style="font-size:10px;font-weight:700;color:var(--green);margin-left:auto;">REQUIRED</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+                <i data-lucide="mail" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;"></i>
+                <span style="font-weight:600;color:var(--text);">Email Address</span>
+                <span style="font-size:10px;font-weight:700;color:var(--muted);margin-left:auto;">OPTIONAL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom parameters (editable) -->
+          <div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Custom Parameters</div>
           <div id="s-sched-list" style="display:flex;flex-direction:column;gap:10px;"></div>
         </div>
       </div>
@@ -1141,6 +1185,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="s-durations-empty" style="text-align:center;padding:30px 20px;color:var(--muted);font-size:13px;display:none;">
           No services configured. Go to <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('settings')">AI Agent</span> to add services first.
         </div>
+      </div>
+
+      <!-- Holidays & Vacations (blackout dates) -->
+      <div class="card" style="margin-top:20px;" id="sched-blackout-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="card-title" style="margin:0;"><i data-lucide="plane"></i> Holidays &amp; Vacations</div>
+          <button onclick="addBlackoutDate()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add Date</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Add blackout dates when your business is unavailable — holidays, vacations, or any closed period. The AI agent will treat these as unavailable for booking and let callers know you're closed.</div>
+        <div id="s-blackout-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
 
       <!-- Internal Test Booking Harness -->
@@ -1522,6 +1576,72 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="stat-label">Needs Attention</div>
           <div class="stat-value" id="stat-leads-attention" style="color:#f59e0b;">—</div>
           <div class="stat-sub">AI flagged for follow-up</div>
+        </div>
+      </div>
+
+      <!-- Lead Import -->
+      <div class="card" style="margin-bottom:20px;" id="lead-import-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="card-title" style="margin:0;"><i data-lucide="upload"></i> Import Leads</div>
+          <button onclick="toggleLeadImport()" id="li-toggle-btn" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">Expand</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Upload a CSV file or paste lead data directly. Phone number is required; name, service, and notes are optional.</div>
+
+        <div id="li-content" style="display:none;">
+          <!-- Input methods: file upload + paste area -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <!-- File upload -->
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">CSV File Upload</label>
+              <div id="li-drop-zone" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onclick="document.getElementById('li-file-input').click()">
+                <i data-lucide="file-up" style="width:28px;height:28px;color:var(--muted);margin-bottom:8px;"></i>
+                <div style="font-size:13px;color:var(--text);font-weight:600;">Click to browse or drag a CSV file</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Max 2MB, up to 200 leads</div>
+                <input type="file" id="li-file-input" accept=".csv,text/csv,text/plain" style="display:none;" onchange="handleLeadCsvFile(this.files[0])" />
+              </div>
+            </div>
+            <!-- Paste area -->
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Paste CSV Data</label>
+              <textarea id="li-paste-area" rows="5" placeholder="phone,name,service,notes&#10;5551234567,John Smith,Pool Cleaning,Called last week&#10;5559876543,Jane Doe,," style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:100px;" oninput="parseLeadImportPreview()"></textarea>
+            </div>
+          </div>
+
+          <!-- Column mapping (auto-detected, editable) -->
+          <div id="li-mapping-section" style="display:none;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Column Mapping</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">We auto-detected your columns. Adjust the mapping if needed.</div>
+            <div id="li-mapping-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;"></div>
+          </div>
+
+          <!-- Preview table -->
+          <div id="li-preview-section" style="display:none;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:12px;font-weight:600;color:var(--text);">Preview (<span id="li-valid-count">0</span> valid, <span id="li-invalid-count">0</span> skipped)</div>
+              <button onclick="clearLeadImport()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;color:var(--text);cursor:pointer;">Clear</button>
+            </div>
+            <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead style="position:sticky;top:0;background:var(--surface2);z-index:1;">
+                  <tr>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">#</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Phone</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Name</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Service</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Notes</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="li-preview-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Import button + status -->
+          <div id="li-action-row" style="display:none;align-items:center;gap:12px;">
+            <button id="li-import-btn" onclick="executeLeadImport()" style="background:#22c55e;border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Import <span id="li-import-count">0</span> Leads</button>
+            <span id="li-status" style="font-size:12px;color:var(--muted);"></span>
+          </div>
         </div>
       </div>
 
@@ -4646,6 +4766,7 @@ function loadScheduling() {
   // Populate office hours + scheduling params (same fields, now on this page)
   buildPortalHoursGrid(c.office_hours || '24/7');
   renderSchedulingParams(c.scheduling_params || []);
+  renderBlackoutDates(c.blackout_dates || []);
   // Ensure services are loaded for the durations card
   portalServices = [...(c.service_areas || [])];
   renderServiceDurations();
@@ -5651,6 +5772,88 @@ function getSchedulingParams() {
   }).filter(p => p.label);
 }
 
+// Blackout Dates (Holidays & Vacations)
+function renderBlackoutDates(dates) {
+  const list = document.getElementById('s-blackout-list');
+  if (!dates.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No blackout dates set — your business is available during all regular office hours.</div>';
+    return;
+  }
+  list.innerHTML = dates.map((d, i) => {
+    const hasRange = !!d.endDate;
+    const dateLabel = hasRange
+      ? `${formatBlackoutDate(d.startDate)} → ${formatBlackoutDate(d.endDate)}`
+      : formatBlackoutDate(d.startDate);
+    return `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;" id="blk-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">${hasRange ? 'Date Range' : 'Single Date'}</span>
+        <button onclick="removeBlackoutDate(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">${hasRange ? 'From' : 'Date'}</label>
+          <input type="date" value="${d.startDate}" onchange="updateBlackoutDate(${i},'startDate',this.value);setDirty()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;" />
+        </div>
+        ${hasRange ? `<div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">To</label>
+          <input type="date" value="${d.endDate}" onchange="updateBlackoutDate(${i},'endDate',this.value);setDirty()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;" />
+        </div>` : ''}
+        <button onclick="convertBlackoutToRange(${i})" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:11px;cursor:pointer;margin-top:14px;">${hasRange ? 'Make single date' : 'Make date range'}</button>
+      </div>
+      <input type="text" value="${(d.label || '').replace(/"/g, '&quot;')}" placeholder="Label (e.g. Thanksgiving, Summer Vacation)" oninput="updateBlackoutDate(${i},'label',this.value);setDirty()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;margin-top:8px;" />
+    </div>`;
+  }).join('');
+}
+
+function formatBlackoutDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getBlackoutDates() {
+  return Array.from(document.querySelectorAll('#s-blackout-list [id^="blk-"]')).map(row => {
+    const startDateInput = row.querySelector('input[type="date"]');
+    const labelInput = row.querySelector('input[type="text"]');
+    const endDateInput = row.querySelectorAll('input[type="date"]')[1];
+    const entry = { startDate: startDateInput?.value || '' };
+    if (endDateInput && endDateInput.value) entry.endDate = endDateInput.value;
+    if (labelInput && labelInput.value) entry.label = labelInput.value;
+    return entry;
+  }).filter(d => d.startDate);
+}
+
+function addBlackoutDate() {
+  const cur = getBlackoutDates();
+  cur.push({ startDate: new Date().toISOString().slice(0, 10) });
+  renderBlackoutDates(cur);
+  setDirty();
+}
+
+function removeBlackoutDate(i) {
+  const cur = getBlackoutDates();
+  cur.splice(i, 1);
+  renderBlackoutDates(cur);
+  setDirty();
+}
+
+function updateBlackoutDate(i, field, value) {
+  // Re-render is not needed for field updates — values are read on save.
+  // Only re-render when toggling range mode.
+}
+
+function convertBlackoutToRange(i) {
+  const cur = getBlackoutDates();
+  if (cur[i].endDate) {
+    delete cur[i].endDate;
+  } else {
+    cur[i].endDate = cur[i].startDate;
+  }
+  renderBlackoutDates(cur);
+  setDirty();
+}
+
 // Save
 async function saveSettings() {
   const btn = document.getElementById('s-save-btn');
@@ -5703,6 +5906,7 @@ async function saveSettings() {
       sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
       faqs:                faqsToSave,
       scheduling_params:   getSchedulingParams(),
+      blackout_dates:      getBlackoutDates(),
       service_durations:   portalClient?.service_durations || {},
       timezone:            document.getElementById('s-timezone')?.value || 'America/Chicago',
       tone:                document.getElementById('s-tone').value,
@@ -7268,6 +7472,297 @@ async function startOutboundCall(isTest) {
 }
 
 // ── CAMPAIGNS (Phase 2) ──────────────────────────────────────────────────────
+
+// ── LEAD IMPORT (Leads & CRM page) ───────────────────────────────────────────
+
+let liParsedRows = [];   // parsed CSV rows (array of arrays)
+let liHeaders = [];      // detected column names
+let liMapping = {};      // { csvColumnIndex: 'phone'|'name'|'service'|'notes'|'email'|'skip' }
+const LI_MAX_LEADS = 200;
+const LI_MAX_SIZE = 2 * 1024 * 1024;
+
+function toggleLeadImport() {
+  const content = document.getElementById('li-content');
+  const btn = document.getElementById('li-toggle-btn');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    btn.textContent = 'Collapse';
+  } else {
+    content.style.display = 'none';
+    btn.textContent = 'Expand';
+  }
+}
+
+function handleLeadCsvFile(file) {
+  if (!file) return;
+  const name = file.name.toLowerCase();
+  const isCsv = name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'text/plain' || file.type === '';
+  if (!isCsv) { showToast('Please select a .csv file', 'error'); return; }
+  if (file.size > LI_MAX_SIZE) { showToast('File too large — max 2MB', 'error'); return; }
+  if (file.size === 0) { showToast('File is empty', 'error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('li-paste-area').value = e.target.result;
+    parseLeadImportPreview();
+  };
+  reader.onerror = function() { showToast('Failed to read file', 'error'); };
+  reader.readAsText(file);
+}
+
+function parseLeadImportPreview() {
+  const text = document.getElementById('li-paste-area').value.trim();
+  if (!text) {
+    document.getElementById('li-mapping-section').style.display = 'none';
+    document.getElementById('li-preview-section').style.display = 'none';
+    document.getElementById('li-action-row').style.display = 'none';
+    liParsedRows = [];
+    return;
+  }
+
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return;
+
+  // Parse CSV lines (handle quoted fields)
+  const parsed = lines.map(line => parseLeadCsvLine(line));
+
+  // Detect header row
+  const firstRow = parsed[0].map(c => (c || '').toLowerCase());
+  const hasHeader = firstRow.some(c =>
+    c.includes('phone') || c.includes('name') || c.includes('number') ||
+    c.includes('service') || c.includes('notes') || c.includes('email')
+  );
+
+  if (hasHeader) {
+    liHeaders = parsed[0];
+    liParsedRows = parsed.slice(1);
+  } else {
+    liHeaders = parsed[0].map((_, i) => `Column ${i + 1}`);
+    liParsedRows = parsed;
+  }
+
+  // Auto-detect column mapping
+  liMapping = {};
+  const usedFields = new Set();
+  liHeaders.forEach((h, i) => {
+    const hl = (h || '').toLowerCase();
+    if (hl.includes('phone') || hl.includes('number') || hl.includes('mobile') || hl.includes('cell')) {
+      if (!usedFields.has('phone')) { liMapping[i] = 'phone'; usedFields.add('phone'); }
+    } else if (hl.includes('name') || hl.includes('first') || hl.includes('contact')) {
+      if (!usedFields.has('name')) { liMapping[i] = 'name'; usedFields.add('name'); }
+    } else if (hl.includes('service') || hl.includes('interest') || hl.includes('topic')) {
+      if (!usedFields.has('service')) { liMapping[i] = 'service'; usedFields.add('service'); }
+    } else if (hl.includes('notes') || hl.includes('comment') || hl.includes('detail')) {
+      if (!usedFields.has('notes')) { liMapping[i] = 'notes'; usedFields.add('notes'); }
+    } else if (hl.includes('email') || hl.includes('e-mail')) {
+      if (!usedFields.has('email')) { liMapping[i] = 'email'; usedFields.add('email'); }
+    }
+  });
+
+  // If no phone column detected, assume first column is phone
+  if (!usedFields.has('phone') && liHeaders.length > 0) {
+    liMapping[0] = 'phone';
+    usedFields.add('phone');
+  }
+
+  renderLeadImportMapping();
+  renderLeadImportPreview();
+}
+
+function renderLeadImportMapping() {
+  const section = document.getElementById('li-mapping-section');
+  const grid = document.getElementById('li-mapping-grid');
+  if (!liHeaders.length) { section.style.display = 'none'; return; }
+
+  section.style.display = 'block';
+  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'skip'];
+  grid.innerHTML = liHeaders.map((h, i) => {
+    const current = liMapping[i] || 'skip';
+    return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${h}</div>
+        <select onchange="updateLeadImportMapping(${i}, this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;outline:none;">
+          ${fieldOptions.map(f => `<option value="${f}" ${current === f ? 'selected' : ''}>${f === 'skip' ? '— Skip —' : f.charAt(0).toUpperCase() + f.slice(1)}</option>`).join('')}
+        </select>
+      </div>`;
+  }).join('');
+}
+
+function updateLeadImportMapping(colIndex, field) {
+  // Remove any existing mapping to the same field
+  if (field !== 'skip') {
+    for (const [k, v] of Object.entries(liMapping)) {
+      if (v === field && parseInt(k) !== colIndex) {
+        delete liMapping[parseInt(k)];
+      }
+    }
+  }
+  if (field === 'skip') {
+    delete liMapping[colIndex];
+  } else {
+    liMapping[colIndex] = field;
+  }
+  renderLeadImportPreview();
+}
+
+function getImportedLeads() {
+  return liParsedRows.map(row => {
+    const lead = {};
+    for (const [colIdx, field] of Object.entries(liMapping)) {
+      if (field !== 'skip') {
+        lead[field] = row[parseInt(colIdx)] || '';
+      }
+    }
+    return lead;
+  });
+}
+
+function renderLeadImportPreview() {
+  const section = document.getElementById('li-preview-section');
+  const actionRow = document.getElementById('li-action-row');
+  const tbody = document.getElementById('li-preview-body');
+
+  if (!liParsedRows.length) {
+    section.style.display = 'none';
+    actionRow.style.display = 'none';
+    return;
+  }
+
+  const leads = getImportedLeads();
+  if (leads.length > LI_MAX_LEADS) {
+    showToast(`Too many leads — max ${LI_MAX_LEADS}. Showing first ${LI_MAX_LEADS}.`, 'error');
+  }
+
+  const valid = [];
+  const invalid = [];
+
+  leads.slice(0, LI_MAX_LEADS).forEach((lead, i) => {
+    const phone = (lead.phone || '').replace(/\D/g, '');
+    if (!phone || phone.length < 10) {
+      invalid.push({ idx: i + 1, lead, reason: 'Invalid phone' });
+    } else {
+      valid.push({ idx: i + 1, lead, phone });
+    }
+  });
+
+  document.getElementById('li-valid-count').textContent = valid.length;
+  document.getElementById('li-invalid-count').textContent = invalid.length;
+  document.getElementById('li-import-count').textContent = valid.length;
+
+  tbody.innerHTML = [...valid.map(v => ({...v, valid: true})), ...invalid.map(v => ({...v, valid: false}))].map(item => {
+    const statusBadge = item.valid
+      ? '<span style="font-size:10px;font-weight:700;color:var(--green);background:rgba(34,197,94,0.1);padding:2px 8px;border-radius:999px;">VALID</span>'
+      : '<span style="font-size:10px;font-weight:700;color:#ef4444;background:rgba(239,68,68,0.1);padding:2px 8px;border-radius:999px;">SKIP</span>';
+    return `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:6px 10px;color:var(--muted);">${item.idx}</td>
+        <td style="padding:6px 10px;">${item.lead.phone || '<span style="color:#ef4444;">—</span>'}</td>
+        <td style="padding:6px 10px;">${item.lead.name || ''}</td>
+        <td style="padding:6px 10px;">${item.lead.service || ''}</td>
+        <td style="padding:6px 10px;color:var(--muted);">${item.lead.notes || ''}</td>
+        <td style="padding:6px 10px;">${statusBadge}</td>
+      </tr>`;
+  }).join('');
+
+  section.style.display = 'block';
+  actionRow.style.display = 'flex';
+}
+
+function parseLeadCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function clearLeadImport() {
+  document.getElementById('li-paste-area').value = '';
+  document.getElementById('li-file-input').value = '';
+  document.getElementById('li-mapping-section').style.display = 'none';
+  document.getElementById('li-preview-section').style.display = 'none';
+  document.getElementById('li-action-row').style.display = 'none';
+  liParsedRows = [];
+  liHeaders = [];
+  liMapping = {};
+}
+
+async function executeLeadImport() {
+  const leads = getImportedLeads().filter(l => {
+    const phone = (l.phone || '').replace(/\D/g, '');
+    return phone && phone.length >= 10;
+  });
+
+  if (!leads.length) {
+    showToast('No valid leads to import', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('li-import-btn');
+  const status = document.getElementById('li-status');
+  btn.disabled = true; btn.style.opacity = '0.6';
+  status.textContent = 'Importing...';
+
+  try {
+    const res = await fetch(`${API}/portal/leads/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ leads })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const skippedTxt = data.skipped?.length ? `, ${data.skipped.length} skipped` : '';
+      status.textContent = `✓ ${data.imported} leads imported${skippedTxt}`;
+      status.style.color = 'var(--green)';
+      showToast(`${data.imported} leads imported successfully ✓`, 'success');
+      clearLeadImport();
+      // Reload the leads list
+      if (typeof loadLeads === 'function') loadLeads();
+    } else {
+      throw new Error(data.error || 'Import failed');
+    }
+  } catch (e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = '#f87171';
+    showToast(e.message, 'error');
+  }
+  btn.disabled = false; btn.style.opacity = '1';
+  setTimeout(() => { status.textContent = ''; status.style.color = 'var(--muted)'; }, 8000);
+}
+
+// Drag-and-drop support for the drop zone
+document.addEventListener('DOMContentLoaded', function() {
+  const dropZone = document.getElementById('li-drop-zone');
+  if (!dropZone) return;
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropZone.addEventListener(evt, function(e) {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.style.borderColor = 'var(--accent)';
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropZone.addEventListener(evt, function(e) {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.style.borderColor = 'var(--border)';
+    });
+  });
+  dropZone.addEventListener('drop', function(e) {
+    const file = e.dataTransfer.files[0];
+    if (file) handleLeadCsvFile(file);
+  });
+});
 
 // ── CSV IMPORT ──────────────────────────────────────────────────────────────
 const MAX_CSV_SIZE = 2 * 1024 * 1024; // 2MB
