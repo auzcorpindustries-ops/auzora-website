@@ -2345,8 +2345,14 @@ function togglePortalDay(day) {
 
 function buildPortalHoursString() {
   if (portalHoursMode === '247') return '24/7';
-  return DAYS
-    .filter(d => document.getElementById('s_day_' + d)?.checked)
+  // Defensive: if the hours grid hasn't been rendered yet (e.g. settings
+  // page not loaded), fall back to the existing office_hours rather than
+  // returning an empty string that would wipe the client's configuration.
+  const days = DAYS.filter(d => document.getElementById('s_day_' + d)?.checked);
+  if (days.length === 0 && portalClient?.office_hours) {
+    return portalClient.office_hours;
+  }
+  return days
     .map(d => `${d} ${document.getElementById('s_from_'+d).value}–${document.getElementById('s_to_'+d).value}`)
     .join(', ');
 }
