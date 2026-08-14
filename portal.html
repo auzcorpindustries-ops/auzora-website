@@ -1143,6 +1143,82 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
+      <!-- Internal Test Booking Harness -->
+      <div class="card" style="margin-top:20px;border:1px dashed var(--border);">
+        <div class="card-title" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+          <i data-lucide="flask-conical"></i> Test Booking Harness
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.5px;background:rgba(234,179,8,0.12);color:var(--yellow,#eab308);border:1px solid rgba(234,179,8,0.3);border-radius:999px;padding:3px 8px;">INTERNAL</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Simulate a full booking — runs the same validation, conflict check, appointments API, and calendar sync as production. All records are tagged <code>is_test=true</code> and no notifications are sent.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Service *</label>
+            <select id="tb-service" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;">
+              <option value="">Select a service…</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Timezone *</label>
+            <select id="tb-timezone" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;">
+              <option value="America/Chicago">America/Chicago (Central)</option>
+              <option value="America/New_York">America/New_York (Eastern)</option>
+              <option value="America/Denver">America/Denver (Mountain)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (Pacific)</option>
+              <option value="America/Phoenix">America/Phoenix</option>
+              <option value="Pacific/Honolulu">Pacific/Honolulu</option>
+              <option value="Europe/London">Europe/London</option>
+              <option value="Europe/Paris">Europe/Paris</option>
+              <option value="Asia/Dubai">Asia/Dubai</option>
+              <option value="Asia/Kolkata">Asia/Kolkata</option>
+              <option value="Asia/Shanghai">Asia/Shanghai</option>
+              <option value="Asia/Tokyo">Asia/Tokyo</option>
+              <option value="Australia/Sydney">Australia/Sydney</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Date *</label>
+            <input type="date" id="tb-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Time *</label>
+            <input type="time" id="tb-time" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Customer Name *</label>
+            <input type="text" id="tb-name" placeholder="Jane Doe" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Phone *</label>
+            <input type="tel" id="tb-phone" placeholder="+15551234567" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text);">Email *</label>
+            <input type="email" id="tb-email" placeholder="jane@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text);">Notes (optional)</label>
+          <input type="text" id="tb-notes" placeholder="Test notes…" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="tb-run-btn" onclick="runTestBooking()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">▶ Run Test Booking</button>
+          <button onclick="clearTestBookingOutput()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:10px 16px;color:var(--text);font-size:13px;cursor:pointer;">Clear</button>
+        </div>
+
+        <!-- Output area -->
+        <div id="tb-output" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;font-family:monospace;max-height:500px;overflow-y:auto;">
+        </div>
+      </div>
+
       <div class="save-bar">
         <span class="unsaved" id="s-unsaved-sched">● Unsaved changes</span>
         <button class="btn-save" onclick="saveSettings()">💾 Save &amp; Apply</button>
@@ -4529,6 +4605,12 @@ function loadScheduling() {
   nativeCalServiceDurations = c.service_durations || {};
   loadNativeCalendarStatus();
   renderNativeCalendar();
+
+  // Populate test booking harness service dropdown
+  populateTestBookingServices();
+  // Default the timezone to the client's timezone
+  const tbTz = document.getElementById('tb-timezone');
+  if (tbTz && c.timezone) tbTz.value = c.timezone;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -5596,6 +5678,133 @@ async function saveSettings() {
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
 
   btn.textContent = '💾 Save & Apply'; btn.disabled = false;
+}
+
+// ── TEST BOOKING HARNESS ─────────────────────────────────────────────────────
+
+function populateTestBookingServices() {
+  const sel = document.getElementById('tb-service');
+  if (!sel || !portalClient) return;
+  const durations = portalClient.service_durations || {};
+  // Keep the placeholder
+  const placeholder = sel.querySelector('option[value=""]');
+  sel.innerHTML = '';
+  if (placeholder) sel.appendChild(placeholder);
+  Object.keys(durations).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `${s} (${durations[s]}min)`;
+    sel.appendChild(opt);
+  });
+}
+
+function clearTestBookingOutput() {
+  const out = document.getElementById('tb-output');
+  if (out) { out.style.display = 'none'; out.innerHTML = ''; }
+}
+
+async function runTestBooking() {
+  const btn = document.getElementById('tb-run-btn');
+  const out = document.getElementById('tb-output');
+  if (!out) return;
+
+  const service  = document.getElementById('tb-service')?.value;
+  const date     = document.getElementById('tb-date')?.value;
+  const time     = document.getElementById('tb-time')?.value;
+  const timezone = document.getElementById('tb-timezone')?.value || 'America/Chicago';
+  const name     = document.getElementById('tb-name')?.value?.trim();
+  const phone    = document.getElementById('tb-phone')?.value?.trim();
+  const email    = document.getElementById('tb-email')?.value?.trim();
+  const notes    = document.getElementById('tb-notes')?.value?.trim() || '';
+
+  // Validate
+  const missing = [];
+  if (!service) missing.push('service');
+  if (!date) missing.push('date');
+  if (!time) missing.push('time');
+  if (!name) missing.push('name');
+  if (!phone) missing.push('phone');
+  if (!email) missing.push('email');
+  if (missing.length) {
+    showToast('Missing: ' + missing.join(', '), 'error');
+    return;
+  }
+
+  // Combine date + time into a natural-language datetime (same format the AI uses)
+  const datetime = `${date} at ${time}`;
+
+  // Show loading state
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+  out.style.display = 'block';
+  out.innerHTML = '<div style="color:var(--muted);">Running test booking…</div>';
+
+  try {
+    const res = await fetch(`${API}/portal/test-booking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ service, datetime, timezone, caller_name: name, caller_phone: phone, caller_email: email, notes }),
+    });
+    const data = await res.json();
+
+    // Render step-by-step output
+    let html = '';
+
+    // Overall result
+    const okColor = data.ok ? 'var(--green,#22c55e)' : 'var(--red,#ef4444)';
+    const okIcon  = data.ok ? '✓' : '✗';
+    html += `<div style="margin-bottom:12px;padding:8px 12px;border-radius:6px;background:rgba(${data.ok ? '34,197,94' : '239,68,68'},0.08);border:1px solid rgba(${data.ok ? '34,197,94' : '239,68,68'},0.2);">`;
+    html += `<div style="font-size:14px;font-weight:700;color:${okColor};">${okIcon} ${data.ok ? 'TEST BOOKING SUCCEEDED' : 'TEST BOOKING FAILED'}</div>`;
+    if (data.error) html += `<div style="color:var(--red,#ef4444);margin-top:4px;">${escapeHtml(data.error)}</div>`;
+    if (data.total_duration_ms) html += `<div style="color:var(--muted);margin-top:2px;">Total: ${data.total_duration_ms}ms</div>`;
+    html += `</div>`;
+
+    // Steps
+    if (data.steps && data.steps.length) {
+      html += '<div style="margin-bottom:8px;font-weight:600;color:var(--text);">Step Log:</div>';
+      data.steps.forEach(s => {
+        const colors = {
+          pass:   'var(--green,#22c55e)',
+          fail:   'var(--red,#ef4444)',
+          warn:   'var(--yellow,#eab308)',
+          skip:   'var(--muted)',
+        };
+        const icons = { pass: '✓', fail: '✗', warn: '⚠', skip: '○' };
+        const c = colors[s.status] || 'var(--text)';
+        const icon = icons[s.status] || '·';
+        html += `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(128,128,128,0.1);">`;
+        html += `<span style="color:${c};font-weight:700;min-width:16px;">${icon}</span>`;
+        html += `<span style="color:var(--text);min-width:180px;">${escapeHtml(s.step)}</span>`;
+        html += `<span style="color:var(--muted);flex:1;">${escapeHtml(s.detail || '')}</span>`;
+        html += `<span style="color:var(--muted);font-size:11px;">${s.duration_ms}ms</span>`;
+        html += `</div>`;
+      });
+    }
+
+    // Appointment details
+    if (data.appointment) {
+      const a = data.appointment;
+      html += '<div style="margin-top:12px;font-weight:600;color:var(--text);">Created Appointment:</div>';
+      html += `<div style="padding:8px;background:rgba(128,128,128,0.06);border-radius:6px;margin-top:4px;">`;
+      html += `<div><span style="color:var(--muted);">appointment_id:</span> <span style="color:var(--accent);">${escapeHtml(a.appointment_id)}</span></div>`;
+      html += `<div><span style="color:var(--muted);">service:</span> ${escapeHtml(a.service)}</div>`;
+      html += `<div><span style="color:var(--muted);">datetime:</span> ${escapeHtml(a.datetime)}</div>`;
+      html += `<div><span style="color:var(--muted);">timezone:</span> ${escapeHtml(a.timezone)}</div>`;
+      html += `<div><span style="color:var(--muted);">caller:</span> ${escapeHtml(a.caller_name)} &lt;${escapeHtml(a.caller_phone)}&gt;</div>`;
+      html += `<div><span style="color:var(--muted);">is_test:</span> <span style="color:var(--yellow,#eab308);font-weight:700;">true</span></div>`;
+      if (data.calendar_event_id) {
+        html += `<div><span style="color:var(--muted);">calendar_event_id:</span> <span style="color:var(--green,#22c55e);">${escapeHtml(data.calendar_event_id)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+
+    out.innerHTML = html;
+  } catch (e) {
+    out.innerHTML = `<div style="color:var(--red,#ef4444);">✗ Request failed: ${escapeHtml(e.message)}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run Test Booking';
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
