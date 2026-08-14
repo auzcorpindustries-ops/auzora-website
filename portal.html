@@ -1282,7 +1282,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="gcal-connected" style="display:none;">
           <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:16px;">
             <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px;">✓ Google Calendar connected</div>
-            <div style="font-size:12px;color:var(--muted);">Calendar ID: <span id="gcal-id-display" style="color:var(--text);font-family:monospace;"></span></div>
+            <div style="font-size:12px;color:var(--muted);">Connected: <span id="gcal-id-display" style="color:var(--text);font-family:monospace;"></span></div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button onclick="showGcalSetup()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;color:var(--muted);font-size:13px;cursor:pointer;">Change Calendar</button>
@@ -4622,18 +4622,23 @@ function loadScheduling() {
     tzSelect.value = tz;
   }
 
-  // Load Google Calendar native iframe embed
+  // Load Google Calendar events — check both manual calendar ID and OAuth connection
   const calId = c.google_calendar_id;
+  const calOAuth = c.google_oauth_connected;
   const embedDiv = document.getElementById('scheduling-cal-embed');
   const placeholder = document.getElementById('scheduling-cal-placeholder');
   const status = document.getElementById('scheduling-cal-status');
-  if (calId) {
+  if (calId || calOAuth) {
     embedDiv.style.display = 'block';
     placeholder.style.display = 'none';
-    status.textContent = calId;
+    // Show calendar ID if set, otherwise show OAuth email or "Connected"
+    status.textContent = calId || c.google_user_email || 'Connected via Google';
     status.style.color = 'var(--green)';
-    // Load events from the API (uses DWD service account — can see private events)
+    // Load events from the API (uses OAuth or DWD service account)
     loadCalendarEvents();
+    // Show sync button
+    const syncBtn = document.getElementById('native-cal-sync-btn');
+    if (syncBtn) syncBtn.style.display = 'inline-block';
   } else {
     embedDiv.style.display = 'none';
     placeholder.style.display = 'block';
@@ -5868,13 +5873,16 @@ function loadIntegrations() {
   // Webhook URL
   document.getElementById('i-webhook-url').value = portalClient.webhook_url || '';
 
+  // Check both manual calendar ID and OAuth connection
   const gcalId = portalClient.google_calendar_id;
-  if (gcalId) {
+  const gcalOAuth = portalClient.google_oauth_connected;
+  if (gcalId || gcalOAuth) {
     document.getElementById('gcal-cta').style.display = 'none';
     document.getElementById('gcal-setup').style.display = 'none';
     document.getElementById('gcal-connected').style.display = 'block';
     document.getElementById('gcal-badge').style.display = 'block';
-    document.getElementById('gcal-id-display').textContent = gcalId;
+    // Show calendar ID if manually set, otherwise show OAuth email
+    document.getElementById('gcal-id-display').textContent = gcalId || (portalClient.google_user_email || 'Connected via Google');
   } else {
     document.getElementById('gcal-cta').style.display = 'block';
     document.getElementById('gcal-setup').style.display = 'none';
@@ -5957,6 +5965,19 @@ async function connectGoogleCalendar() {
 async function disconnectGoogleCalendar() {
   if (!confirm('Disconnect Google Calendar? Existing appointments will remain, but new bookings will not sync.')) return;
   try {
+    // If connected via OAuth, call the OAuth disconnect endpoint to revoke tokens
+    if (portalClient.google_oauth_connected) {
+      const oauthRes = await fetch(`${API}/auth/google/disconnect`, {
+        method: 'POST',
+        headers: { 'X-Portal-Token': portalToken }
+      });
+      if (!oauthRes.ok) {
+        const errBody = await oauthRes.json().catch(() => ({}));
+        console.error('[Auzora] Google OAuth disconnect failed:', oauthRes.status, errBody);
+        // Continue to also clear google_calendar_id if it was set
+      }
+    }
+    // Also clear google_calendar_id via portal settings (handles manual connection path)
     const res = await fetch(`${API}/portal/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
@@ -5967,6 +5988,7 @@ async function disconnectGoogleCalendar() {
       portalClient = data.client;
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
       loadIntegrations();
+      if (typeof loadScheduling === 'function') loadScheduling();
       showToast('Google Calendar disconnected', 'success');
     } else {
       const errMsg = data.error || 'Failed to disconnect';
