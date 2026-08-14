@@ -2087,6 +2087,18 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   </div>
 </div>
 
+<!-- Appointment Details Modal (from Recent Appointments table) -->
+<div id="appt-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeApptDetailModal()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <h3 style="margin:0;font-size:18px;font-weight:700;" id="appt-detail-title">Appointment Details</h3>
+      <button onclick="closeApptDetailModal()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:0;line-height:1;">&times;</button>
+    </div>
+    <div id="appt-detail-body" style="font-size:14px;line-height:1.7;"></div>
+    <div id="appt-detail-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;"></div>
+  </div>
+</div>
+
 <!-- Reschedule Modal -->
 <div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeRescheduleModal()">
   <div style="background:#fff;border-radius:16px;max-width:480px;width:100%;padding:28px;">
@@ -4113,6 +4125,9 @@ async function loadDashboard() {
   document.getElementById('dash-appt-list').innerHTML = recent.length
     ? apptTableRows(recent, true)
     : '<div class="empty">No appointments in the last 14 days.</div>';
+
+  // Store all appointments for the detail modal
+  setApptData(appts);
   } catch (e) {
     console.error('[Auzora] Dashboard load error:', e.message);
   }
@@ -4213,35 +4228,132 @@ function apptTableRows(appts, compact) {
       ? '<span class="badge-confirmed">✓ Confirmed</span>'
       : '<span class="badge-unconfirmed">⚠ Unconfirmed</span>';
 
-    // Action buttons: only for upcoming appointments with calendar sync
-    let actions = '';
-    if (!isPast && hasCalendarSync) {
-      actions = `
-        <td style="white-space:nowrap;">
-          <button onclick="openRescheduleModal('${a.appointment_id}','${(a.service||'').replace(/'/g,"\\'")}','${formatDT(a.datetime)}','${(a.caller_name||'').replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text);margin-right:4px;">Reschedule</button>
-          <button onclick="confirmCancel('${a.appointment_id}','${(a.service||'').replace(/'/g,"\\'")}','${formatDT(a.datetime)}')" style="background:none;border:1px solid #ef4444;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#ef4444;">Cancel</button>
-        </td>`;
-    } else if (!isPast && !hasCalendarSync) {
-      actions = '<td style="font-size:11px;color:var(--muted);">Calendar sync unavailable</td>';
-    } else {
-      actions = '<td></td>';
-    }
-
     return `
-    <tr class="${rowClass}">
+    <tr class="${rowClass}" style="cursor:pointer;" onclick="openApptDetail('${a.appointment_id}')">
       <td style="font-weight:600;">${a.caller_name || '—'}</td>
       <td style="color:var(--accent2);">${a.service || '—'}</td>
       ${compact ? '' : `<td>${a.caller_phone || '—'}</td>`}
       <td style="color:var(--muted);font-size:12px;">${formatDT(a.datetime)}</td>
       ${compact ? '' : `<td style="color:var(--muted);font-size:11px;">${a.notes || '—'}</td>`}
       <td>${badge}</td>
-      ${actions}
+      <td style="font-size:11px;color:var(--muted);">${hasCalendarSync ? 'Calendar synced' : (isPast ? '' : 'No calendar sync')}</td>
     </tr>`;
   }).join('');
   const headers = compact
     ? '<tr><th>Name</th><th>Service</th><th>Date & Time</th><th>Status</th><th></th></tr>'
-    : '<tr><th>Name</th><th>Service</th><th>Phone</th><th>Date & Time</th><th>Notes</th><th>Status</th><th>Actions</th></tr>';
+    : '<tr><th>Name</th><th>Service</th><th>Phone</th><th>Date & Time</th><th>Notes</th><th>Status</th><th>Calendar</th></tr>';
   return `<table>${headers}<tbody>${rows}</tbody></table>`;
+}
+
+// ── APPOINTMENT DETAIL MODAL ─────────────────────────────────────────────────
+let _apptDetailData = null; // all appointments from last dashboard load
+let _currentApptDetail = null;
+
+function setApptData(appts) {
+  _apptDetailData = appts;
+}
+
+function openApptDetail(apptId) {
+  if (!_apptDetailData) return;
+  const a = _apptDetailData.find(x => x.appointment_id === apptId);
+  if (!a) return;
+  _currentApptDetail = a;
+
+  const confirmed = a.participant_added === true || a.confirmed === true;
+  const isPast = a.datetime && new Date(a.datetime) < new Date();
+  const hasCalendarSync = !!a.calendar_event_id;
+
+  const tz = portalClient?.timezone || 'America/Chicago';
+  const dtStr = a.datetime
+    ? new Date(a.datetime).toLocaleString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz,
+      })
+    : '—';
+
+  const badge = confirmed
+    ? '<span class="badge-confirmed">✓ Confirmed</span>'
+    : '<span class="badge-unconfirmed">⚠ Unconfirmed</span>';
+
+  const body = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;">
+      <div><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Caller</div><div style="font-weight:600;">${escapeHtml(a.caller_name || '—')}</div></div>
+      <div><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Phone</div><div>${escapeHtml(a.caller_phone || '—')}</div></div>
+      <div><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Service</div><div style="color:var(--accent2);font-weight:600;">${escapeHtml(a.service || '—')}</div></div>
+      <div><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Status</div><div>${badge}</div></div>
+      <div style="grid-column:1/-1;"><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Date & Time</div><div>${dtStr}</div></div>
+      ${a.notes ? `<div style="grid-column:1/-1;"><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Notes</div><div>${escapeHtml(a.notes)}</div></div>` : ''}
+      <div style="grid-column:1/-1;"><div style="color:var(--muted);font-size:12px;margin-bottom:4px;">Calendar Sync</div><div>${hasCalendarSync ? '✓ Synced (Event ID: ' + escapeHtml(a.calendar_event_id) + ')' : 'Not synced'}</div></div>
+    </div>`;
+
+  document.getElementById('appt-detail-body').innerHTML = body;
+
+  // Build action buttons
+  let actions = `<button onclick="closeApptDetailModal()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 18px;color:var(--muted);font-size:14px;cursor:pointer;">Close</button>`;
+
+  if (!confirmed && !isPast) {
+    actions = `<button onclick="confirmApptFromDetail()" style="background:#16a34a;border:none;border-radius:8px;padding:9px 20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✓ Confirm Appointment</button>` + actions;
+  }
+
+  if (!isPast && hasCalendarSync) {
+    actions = `<button onclick="openRescheduleModal('${a.appointment_id}','${(a.service||'').replace(/'/g,"\\'")}','${formatDT(a.datetime)}','${(a.caller_name||'').replace(/'/g,"\\'")}');closeApptDetailModal();" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 18px;color:var(--text);font-size:14px;cursor:pointer;">Reschedule</button>` + actions;
+    actions = `<button onclick="confirmCancel('${a.appointment_id}','${(a.service||'').replace(/'/g,"\\'")}','${formatDT(a.datetime)}');closeApptDetailModal();" style="background:none;border:1px solid #ef4444;border-radius:8px;padding:9px 18px;color:#ef4444;font-size:14px;cursor:pointer;">Cancel</button>` + actions;
+  }
+
+  document.getElementById('appt-detail-actions').innerHTML = actions;
+  document.getElementById('appt-detail-modal').style.display = 'flex';
+}
+
+function closeApptDetailModal() {
+  document.getElementById('appt-detail-modal').style.display = 'none';
+  _currentApptDetail = null;
+}
+
+/** Confirm an unconfirmed appointment from the detail modal.
+ *  Uses the native calendar confirm endpoint if the appointment has a
+ *  calendar_event_id, otherwise falls back to the appointments confirm endpoint. */
+async function confirmApptFromDetail() {
+  if (!_currentApptDetail) return;
+  const a = _currentApptDetail;
+
+  try {
+    if (a.calendar_event_id) {
+      // Native calendar event — use the native confirm endpoint
+      const res = await fetch(`${API}/portal/native-calendar/events/${encodeURIComponent(a.calendar_event_id)}/confirm`, {
+        method: 'POST',
+        headers: { 'X-Portal-Token': portalToken },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || 'Failed to confirm appointment.', 'error');
+        return;
+      }
+    } else {
+      // Fallback: use the appointments confirm endpoint
+      const res = await fetch(`${API}/portal/appointments/${encodeURIComponent(a.appointment_id)}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || 'Failed to confirm appointment.', 'error');
+        return;
+      }
+    }
+
+    showToast('Appointment confirmed.', 'success');
+
+    // Update local state so the table re-renders with confirmed status
+    a.confirmed = true;
+    a.participant_added = true;
+
+    closeApptDetailModal();
+    // Reload dashboard to reflect the change
+    loadDashboard();
+  } catch (e) {
+    console.error('[Auzora] Confirm from detail error:', e.message);
+    showToast('Failed to confirm appointment.', 'error');
+  }
 }
 
 function formatDT(iso) {
