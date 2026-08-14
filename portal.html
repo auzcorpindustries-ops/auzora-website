@@ -1189,18 +1189,14 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
           <div>
             <label style="font-size:12px;font-weight:600;color:var(--text);">Customer Name *</label>
             <input type="text" id="tb-name" placeholder="Jane Doe" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:var(--text);">Phone *</label>
-            <input type="tel" id="tb-phone" placeholder="+15551234567" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
-          </div>
-          <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text);">Email *</label>
-            <input type="email" id="tb-email" placeholder="jane@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
+            <input type="tel" id="tb-phone" placeholder="+155****4567" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-top:4px;" />
           </div>
         </div>
 
@@ -5768,7 +5764,6 @@ async function runTestBooking() {
   const timezone = document.getElementById('tb-timezone')?.value || 'America/Chicago';
   const name     = document.getElementById('tb-name')?.value?.trim();
   const phone    = document.getElementById('tb-phone')?.value?.trim();
-  const email    = document.getElementById('tb-email')?.value?.trim();
   const notes    = document.getElementById('tb-notes')?.value?.trim() || '';
 
   // Validate
@@ -5778,7 +5773,6 @@ async function runTestBooking() {
   if (!time) missing.push('time');
   if (!name) missing.push('name');
   if (!phone) missing.push('phone');
-  if (!email) missing.push('email');
   if (missing.length) {
     showToast('Missing: ' + missing.join(', '), 'error');
     return;
@@ -5797,7 +5791,7 @@ async function runTestBooking() {
     const res = await fetch(`${API}/portal/test-booking`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ service, datetime, timezone, caller_name: name, caller_phone: phone, caller_email: email, notes }),
+      body: JSON.stringify({ service, datetime, timezone, caller_name: name, caller_phone: phone, notes }),
     });
     const data = await res.json();
 
@@ -6592,6 +6586,9 @@ async function saveProfile() {
     portalClient = data;
     // Sync photo state from server response
     acProfilePhoto = portalClient.profile_photo || null;
+    acProfilePhotoDirty = false;
+    // Persist to sessionStorage so the photo survives page refresh
+    sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
     updatePhotoPreview();
     status.textContent = 'Saved!'; status.style.color = 'var(--green)';
     acDirty = false;
@@ -7159,6 +7156,26 @@ async function dismissAttention(leadId, btn) {
     console.error('dismissAttention error:', e.message);
     showToast('Could not clear attention flag', 'error');
     btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function deleteLead(leadId) {
+  if (!confirm('Permanently delete this lead? This cannot be undone. All interaction history will be removed.')) return;
+  try {
+    const res = await fetch(`${API}/portal/leads/${leadId}`, {
+      method: 'DELETE',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    showToast('Lead deleted permanently', 'success');
+    closeLeadTimeline();
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('deleteLead error:', e.message);
+    showToast('Could not delete lead: ' + e.message, 'error');
   }
 }
 
@@ -8941,6 +8958,11 @@ async function showLeadTimeline(leadId) {
     // Dismiss attention flag
     if (needsAttention && canInternalCrm) {
       actionsHtml += `<button onclick="dismissAttention('${lead.lead_id}', this)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--muted);cursor:pointer;">Dismiss</button>`;
+    }
+
+    // Delete lead button (permanently remove)
+    if (canInternalCrm) {
+      actionsHtml += `<button onclick="deleteLead('${lead.lead_id}')" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;margin-left:auto;">Delete Lead</button>`;
     }
 
     actionsHtml += '</div>';
