@@ -770,27 +770,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <label>Business Name</label>
                 <input type="text" id="s-biz-name" oninput="setDirty()" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom:0;">
                 <label>Agent Name</label>
                 <input type="text" id="s-agent-name" oninput="setDirty()" />
-              </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label>Escalation Phone</label>
-                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-              </div>
-
-              <!-- Warm Transfer Toggle -->
-              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <div>
-                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
-                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
-                  </div>
-                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                    Enable
-                  </label>
-                </div>
               </div>
 
               <!-- Appointment Reminders Toggle -->
@@ -802,6 +784,37 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   </div>
                   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
                     <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Escalation -->
+          <div class="card collapsible-section" data-collapse-key="agent-escalation">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="phone-forwarded"></i> Escalation
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Escalation Phone</label>
+                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Rules</label>
+                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+              </div>
+              <!-- Warm Transfer Toggle -->
+              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
                     Enable
                   </label>
                 </div>
@@ -869,10 +882,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <div class="form-group">
                 <label>Custom Greeting</label>
                 <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
-              </div>
-              <div class="form-group">
-                <label>Escalation Rules</label>
-                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
               </div>
               <div class="form-group">
                 <label>Lead Follow-up SMS Template</label>
