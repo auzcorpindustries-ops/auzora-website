@@ -770,27 +770,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <label>Business Name</label>
                 <input type="text" id="s-biz-name" oninput="setDirty()" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom:0;">
                 <label>Agent Name</label>
                 <input type="text" id="s-agent-name" oninput="setDirty()" />
-              </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label>Escalation Phone</label>
-                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
-              </div>
-
-              <!-- Warm Transfer Toggle -->
-              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <div>
-                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
-                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
-                  </div>
-                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
-                    Enable
-                  </label>
-                </div>
               </div>
 
               <!-- Appointment Reminders Toggle -->
@@ -802,6 +784,37 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   </div>
                   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
                     <input type="checkbox" id="s-reminders" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Enable
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Escalation -->
+          <div class="card collapsible-section" data-collapse-key="agent-escalation">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="phone-forwarded"></i> Escalation
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div class="form-group">
+                <label>Escalation Phone</label>
+                <input type="text" id="s-escalation-phone" placeholder="(555) 000-0000" oninput="setDirty()" />
+              </div>
+              <div class="form-group">
+                <label>Escalation Rules</label>
+                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
+              </div>
+              <!-- Warm Transfer Toggle -->
+              <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">Warm Transfer</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">When enabled, your AI agent can instantly connect callers to your escalation phone for live human handoff.</div>
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                    <input type="checkbox" id="s-warm-transfer" onchange="setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
                     Enable
                   </label>
                 </div>
@@ -869,10 +882,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <div class="form-group">
                 <label>Custom Greeting</label>
                 <input type="text" id="s-greeting" placeholder="Leave blank to auto-generate" oninput="setDirty()" />
-              </div>
-              <div class="form-group">
-                <label>Escalation Rules</label>
-                <textarea id="s-escalation" rows="3" placeholder="If caller asks for a human, say..." oninput="setDirty()"></textarea>
               </div>
               <div class="form-group">
                 <label>Lead Follow-up SMS Template</label>
@@ -1190,6 +1199,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <button onclick="addBlackoutDate()" style="background:var(--accent);border:none;border-radius:6px;padding:5px 10px;color:#fff;font-size:11px;cursor:pointer;">+ Add Date</button>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Add blackout dates when your business is unavailable — holidays, vacations, or any closed period. The AI agent will treat these as unavailable for booking and let callers know you're closed.</div>
+
+        <!-- Quick Add: Federal Holidays -->
+        <div id="fed-holidays-section" style="margin-bottom:16px;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Quick Add: U.S. Federal Holidays</div>
+          <div id="fed-holidays-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+
         <div id="s-blackout-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
 
@@ -4759,6 +4775,7 @@ function loadScheduling() {
   buildPortalHoursGrid(c.office_hours || '24/7');
   renderSchedulingParams(c.scheduling_params || []);
   renderBlackoutDates(c.blackout_dates || []);
+  renderFederalHolidays();
   // Ensure services are loaded for the durations card
   portalServices = [...(c.service_areas || [])];
   renderServiceDurations();
@@ -5912,6 +5929,96 @@ function convertBlackoutToRange(i) {
     cur[i].endDate = cur[i].startDate;
   }
   renderBlackoutDates(cur);
+  setDirty();
+}
+
+// ── Federal Holidays Quick-Add ──────────────────────────────────────
+// Major U.S. Federal holidays shown as toggle chips. All default OFF.
+// Toggling a holiday on adds it as a blackout date entry with the label
+// pre-filled. Toggling off removes the matching entry.
+function getFederalHolidays() {
+  const year = new Date().getFullYear();
+  const nextYear = year + 1;
+  const holidays = [];
+
+  // Helper: nth weekday of month (e.g., 1st Monday of September)
+  function nthWeekday(year, month, weekday, n) {
+    const d = new Date(year, month, 1);
+    const offset = (weekday - d.getDay() + 7) % 7;
+    d.setDate(1 + offset + (n - 1) * 7);
+    return d;
+  }
+
+  // Helper: last weekday of month (e.g., last Monday of May)
+  function lastWeekday(year, month, weekday) {
+    const d = new Date(year, month + 1, 0);
+    const offset = (d.getDay() - weekday + 7) % 7;
+    d.setDate(d.getDate() - offset);
+    return d;
+  }
+
+  function fmt(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  function addHoliday(name, date, labelYear) {
+    holidays.push({ name: `${name} (${labelYear})`, date: fmt(date), label: name });
+  }
+
+  // Current year holidays
+  addHoliday("New Year's Day", new Date(year, 0, 1), year);
+  addHoliday("MLK Day", nthWeekday(year, 0, 1, 3), year); // 3rd Monday of January
+  addHoliday("Presidents' Day", nthWeekday(year, 1, 1, 3), year); // 3rd Monday of February
+  addHoliday("Memorial Day", lastWeekday(year, 4, 1), year); // last Monday of May
+  addHoliday("Juneteenth", new Date(year, 5, 19), year);
+  addHoliday("Independence Day", new Date(year, 6, 4), year);
+  addHoliday("Labor Day", nthWeekday(year, 8, 1, 1), year); // 1st Monday of September
+  addHoliday("Columbus Day", nthWeekday(year, 9, 1, 2), year); // 2nd Monday of October
+  addHoliday("Veterans Day", new Date(year, 10, 11), year);
+  addHoliday("Thanksgiving Day", nthWeekday(year, 10, 4, 4), year); // 4th Thursday of November
+  addHoliday("Christmas Day", new Date(year, 11, 25), year);
+
+  // Next year holidays
+  addHoliday("New Year's Day", new Date(nextYear, 0, 1), nextYear);
+  addHoliday("MLK Day", nthWeekday(nextYear, 0, 1, 3), nextYear);
+  addHoliday("Presidents' Day", nthWeekday(nextYear, 1, 1, 3), nextYear);
+  addHoliday("Memorial Day", lastWeekday(nextYear, 4, 1), nextYear);
+  addHoliday("Juneteenth", new Date(nextYear, 5, 19), nextYear);
+  addHoliday("Independence Day", new Date(nextYear, 6, 4), nextYear);
+  addHoliday("Labor Day", nthWeekday(nextYear, 8, 1, 1), nextYear);
+  addHoliday("Thanksgiving Day", nthWeekday(nextYear, 10, 4, 4), nextYear);
+  addHoliday("Christmas Day", new Date(nextYear, 11, 25), nextYear);
+
+  return holidays;
+}
+
+function renderFederalHolidays() {
+  const container = document.getElementById('fed-holidays-list');
+  if (!container) return;
+  const holidays = getFederalHolidays();
+  const activeDates = new Set(getBlackoutDates().map(d => d.startDate));
+
+  container.innerHTML = holidays.map((h, i) => {
+    const isActive = activeDates.has(h.date);
+    return `<button type="button" id="fed-hol-${i}"
+      onclick="toggleFederalHoliday(${i})"
+      style="background:${isActive ? 'var(--accent)' : 'var(--surface2)'};border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-radius:999px;padding:6px 14px;color:${isActive ? '#fff' : 'var(--text)'};font-size:12px;cursor:pointer;transition:all 0.15s;font-family:var(--font);">${h.name}</button>`;
+  }).join('');
+}
+
+function toggleFederalHoliday(i) {
+  const holidays = getFederalHolidays();
+  const h = holidays[i];
+  if (!h) return;
+  const cur = getBlackoutDates();
+  const idx = cur.findIndex(d => d.startDate === h.date);
+  if (idx >= 0) {
+    cur.splice(idx, 1);
+  } else {
+    cur.push({ startDate: h.date, label: h.label });
+  }
+  renderBlackoutDates(cur);
+  renderFederalHolidays();
   setDirty();
 }
 
@@ -8382,17 +8489,20 @@ async function loadCampaignActivity() {
 }
 
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
+// CSS uses :root (light, default) and :root.dark (dark overrides).
+// JS toggles the .dark class to match — NOT .light.
 function applyTheme(theme) {
-  const isLight = theme === 'light';
-  document.documentElement.classList.toggle('light', isLight);
+  const isDark = theme === 'dark';
+  document.documentElement.classList.toggle('dark', isDark);
   const btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = isLight ? '🌑 Dark' : '☀️ Light';
+  if (btn) btn.textContent = isDark ? '☀️ Light' : '🌑 Dark';
   localStorage.setItem('atlas_theme', theme);
 }
 function toggleTheme() {
-  const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
-  applyTheme(current === 'light' ? 'dark' : 'light');
+  const current = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 }
+// Default to light theme (matches CSS :root defaults)
 applyTheme(localStorage.getItem('atlas_theme') || 'light');
 
 // ── CAMPAIGN TAB TOGGLE ──────────────────────────────────────────────────────
