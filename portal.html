@@ -8480,17 +8480,20 @@ async function loadCampaignActivity() {
 }
 
 // ── THEME TOGGLE ─────────────────────────────────────────────────────────────
+// CSS uses :root (light, default) and :root.dark (dark overrides).
+// JS toggles the .dark class to match — NOT .light.
 function applyTheme(theme) {
-  const isLight = theme === 'light';
-  document.documentElement.classList.toggle('light', isLight);
+  const isDark = theme === 'dark';
+  document.documentElement.classList.toggle('dark', isDark);
   const btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = isLight ? '🌑 Dark' : '☀️ Light';
+  if (btn) btn.textContent = isDark ? '☀️ Light' : '🌑 Dark';
   localStorage.setItem('atlas_theme', theme);
 }
 function toggleTheme() {
-  const current = document.documentElement.classList.contains('light') ? 'light' : 'dark';
-  applyTheme(current === 'light' ? 'dark' : 'light');
+  const current = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 }
+// Default to light theme (matches CSS :root defaults)
 applyTheme(localStorage.getItem('atlas_theme') || 'light');
 
 // ── CAMPAIGN TAB TOGGLE ──────────────────────────────────────────────────────
