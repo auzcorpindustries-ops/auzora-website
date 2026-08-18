@@ -3167,7 +3167,7 @@ async function loadForms() {
 }
 
 function showFormBuilder() {
-  openFormBuilder(null);
+  showTemplatePicker();
 }
 
 function editForm(formId) {
@@ -3496,6 +3496,211 @@ function fallbackCopy(text) {
 
 // ── FORM BUILDER ──────────────────────────────────────────────────────────────
 let currentForm = null; // { form_id, name, fields: [], field_mapping: {}, status, styling, spam_protection }
+
+// ── Form Templates ───────────────────────────────────────────────────────────
+const FORM_TEMPLATES = {
+  blank: {
+    name: 'Blank Form',
+    icon: 'file',
+    description: 'Start from scratch with an empty form.',
+    form: { name: '', fields: [], field_mapping: {}, status: 'active', styling: {} },
+  },
+  contact: {
+    name: 'Contact Us',
+    icon: 'mail',
+    description: 'Name, email, phone, and message — the essentials.',
+    form: {
+      name: 'Contact Us',
+      fields: [
+        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Full name', required: true, maps_to: 'name' },
+        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
+        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: false, maps_to: 'phone' },
+        { id: 'tpl_msg', type: 'textarea', label: 'Message', placeholder: 'How can we help?', required: true, maps_to: 'notes' },
+      ],
+      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', notes: 'tpl_msg' },
+      status: 'active',
+      styling: {},
+    },
+  },
+  appointment: {
+    name: 'Book an Appointment',
+    icon: 'calendar',
+    description: 'Capture booking details with service selection and preferred date.',
+    form: {
+      name: 'Book an Appointment',
+      fields: [
+        { id: 'tpl_name', type: 'text', label: 'Full Name', placeholder: 'John Smith', required: true, maps_to: 'name' },
+        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
+        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: true, maps_to: 'phone' },
+        { id: 'tpl_service', type: 'select', label: 'Service', placeholder: '', required: true, maps_to: 'service', options: ['Consultation', 'Cleaning', 'Other'] },
+        { id: 'tpl_date', type: 'date', label: 'Preferred Date', placeholder: '', required: true, maps_to: '' },
+        { id: 'tpl_notes', type: 'textarea', label: 'Notes', placeholder: 'Any details we should know?', required: false, maps_to: 'notes' },
+      ],
+      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', service: 'tpl_service', notes: 'tpl_notes' },
+      status: 'active',
+      styling: {},
+    },
+  },
+  lead_capture: {
+    name: 'Lead Capture',
+    icon: 'user-plus',
+    description: 'Minimal form for landing pages — just name, email, and phone.',
+    form: {
+      name: 'Lead Capture',
+      fields: [
+        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Full name', required: true, maps_to: 'name' },
+        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
+        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: false, maps_to: 'phone' },
+      ],
+      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone' },
+      status: 'active',
+      styling: {},
+    },
+  },
+  quote_request: {
+    name: 'Quote Request',
+    icon: 'file-text',
+    description: 'Service inquiry with project details for home services and B2B.',
+    form: {
+      name: 'Request a Quote',
+      fields: [
+        { id: 'tpl_name', type: 'text', label: 'Full Name', placeholder: 'John Smith', required: true, maps_to: 'name' },
+        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
+        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: true, maps_to: 'phone' },
+        { id: 'tpl_service', type: 'select', label: 'Service Needed', placeholder: '', required: true, maps_to: 'service', options: ['Repair', 'Installation', 'Consultation', 'Other'] },
+        { id: 'tpl_details', type: 'textarea', label: 'Project Details', placeholder: 'Describe your project...', required: true, maps_to: 'notes' },
+      ],
+      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', service: 'tpl_service', notes: 'tpl_details' },
+      status: 'active',
+      styling: {},
+    },
+  },
+  newsletter: {
+    name: 'Newsletter Signup',
+    icon: 'newspaper',
+    description: 'Single email field for newsletter and mailing list signups.',
+    form: {
+      name: 'Newsletter Signup',
+      fields: [
+        { id: 'tpl_email', type: 'email', label: 'Email Address', placeholder: 'you@example.com', required: true, maps_to: 'email' },
+      ],
+      field_mapping: { email: 'tpl_email' },
+      status: 'active',
+      styling: {},
+    },
+  },
+  feedback: {
+    name: 'Feedback / Survey',
+    icon: 'clipboard-list',
+    description: 'Collect customer feedback with rating and comments.',
+    form: {
+      name: 'Customer Feedback',
+      fields: [
+        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Your name (optional)', required: false, maps_to: 'name' },
+        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: false, maps_to: 'email' },
+        { id: 'tpl_rating', type: 'select', label: 'How did we do?', placeholder: '', required: true, maps_to: '', options: ['Excellent', 'Good', 'Average', 'Below Average', 'Poor'] },
+        { id: 'tpl_comments', type: 'textarea', label: 'Comments', placeholder: 'Tell us about your experience...', required: false, maps_to: 'notes' },
+      ],
+      field_mapping: { name: 'tpl_name', email: 'tpl_email', notes: 'tpl_comments' },
+      status: 'active',
+      styling: {},
+    },
+  },
+};
+
+function showTemplatePicker() {
+  // Remove existing picker if any
+  const existing = document.getElementById('template-picker-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'template-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  overlay.setAttribute('data-modal', '');
+
+  const templates = Object.entries(FORM_TEMPLATES);
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;display:flex;flex-direction:column;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="layout-template" style="width:18px;height:18px;color:#3B82F6;"></i>
+          </div>
+          <div>
+            <div style="font-size:17px;font-weight:700;">Choose a Form Template</div>
+            <div style="font-size:13px;color:var(--muted);">Start fast — customize everything later.</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('template-picker-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+
+      <!-- Template grid -->
+      <div style="padding:20px;overflow-y:auto;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+          ${templates.map(([key, tpl]) => `
+            <div onclick="selectFormTemplate('${key}')"
+              style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;"
+              onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)';"
+              onmouseout="this.style.borderColor='var(--border)';this.style.transform='';">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div style="width:34px;height:34px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+                  <i data-lucide="${tpl.icon}" style="width:17px;height:17px;color:var(--accent);"></i>
+                </div>
+                <div style="font-size:14.5px;font-weight:700;color:var(--text);">${escapeHtml(tpl.name)}</div>
+              </div>
+              <div style="font-size:12.5px;color:var(--muted);line-height:1.5;">${escapeHtml(tpl.description)}</div>
+              ${tpl.form.fields.length > 0 ? `<div style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">${tpl.form.fields.length} field${tpl.form.fields.length === 1 ? '' : 's'}</div>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="document.getElementById('template-picker-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+
+  // Close on backdrop click
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function selectFormTemplate(templateKey) {
+  const tpl = FORM_TEMPLATES[templateKey];
+  if (!tpl) return;
+
+  // Deep copy the template and generate fresh field IDs
+  currentForm = JSON.parse(JSON.stringify(tpl.form));
+  currentForm.fields.forEach(f => {
+    f.id = 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  });
+
+  // Update field_mapping to point to new IDs
+  if (currentForm.field_mapping) {
+    const oldToNew = {};
+    tpl.form.fields.forEach((oldField, i) => {
+      oldToNew[oldField.id] = currentForm.fields[i].id;
+    });
+    const newMapping = {};
+    for (const [key, oldId] of Object.entries(currentForm.field_mapping)) {
+      if (oldToNew[oldId]) newMapping[key] = oldToNew[oldId];
+    }
+    currentForm.field_mapping = newMapping;
+  }
+
+  // Close template picker
+  const picker = document.getElementById('template-picker-overlay');
+  if (picker) picker.remove();
+
+  // Open form builder with the pre-populated form
+  renderFormBuilder();
+}
 
 function openFormBuilder(formId) {
   if (formId) {
