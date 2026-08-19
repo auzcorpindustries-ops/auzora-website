@@ -4214,9 +4214,7 @@ const TEMPLATE_FONTS = [
   { value: "ui-monospace, monospace", label: 'Monospace' },
 ];
 
-let drawerState = { templateKey: null, accent: '#3B82F6', bgColor: '#ffffff', fontIdx: 0, fields: [], dragIdx: null };
-
-const TEMPLATE_BG_SWATCHES = ['#ffffff', '#f8fafc', '#f1f5f9', '#0f172a', '#1e293b', '#fef3c7', '#ecfdf5', '#fce7f3'];
+let drawerState = { templateKey: null, accent: '#3B82F6', fontIdx: 0, fields: [], dragIdx: null };
 
 function showTemplatePicker() {
   const existing = document.getElementById('template-picker-overlay');
@@ -4276,7 +4274,6 @@ function openCustomizeDrawer(templateKey) {
   drawerState = {
     templateKey,
     accent: tpl.accent,
-    bgColor: tpl.bgColor || '#ffffff',
     fontIdx: fontIdx >= 0 ? fontIdx : 0,
     fields: tpl.fields.map(f => ({ ...f, on: true })),
     dragIdx: null,
@@ -4316,16 +4313,6 @@ function openCustomizeDrawer(templateKey) {
               style="width:42px;height:42px;border-radius:9px;cursor:pointer;-webkit-appearance:none;border:none;padding:0;" />
             <div style="display:flex;gap:8px;flex:1;">
               ${TEMPLATE_SWATCHES.map(sw => `<span onclick="updateDrawerAccent('${sw}')" style="width:28px;height:28px;border-radius:8px;cursor:pointer;background:${sw};${drawerState.accent === sw ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + sw : ''};transition:box-shadow .15s;"></span>`).join('')}
-            </div>
-          </div>
-        </div>
-        <div style="margin-bottom:26px;">
-          <div style="font-size:13px;font-weight:700;color:#101826;margin-bottom:12px;">Background color</div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <input type="color" id="drawer-bg-input" value="${drawerState.bgColor}" oninput="updateDrawerBgColor(this.value)"
-              style="width:42px;height:42px;border-radius:9px;cursor:pointer;-webkit-appearance:none;border:none;padding:0;" />
-            <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;">
-              ${TEMPLATE_BG_SWATCHES.map(sw => `<span onclick="updateDrawerBgColor('${sw}')" style="width:28px;height:28px;border-radius:8px;cursor:pointer;background:${sw};border:1px solid rgba(16,24,38,0.1);${drawerState.bgColor === sw ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px #7C3AED' : ''};transition:box-shadow .15s;"></span>`).join('')}
             </div>
           </div>
         </div>
@@ -4418,17 +4405,6 @@ function updateDrawerAccent(color) {
   renderDrawerPreview();
 }
 
-function updateDrawerBgColor(color) {
-  drawerState.bgColor = color;
-  const input = document.getElementById('drawer-bg-input');
-  if (input) input.value = color;
-  document.querySelectorAll('#customize-drawer-overlay span[onclick*="updateDrawerBgColor"]').forEach(el => {
-    const swColor = el.getAttribute('onclick').match(/'([^']+)'/)[1];
-    el.style.boxShadow = swColor === color ? '0 0 0 2px #fff,0 0 0 4px #7C3AED' : '';
-  });
-  renderDrawerPreview();
-}
-
 function updateDrawerFont(idx) {
   drawerState.fontIdx = idx;
   const container = document.getElementById('drawer-fonts');
@@ -4448,7 +4424,6 @@ function renderDrawerPreview() {
   const font = TEMPLATE_FONTS[drawerState.fontIdx].value;
   if (font !== tpl.font) { html = html.replace('</head>', `<style>*{font-family:${font} !important;}</style></head>`); }
   if (drawerState.accent !== tpl.accent) { html = html.replace('</head>', `<style>button{background:${drawerState.accent} !important;}</style></head>`); }
-  if (drawerState.bgColor !== (tpl.bgColor || '#ffffff')) { html = html.replace('</head>', `<style>body{background:${drawerState.bgColor} !important;} section{background:${drawerState.bgColor} !important;}</style></head>`); }
   preview.innerHTML = `<iframe srcdoc="${html.replace(/"/g, '&quot;')}" style="width:200%;height:200%;border:none;transform:scale(0.5);transform-origin:top left;pointer-events:none;" scrolling="no"></iframe>`;
 }
 
@@ -4462,7 +4437,7 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { accent_color: drawerState.accent, background_color: drawerState.bgColor, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    styling: { accent_color: drawerState.accent, background_color: '#ffffff', text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
