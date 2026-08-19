@@ -4498,6 +4498,10 @@ function openFormBuilder(formId) {
         currentForm = JSON.parse(JSON.stringify(form));
         if (!currentForm.fields) currentForm.fields = [];
         if (!currentForm.field_mapping) currentForm.field_mapping = {};
+        // Restore template HTML from saved templateKey
+        if (currentForm.templateKey && FORM_TEMPLATES[currentForm.templateKey]) {
+          currentForm.templateHtml = FORM_TEMPLATES[currentForm.templateKey].html;
+        }
         renderFormBuilder();
       })
       .catch(err => showToast('Failed to load form: ' + err.message, 'error'));
@@ -4524,8 +4528,8 @@ const FIELD_TYPES = [
   { type: 'date',     label: 'Date',     icon: 'calendar' },
 ];
 
-const MAPS_TO_OPTIONS = ['', 'name', 'phone', 'email', 'service', 'notes'];
-const MAPS_TO_LABELS = { '': 'Custom', name: 'Name', phone: 'Phone', email: 'Email', service: 'Service', notes: 'Notes' };
+const MAPS_TO_OPTIONS = ['', 'name', 'phone', 'email', 'service', 'notes', 'company'];
+const MAPS_TO_LABELS = { '': 'Custom', name: 'Name', phone: 'Phone', email: 'Email', service: 'Service', notes: 'Notes', company: 'Company' };
 
 function renderFormBuilder() {
   // Remove existing builder if any
