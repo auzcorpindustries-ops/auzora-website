@@ -3499,209 +3499,519 @@ function fallbackCopy(text) {
 // ── FORM BUILDER ──────────────────────────────────────────────────────────────
 let currentForm = null; // { form_id, name, fields: [], field_mapping: {}, status, styling, spam_protection }
 
-// ── Form Templates ───────────────────────────────────────────────────────────
+// ── Form Templates (real lead-capture templates) ──────────────────────────────
 const FORM_TEMPLATES = {
-  blank: {
-    name: 'Blank Form',
-    icon: 'file',
-    description: 'Start from scratch with an empty form.',
-    form: { name: '', fields: [], field_mapping: {}, status: 'active', styling: {} },
+  scratch: {
+    name: 'Start from scratch',
+    accent: '#3B82F6',
+    font: 'inherit',
+    submitLabel: 'Submit',
+    fields: [],
+    previewBg: 'linear-gradient(135deg,#f5f6fa,#eef0f4)',
   },
-  contact: {
-    name: 'Contact Us',
-    icon: 'mail',
-    description: 'Name, email, phone, and message — the essentials.',
-    form: {
-      name: 'Contact Us',
-      fields: [
-        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Full name', required: true, maps_to: 'name' },
-        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
-        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: false, maps_to: 'phone' },
-        { id: 'tpl_msg', type: 'textarea', label: 'Message', placeholder: 'How can we help?', required: true, maps_to: 'notes' },
-      ],
-      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', notes: 'tpl_msg' },
-      status: 'active',
-      styling: {},
-    },
+  minimal: {
+    name: 'Minimal',
+    accent: '#333333',
+    font: 'Georgia, serif',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: 'Jordan Kim', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: 'jordan@company.com', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: '+1 (555) 000-0000', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: 'Acme Inc.', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#f5f6fa,#eef0f4)',
   },
-  appointment: {
-    name: 'Book an Appointment',
-    icon: 'calendar',
-    description: 'Capture booking details with service selection and preferred date.',
-    form: {
-      name: 'Book an Appointment',
-      fields: [
-        { id: 'tpl_name', type: 'text', label: 'Full Name', placeholder: 'John Smith', required: true, maps_to: 'name' },
-        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
-        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: true, maps_to: 'phone' },
-        { id: 'tpl_service', type: 'select', label: 'Service', placeholder: '', required: true, maps_to: 'service', options: ['Consultation', 'Cleaning', 'Other'] },
-        { id: 'tpl_date', type: 'date', label: 'Preferred Date', placeholder: '', required: true, maps_to: '' },
-        { id: 'tpl_notes', type: 'textarea', label: 'Notes', placeholder: 'Any details we should know?', required: false, maps_to: 'notes' },
-      ],
-      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', service: 'tpl_service', notes: 'tpl_notes' },
-      status: 'active',
-      styling: {},
-    },
+  editorial: {
+    name: 'Editorial Split',
+    accent: '#c2410c',
+    font: 'Georgia, serif',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: 'Full name', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email address', placeholder: 'Email address', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: 'Phone number', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: 'Company name', required: false, maps_to: 'company' },
+      { type: 'textarea', label: 'What are you looking to achieve?', placeholder: '', required: false, maps_to: 'notes' },
+    ],
+    previewBg: 'linear-gradient(135deg,#fdf2f8,#f5f6fa)',
   },
-  lead_capture: {
-    name: 'Lead Capture',
-    icon: 'user-plus',
-    description: 'Minimal form for landing pages — just name, email, and phone.',
-    form: {
-      name: 'Lead Capture',
-      fields: [
-        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Full name', required: true, maps_to: 'name' },
-        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
-        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: false, maps_to: 'phone' },
-      ],
-      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone' },
-      status: 'active',
-      styling: {},
-    },
+  darktech: {
+    name: 'Dark Tech',
+    accent: '#0ea5e9',
+    font: "'Space Grotesk', sans-serif",
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: 'Jordan Kim', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: 'jordan@company.com', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: '+1 (555) 000-0000', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: 'Acme Inc.', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#eff6ff,#f5f6fa)',
   },
-  quote_request: {
-    name: 'Quote Request',
-    icon: 'file-text',
-    description: 'Service inquiry with project details for home services and B2B.',
-    form: {
-      name: 'Request a Quote',
-      fields: [
-        { id: 'tpl_name', type: 'text', label: 'Full Name', placeholder: 'John Smith', required: true, maps_to: 'name' },
-        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: true, maps_to: 'email' },
-        { id: 'tpl_phone', type: 'tel', label: 'Phone', placeholder: '(555) 555-5555', required: true, maps_to: 'phone' },
-        { id: 'tpl_service', type: 'select', label: 'Service Needed', placeholder: '', required: true, maps_to: 'service', options: ['Repair', 'Installation', 'Consultation', 'Other'] },
-        { id: 'tpl_details', type: 'textarea', label: 'Project Details', placeholder: 'Describe your project...', required: true, maps_to: 'notes' },
-      ],
-      field_mapping: { name: 'tpl_name', email: 'tpl_email', phone: 'tpl_phone', service: 'tpl_service', notes: 'tpl_details' },
-      status: 'active',
-      styling: {},
-    },
+  wizard: {
+    name: 'Wizard',
+    accent: '#9333ea',
+    font: "'Quicksand', sans-serif",
+    submitLabel: 'Continue',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: 'Full name', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email address', placeholder: 'Email address', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: 'Phone number', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: 'Company name', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#faf5ff,#f5f6fa)',
   },
-  newsletter: {
-    name: 'Newsletter Signup',
-    icon: 'newspaper',
-    description: 'Single email field for newsletter and mailing list signups.',
-    form: {
-      name: 'Newsletter Signup',
-      fields: [
-        { id: 'tpl_email', type: 'email', label: 'Email Address', placeholder: 'you@example.com', required: true, maps_to: 'email' },
-      ],
-      field_mapping: { email: 'tpl_email' },
-      status: 'active',
-      styling: {},
-    },
+  inline: {
+    name: 'Inline Widget',
+    accent: '#0d9488',
+    font: 'inherit',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Name', placeholder: 'Name', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: 'Email', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone', placeholder: 'Phone', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company', placeholder: 'Company', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#f0fdfa,#f5f6fa)',
   },
-  feedback: {
-    name: 'Feedback / Survey',
-    icon: 'clipboard-list',
-    description: 'Collect customer feedback with rating and comments.',
-    form: {
-      name: 'Customer Feedback',
-      fields: [
-        { id: 'tpl_name', type: 'text', label: 'Name', placeholder: 'Your name (optional)', required: false, maps_to: 'name' },
-        { id: 'tpl_email', type: 'email', label: 'Email', placeholder: 'you@example.com', required: false, maps_to: 'email' },
-        { id: 'tpl_rating', type: 'select', label: 'How did we do?', placeholder: '', required: true, maps_to: '', options: ['Excellent', 'Good', 'Average', 'Below Average', 'Poor'] },
-        { id: 'tpl_comments', type: 'textarea', label: 'Comments', placeholder: 'Tell us about your experience...', required: false, maps_to: 'notes' },
-      ],
-      field_mapping: { name: 'tpl_name', email: 'tpl_email', notes: 'tpl_comments' },
-      status: 'active',
-      styling: {},
-    },
+  brutalist: {
+    name: 'Brutalist',
+    accent: '#000000',
+    font: "ui-monospace, monospace",
+    submitLabel: 'GET STARTED',
+    fields: [
+      { type: 'text', label: 'FULL NAME', placeholder: 'FULL NAME', required: true, maps_to: 'name' },
+      { type: 'email', label: 'EMAIL', placeholder: 'EMAIL', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'PHONE', placeholder: 'PHONE', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'COMPANY', placeholder: 'COMPANY', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#fefce8,#f5f6fa)',
+  },
+  luxury: {
+    name: 'Luxury',
+    accent: '#a16207',
+    font: 'Georgia, serif',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: '', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: '', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: '', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: '', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#fefce8,#f5f6fa)',
+  },
+  playful: {
+    name: 'Playful',
+    accent: '#ea580c',
+    font: "'Quicksand', sans-serif",
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Your name', placeholder: 'Your name', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Your email', placeholder: 'Your email', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Your phone', placeholder: 'Your phone', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Your company', placeholder: 'Your company', required: false, maps_to: 'company' },
+    ],
+    previewBg: 'linear-gradient(135deg,#fff7ed,#f5f6fa)',
+  },
+  corporate: {
+    name: 'Corporate',
+    accent: '#3730a3',
+    font: 'inherit',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: '', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: '', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: '', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: '', required: false, maps_to: 'company' },
+      { type: 'select', label: 'How did you hear about us?', placeholder: '', required: false, maps_to: '', options: ['Search engine', 'Referral', 'Event or conference', 'Social media', 'Other'] },
+    ],
+    previewBg: 'linear-gradient(135deg,#eef2ff,#f5f6fa)',
+  },
+  floating: {
+    name: 'Floating Label',
+    accent: '#7c3aed',
+    font: 'inherit',
+    submitLabel: 'Get Started',
+    fields: [
+      { type: 'text', label: 'Full name', placeholder: 'Full name', required: true, maps_to: 'name' },
+      { type: 'email', label: 'Email', placeholder: 'Email', required: true, maps_to: 'email' },
+      { type: 'tel', label: 'Phone number', placeholder: 'Phone number', required: false, maps_to: 'phone' },
+      { type: 'text', label: 'Company name', placeholder: 'Company name', required: false, maps_to: 'company' },
+      { type: 'textarea', label: 'Notes (optional)', placeholder: '', required: false, maps_to: 'notes' },
+    ],
+    previewBg: 'linear-gradient(135deg,#f5f3ff,#f5f6fa)',
   },
 };
 
+const TEMPLATE_SWATCHES = ['#3B82F6', '#7C3AED', '#EC4899', '#F97316'];
+const TEMPLATE_FONTS = [
+  { value: 'inherit', label: 'System UI' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: "'Space Grotesk', sans-serif", label: 'Space Grotesk' },
+  { value: "'Quicksand', sans-serif", label: 'Quicksand' },
+  { value: "ui-monospace, monospace", label: 'Monospace' },
+];
+
+// State for the customize drawer
+let drawerState = { templateKey: null, accent: '#3B82F6', fontIdx: 0, fields: [], dragIdx: null };
+
 function showTemplatePicker() {
-  // Remove existing picker if any
   const existing = document.getElementById('template-picker-overlay');
   if (existing) existing.remove();
 
   const overlay = document.createElement('div');
   overlay.id = 'template-picker-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(16,24,38,0.42);backdrop-filter:blur(2px);z-index:9999;overflow-y:auto;padding:32px 36px;';
   overlay.setAttribute('data-modal', '');
 
   const templates = Object.entries(FORM_TEMPLATES);
+  const previewBgs = ['linear-gradient(135deg,#f5f6fa,#eef0f4)', 'linear-gradient(135deg,#fdf2f8,#f5f6fa)', 'linear-gradient(135deg,#eff6ff,#f5f6fa)'];
 
   overlay.innerHTML = `
-    <div style="background:var(--surface);border-radius:16px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;display:flex;flex-direction:column;">
+    <div style="max-width:1100px;margin:0 auto;">
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-            <i data-lucide="layout-template" style="width:18px;height:18px;color:#3B82F6;"></i>
-          </div>
-          <div>
-            <div style="font-size:17px;font-weight:700;">Choose a Form Template</div>
-            <div style="font-size:13px;color:var(--muted);">Start fast — customize everything later.</div>
-          </div>
-        </div>
-        <button onclick="document.getElementById('template-picker-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
-          <i data-lucide="x" style="width:20px;height:20px;"></i>
-        </button>
+      <div style="margin-bottom:26px;">
+        <div style="font-size:24px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Form Templates</div>
+        <div style="font-size:14px;color:#5f687a;margin-top:5px;">Start from a template and customize colors, fonts and fields to match your brand.</div>
       </div>
+
+      <!-- Category header -->
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;">Lead Capture</div>
 
       <!-- Template grid -->
-      <div style="padding:20px;overflow-y:auto;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
-          ${templates.map(([key, tpl]) => `
-            <div onclick="selectFormTemplate('${key}')"
-              style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;"
-              onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)';"
-              onmouseout="this.style.borderColor='var(--border)';this.style.transform='';">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                <div style="width:34px;height:34px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
-                  <i data-lucide="${tpl.icon}" style="width:17px;height:17px;color:var(--accent);"></i>
-                </div>
-                <div style="font-size:14.5px;font-weight:700;color:var(--text);">${escapeHtml(tpl.name)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px;">
+        ${templates.map(([key, tpl], i) => `
+          <div style="background:#fff;border:1px solid rgba(16,24,38,0.08);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;">
+            <!-- Preview area -->
+            <div style="position:relative;height:132px;background:${tpl.previewBg || previewBgs[i % 3]};border-bottom:1px solid rgba(16,24,38,0.06);padding:16px;">
+              <div style="display:flex;flex-direction:column;gap:8px;max-width:150px;">
+                ${tpl.fields.length > 0 ? tpl.fields.slice(0, 4).map((f, j) => `
+                  <div style="display:flex;align-items:center;gap:6px;${j > 0 ? 'margin-left:' + (j * 6) + 'px' : ''}">
+                    <span style="width:9px;height:9px;border-radius:50%;flex-shrink:0;background:${['#7C3AED','#F97316','#22c55e','#101826'][j % 4]};"></span>
+                    <span style="flex:1;height:9px;border-radius:5px;background:#fff;border:1px solid rgba(16,24,38,0.08);width:${[55,60,50,45][j % 4]}%;"></span>
+                  </div>`).join('') : `
+                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9aa3b2;font-size:13px;">Blank canvas</div>`}
               </div>
-              <div style="font-size:12.5px;color:var(--muted);line-height:1.5;">${escapeHtml(tpl.description)}</div>
-              ${tpl.form.fields.length > 0 ? `<div style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">${tpl.form.fields.length} field${tpl.form.fields.length === 1 ? '' : 's'}</div>` : ''}
-            </div>`).join('')}
-        </div>
+            </div>
+            <!-- Title -->
+            <div style="padding:14px 16px 12px;flex:1;display:flex;flex-direction:column;">
+              <div style="font-size:15px;font-weight:700;letter-spacing:-0.1px;color:var(--text);">${escapeHtml(tpl.name)}</div>
+            </div>
+            <!-- Action -->
+            <div style="display:flex;align-items:center;justify-content:flex-end;padding:12px 16px;border-top:1px solid rgba(16,24,38,0.06);">
+              <button onclick="${key === 'scratch' ? "selectFormTemplate('scratch')" : "openCustomizeDrawer('" + key + "')"}"
+                style="border:none;border-radius:9px;padding:8px 18px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;background:#3B82F6;transition:filter .15s;"
+                onmouseover="this.style.filter='brightness(1.06)'"
+                onmouseout="this.style.filter=''">
+                ${key === 'scratch' ? 'Start' : 'Customize'}
+              </button>
+            </div>
+          </div>`).join('')}
       </div>
 
-      <!-- Footer -->
-      <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;">
-        <button class="btn-secondary" onclick="document.getElementById('template-picker-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
-      </div>
+      <!-- Close button (floating top-right) -->
+      <button onclick="document.getElementById('template-picker-overlay').remove()"
+        style="position:fixed;top:20px;right:24px;width:38px;height:38px;border:1px solid rgba(16,24,38,0.12);background:#fff;border-radius:10px;color:#5f687a;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s;z-index:10001;"
+        onmouseover="this.style.borderColor='#7C3AED';this.style.color='#7C3AED'"
+        onmouseout="this.style.borderColor='rgba(16,24,38,0.12)';this.style.color='#5f687a'">
+        <i data-lucide="x" style="width:18px;height:18px;"></i>
+      </button>
     </div>`;
 
   document.body.appendChild(overlay);
   if (window.lucide) lucide.createIcons();
 
-  // Close on backdrop click
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
-function selectFormTemplate(templateKey) {
+function openCustomizeDrawer(templateKey) {
   const tpl = FORM_TEMPLATES[templateKey];
   if (!tpl) return;
 
-  // Deep copy the template and generate fresh field IDs
-  currentForm = JSON.parse(JSON.stringify(tpl.form));
-  currentForm.fields.forEach(f => {
-    f.id = 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  // Initialize drawer state
+  const fontIdx = TEMPLATE_FONTS.findIndex(f => f.value === tpl.font);
+  drawerState = {
+    templateKey,
+    accent: tpl.accent,
+    fontIdx: fontIdx >= 0 ? fontIdx : 0,
+    fields: tpl.fields.map(f => ({ ...f, on: true })),
+    dragIdx: null,
+  };
+
+  // Remove existing drawer
+  const existing = document.getElementById('customize-drawer-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'customize-drawer-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(16,24,38,0.42);backdrop-filter:blur(2px);z-index:10000;display:flex;justify-content:flex-end;';
+  overlay.setAttribute('data-modal', '');
+
+  overlay.innerHTML = `
+    <div id="customize-drawer" style="width:min(420px,100%);height:100%;background:#fff;box-shadow:-20px 0 50px rgba(24,33,47,0.18);display:flex;flex-direction:column;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;padding:20px 22px;border-bottom:1px solid rgba(16,24,38,0.08);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:#101826;">Customize template</div>
+          <div style="font-size:13px;color:#5f687a;margin-top:2px;">${escapeHtml(tpl.name)}</div>
+        </div>
+        <button onclick="document.getElementById('customize-drawer-overlay').remove()"
+          style="width:34px;height:34px;border:1px solid rgba(16,24,38,0.12);background:#fff;border-radius:9px;color:#5f687a;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s;"
+          onmouseover="this.style.borderColor='#7C3AED';this.style.color='#7C3AED'"
+          onmouseout="this.style.borderColor='rgba(16,24,38,0.12)';this.style.color='#5f687a'">
+          <i data-lucide="x" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div style="flex:1;overflow-y:auto;padding:22px;">
+        <!-- Live preview -->
+        <div style="margin-bottom:26px;">
+          <div style="font-size:13px;font-weight:700;color:#101826;margin-bottom:12px;">Preview</div>
+          <div id="drawer-preview" style="border:1px solid rgba(16,24,38,0.08);border-radius:12px;padding:20px;background:#fbfbfc;"></div>
+        </div>
+
+        <!-- Accent color -->
+        <div style="margin-bottom:26px;">
+          <div style="font-size:13px;font-weight:700;color:#101826;margin-bottom:12px;">Accent color</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="drawer-accent-input" value="${drawerState.accent}" oninput="updateDrawerAccent(this.value)"
+              style="width:42px;height:42px;border-radius:9px;cursor:pointer;-webkit-appearance:none;border:none;padding:0;" />
+            <div style="display:flex;gap:8px;flex:1;">
+              ${TEMPLATE_SWATCHES.map(sw => `
+                <span onclick="updateDrawerAccent('${sw}')"
+                  style="width:28px;height:28px;border-radius:8px;cursor:pointer;background:${sw};${drawerState.accent === sw ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + sw : ''};transition:box-shadow .15s;"></span>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Font style -->
+        <div style="margin-bottom:26px;">
+          <div style="font-size:13px;font-weight:700;color:#101826;margin-bottom:12px;">Font style</div>
+          <div id="drawer-fonts" style="display:flex;flex-direction:column;gap:8px;">
+            ${TEMPLATE_FONTS.map((fo, i) => `
+              <div onclick="updateDrawerFont(${i})"
+                style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(16,24,38,0.12);border-radius:9px;padding:10px 14px;cursor:pointer;font-family:${fo.value};${drawerState.fontIdx === i ? 'border-color:#7C3AED;box-shadow:0 0 0 3px rgba(124,58,237,0.12)' : ''};transition:border-color .15s;">
+                <span style="font-size:14px;color:#101826;">${fo.label}</span>
+                ${drawerState.fontIdx === i ? '<i data-lucide="check" style="width:15px;height:15px;color:#7C3AED;"></i>' : ''}
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Fields -->
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#101826;margin-bottom:4px;">Fields</div>
+          <div style="font-size:12px;color:#5f687a;margin-bottom:12px;">Toggle fields on or off. Drag the handle to reorder.</div>
+          <div id="drawer-fields" style="display:flex;flex-direction:column;gap:8px;">
+            ${renderDrawerFields()}
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;gap:10px;padding:16px 22px;border-top:1px solid rgba(16,24,38,0.08);">
+        <button onclick="document.getElementById('customize-drawer-overlay').remove()"
+          style="flex:1;border:1px solid rgba(16,24,38,0.14);background:#fff;border-radius:10px;padding:11px;font-size:14px;font-weight:600;color:#101826;cursor:pointer;transition:border-color .15s,color .15s;"
+          onmouseover="this.style.borderColor='#7C3AED';this.style.color='#7C3AED'"
+          onmouseout="this.style.borderColor='rgba(16,24,38,0.14)';this.style.color='#101826'">Cancel</button>
+        <button onclick="useTemplateFromDrawer()"
+          style="flex:1;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#3B82F6;transition:filter .15s;"
+          onmouseover="this.style.filter='brightness(1.06)'"
+          onmouseout="this.style.filter=''">Use template</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+  renderDrawerPreview();
+
+  // Drag-and-drop for field reorder
+  setTimeout(() => {
+    document.querySelectorAll('#drawer-fields [data-field-idx]').forEach(el => {
+      el.addEventListener('dragstart', (e) => { drawerState.dragIdx = parseInt(el.dataset.fieldIdx); el.style.opacity = '0.4'; });
+      el.addEventListener('dragend', (e) => { el.style.opacity = ''; });
+      el.addEventListener('dragover', (e) => { e.preventDefault(); });
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const dropIdx = parseInt(el.dataset.fieldIdx);
+        if (drawerState.dragIdx !== null && drawerState.dragIdx !== dropIdx) {
+          const item = drawerState.fields.splice(drawerState.dragIdx, 1)[0];
+          drawerState.fields.splice(dropIdx, 0, item);
+          drawerState.dragIdx = null;
+          refreshDrawerFields();
+        }
+      });
+    });
+  }, 50);
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function renderDrawerFields() {
+  return drawerState.fields.map((f, i) => `
+    <div data-field-idx="${i}" draggable="true"
+      style="display:flex;align-items:center;gap:10px;border:1px solid rgba(16,24,38,0.1);border-radius:9px;padding:10px 12px;background:#fbfbfc;cursor:grab;${!f.on ? 'opacity:0.45' : ''};">
+      <i data-lucide="grip-vertical" style="width:15px;height:15px;color:#c3c9d4;flex-shrink:0;"></i>
+      <span style="flex:1;font-size:14px;font-weight:500;color:#101826;">${escapeHtml(f.label)}</span>
+      ${f.required ? '<span style="font-size:10px;font-weight:700;color:#9aa3b2;letter-spacing:0.4px;">REQUIRED</span>' : ''}
+      <span onclick="toggleDrawerField(${i})" style="display:inline-flex;align-items:center;width:38px;height:22px;border-radius:999px;padding:2px;cursor:pointer;flex-shrink:0;transition:background .15s;${f.on ? 'background:' + drawerState.accent : 'background:rgba(16,24,38,0.12)'};">
+        <span style="width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(16,24,38,0.25);transition:transform .15s;transform:translateX(${f.on ? '16px' : '0'});"></span>
+      </span>
+    </div>`).join('');
+}
+
+function refreshDrawerFields() {
+  const container = document.getElementById('drawer-fields');
+  if (container) {
+    container.innerHTML = renderDrawerFields();
+    if (window.lucide) lucide.createIcons();
+    // Re-attach drag listeners
+    container.querySelectorAll('[data-field-idx]').forEach(el => {
+      el.addEventListener('dragstart', (e) => { drawerState.dragIdx = parseInt(el.dataset.fieldIdx); el.style.opacity = '0.4'; });
+      el.addEventListener('dragend', (e) => { el.style.opacity = ''; });
+      el.addEventListener('dragover', (e) => { e.preventDefault(); });
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const dropIdx = parseInt(el.dataset.fieldIdx);
+        if (drawerState.dragIdx !== null && drawerState.dragIdx !== dropIdx) {
+          const item = drawerState.fields.splice(drawerState.dragIdx, 1)[0];
+          drawerState.fields.splice(dropIdx, 0, item);
+          drawerState.dragIdx = null;
+          refreshDrawerFields();
+        }
+      });
+    });
+  }
+  renderDrawerPreview();
+}
+
+function toggleDrawerField(idx) {
+  if (drawerState.fields[idx]) {
+    drawerState.fields[idx].on = !drawerState.fields[idx].on;
+    refreshDrawerFields();
+  }
+}
+
+function updateDrawerAccent(color) {
+  drawerState.accent = color;
+  const input = document.getElementById('drawer-accent-input');
+  if (input) input.value = color;
+  // Update swatch rings
+  document.querySelectorAll('#customize-drawer-overlay span[onclick*="updateDrawerAccent"]').forEach(el => {
+    const swColor = el.getAttribute('onclick').match(/'([^']+)'/)[1];
+    el.style.boxShadow = swColor === color ? '0 0 0 2px #fff,0 0 0 4px ' + color : '';
+  });
+  refreshDrawerFields();
+  renderDrawerPreview();
+}
+
+function updateDrawerFont(idx) {
+  drawerState.fontIdx = idx;
+  const container = document.getElementById('drawer-fonts');
+  if (container) {
+    container.innerHTML = TEMPLATE_FONTS.map((fo, i) => `
+      <div onclick="updateDrawerFont(${i})"
+        style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(16,24,38,0.12);border-radius:9px;padding:10px 14px;cursor:pointer;font-family:${fo.value};${i === idx ? 'border-color:#7C3AED;box-shadow:0 0 0 3px rgba(124,58,237,0.12)' : ''};transition:border-color .15s;">
+        <span style="font-size:14px;color:#101826;">${fo.label}</span>
+        ${i === idx ? '<i data-lucide="check" style="width:15px;height:15px;color:#7C3AED;"></i>' : ''}
+      </div>`).join('');
+    if (window.lucide) lucide.createIcons();
+  }
+  renderDrawerPreview();
+}
+
+function renderDrawerPreview() {
+  const preview = document.getElementById('drawer-preview');
+  if (!preview) return;
+  const font = TEMPLATE_FONTS[drawerState.fontIdx].value;
+  const activeFields = drawerState.fields.filter(f => f.on);
+  const tpl = FORM_TEMPLATES[drawerState.templateKey];
+  if (!tpl) return;
+
+  preview.style.fontFamily = font;
+  preview.innerHTML = `
+    <div style="font-weight:700;font-size:15px;color:#101826;margin-bottom:14px;">Get a quote</div>
+    ${activeFields.map(f => `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11.5px;color:#5f687a;margin-bottom:5px;">${escapeHtml(f.label)}</div>
+        <div style="height:34px;border-radius:8px;border:1px solid rgba(16,24,38,0.14);background:#fff;"></div>
+      </div>`).join('')}
+    <div style="margin-top:14px;text-align:center;color:#fff;font-size:13px;font-weight:700;padding:10px;border-radius:8px;background:${drawerState.accent};">${escapeHtml(tpl.submitLabel)}</div>
+  `;
+}
+
+function useTemplateFromDrawer() {
+  const tpl = FORM_TEMPLATES[drawerState.templateKey];
+  if (!tpl) return;
+  const font = TEMPLATE_FONTS[drawerState.fontIdx].value;
+  const activeFields = drawerState.fields.filter(f => f.on);
+
+  // Build currentForm from drawer state
+  currentForm = {
+    name: tpl.name,
+    fields: activeFields.map(f => ({
+      ...f,
+      id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    })),
+    field_mapping: {},
+    status: 'active',
+    styling: {
+      accent_color: drawerState.accent,
+      background_color: '#ffffff',
+      text_color: '#101826',
+      input_border: 'rgba(16,24,38,0.14)',
+      border_radius: '8px',
+      font_family: font,
+      submit_label: tpl.submitLabel,
+      submit_full_width: true,
+    },
+  };
+
+  // Build field_mapping
+  activeFields.forEach(f => {
+    if (f.maps_to) {
+      const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type);
+      if (field) currentForm.field_mapping[f.maps_to] = field.id;
+    }
   });
 
-  // Update field_mapping to point to new IDs
-  if (currentForm.field_mapping) {
-    const oldToNew = {};
-    tpl.form.fields.forEach((oldField, i) => {
-      oldToNew[oldField.id] = currentForm.fields[i].id;
-    });
-    const newMapping = {};
-    for (const [key, oldId] of Object.entries(currentForm.field_mapping)) {
-      if (oldToNew[oldId]) newMapping[key] = oldToNew[oldId];
-    }
-    currentForm.field_mapping = newMapping;
-  }
-
-  // Close template picker
+  // Close drawer
+  const drawer = document.getElementById('customize-drawer-overlay');
+  if (drawer) drawer.remove();
+  // Close template picker too
   const picker = document.getElementById('template-picker-overlay');
   if (picker) picker.remove();
 
-  // Open form builder with the pre-populated form
+  // Open form builder
   renderFormBuilder();
+}
+
+function selectFormTemplate(templateKey) {
+  if (templateKey === 'scratch') {
+    currentForm = {
+      name: '',
+      fields: [],
+      field_mapping: {},
+      status: 'active',
+      styling: {
+        accent_color: '#3B82F6',
+        background_color: '#ffffff',
+        text_color: '#101826',
+        input_border: '#d1d5db',
+        border_radius: '8px',
+        font_family: 'inherit',
+        submit_label: 'Submit',
+        submit_full_width: true,
+      },
+    };
+    const picker = document.getElementById('template-picker-overlay');
+    if (picker) picker.remove();
+    renderFormBuilder();
+    return;
+  }
+  // For non-scratch templates, open the customize drawer
+  openCustomizeDrawer(templateKey);
 }
 
 function openFormBuilder(formId) {
