@@ -1913,8 +1913,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
       <!-- Empty state (shown when no forms) -->
       <div id="forms-empty" style="display:none;text-align:center;padding:60px 20px;">
-        <div style="width:64px;height:64px;margin:0 auto 16px;background:var(--surface2);border-radius:16px;display:flex;align-items:center;justify-content:center;">
-          <i data-lucide="file-input" style="width:28px;height:28px;color:var(--muted);"></i>
+        <div style="width:60px;height:60px;margin:0 auto 16px;background:rgba(59,130,246,0.10);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="file-input" style="width:26px;height:26px;color:#3B82F6;"></i>
         </div>
         <div style="font-size:18px;font-weight:700;margin-bottom:6px;">No forms yet</div>
         <div style="font-size:14px;color:var(--muted);margin-bottom:20px;">Create your first embeddable form to capture leads from your website.</div>
@@ -3131,9 +3131,11 @@ async function loadForms() {
     grid.innerHTML = forms.map(f => {
       const isActive = f.status === 'active';
       const statusBadge = isActive
-        ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#16a34a;background:rgba(22,163,74,0.1);padding:3px 10px;border-radius:20px;">● Active</span>'
-        : '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#d97706;background:rgba(217,119,6,0.1);padding:3px 10px;border-radius:20px;">● Paused</span>';
+        ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#16a34a;background:rgba(34,197,94,0.10);padding:3px 10px;border-radius:20px;">● Active</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#b45309;background:rgba(180,83,9,0.10);padding:3px 10px;border-radius:20px;">● Paused</span>';
       const subCount = f.submission_count || 0;
+      const viewCount = f.view_count || 0;
+      const conversionRate = (viewCount > 0 && subCount > 0) ? Math.round((subCount / viewCount) * 100) : null;
       const updated = f.updated_at ? new Date(f.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
       return `
         <div class="card" style="display:flex;flex-direction:column;gap:12px;">
@@ -3143,17 +3145,17 @@ async function loadForms() {
               <div style="margin-top:4px;">${statusBadge}</div>
             </div>
           </div>
-          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);">
-            <span><i data-lucide="inbox" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${subCount} sub${subCount !== 1 ? 's' : ''}</span>
-            <span><i data-lucide="eye" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${f.view_count || 0} views</span>
-            ${(f.view_count > 0 && subCount > 0) ? `<span style="color:#16a34a;font-weight:600;"><i data-lucide="trending-up" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${Math.round((subCount / f.view_count) * 100)}%</span>` : ''}
-            ${updated ? `<span><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> ${updated}</span>` : ''}
+          <div style="display:flex;gap:16px;font-size:12.5px;color:#5f687a;">
+            <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="inbox" style="width:13px;height:13px;"></i> ${subCount} sub${subCount !== 1 ? 's' : ''}</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="eye" style="width:13px;height:13px;"></i> ${viewCount} views</span>
+            ${conversionRate !== null ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-weight:600;"><i data-lucide="trending-up" style="width:13px;height:13px;"></i> ${conversionRate}%</span>` : ''}
+            ${updated ? `<span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="clock" style="width:13px;height:13px;"></i> ${updated}</span>` : ''}
           </div>
           <div style="display:flex;gap:8px;margin-top:auto;">
             <button class="btn-secondary" onclick="openAnalyticsModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Analytics</button>
             <button class="btn-secondary" onclick="openEmbedModal('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Embed</button>
-            <button class="btn-secondary" onclick="editForm('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;">Edit</button>
-            <button class="btn-secondary" onclick="confirmDeleteForm('${f.form_id}','${escapeHtml(f.name || 'Untitled Form')}')" style="font-size:13px;padding:8px 12px;color:#ef4444;border-color:rgba(239,68,68,0.3);">Delete</button>
+            <button onclick="editForm('${f.form_id}')" style="flex:1;font-size:13px;padding:8px 12px;justify-content:center;border:none;border-radius:11px;background:#3B82F6;color:#fff;font-weight:700;cursor:pointer;transition:filter .15s;" onmouseover="this.style.filter='brightness(1.06)'" onmouseout="this.style.filter=''">Edit</button>
+            <button onclick="confirmDeleteForm('${f.form_id}','${escapeHtml(f.name || 'Untitled Form')}')" style="font-size:13px;padding:8px 12px;border:none;background:none;color:#ef4444;cursor:pointer;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Delete</button>
           </div>
         </div>`;
     }).join('');
@@ -3773,8 +3775,8 @@ function renderFormBuilder() {
             <button onclick="setPreviewViewport('desktop')" id="fb-vp-desktop" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;">Desktop</button>
             <button onclick="setPreviewViewport('mobile')" id="fb-vp-mobile" style="padding:5px 10px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--muted);">Mobile</button>
           </div>
-          <button onclick="document.getElementById('form-builder-overlay').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;">
-            <i data-lucide="x" style="width:20px;height:20px;"></i>
+          <button onclick="document.getElementById('form-builder-overlay').remove()" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:9px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--purple)';this.style.color='var(--purple)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
           </button>
         </div>
       </div>
@@ -3785,16 +3787,16 @@ function renderFormBuilder() {
         <div style="flex:1;min-width:0;padding:20px;overflow-y:auto;">
           <!-- Form name -->
           <div style="margin-bottom:20px;">
-            <label style="display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Form Name</label>
+            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Form Name</label>
             <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
               oninput="currentForm.name = this.value; updateFbSaveButton();"
-              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+              style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;" onfocus="this.style.borderColor='var(--purple)';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
           </div>
 
           <!-- Fields -->
           <div style="margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-              <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Fields (${currentForm.fields.length}/${maxFields})</label>
+              <label style="font-size:13px;font-weight:700;color:var(--text);">Fields (${currentForm.fields.length}/${maxFields})</label>
             </div>
             <div id="fb-fields" style="display:flex;flex-direction:column;gap:10px;">
               ${currentForm.fields.length === 0 ? '<div style="text-align:center;padding:30px 20px;color:var(--muted);font-size:14px;border:2px dashed var(--border);border-radius:12px;">No fields yet. Add a field below to get started.</div>' : ''}
@@ -3805,10 +3807,10 @@ function renderFormBuilder() {
           <div id="fb-add-field-wrap" style="${canAddMore ? '' : 'display:none;'}">
             <div style="position:relative;">
               <button id="fb-add-field-btn" onclick="toggleFieldDropdown()"
-                style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+                style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px;padding:11px 14px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
                 <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Field
               </button>
-              <div id="fb-field-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
+              <div id="fb-field-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;overflow:hidden;">
                 ${FIELD_TYPES.map(ft => `
                   <div onclick="addField('${ft.type}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);transition:background 0.15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
                     <i data-lucide="${ft.icon}" style="width:15px;height:15px;color:var(--muted);"></i>
@@ -3823,15 +3825,15 @@ function renderFormBuilder() {
         </div>
 
         <!-- Right: Live Preview -->
-        <div style="width:420px;flex-shrink:0;border-left:1px solid var(--border);background:var(--field);display:flex;flex-direction:column;">
+        <div style="width:420px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;">
           <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Live Preview</span>
+            <span style="font-size:13px;font-weight:700;color:var(--text);">Live Preview</span>
             <span id="fb-preview-width" style="font-size:11px;color:var(--muted);">100%</span>
           </div>
           <div style="flex:1;overflow-y:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start;">
             <div id="fb-preview-wrap" style="width:100%;transition:width 0.2s;">
               <iframe id="fb-preview-iframe"
-                style="width:100%;border:none;border-radius:8px;background:#fff;min-height:400px;"
+                style="width:100%;border:1px solid var(--border);border-radius:10px;background:#fff;min-height:400px;"
                 sandbox="allow-same-origin"
                 title="Form Preview"></iframe>
             </div>
@@ -3896,13 +3898,13 @@ function renderStyleSection() {
 
   return `
     <div data-style-section style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
-      <label style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:block;">Style</label>
+      <label style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:block;">Style</label>
 
       <!-- Theme presets -->
       <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
         ${Object.entries(THEME_PRESETS).map(([key, preset]) => `
           <button onclick="applyThemePreset('${key}')"
-            style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:border-color 0.15s;"
+            style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:border-color 0.15s;"
             onmouseover="this.style.borderColor='var(--accent)'"
             onmouseout="this.style.borderColor='var(--border)'">
             <span style="width:14px;height:14px;border-radius:${preset.border_radius};background:${preset.accent_color};border:1px solid ${preset.input_border};"></span>
@@ -3920,55 +3922,55 @@ function renderStyleSection() {
 
       <!-- Font family -->
       <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Font Family</label>
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Font Family</label>
         <select id="fb-font" onchange="updateStyling('font_family', this.value)"
-          style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;">
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;">
           ${FONT_OPTIONS.map(f => `<option value="${f.value}" ${s.font_family === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
           <option value="custom" ${!FONT_OPTIONS.some(f => f.value === s.font_family) && s.font_family !== 'inherit' ? 'selected' : ''}>Custom...</option>
         </select>
         <input type="text" id="fb-font-custom" placeholder="e.g. 'Comic Sans MS', sans-serif"
           value="${FONT_OPTIONS.some(f => f.value === s.font_family) || s.font_family === 'inherit' ? '' : escapeHtml(s.font_family)}"
           oninput="updateStyling('font_family', this.value)"
-          style="display:none;width:100%;margin-top:6px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+          style="display:none;width:100%;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
       </div>
 
       <!-- Border radius slider -->
       <div style="margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-          <label style="font-size:12px;font-weight:600;color:var(--text);">Border Radius</label>
+          <label style="font-size:13px;font-weight:700;color:var(--text);">Border Radius</label>
           <span id="fb-radius-val" style="font-size:12px;color:var(--muted);font-weight:600;">${radiusVal}px</span>
         </div>
         <input type="range" min="0" max="20" value="${radiusVal}" oninput="updateBorderRadius(this.value)"
-          style="width:100%;accent-color:var(--accent);" />
+          style="width:100%;accent-color:var(--purple);" />
       </div>
 
       <!-- Button options -->
       <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
         <div style="flex:1;min-width:180px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Text</label>
+          <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Text</label>
           <input type="text" id="fb-submit-label" value="${escapeHtml(s.submit_label)}" oninput="updateStyling('submit_label', this.value)"
-            style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
         </div>
         <div style="min-width:140px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">Button Width</label>
+          <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Width</label>
           <div style="display:flex;gap:6px;">
             <button onclick="updateStyling('submit_full_width', true)" id="fb-btn-full"
-              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Full</button>
+              style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Full</button>
             <button onclick="updateStyling('submit_full_width', false)" id="fb-btn-auto"
-              style="flex:1;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Auto</button>
+              style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.submit_full_width ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Auto</button>
           </div>
         </div>
       </div>
 
       <!-- Custom CSS (collapsible) -->
       <details style="margin-top:8px;">
-        <summary style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;padding:8px 0;list-style:none;">
+        <summary style="font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;padding:8px 0;list-style:none;">
           <i data-lucide="chevron-right" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i>
           Custom CSS (advanced)
         </summary>
         <textarea id="fb-custom-css" placeholder="/* Add custom CSS here */" rows="4"
           oninput="updateStyling('custom_css', this.value)"
-          style="width:100%;margin-top:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:'Courier New',monospace;resize:vertical;">${escapeHtml(s.custom_css || '')}</textarea>
+          style="width:100%;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;font-family:'Courier New',monospace;resize:vertical;">${escapeHtml(s.custom_css || '')}</textarea>
       </details>
     </div>`;
 }
@@ -3976,8 +3978,8 @@ function renderStyleSection() {
 function renderColorPicker(key, label, value) {
   return `
     <div>
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;">${label}</label>
-      <div style="display:flex;align-items:center;gap:8px;background:var(--field);border:1px solid var(--border);border-radius:10px;padding:6px 10px;">
+      <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">${label}</label>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 10px;">
         <input type="color" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
           style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;" />
         <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.querySelector('input[type=color][oninput*=${key}]')?.click()"
@@ -4305,7 +4307,7 @@ function renderFieldCards() {
     }
 
     return `
-    <div id="fb-card-${f.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div id="fb-card-${f.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
       <!-- Collapsed header -->
       <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;" onclick="toggleFieldExpand('${f.id}')">
         <i data-lucide="grip-vertical" class="fb-drag" style="width:15px;height:15px;color:var(--muted);cursor:grab;flex-shrink:0;"></i>
@@ -4320,15 +4322,15 @@ function renderFieldCards() {
         <div style="padding-top:12px;display:flex;flex-direction:column;gap:10px;">
           <!-- Label -->
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Label</label>
+            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Label</label>
             <input type="text" value="${escapeHtml(f.label)}" placeholder="Field label" oninput="updateField('${f.id}', 'label', this.value); updateFieldCardHeader('${f.id}');"
-              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+              style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
           </div>
           <!-- Placeholder -->
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Placeholder</label>
+            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Placeholder</label>
             <input type="text" value="${escapeHtml(f.placeholder || '')}" placeholder="Placeholder text" oninput="updateField('${f.id}', 'placeholder', this.value);"
-              style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+              style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
           </div>
           <!-- Required toggle + Maps to -->
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
@@ -4338,9 +4340,9 @@ function renderFieldCards() {
               <label for="fb-req-${f.id}" style="font-size:13px;color:var(--text);cursor:pointer;user-select:none;">Required</label>
             </div>
             <div style="flex:1;min-width:150px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Maps to</label>
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Maps to</label>
               <select onchange="updateMapsTo('${f.id}', this.value); renderFieldCards();"
-                style="width:100%;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;">
+                style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;">
                 ${MAPS_TO_OPTIONS.map(opt => `<option value="${opt}" ${mapsToVal_read === opt ? 'selected' : ''}>${MAPS_TO_LABELS[opt]}</option>`).join('')}
               </select>
             </div>
@@ -4348,12 +4350,12 @@ function renderFieldCards() {
           <!-- Select options editor -->
           ${hasOptions ? `
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">Options</label>
+            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Options</label>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${(f.options || []).map((opt, i) => `
                 <div style="display:flex;gap:6px;align-items:center;">
                   <input type="text" value="${escapeHtml(opt)}" oninput="updateSelectOption('${f.id}', ${i}, this.value);"
-                    style="flex:1;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
+                    style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 12px;color:var(--text);font-size:13.5px;outline:none;font-family:inherit;" />
                   <button onclick="removeSelectOption('${f.id}', ${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:4px;">
                     <i data-lucide="x" style="width:15px;height:15px;"></i>
                   </button>
@@ -4365,13 +4367,13 @@ function renderFieldCards() {
           </div>` : ''}
           <!-- Actions: reorder + delete -->
           <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
-            <button onclick="moveField('${f.id}', 'up')" ${idx === 0 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === 0 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+            <button onclick="moveField('${f.id}', 'up')" ${idx === 0 ? 'disabled' : ''} style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === 0 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
               <i data-lucide="chevron-up" style="width:14px;height:14px;"></i>
             </button>
-            <button onclick="moveField('${f.id}', 'down')" ${idx === currentForm.fields.length - 1 ? 'disabled' : ''} style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === currentForm.fields.length - 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+            <button onclick="moveField('${f.id}', 'down')" ${idx === currentForm.fields.length - 1 ? 'disabled' : ''} style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;cursor:pointer;color:var(--muted);${idx === currentForm.fields.length - 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
               <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
             </button>
-            <button onclick="if(confirm('Delete this field?')) removeField('${f.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 10px;cursor:pointer;color:#ef4444;">
+            <button onclick="if(confirm('Delete this field?')) removeField('${f.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:9px;padding:6px 10px;cursor:pointer;color:#ef4444;">
               <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
             </button>
           </div>
