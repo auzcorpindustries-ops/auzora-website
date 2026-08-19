@@ -4460,6 +4460,8 @@ function useTemplateFromDrawer() {
   const activeFields = drawerState.fields.filter(f => f.on);
   currentForm = {
     name: tpl.name,
+    templateKey: drawerState.templateKey,
+    templateHtml: tpl.html,
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
@@ -4642,6 +4644,9 @@ function renderFormBuilder() {
 
   // Initial preview render
   setTimeout(renderFormPreview, 50);
+
+  // Sync save button state with current form name
+  updateFbSaveButton();
 }
 
 // ── Style customization ─────────────────────────────────────────────────────
@@ -4842,6 +4847,32 @@ function renderFormPreview() {
   if (!iframe || !currentForm) return;
 
   const s = currentForm.styling || {};
+
+  // If we have a template HTML (from "Use Template"), render it with customizations
+  if (currentForm.templateHtml) {
+    let html = currentForm.templateHtml;
+    const tpl = FORM_TEMPLATES[currentForm.templateKey];
+    // Apply accent color override
+    if (tpl && s.accent_color !== tpl.accent) {
+      html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
+    }
+    // Apply font override
+    if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
+      html = html.replace('</head>', `<style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
+    }
+    // Apply container bg override
+    if (s.container_bg) {
+      html = html.replace('</head>', `<style>.form-container{background:${s.container_bg} !important;}</style></head>`);
+    }
+    // Apply background color (page bg) override
+    if (s.background_color && s.background_color !== '#ffffff') {
+      html = html.replace('</head>', `<style>body{background:${s.background_color} !important;}</style></head>`);
+    }
+    iframe.srcdoc = html;
+    return;
+  }
+
+  // Fallback: generic form builder preview (for "Start from scratch")
   const fields = currentForm.fields || [];
   const fontStack = s.font_family && s.font_family !== 'inherit'
     ? `'${s.font_family}', sans-serif`
@@ -5206,6 +5237,7 @@ async function saveFormBuilder() {
   // Build payload — match the API's expected shape
   const payload = {
     name: currentForm.name.trim(),
+    templateKey: currentForm.templateKey || null,
     fields: currentForm.fields.map(f => {
       const field = {
         id: f.id,
@@ -5253,10 +5285,16 @@ async function saveFormBuilder() {
       throw new Error(errData.error || `HTTP ${res.status}`);
     }
 
+    const responseData = await res.json().catch(() => ({}));
     document.getElementById('form-builder-overlay').remove();
     showToast(isEditing ? 'Form updated successfully' : 'Form created successfully', 'success');
     loadForms();
+    // For new forms, auto-open embed modal with implementation instructions
+    if (!isEditing && responseData.form_id) {
+      setTimeout(() => openEmbedModal(responseData.form_id), 500);
+    }
   } catch (err) {
+    console.error('saveFormBuilder error:', err);
     showToast(`Save failed: ${err.message}`, 'error');
     const isEditing = !!currentForm.form_id;
     btn.textContent = isEditing ? 'Save Changes' : 'Create Form';
