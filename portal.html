@@ -4707,6 +4707,8 @@ function renderStyleSection() {
         ${renderColorPicker('background_color', 'Background', s.background_color)}
         ${renderColorPicker('text_color', 'Text Color', s.text_color)}
         ${renderColorPicker('input_border', 'Input Border', s.input_border)}
+        ${renderColorPicker('input_background', 'Input Background', s.input_background || '#ffffff')}
+        ${renderColorPicker('container_bg', 'Container BG', s.container_bg || s.background_color || '#ffffff')}
       </div>
 
       <!-- Font family -->
@@ -4769,9 +4771,9 @@ function renderColorPicker(key, label, value) {
     <div>
       <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">${label}</label>
       <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 10px;">
-        <input type="color" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
+        <input type="color" id="fb-color-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
           style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;" />
-        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.querySelector('input[type=color][oninput*=${key}]')?.click()"
+        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); var c = document.getElementById('fb-color-${key}'); if (c && /^#[0-9a-fA-F]{6}$/.test(this.value)) c.value = this.value;"
           style="flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;" />
       </div>
     </div>`;
@@ -4860,9 +4862,11 @@ function renderFormPreview() {
     if (tpl && s.accent_color !== tpl.accent) {
       html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
     }
-    // Apply font override
+    // Apply font override — also load the font file itself; a font-family
+    // override alone silently falls back when the family isn't loaded.
     if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
-      html = html.replace('</head>', `<style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
+      const fontQuery = s.font_family.trim().replace(/\s+/g, '+'); // css2 wants + not %20
+      html = html.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontQuery}:wght@400;500;600;700&display=swap" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
     }
     // Apply container bg override
     if (s.container_bg) {
@@ -4890,7 +4894,7 @@ function renderFormPreview() {
     const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
     const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
     const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
-    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:#fff;color:${s.text_color || '#1a1a1a'};`;
+    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
 
     let input = '';
     switch (f.type) {
@@ -4916,8 +4920,10 @@ function renderFormPreview() {
   }).join('');
 
   // Build full HTML document
+  // Google Fonts css2 expects "+" between words: family=Space+Grotesk.
+  // encodeURIComponent would emit %20 which the API rejects.
   const googleFonts = s.font_family && s.font_family !== 'inherit'
-    ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(s.font_family)}:wght@400;500;600;700&display=swap" rel="stylesheet">`
+    ? `<link href="https://fonts.googleapis.com/css2?family=${s.font_family.trim().replace(/\s+/g, '+')}:wght@400;500;600;700&display=swap" rel="stylesheet">`
     : '';
 
   const html = `<!DOCTYPE html>
