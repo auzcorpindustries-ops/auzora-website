@@ -2469,6 +2469,16 @@ let obLeadsAll = [];
 let obLeadsPage = 0;
 const OB_LEADS_PER_PAGE = 25;
 
+// Shared Google Fonts css2 URL builder — keeps the + separator logic in one
+// place. Mirrors public/js/google-fonts.js in atlas-ai.
+// css2 expects "+" between words: family=Space+Grotesk.
+// encodeURIComponent would emit %20 which the API rejects.
+function buildGoogleFontsUrl(fontFamily) {
+  if (!fontFamily || !fontFamily.trim()) return '';
+  const query = fontFamily.trim().replace(/\s+/g, '+');
+  return `https://fonts.googleapis.com/css2?family=${query}:wght@400;500;600;700&display=swap`;
+}
+
 // n8n workflow constants — declared early so loadWorkflows() can use them
 // before the rest of the script finishes executing.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
@@ -3513,6 +3523,22 @@ async function openEmbedModal(formId) {
               <div>
                 <div style="font-weight:700;margin-bottom:4px;">Using the iframe method</div>
                 <div style="color:var(--muted);">Use the iframe embed if your website doesn't allow external JavaScript (some CMS platforms restrict scripts). The iframe renders the form in a self-contained frame — less flexible but works everywhere.</div>
+              </div>
+              <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+                <div style="font-weight:700;margin-bottom:6px;">Styling parameters</div>
+                <div style="color:var(--muted);margin-bottom:8px;">These keys in the <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:12px;">styling</code> object control the form's appearance. Set them in the styling tab above — the embed code updates automatically.</div>
+                <table style="width:100%;font-size:12px;border-collapse:collapse;">
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">accent_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Button and focus-border color</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">background_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Page background behind the form (legacy — use container_bg for the form container)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">container_bg</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Background color of the form container itself</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">input_background</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Background color of text inputs and textareas</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">input_border</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Border color of text inputs and textareas</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">text_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Text color for labels and inputs</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">border_radius</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Corner rounding (e.g. 8px, 12px)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">font_family</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Font for form text (Google Fonts loaded automatically)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">submit_label</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Text on the submit button</td></tr>
+                  <tr><td style="padding:5px 0;font-weight:600;color:var(--text);">submit_full_width</td><td style="padding:5px 0 5px 12px;color:var(--muted);">true = full-width button, false = auto-width</td></tr>
+                </table>
               </div>
             </div>
           </div>
@@ -4707,6 +4733,8 @@ function renderStyleSection() {
         ${renderColorPicker('background_color', 'Background', s.background_color)}
         ${renderColorPicker('text_color', 'Text Color', s.text_color)}
         ${renderColorPicker('input_border', 'Input Border', s.input_border)}
+        ${renderColorPicker('input_background', 'Input Background', s.input_background || '#ffffff')}
+        ${renderColorPicker('container_bg', 'Container BG', s.container_bg || s.background_color || '#ffffff')}
       </div>
 
       <!-- Font family -->
@@ -4769,9 +4797,9 @@ function renderColorPicker(key, label, value) {
     <div>
       <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">${label}</label>
       <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 10px;">
-        <input type="color" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
+        <input type="color" id="fb-color-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.getElementById('fb-color-text-${key}').value = this.value;"
           style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;" />
-        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); document.querySelector('input[type=color][oninput*=${key}]')?.click()"
+        <input type="text" id="fb-color-text-${key}" value="${value}" oninput="updateStyling('${key}', this.value); var c = document.getElementById('fb-color-${key}'); if (c && /^#[0-9a-fA-F]{6}$/.test(this.value)) c.value = this.value;"
           style="flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none;font-family:inherit;width:100%;" />
       </div>
     </div>`;
@@ -4860,9 +4888,10 @@ function renderFormPreview() {
     if (tpl && s.accent_color !== tpl.accent) {
       html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
     }
-    // Apply font override
+    // Apply font override — also load the font file itself; a font-family
+    // override alone silently falls back when the family isn't loaded.
     if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
-      html = html.replace('</head>', `<style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
+      html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
     }
     // Apply container bg override
     if (s.container_bg) {
@@ -4890,7 +4919,7 @@ function renderFormPreview() {
     const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
     const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
     const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
-    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:#fff;color:${s.text_color || '#1a1a1a'};`;
+    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
 
     let input = '';
     switch (f.type) {
@@ -4917,7 +4946,7 @@ function renderFormPreview() {
 
   // Build full HTML document
   const googleFonts = s.font_family && s.font_family !== 'inherit'
-    ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(s.font_family)}:wght@400;500;600;700&display=swap" rel="stylesheet">`
+    ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
     : '';
 
   const html = `<!DOCTYPE html>
@@ -8479,28 +8508,34 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
+      <td>${latest.service ? `<span style="font-size:13px;color:var(--text);">${latest.service}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${latest.company ? `<span style="font-size:13px;color:var(--text);">${latest.company}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${smsConsent
         ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
         : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
+      <td>${latest.notes ? `<span style="font-size:13px;color:var(--text);" title="${latest.notes.replace(/"/g, '&quot;')}">${latest.notes.length > 40 ? latest.notes.slice(0, 40) + '…' : latest.notes}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td><span style="font-size:13px;color:var(--text);">${latest.previous_action || 'N/A'}</span></td>
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
     </tr>
-    ${showExpand ? `<tr><td colspan="10" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    ${showExpand ? `<tr><td colspan="13" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
   }).join('');
 
-  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:980px;">
+  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:1180px;">
     <thead><tr>
       <th style="width:40px;">#</th>
       <th>Lead</th>
+      <th>Service</th>
+      <th>Company</th>
       <th>SMS</th>
       <th>Score</th>
       <th>Intent</th>
+      <th>Notes</th>
       <th>Source</th>
       <th>Previous Action</th>
       <th>Time Elapsed</th>
