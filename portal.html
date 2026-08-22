@@ -2469,6 +2469,16 @@ let obLeadsAll = [];
 let obLeadsPage = 0;
 const OB_LEADS_PER_PAGE = 25;
 
+// Shared Google Fonts css2 URL builder — keeps the + separator logic in one
+// place. Mirrors public/js/google-fonts.js in atlas-ai.
+// css2 expects "+" between words: family=Space+Grotesk.
+// encodeURIComponent would emit %20 which the API rejects.
+function buildGoogleFontsUrl(fontFamily) {
+  if (!fontFamily || !fontFamily.trim()) return '';
+  const query = fontFamily.trim().replace(/\s+/g, '+');
+  return `https://fonts.googleapis.com/css2?family=${query}:wght@400;500;600;700&display=swap`;
+}
+
 // n8n workflow constants — declared early so loadWorkflows() can use them
 // before the rest of the script finishes executing.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
@@ -4865,8 +4875,7 @@ function renderFormPreview() {
     // Apply font override — also load the font file itself; a font-family
     // override alone silently falls back when the family isn't loaded.
     if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
-      const fontQuery = s.font_family.trim().replace(/\s+/g, '+'); // css2 wants + not %20
-      html = html.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontQuery}:wght@400;500;600;700&display=swap" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
+      html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
     }
     // Apply container bg override
     if (s.container_bg) {
@@ -4920,10 +4929,8 @@ function renderFormPreview() {
   }).join('');
 
   // Build full HTML document
-  // Google Fonts css2 expects "+" between words: family=Space+Grotesk.
-  // encodeURIComponent would emit %20 which the API rejects.
   const googleFonts = s.font_family && s.font_family !== 'inherit'
-    ? `<link href="https://fonts.googleapis.com/css2?family=${s.font_family.trim().replace(/\s+/g, '+')}:wght@400;500;600;700&display=swap" rel="stylesheet">`
+    ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
     : '';
 
   const html = `<!DOCTYPE html>
