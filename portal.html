@@ -8485,28 +8485,34 @@ function renderObLeads() {
         ${name ? (email ? `<div style="color:var(--accent2);font-size:12px;margin-top:2px;">${email}</div>` : '') : (email && phone ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${phone}</div>` : '')}
         <div style="color:var(--muted);font-size:11px;margin-top:2px;">Last: ${lastDate}</div>
       </td>
+      <td>${latest.service ? `<span style="font-size:13px;color:var(--text);">${latest.service}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${latest.company ? `<span style="font-size:13px;color:var(--text);">${latest.company}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${smsConsent
         ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
         : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
+      <td>${latest.notes ? `<span style="font-size:13px;color:var(--text);" title="${latest.notes.replace(/"/g, '&quot;')}">${latest.notes.length > 40 ? latest.notes.slice(0, 40) + '…' : latest.notes}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.source ? `<span style="font-size:13px;">${latest.source.replace(/_/g, ' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td><span style="font-size:13px;color:var(--text);">${latest.previous_action || 'N/A'}</span></td>
       <td><span style="font-size:13px;color:var(--muted);">${latest.previous_action_at ? formatTimeSinceLabel(latest.previous_action_at) : 'N/A'}</span></td>
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
     </tr>
-    ${showExpand ? `<tr><td colspan="10" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    ${showExpand ? `<tr><td colspan="13" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
   }).join('');
 
-  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:980px;">
+  listEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:1180px;">
     <thead><tr>
       <th style="width:40px;">#</th>
       <th>Lead</th>
+      <th>Service</th>
+      <th>Company</th>
       <th>SMS</th>
       <th>Score</th>
       <th>Intent</th>
+      <th>Notes</th>
       <th>Source</th>
       <th>Previous Action</th>
       <th>Time Elapsed</th>
