@@ -3524,6 +3524,22 @@ async function openEmbedModal(formId) {
                 <div style="font-weight:700;margin-bottom:4px;">Using the iframe method</div>
                 <div style="color:var(--muted);">Use the iframe embed if your website doesn't allow external JavaScript (some CMS platforms restrict scripts). The iframe renders the form in a self-contained frame — less flexible but works everywhere.</div>
               </div>
+              <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+                <div style="font-weight:700;margin-bottom:6px;">Styling parameters</div>
+                <div style="color:var(--muted);margin-bottom:8px;">These keys in the <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:12px;">styling</code> object control the form's appearance. Set them in the styling tab above — the embed code updates automatically.</div>
+                <table style="width:100%;font-size:12px;border-collapse:collapse;">
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">accent_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Button and focus-border color</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">background_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Page background behind the form (legacy — use container_bg for the form container)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">container_bg</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Background color of the form container itself</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">input_background</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Background color of text inputs and textareas</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">input_border</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Border color of text inputs and textareas</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">text_color</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Text color for labels and inputs</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">border_radius</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Corner rounding (e.g. 8px, 12px)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">font_family</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Font for form text (Google Fonts loaded automatically)</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 0;font-weight:600;color:var(--text);">submit_label</td><td style="padding:5px 0 5px 12px;color:var(--muted);">Text on the submit button</td></tr>
+                  <tr><td style="padding:5px 0;font-weight:600;color:var(--text);">submit_full_width</td><td style="padding:5px 0 5px 12px;color:var(--muted);">true = full-width button, false = auto-width</td></tr>
+                </table>
+              </div>
             </div>
           </div>
         </div>
