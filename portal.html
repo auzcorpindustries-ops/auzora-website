@@ -1587,6 +1587,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
+      <!-- Lead email notification toggle — same notification_prefs.email_new_lead
+           key the Account > Notification Preferences page uses. Saving here goes
+           through PATCH /portal/account/notifications, so both toggles always
+           reflect one shared state. -->
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+          <div>
+            <div class="card-title" style="margin:0 0 4px;"><i data-lucide="bell"></i> Email Notifications</div>
+            <div style="font-size:12px;color:var(--muted);">Email me when a new lead is captured. Manage all notification preferences in <a href="#" onclick="showPage('account');return false;" style="color:var(--accent);">Account</a>.</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;">
+            <input type="checkbox" id="lead-email-notify-toggle" onchange="toggleLeadEmailNotify(this.checked)" style="width:18px;height:18px;cursor:pointer;" />
+            <span id="lead-email-notify-label" style="font-size:13px;color:var(--muted);">Loading…</span>
+          </label>
+        </div>
+        <span id="lead-email-notify-status" style="font-size:12px;color:var(--muted);display:block;margin-top:8px;"></span>
+      </div>
+
       <!-- Lead Import -->
       <div class="card" style="margin-bottom:20px;" id="lead-import-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -3153,7 +3171,7 @@ function showPage(name) {
   if (name === 'settings') { restoreCollapseStates(); loadSettings(); }
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
-  if (name === 'leads')       loadOutbound();
+  if (name === 'leads')       { loadOutbound(); loadLeadNotifyToggle(); }
   if (name === 'conversations') loadConversations();
   if (name === 'campaigns')   {
     // Ensure the correct tab is visible based on entitlements
@@ -8296,6 +8314,60 @@ async function loadDocs() {
 
 // ── OUTBOUND ─────────────────────────────────────────────────────────────────
 // (obLeadsAll, obLeadsPage, OB_LEADS_PER_PAGE moved to top of script)
+
+// ── LEADS PAGE EMAIL TOGGLE ──────────────────────────────────────────────────
+// Bound to the SAME notification_prefs.email_new_lead key the Account page
+// Notification Preferences list uses (acNotifPrefs). One source of truth:
+// GET/PATCH /portal/account/notifications — no second key, no separate save
+// path. Default ON for clients without prefs (undefined = enabled server-side).
+async function loadLeadNotifyToggle() {
+  const input = document.getElementById('lead-email-notify-toggle');
+  const label = document.getElementById('lead-email-notify-label');
+  if (!input) return;
+  input.disabled = true;
+  try {
+    const res = await fetch(`${API}/portal/account/notifications`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const prefs = await res.json();
+    input.checked = prefs.email_new_lead !== false;
+    label.textContent = input.checked ? 'On — you get an email for every new lead' : 'Off — new leads appear here only';
+    label.style.color = input.checked ? 'var(--green)' : 'var(--muted)';
+  } catch (e) {
+    console.error('loadLeadNotifyToggle error:', e.message);
+    label.textContent = 'Could not load preference';
+    label.style.color = '#ef4444';
+  }
+  input.disabled = false;
+}
+
+async function toggleLeadEmailNotify(enabled) {
+  const input = document.getElementById('lead-email-notify-toggle');
+  const label = document.getElementById('lead-email-notify-label');
+  const status = document.getElementById('lead-email-notify-status');
+  if (!input) return;
+  const prevChecked = !enabled; // state before this change, for rollback
+  input.disabled = true;
+  try {
+    const res = await fetch(`${API}/portal/account/notifications`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ email_new_lead: enabled }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    input.checked = data.email_new_lead !== false;
+    label.textContent = input.checked ? 'On — you get an email for every new lead' : 'Off — new leads appear here only';
+    label.style.color = input.checked ? 'var(--green)' : 'var(--muted)';
+    status.textContent = 'Saved!';
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    input.checked = prevChecked; // roll back the visual state
+    status.textContent = e.message;
+    status.style.color = '#ef4444';
+  }
+  input.disabled = false;
+  setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+}
 
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
