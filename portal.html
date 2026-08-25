@@ -408,7 +408,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 /* ── VOICE GRID ────────────────────────────────────────────────────────── */
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
-#voice-provider-switch .vp-active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+/* Section headers + add-on notice span both columns inside the grid */
+.voice-grid > div[style*="grid-column:1/-1"] { margin-bottom: 2px; }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
 .voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
 .voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
@@ -436,9 +437,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   color: #f59e0b; background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.30);
 }
 .voice-locked {
-  opacity: 0.55; cursor: not-allowed; pointer-events: none;
+  opacity: 0.55; cursor: not-allowed;
 }
-.voice-locked .play-btn { opacity: 0.4; cursor: not-allowed; }
+/* Previews are FREE for every voice — the lock only blocks selection, so the
+   play button must stay clickable on locked cards. */
+.voice-locked .play-btn { opacity: 1; cursor: pointer; pointer-events: auto; }
 .play-btn {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
   width: 22px; height: 22px; cursor: pointer;
@@ -756,13 +759,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="collapsible-body">
-              <div class="form-group" style="margin-bottom:14px;">
-                <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Voice Provider</label>
-                <div id="voice-provider-switch" style="display:flex;gap:8px;">
-                  <button type="button" id="vp-btn-elevenlabs" onclick="selectVoiceProvider('elevenlabs')" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:transparent;color:inherit;font-size:13px;font-weight:600;cursor:pointer;">ElevenLabs</button>
-                  <button type="button" id="vp-btn-openai" onclick="selectVoiceProvider('openai')" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:transparent;color:inherit;font-size:13px;font-weight:600;cursor:pointer;">OpenAI</button>
-                </div>
-              </div>
               <div class="voice-grid" id="portal-voice-grid"></div>
             </div>
           </div>
@@ -3041,8 +3037,12 @@ async function fetchEntitlements() {
     sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     applyTierVisibility();
-    // Re-render voice grid if it's currently visible, to apply tier gating
-    if (currentPortalVoiceId) {
+    // Re-render voice grid if it's currently visible, to apply add-on gating.
+    // Check the grid itself, not just currentPortalVoiceId — the grid can be
+    // rendered with no selection yet (currentPortalVoiceId === null), and a
+    // late entitlements fetch must still lift/apply the lock state.
+    const voiceGrid = document.getElementById('portal-voice-grid');
+    if (currentPortalVoiceId || (voiceGrid && voiceGrid.children.length > 0)) {
       renderPortalVoiceGrid(currentPortalVoiceId);
     }
   } catch(e) {
@@ -6699,11 +6699,9 @@ async function loadSettings() {
 
   // Load voice catalog (ElevenLabs + OpenAI) then render grid (async — non-blocking for data)
   loadVoices().then(() => {
-    // Restore the saved provider tab (defaults to elevenlabs)
-    const savedProvider = c.voice_provider === 'openai' ? 'openai' : 'elevenlabs';
-    currentVoiceProvider = savedProvider;
-    document.getElementById('vp-btn-elevenlabs')?.classList.toggle('vp-active', savedProvider === 'elevenlabs');
-    document.getElementById('vp-btn-openai')?.classList.toggle('vp-active', savedProvider === 'openai');
+    // Both provider sections render together now; the saved provider just
+    // seeds which voice the client record maps to.
+    currentVoiceProvider = c.voice_provider === 'openai' ? 'openai' : (c.voice_provider || 'elevenlabs');
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
 
@@ -6779,16 +6777,32 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  // Provider-filtered view for the active tab
-  const providerVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === currentVoiceProvider);
-  if (providerVoices.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
-    return;
-  }
-  const activeVoiceId = providerVoices.some(v => v.id === selected) ? selected : providerVoices[0]?.id;
+  // Both providers render as separate labeled sections (ticket
+  // zeus_1787667146591_6dc83474): OpenAI first (included with every plan),
+  // then ElevenLabs (paid add-on — previewable without it, selectable with it).
+  const hasAddon = portalTierVoices?.elevenlabsAddon === true;
+  const openaiVoices = VOICES.filter(v => v.provider === 'openai');
+  const elevenlabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
+
+  // Keep the selected highlight inside the client's saved provider when the
+  // saved voice is still selectable there. A saved-but-locked voice (add-on
+  // absent or revoked) must NOT stay selected — saving it would 403, so the
+  // default voice becomes the active selection instead.
+  let activeVoiceId = selected;
+  if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) activeVoiceId = null;
+  if (activeVoiceId && isVoiceLocked(activeVoiceId)) activeVoiceId = DEFAULT_VOICE_ID || null;
   currentPortalVoiceId = activeVoiceId;
-  const leftVoices = providerVoices.filter(v => v.gender === 'female');
-  const rightVoices = providerVoices.filter(v => v.gender === 'male');
+  if (activeVoiceId) {
+    const activeVoice = VOICES.find(v => v.id === activeVoiceId);
+    if (activeVoice) currentVoiceProvider = activeVoice.provider || 'elevenlabs';
+  }
+
+  const sectionHeader = (title, noteHtml) => `
+    <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">${title}</div>
+      ${noteHtml}
+    </div>`;
+
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
       ${voices.map(v => {
@@ -6807,33 +6821,51 @@ function renderPortalVoiceGrid(selected) {
         </div>`;
       }).join('')}
     </div>`;
-  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
+
+  const openaiNote = '<span style="font-size:11px;color:var(--green);font-weight:600;">Included with every plan</span>';
+  const elevenlabsNote = hasAddon
+    ? '<span style="font-size:11px;color:var(--green);font-weight:600;">Add-on active</span>'
+    : `<span style="font-size:11px;color:#f59e0b;font-weight:600;">Available as an add-on for $49.99 per month</span>`;
+
+  let html = '';
+  if (openaiVoices.length > 0) {
+    html += sectionHeader('OpenAI Voices', openaiNote);
+    html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
+    html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
+  }
+  if (elevenlabsVoices.length > 0) {
+    html += sectionHeader('ElevenLabs Voices', elevenlabsNote);
+    if (!hasAddon) {
+      html += `<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;font-size:12px;color:var(--text);">
+        <span style="color:#f59e0b;font-weight:700;">Add-on</span>
+        <span>ElevenLabs premium voices are available as an add-on for $49.99 per month. Previews are free — upgrade to unlock selection.</span>
+      </div>`;
+    }
+    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'female'), 'left');
+    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'male'), 'right');
+  }
+  if (!html) {
+    html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
+  }
+  document.getElementById('portal-voice-grid').innerHTML = html;
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// Switch the provider tab (ElevenLabs <-> OpenAI) and re-render the grid.
-// Marks settings dirty so the provider choice is included in the next save.
-function selectVoiceProvider(provider) {
-  if (!VOICE_PROVIDERS[provider] || provider === currentVoiceProvider) return;
-  currentVoiceProvider = provider;
-  document.getElementById('vp-btn-elevenlabs')?.classList.toggle('vp-active', provider === 'elevenlabs');
-  document.getElementById('vp-btn-openai')?.classList.toggle('vp-active', provider === 'openai');
-  const providerVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === provider);
-  const firstVoice = providerVoices.find(v => !isVoiceLocked(v.id)) || providerVoices[0];
-  renderPortalVoiceGrid(firstVoice?.id || null);
-  setDirty();
-}
-
+// Selecting a voice also switches the active provider so saves persist the
+// matching provider alongside the voice id.
 function selectPortalVoice(id) {
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
+  const voice = VOICES.find(v => v.id === id);
+  if (voice) currentVoiceProvider = voice.provider || 'elevenlabs';
   currentPortalVoiceId = id;
-  VOICES.forEach(v => {
-    const card = document.getElementById(`pvc-${v.id}`);
-    if (!card) return;
+  document.querySelectorAll('#portal-voice-grid .voice-card').forEach(card => {
+    const idAttr = card.id.replace('pvc-', '');
+    const v = VOICES.find(x => x.id === idAttr);
+    if (!v) return;
     const tone = v.gender === 'female' ? 'left' : 'right';
-    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
-    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
+    const locked = isVoiceLocked(v.id);
+    card.className = `voice-card voice-tone-${tone} ${idAttr===id?'selected':''} ${locked?'voice-locked':''}`;
   });
   setDirty();
 }
