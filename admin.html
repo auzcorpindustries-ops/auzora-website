@@ -1491,6 +1491,8 @@ async function openDetail(clientId) {
 
   // Load entitlements for the tier management section
   loadClientEntitlements(clientId);
+  // Load the ElevenLabs add-on override state for the toggle
+  loadVoiceAddonState(clientId);
 
   document.getElementById('modal-body').innerHTML = `
     <div class="detail-grid">
@@ -1571,6 +1573,13 @@ async function openDetail(clientId) {
             </label>
           `).join('')}
         </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+            <input type="checkbox" id="edit-voice-addon-elevenlabs" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
+            <span><strong>ElevenLabs voices add-on</strong> — $49/mo</span>
+          </label>
+          <span style="font-size:12px;color:var(--muted);">Admin override: unlocks premium ElevenLabs voices for this client, bypassing the paywall.</span>
+        </div>
       </div>
     </div>
   `;
@@ -1618,6 +1627,24 @@ async function loadClientEntitlements(clientId) {
   }
 }
 
+// Load the ElevenLabs add-on override state into the edit modal toggle.
+// Reads the raw client record (snake_case field straight from DynamoDB via
+// GET /admin/clients), not the entitlements payload — the add-on is a
+// separate paid flag, not part of the tier entitlements matrix.
+async function loadVoiceAddonState(clientId) {
+  try {
+    const res = await fetch(`${API}/clients/${clientId}`, {
+      headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
+    });
+    if (!res.ok) return;
+    const client = await res.json();
+    const el = document.getElementById('edit-voice-addon-elevenlabs');
+    if (el) el.checked = client.voice_addon_elevenlabs === true;
+  } catch (e) {
+    console.error('Failed to load ElevenLabs add-on state:', e);
+  }
+}
+
 async function saveClientEdit() {
   if (!editingClientId) return;
   const updates = {
@@ -1639,6 +1666,10 @@ async function saveClientEdit() {
   } else {
     updates.entitlements_override = null;
   }
+
+  // ElevenLabs add-on override (admin-only, bypasses the $49/mo paywall)
+  const addonToggle = document.getElementById('edit-voice-addon-elevenlabs');
+  if (addonToggle) updates.voice_addon_elevenlabs = addonToggle.checked;
 
   try {
     const res = await fetch(`${API}/clients/${editingClientId}`, {
