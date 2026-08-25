@@ -2569,12 +2569,12 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (Starter = default only)
 function isVoiceLocked(voiceId) {
-  if (!portalTierVoices) return false; // no tier info loaded = show all (fallback)
-  if (portalTierVoices.access && portalTierVoices.access.includes('all')) return false;
-  // 'default' only — lock everything except the default voice
-  const defaultId = portalTierVoices.defaultVoiceId || DEFAULT_VOICE_ID;
-  if (defaultId && voiceId === defaultId) return false;
-  return true;
+  // ElevenLabs voices are a $49/mo add-on on ANY tier. OpenAI voices are
+  // included with every plan. Locked = EL voice without the add-on.
+  const voice = VOICES.find(v => v.id === voiceId);
+  const provider = voice?.provider || 'elevenlabs';
+  if (provider !== 'elevenlabs') return false; // OpenAI always selectable
+  return !(portalTierVoices?.elevenlabsAddon === true);
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -6799,9 +6799,9 @@ function renderPortalVoiceGrid(selected) {
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
-              ${locked ? '<span class="voice-badge voice-badge-locked">Upgrade</span>' : ''}
+              ${locked ? '<span class="voice-badge voice-badge-locked" title="ElevenLabs voices are a $49/mo add-on to any plan">Add-on</span>' : ''}
             </div>
-            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" ${locked?'disabled':''}>▶</button>
+            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" title="Preview — free for every voice">▶</button>
           </div>
           ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
         </div>`;
