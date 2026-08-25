@@ -408,6 +408,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 /* ── VOICE GRID ────────────────────────────────────────────────────────── */
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
+#voice-provider-switch .vp-active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
 .voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
 .voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
@@ -755,6 +756,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="collapsible-body">
+              <div class="form-group" style="margin-bottom:14px;">
+                <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Voice Provider</label>
+                <div id="voice-provider-switch" style="display:flex;gap:8px;">
+                  <button type="button" id="vp-btn-elevenlabs" onclick="selectVoiceProvider('elevenlabs')" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:transparent;color:inherit;font-size:13px;font-weight:600;cursor:pointer;">ElevenLabs</button>
+                  <button type="button" id="vp-btn-openai" onclick="selectVoiceProvider('openai')" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:transparent;color:inherit;font-size:13px;font-weight:600;cursor:pointer;">OpenAI</button>
+                </div>
+              </div>
               <div class="voice-grid" id="portal-voice-grid"></div>
             </div>
           </div>
@@ -2525,26 +2533,30 @@ let portalServices = [];
 let portalSpecialties = [];
 let portalHoursMode = 'custom';
 
-let VOICES = []; // Populated from ElevenLabs API
+let VOICES = []; // Populated from /api/voices (all providers)
 let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let VOICE_PROVIDERS = { elevenlabs: { label: 'ElevenLabs' } }; // providers map
+let currentVoiceProvider = 'elevenlabs'; // active provider tab
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
 
-// Fetch ElevenLabs voices
+// Fetch voice catalog (ElevenLabs + OpenAI)
 async function loadVoices() {
   try {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
     DEFAULT_VOICE_ID = data.default_voice_id || null;
+    VOICE_PROVIDERS = data.providers || VOICE_PROVIDERS;
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
+      provider: v.provider || 'elevenlabs',
       preview_url: v.preview_url,
       isDefault: v.is_default === true || v.isDefault === true
     }));
@@ -6685,8 +6697,13 @@ async function loadSettings() {
   portalSpecialties = [...(c.specialties || [])];
   renderSpecialtyTags();
 
-  // Load ElevenLabs voices then render grid (async — non-blocking for data)
+  // Load voice catalog (ElevenLabs + OpenAI) then render grid (async — non-blocking for data)
   loadVoices().then(() => {
+    // Restore the saved provider tab (defaults to elevenlabs)
+    const savedProvider = c.voice_provider === 'openai' ? 'openai' : 'elevenlabs';
+    currentVoiceProvider = savedProvider;
+    document.getElementById('vp-btn-elevenlabs')?.classList.toggle('vp-active', savedProvider === 'elevenlabs');
+    document.getElementById('vp-btn-openai')?.classList.toggle('vp-active', savedProvider === 'openai');
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
 
@@ -6762,14 +6779,16 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  if (VOICES.length === 0) {
+  // Provider-filtered view for the active tab
+  const providerVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === currentVoiceProvider);
+  if (providerVoices.length === 0) {
     document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
     return;
   }
-  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  const activeVoiceId = providerVoices.some(v => v.id === selected) ? selected : providerVoices[0]?.id;
   currentPortalVoiceId = activeVoiceId;
-  const leftVoices = VOICES.filter(v => v.gender === 'female');
-  const rightVoices = VOICES.filter(v => v.gender === 'male');
+  const leftVoices = providerVoices.filter(v => v.gender === 'female');
+  const rightVoices = providerVoices.filter(v => v.gender === 'male');
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
       ${voices.map(v => {
@@ -6792,6 +6811,19 @@ function renderPortalVoiceGrid(selected) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+// Switch the provider tab (ElevenLabs <-> OpenAI) and re-render the grid.
+// Marks settings dirty so the provider choice is included in the next save.
+function selectVoiceProvider(provider) {
+  if (!VOICE_PROVIDERS[provider] || provider === currentVoiceProvider) return;
+  currentVoiceProvider = provider;
+  document.getElementById('vp-btn-elevenlabs')?.classList.toggle('vp-active', provider === 'elevenlabs');
+  document.getElementById('vp-btn-openai')?.classList.toggle('vp-active', provider === 'openai');
+  const providerVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === provider);
+  const firstVoice = providerVoices.find(v => !isVoiceLocked(v.id)) || providerVoices[0];
+  renderPortalVoiceGrid(firstVoice?.id || null);
+  setDirty();
+}
+
 function selectPortalVoice(id) {
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
@@ -6806,17 +6838,34 @@ function selectPortalVoice(id) {
   setDirty();
 }
 
-function playPortalVoice(id) {
+async function playPortalVoice(id) {
   if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; }
   VOICES.forEach(v => { const b = document.getElementById(`ppb-${v.id}`); if(b) b.textContent='▶'; });
   const btn = document.getElementById(`ppb-${id}`);
   const voice = VOICES.find(v => v.id === id);
-  if (!voice || !voice.preview_url) return;
-  const audio = new Audio(voice.preview_url);
-  activeAudio = audio;
-  btn.textContent = '⏸';
-  audio.play();
-  audio.onended = () => { btn.textContent = '▶'; activeAudio = null; };
+  if (!voice || !portalToken) return;
+  btn.textContent = '⋯';
+  btn.disabled = true;
+  try {
+    // Live synthesis preview — works for every provider (preview_url is empty
+    // in the catalog for most voices).
+    const res = await fetch(`${API}/portal/voice-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ voice: id, provider: voice.provider || 'elevenlabs' })
+    });
+    if (!res.ok) throw new Error(`Preview failed (${res.status})`);
+    const blob = await res.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    activeAudio = audio;
+    btn.textContent = '⏸';
+    audio.onended = () => { btn.textContent = '▶'; btn.disabled = false; activeAudio = null; URL.revokeObjectURL(audio.src); };
+    audio.play();
+  } catch (e) {
+    console.error('Voice preview failed:', e);
+    btn.textContent = '▶';
+    btn.disabled = false;
+  }
 }
 
 // Avoid tags
@@ -7137,6 +7186,7 @@ async function saveSettings() {
       specialties:         specialtiesToSave,
       escalation_phone:    document.getElementById('s-escalation-phone').value,
       voice:               voice || portalClient?.voice || portalClient?.voice_id || undefined,
+      voice_provider:      currentVoiceProvider,
       custom_greeting:     document.getElementById('s-greeting').value,
       escalation_rules:    document.getElementById('s-escalation').value,
       topics_to_avoid:     portalAvoidTopics,
