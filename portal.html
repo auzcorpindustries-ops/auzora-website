@@ -4698,8 +4698,12 @@ function renderFormBuilder() {
               </div>
             </div>
           </div>
+          </div><!-- /fb-pane-content -->
 
-          <!-- Style pane (Forms T2 tab split) -->
+          <!-- Style pane (Forms T2 tab split). MUST be a sibling of
+               fb-pane-content, not nested inside it — an unclosed content
+               pane made switching to Style render blank (the pane hid with
+               its parent). Caught by e2e/forms.spec.js. -->
           <div id="fb-pane-style" style="${builderTab === 'style' ? '' : 'display:none;'}">
           <!-- Style section -->
           ${renderStyleSection()}
