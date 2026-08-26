@@ -4791,6 +4791,18 @@ function renderStyleSection() {
           style="width:100%;accent-color:var(--purple);" />
       </div>
 
+      <!-- Container mode: card vs form-only (transparent) -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Container</label>
+        <div style="display:flex;gap:6px;">
+          <button onclick="updateStyling('form_only', false)" id="fb-container-card"
+            style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.form_only ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Card</button>
+          <button onclick="updateStyling('form_only', true)" id="fb-container-formonly"
+            style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.form_only ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Form Only</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">Form Only renders the form with a transparent background — it blends into the surrounding section on your website.</div>
+      </div>
+
       <!-- Button options -->
       <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
         <div style="flex:1;min-width:180px;">
@@ -4869,6 +4881,21 @@ function updateStyling(key, value) {
     }
   }
 
+  // Update container mode toggle visuals
+  if (key === 'form_only') {
+    const cardBtn = document.getElementById('fb-container-card');
+    const formOnlyBtn = document.getElementById('fb-container-formonly');
+    if (cardBtn && formOnlyBtn) {
+      if (value) {
+        cardBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+        formOnlyBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+      } else {
+        cardBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+        formOnlyBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+      }
+    }
+  }
+
   updateFormPreview();
 }
 
@@ -4924,11 +4951,16 @@ function renderFormPreview() {
       html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
     }
     // Apply container bg override
-    if (s.container_bg) {
+    if (s.container_bg && s.form_only !== true) {
       html = html.replace('</head>', `<style>.form-container{background:${s.container_bg} !important;}</style></head>`);
     }
+    // Form-only mode: strip the background container — the form's card goes
+    // transparent so it blends into the host page section.
+    if (s.form_only === true) {
+      html = html.replace('</head>', `<style>.form-container{background:transparent !important;box-shadow:none !important;border:none !important;}</style></head>`);
+    }
     // Apply background color (page bg) override
-    if (s.background_color && s.background_color !== '#ffffff') {
+    if (s.background_color && s.background_color !== '#ffffff' && s.form_only !== true) {
       html = html.replace('</head>', `<style>body{background:${s.background_color} !important;}</style></head>`);
     }
     iframe.srcdoc = html;
@@ -4979,6 +5011,13 @@ function renderFormPreview() {
     ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
     : '';
 
+  // Form-only mode: simulate the host page section behind a transparent form
+  // so the blending effect is visible in the preview. Card mode keeps the
+  // plain background as before.
+  const previewBodyBg = s.form_only === true
+    ? 'linear-gradient(135deg, #e8edf3 0%, #dfe7f1 100%)'
+    : (s.background_color || '#ffffff');
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -4987,7 +5026,8 @@ function renderFormPreview() {
 ${googleFonts}
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: ${fontStack}; background: ${s.background_color || '#ffffff'}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
+  body { font-family: ${fontStack}; background: ${previewBodyBg}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
+  .az-card { ${s.form_only === true ? 'background: transparent; padding: 0;' : `background: ${s.container_bg || s.background_color || '#ffffff'}; padding: 4px; border-radius: ${radius};`} }
   .az-form-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: ${s.text_color || '#1a1a1a'}; }
   .az-submit-btn {
     ${submitWidth === 'auto' ? '' : 'width: 100%;'}
@@ -5007,11 +5047,13 @@ ${googleFonts}
 </style>
 </head>
 <body>
-  ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
-  <form onsubmit="event.preventDefault();">
-    ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
-    <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
-  </form>
+  <div class="az-card">
+    ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
+    <form onsubmit="event.preventDefault();">
+      ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
+      <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
+    </form>
+  </div>
 </body>
 </html>`;
 
