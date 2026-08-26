@@ -4542,7 +4542,8 @@ function useTemplateFromDrawer() {
   currentForm = {
     name: tpl.name,
     templateKey: drawerState.templateKey,
-    templateHtml: tpl.html,
+    // templateHtml intentionally NOT carried (Forms T5): the preview renders
+    // through the live embed renderer; templateKey stays as provenance only.
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
@@ -4579,10 +4580,11 @@ function openFormBuilder(formId) {
         currentForm = JSON.parse(JSON.stringify(form));
         if (!currentForm.fields) currentForm.fields = [];
         if (!currentForm.field_mapping) currentForm.field_mapping = {};
-        // Restore template HTML from saved templateKey
-        if (currentForm.templateKey && FORM_TEMPLATES[currentForm.templateKey]) {
-          currentForm.templateHtml = FORM_TEMPLATES[currentForm.templateKey].html;
-        }
+        // Forms T5: templateHtml is no longer re-derived from the static
+        // FORM_TEMPLATES const on edit — the saved record (fields + styling)
+        // is the single source of truth. Saved forms lacking content seeds
+        // (created before T2) fall back naturally: the renderer uses
+        // styling.headline || form.name and skips empty subtext.
         renderFormBuilder();
       })
       .catch(err => showToast('Failed to load form: ' + err.message, 'error'));
@@ -5112,130 +5114,62 @@ function updateFormPreview() {
   window._fbPreviewDebounce = setTimeout(renderFormPreview, 200);
 }
 
+// Renders the builder's live preview through the SAME renderer as the
+// customer-facing embed widget (form-renderer.js, served from the API host).
+// Single source of truth (Forms T5): what you style in the builder is exactly
+// what the embed renders. The old dual path — patched templateHtml for
+// template forms, a hand-rolled .az-card doc for scratch forms — drifted from
+// the live widget (which renders only fields + styling) and leaned on
+// fragile </head> string-patching with stale-override bugs. Deleted.
+let _previewRendererLoading = null;
+function loadPreviewRenderer() {
+  if (window.AuzoraFormRenderer) return Promise.resolve();
+  if (_previewRendererLoading) return _previewRendererLoading;
+  const s = document.createElement('script');
+  s.src = API + '/js/form-renderer.js';
+  _previewRendererLoading = new Promise((resolve, reject) => {
+    s.onload = () => resolve();
+    s.onerror = () => { _previewRendererLoading = null; reject(new Error('form-renderer.js failed to load from ' + API)); };
+  });
+  document.head.appendChild(s);
+  return _previewRendererLoading;
+}
+
 function renderFormPreview() {
   const iframe = document.getElementById('fb-preview-iframe');
   if (!iframe || !currentForm) return;
 
   const s = currentForm.styling || {};
 
-  // If we have a template HTML (from "Use Template"), render it with customizations
-  if (currentForm.templateHtml) {
-    let html = currentForm.templateHtml;
-    const tpl = FORM_TEMPLATES[currentForm.templateKey];
-    // Content-tab text swaps (Forms T2): headline, subtext, button label.
-    // Applied BEFORE styling overrides so text edits are always visible.
-    {
-      const esc = t => String(t == null ? '' : t)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      // Slot selectors — per-template override (t5's inline widget has no <h1>)
-      const hSel = (tpl && tpl.contentSelectors && tpl.contentSelectors.headline) || /(<h1[^>]*>)[^<]*(<\/h1>)/;
-      const pSel = (tpl && tpl.contentSelectors && tpl.contentSelectors.subtext) || /(<\/h1>\s*<p[^>]*>)[^<]*(<\/p>)/;
-      // Headline — first heading slot in the template
-      if (typeof s.headline === 'string' && s.headline.trim() !== '' && tpl && s.headline !== tpl.headline) {
-        html = html.replace(hSel, `$1${esc(s.headline)}$2`);
-      }
-      // Subtext — the template's subheading line
-      if (typeof s.subtext === 'string' && s.subtext.trim() !== '' && tpl && s.subtext !== tpl.subtext) {
-        html = html.replace(pSel, `$1${esc(s.subtext)}$2`);
-      }
-      // Button label — first <button> in the template
-      if (typeof s.submit_label === 'string' && s.submit_label.trim() !== '' && tpl && s.submit_label !== tpl.submitLabel) {
-        html = html.replace(/(<button[^>]*>)[^<]*(<\/button>)/, `$1${esc(s.submit_label)}$2`);
-      }
-    }
-    // Apply accent color override
-    if (tpl && s.accent_color !== tpl.accent) {
-      html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
-    }
-    // Apply font override — also load the font file itself; a font-family
-    // override alone silently falls back when the family isn't loaded.
-    if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
-      html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
-    }
-    // Text-element overrides (Forms T4) — heading, subtext, labels, input text
-    {
-      const overrides = [];
-      if (s.heading_color) overrides.push(`h1,h2{color:${s.heading_color} !important;}`);
-      if (s.heading_size) overrides.push(`h1{font-size:${s.heading_size}px !important;}`);
-      if (s.heading_align) overrides.push(`.form-container h1,.form-container h2{text-align:${s.heading_align} !important;}`);
-      if (s.subtext_color) overrides.push(`.form-container p{color:${s.subtext_color} !important;}`);
-      if (s.subtext_size) overrides.push(`.form-container p{font-size:${s.subtext_size}px !important;}`);
-      if (s.subtext_align) overrides.push(`.form-container p{text-align:${s.subtext_align} !important;}`);
-      if (s.label_size) overrides.push(`.form-container label span{font-size:${s.label_size}px !important;}`);
-      if (s.text_size) overrides.push(`.form-container input,.form-container textarea,.form-container select{font-size:${s.text_size}px !important;}`);
-      if (overrides.length) {
-        html = html.replace('</head>', `<style>${overrides.join('')}</style></head>`);
-      }
-    }
-    // Apply container bg override
-    if (s.container_bg && s.form_only !== true) {
-      html = html.replace('</head>', `<style>.form-container{background:${s.container_bg} !important;}</style></head>`);
-    }
-    // Form-only mode: strip the background container — the form's card goes
-    // transparent so it blends into the host page section.
-    if (s.form_only === true) {
-      html = html.replace('</head>', `<style>.form-container{background:transparent !important;box-shadow:none !important;border:none !important;}</style></head>`);
-    }
-    // Apply background color (page bg) override
-    if (s.background_color && s.background_color !== '#ffffff' && s.form_only !== true) {
-      html = html.replace('</head>', `<style>body{background:${s.background_color} !important;}</style></head>`);
-    }
-    iframe.srcdoc = html;
-    return;
-  }
+  loadPreviewRenderer().then(() => {
+    const R = window.AuzoraFormRenderer;
+    if (!R) throw new Error('renderer unavailable');
 
-  // Fallback: generic form builder preview (for "Start from scratch")
-  const fields = currentForm.fields || [];
-  const fontStack = s.font_family && s.font_family !== 'inherit'
-    ? `'${s.font_family}', sans-serif`
-    : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  const radius = s.border_radius || '8px';
-  const submitLabel = escapeHtml(s.submit_label || 'Submit');
-  const submitWidth = s.submit_full_width === false ? 'auto' : '100%';
+    // Render through the live renderer into a probe div, then inline the
+    // result into the sandboxed iframe (no network inside the sandbox).
+    // brand_name powers the SMS consent line exactly like the live embed.
+    const probe = document.createElement('div');
+    R.renderForm(probe, {
+      form_id: currentForm.form_id || 'preview',
+      name: currentForm.name,
+      brand_name: (portalClient && portalClient.business_name) || currentForm.name || 'the business',
+      fields: currentForm.fields || [],
+      styling: s,
+    });
+    const inner = probe.innerHTML;
 
-  // Build field HTML
-  const fieldsHTML = fields.map(f => {
-    const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
-    const label = f.label ? `<label style="display:block;font-size:${parseInt(s.label_size) || 14}px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
-    const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
-    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:${parseInt(s.text_size) || 14}px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
+    const googleFonts = s.font_family && s.font_family !== 'inherit'
+      ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
+      : '';
 
-    let input = '';
-    switch (f.type) {
-      case 'textarea':
-        input = `<textarea ${ph} rows="3" style="${inputStyle}resize:vertical;"></textarea>`;
-        break;
-      case 'select':
-        input = `<select style="${inputStyle}appearance:none;">
-          ${(f.options || ['Option 1']).map(o => `<option>${escapeHtml(o)}</option>`).join('')}
-        </select>`;
-        break;
-      case 'checkbox':
-        input = `<div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" style="width:18px;height:18px;accent-color:${s.accent_color || '#22c55e'};" /> <span style="font-size:14px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.placeholder || 'Check this box')}</span></div>`;
-        break;
-      case 'date':
-        input = `<input type="date" style="${inputStyle}" />`;
-        break;
-      default:
-        input = `<input type="${f.type || 'text'}" ${ph} style="${inputStyle}" />`;
-    }
+    // Transparent Form Only forms blend into the host page — approximate a
+    // host section behind them. Card forms sit on a neutral page like a real
+    // host site; the renderer paints the card itself (container_bg).
+    const previewBodyBg = s.form_only === true
+      ? 'linear-gradient(135deg, #e8edf3 0%, #dfe7f1 100%)'
+      : '#ffffff';
 
-    return `<div style="margin-bottom:14px;">${label}${input}</div>`;
-  }).join('');
-
-  // Build full HTML document
-  const googleFonts = s.font_family && s.font_family !== 'inherit'
-    ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
-    : '';
-
-  // Form-only mode: simulate the host page section behind a transparent form
-  // so the blending effect is visible in the preview. Card mode keeps the
-  // plain background as before.
-  const previewBodyBg = s.form_only === true
-    ? 'linear-gradient(135deg, #e8edf3 0%, #dfe7f1 100%)'
-    : (s.background_color || '#ffffff');
-
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -5243,40 +5177,18 @@ function renderFormPreview() {
 ${googleFonts}
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: ${fontStack}; background: ${previewBodyBg}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
-  .az-card { ${s.form_only === true ? 'background: transparent; padding: 0;' : `background: ${s.container_bg || s.background_color || '#ffffff'}; padding: 4px; border-radius: ${radius};`} }
-  .az-form-title { font-size: ${parseInt(s.heading_size) || 20}px; font-weight: 700; margin-bottom: ${s.subtext ? 6 : 16}px; color: ${s.heading_color || s.text_color || '#1a1a1a'}; ${s.heading_align ? `text-align:${s.heading_align};` : ''} }
-  ${s.subtext ? `.az-form-subtext { font-size: ${parseInt(s.subtext_size) || 14}px; color: ${s.subtext_color || s.text_color || '#1a1a1a'}; line-height: 1.5; margin: 0 0 18px; ${s.subtext_align ? `text-align:${s.subtext_align};` : ''} }` : ''}
-  .az-submit-btn {
-    ${submitWidth === 'auto' ? '' : 'width: 100%;'}
-    padding: 12px 24px;
-    background: ${s.accent_color || '#22c55e'};
-    color: #fff;
-    border: none;
-    border-radius: ${radius};
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: ${fontStack};
-    transition: opacity 0.15s;
-  }
-  .az-submit-btn:hover { opacity: 0.9; }
-  ${s.custom_css || ''}
+  body { background: ${previewBodyBg}; padding: 20px; }
 </style>
 </head>
 <body>
-  <div class="az-card">
-    ${currentForm.name || s.headline ? `<div class="az-form-title">${escapeHtml(s.headline && s.headline.trim() !== '' ? s.headline : currentForm.name)}</div>` : ''}
-    ${s.subtext ? `<div class="az-form-subtext">${escapeHtml(s.subtext)}</div>` : ''}
-    <form onsubmit="event.preventDefault();">
-      ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
-      <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
-    </form>
-  </div>
+  ${inner}
 </body>
 </html>`;
 
-  iframe.srcdoc = html;
+    iframe.srcdoc = html;
+  }).catch(err => {
+    iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font:13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#6b7280;padding:24px;">Preview unavailable: ${escapeHtml(err.message)}</body></html>`;
+  });
 }
 
 function setPreviewViewport(size) {
