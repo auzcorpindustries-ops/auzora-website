@@ -4775,10 +4775,66 @@ function renderStyleSection() {
           ${FONT_OPTIONS.map(f => `<option value="${f.value}" ${s.font_family === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
           <option value="custom" ${!FONT_OPTIONS.some(f => f.value === s.font_family) && s.font_family !== 'inherit' ? 'selected' : ''}>Custom...</option>
         </select>
-        <input type="text" id="fb-font-custom" placeholder="e.g. 'Comic Sans MS', sans-serif"
-          value="${FONT_OPTIONS.some(f => f.value === s.font_family) || s.font_family === 'inherit' ? '' : escapeHtml(s.font_family)}"
-          oninput="updateStyling('font_family', this.value)"
-          style="display:none;width:100%;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      </div>
+
+      <!-- Text elements (Forms T4): heading, subtext, label & input text -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Text Elements</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${renderColorPicker('heading_color', 'Heading Color', s.heading_color || s.text_color)}
+          ${renderColorPicker('subtext_color', 'Subtext Color', s.subtext_color || s.text_color)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Heading Size</label>
+            <input type="range" min="12" max="42" value="${parseInt(s.heading_size) || 20}" oninput="updateTextSize('heading_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext Size</label>
+            <input type="range" min="10" max="24" value="${parseInt(s.subtext_size) || 14}" oninput="updateTextSize('subtext_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Label Size</label>
+            <input type="range" min="10" max="18" value="${parseInt(s.label_size) || 13}" oninput="updateTextSize('label_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Input Text Size</label>
+            <input type="range" min="12" max="20" value="${parseInt(s.text_size) || 14}" oninput="updateTextSize('text_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Heading Align</label>
+            <div style="display:flex;gap:6px;">
+              <button onclick="updateAlignToggle('heading_align', 'left')" id="fb-ha-left"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${(!s.heading_align || s.heading_align === 'left') ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Left</button>
+              <button onclick="updateAlignToggle('heading_align', 'center')" id="fb-ha-center"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.heading_align === 'center' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Center</button>
+              <button onclick="updateAlignToggle('heading_align', 'right')" id="fb-ha-right"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.heading_align === 'right' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Right</button>
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext Align</label>
+            <div style="display:flex;gap:6px;">
+              <button onclick="updateAlignToggle('subtext_align', 'left')" id="fb-sa-left"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${(!s.subtext_align || s.subtext_align === 'left') ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Left</button>
+              <button onclick="updateAlignToggle('subtext_align', 'center')" id="fb-sa-center"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.subtext_align === 'center' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Center</button>
+              <button onclick="updateAlignToggle('subtext_align', 'right')" id="fb-sa-right"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.subtext_align === 'right' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Right</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext <span style="font-weight:400;">(line under the heading)</span></label>
+          <input type="text" id="fb-subtext" placeholder="Optional — e.g. We reply within one business day" value="${escapeHtml(s.subtext || '')}" oninput="updateStyling('subtext', this.value)"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        </div>
       </div>
 
       <!-- Border radius slider -->
@@ -4907,11 +4963,37 @@ function updateBorderRadius(val) {
   updateFormPreview();
 }
 
+function updateTextSize(key, val) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = parseInt(val) || undefined;
+  updateFormPreview();
+}
+
+function updateAlignToggle(key, val) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = val;
+  // Re-render the style section so toggle button states stay in sync
+  const builder = document.getElementById('form-builder-overlay');
+  if (builder) {
+    const styleSection = builder.querySelector('[data-style-section]');
+    if (styleSection) {
+      styleSection.outerHTML = renderStyleSection();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  updateFormPreview();
+}
+
 function applyThemePreset(name) {
   const preset = THEME_PRESETS[name];
   if (!preset) return;
   if (!currentForm.styling) currentForm.styling = {};
   Object.assign(currentForm.styling, preset);
+  // Theme presets own the full palette - clear text-element overrides (T4)
+  // so a preset applied after customizing doesn't leave stale values behind.
+  for (const k of ['heading_color','heading_size','heading_align','subtext_color','subtext_size','subtext_align','subtext','label_size','text_size']) {
+    delete currentForm.styling[k];
+  }
 
   // Re-render the style section to reflect new values
   const builder = document.getElementById('form-builder-overlay');
@@ -4950,6 +5032,21 @@ function renderFormPreview() {
     if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
       html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
     }
+    // Text-element overrides (Forms T4) — heading, subtext, labels, input text
+    {
+      const overrides = [];
+      if (s.heading_color) overrides.push(`h1,h2{color:${s.heading_color} !important;}`);
+      if (s.heading_size) overrides.push(`h1{font-size:${s.heading_size}px !important;}`);
+      if (s.heading_align) overrides.push(`.form-container h1,.form-container h2{text-align:${s.heading_align} !important;}`);
+      if (s.subtext_color) overrides.push(`.form-container p{color:${s.subtext_color} !important;}`);
+      if (s.subtext_size) overrides.push(`.form-container p{font-size:${s.subtext_size}px !important;}`);
+      if (s.subtext_align) overrides.push(`.form-container p{text-align:${s.subtext_align} !important;}`);
+      if (s.label_size) overrides.push(`.form-container label span{font-size:${s.label_size}px !important;}`);
+      if (s.text_size) overrides.push(`.form-container input,.form-container textarea,.form-container select{font-size:${s.text_size}px !important;}`);
+      if (overrides.length) {
+        html = html.replace('</head>', `<style>${overrides.join('')}</style></head>`);
+      }
+    }
     // Apply container bg override
     if (s.container_bg && s.form_only !== true) {
       html = html.replace('</head>', `<style>.form-container{background:${s.container_bg} !important;}</style></head>`);
@@ -4979,9 +5076,9 @@ function renderFormPreview() {
   // Build field HTML
   const fieldsHTML = fields.map(f => {
     const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
-    const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
+    const label = f.label ? `<label style="display:block;font-size:${parseInt(s.label_size) || 14}px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
     const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
-    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
+    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:${parseInt(s.text_size) || 14}px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
 
     let input = '';
     switch (f.type) {
@@ -5028,7 +5125,8 @@ ${googleFonts}
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: ${fontStack}; background: ${previewBodyBg}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
   .az-card { ${s.form_only === true ? 'background: transparent; padding: 0;' : `background: ${s.container_bg || s.background_color || '#ffffff'}; padding: 4px; border-radius: ${radius};`} }
-  .az-form-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: ${s.text_color || '#1a1a1a'}; }
+  .az-form-title { font-size: ${parseInt(s.heading_size) || 20}px; font-weight: 700; margin-bottom: ${s.subtext ? 6 : 16}px; color: ${s.heading_color || s.text_color || '#1a1a1a'}; ${s.heading_align ? `text-align:${s.heading_align};` : ''} }
+  ${s.subtext ? `.az-form-subtext { font-size: ${parseInt(s.subtext_size) || 14}px; color: ${s.subtext_color || s.text_color || '#1a1a1a'}; line-height: 1.5; margin: 0 0 18px; ${s.subtext_align ? `text-align:${s.subtext_align};` : ''} }` : ''}
   .az-submit-btn {
     ${submitWidth === 'auto' ? '' : 'width: 100%;'}
     padding: 12px 24px;
@@ -5049,6 +5147,7 @@ ${googleFonts}
 <body>
   <div class="az-card">
     ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
+    ${s.subtext ? `<div class="az-form-subtext">${escapeHtml(s.subtext)}</div>` : ''}
     <form onsubmit="event.preventDefault();">
       ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
       <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
