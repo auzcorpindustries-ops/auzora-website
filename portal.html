@@ -3662,6 +3662,8 @@ const FORM_TEMPLATES = {
     accent: '#333333',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: 'Request access',
+    subtext: "Tell us who you are and we'll set up your account.",
     fields: [
           {
                 "type": "text",
@@ -3718,6 +3720,8 @@ const FORM_TEMPLATES = {
     accent: '#c2410c',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: "Let's start the conversation.",
+    subtext: 'Share a few details and a specialist will reach out within one business day.',
     fields: [
           {
                 "type": "text",
@@ -3788,6 +3792,8 @@ const FORM_TEMPLATES = {
     accent: '#0ea5e9',
     font: "'Space Grotesk', sans-serif",
     submitLabel: 'Get Started',
+    headline: 'Join the client portal',
+    subtext: 'Get provisioned access to dashboards, reports, and support.',
     fields: [
           {
                 "type": "text",
@@ -3843,6 +3849,8 @@ const FORM_TEMPLATES = {
     accent: '#9333ea',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Continue',
+    headline: 'First, the basics',
+    subtext: "We'll ask about your project next.",
     fields: [
           {
                 "type": "text",
@@ -3902,6 +3910,13 @@ const FORM_TEMPLATES = {
     accent: '#0d9488',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Quick contact',
+    subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.',
+    // Inline widget has no <h1> — content slots map to its label span + trailing note
+    contentSelectors: {
+      headline: /(<span style="font-size:15px;font-weight:600;[^>]*>)[^<]*(<\/span>)/,
+      subtext: /(<p style="font-size:12px;[^>]*>)[^<]*(<\/p>)/,
+    },
     fields: [
           {
                 "type": "text",
@@ -3954,6 +3969,8 @@ const FORM_TEMPLATES = {
     accent: '#000000',
     font: 'ui-monospace, monospace',
     submitLabel: 'GET STARTED',
+    headline: 'SIGN UP NOW',
+    subtext: 'NO FLUFF. JUST FILL IT OUT.',
     fields: [
           {
                 "type": "text",
@@ -4017,6 +4034,8 @@ const FORM_TEMPLATES = {
     accent: '#a16207',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: 'Private Client Access',
+    subtext: 'By invitation and referral only. Please share your details for consideration.',
     fields: [
           {
                 "type": "text",
@@ -4069,6 +4088,8 @@ const FORM_TEMPLATES = {
     accent: '#ea580c',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Get Started',
+    headline: 'Hey there! 👋',
+    subtext: "Tell us a bit about you, we can't wait to chat.",
     fields: [
           {
                 "type": "text",
@@ -4142,6 +4163,8 @@ const FORM_TEMPLATES = {
     accent: '#3730a3',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Talk to our team',
+    subtext: 'Complete the form and an account representative will contact you within 24 hours.',
     fields: [
           {
                 "type": "text",
@@ -4222,6 +4245,8 @@ const FORM_TEMPLATES = {
     accent: '#7c3aed',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Create your account',
+    subtext: 'Takes about a minute.',
     fields: [
           {
                 "type": "text",
@@ -4521,7 +4546,7 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    styling: { headline: tpl.headline || tpl.name, subtext: tpl.subtext || '', accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
@@ -4627,6 +4652,13 @@ function renderFormBuilder() {
       <div style="display:flex;gap:0;flex:1;overflow:hidden;">
         <!-- Left: Config -->
         <div style="flex:1;min-width:0;padding:20px;overflow-y:auto;">
+          <!-- Builder tabs: Content | Style (Forms T2) -->
+          <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:20px;">
+            <button onclick="switchBuilderTab('content')" id="fb-tab-content" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${builderTab === 'content' ? 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);' : 'background:none;color:var(--muted);font-weight:600;'}">Content</button>
+            <button onclick="switchBuilderTab('style')" id="fb-tab-style" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${builderTab === 'style' ? 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);' : 'background:none;color:var(--muted);font-weight:600;'}">Style</button>
+          </div>
+
+          <div id="fb-pane-content" style="${builderTab === 'content' ? '' : 'display:none;'}">
           <!-- Form name -->
           <div style="margin-bottom:20px;">
             <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Form Name</label>
@@ -4634,6 +4666,9 @@ function renderFormBuilder() {
               oninput="currentForm.name = this.value; updateFbSaveButton();"
               style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;" onfocus="this.style.borderColor='var(--purple)';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
           </div>
+
+          <!-- Content: headline / subtext / button label (Forms T2) -->
+          ${renderContentSection()}
 
           <!-- Fields -->
           <div style="margin-bottom:16px;">
@@ -4662,8 +4697,11 @@ function renderFormBuilder() {
             </div>
           </div>
 
+          <!-- Style pane (Forms T2 tab split) -->
+          <div id="fb-pane-style" style="${builderTab === 'style' ? '' : 'display:none;'}">
           <!-- Style section -->
           ${renderStyleSection()}
+          </div>
         </div>
 
         <!-- Right: Live Preview -->
@@ -4710,6 +4748,67 @@ function renderFormBuilder() {
 }
 
 // ── Style customization ─────────────────────────────────────────────────────
+
+// Active builder tab: 'content' | 'style' (Forms T2). Defaults to Content —
+// the natural first stop when creating a form (name it, write its copy, then style it).
+let builderTab = 'content';
+
+function switchBuilderTab(tab) {
+  builderTab = tab;
+  const contentPane = document.getElementById('fb-pane-content');
+  const stylePane = document.getElementById('fb-pane-style');
+  const contentBtn = document.getElementById('fb-tab-content');
+  const styleBtn = document.getElementById('fb-tab-style');
+  if (contentPane) contentPane.style.display = tab === 'content' ? '' : 'none';
+  if (stylePane) stylePane.style.display = tab === 'style' ? '' : 'none';
+  const active = 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);';
+  const inactive = 'background:none;color:var(--muted);';
+  if (contentBtn) contentBtn.style.cssText = contentBtn.style.cssText.replace(/background:[^;]+;color:[^;]+;(box-shadow:[^;]+;)?/, tab === 'content' ? active : inactive);
+  if (styleBtn) styleBtn.style.cssText = styleBtn.style.cssText.replace(/background:[^;]+;color:[^;]+;(box-shadow:[^;]+;)?/, tab === 'style' ? active : inactive);
+}
+
+// Content tab (Forms T2): headline, subtext, and button label editing.
+// Values live in styling.* so they persist through the existing save path
+// (POST/PUT /portal/forms) and render via the same keys on live embeds.
+function renderContentSection() {
+  if (!currentForm.styling) currentForm.styling = {};
+  const s = currentForm.styling;
+
+  return `
+    <div style="margin-bottom:20px;border-top:1px solid var(--border);padding-top:20px;">
+      <label style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:block;">Content</label>
+
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Headline</label>
+        <input type="text" id="fb-headline" placeholder="${escapeHtmlAttr(currentForm.name || 'Shown as the form heading')}" value="${escapeHtml(s.headline || '')}" maxlength="100"
+          oninput="updateContentField('headline', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">The big heading visitors see. Leave empty to use the form name.</div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Subtext</label>
+        <input type="text" id="fb-subtext-content" placeholder="Optional — e.g. We reply within one business day" value="${escapeHtml(s.subtext || '')}" maxlength="300"
+          oninput="updateContentField('subtext', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Small line under the headline.</div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Button Label</label>
+        <input type="text" id="fb-submit-label-content" placeholder="Submit" value="${escapeHtml(s.submit_label || '')}" maxlength="50"
+          oninput="updateContentField('submit_label', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Text on the submit button.</div>
+      </div>
+    </div>`;
+}
+
+function updateContentField(key, value) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = value;
+  updateFormPreview();
+}
 
 const THEME_PRESETS = {
   minimal: { accent_color: '#333333', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '4px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
@@ -4830,11 +4929,7 @@ function renderStyleSection() {
             </div>
           </div>
         </div>
-        <div style="margin-top:10px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext <span style="font-weight:400;">(line under the heading)</span></label>
-          <input type="text" id="fb-subtext" placeholder="Optional — e.g. We reply within one business day" value="${escapeHtml(s.subtext || '')}" oninput="updateStyling('subtext', this.value)"
-            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
-        </div>
+        <!-- Forms T2: subtext text moved to the Content tab; only its styling lives here -->
       </div>
 
       <!-- Border radius slider -->
@@ -4859,13 +4954,8 @@ function renderStyleSection() {
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">Form Only renders the form with a transparent background — it blends into the surrounding section on your website.</div>
       </div>
 
-      <!-- Button options -->
+      <!-- Button options (Forms T2: Button Text moved to the Content tab) -->
       <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:180px;">
-          <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Text</label>
-          <input type="text" id="fb-submit-label" value="${escapeHtml(s.submit_label)}" oninput="updateStyling('submit_label', this.value)"
-            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
-        </div>
         <div style="min-width:140px;">
           <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Width</label>
           <div style="display:flex;gap:6px;">
@@ -4988,12 +5078,21 @@ function applyThemePreset(name) {
   const preset = THEME_PRESETS[name];
   if (!preset) return;
   if (!currentForm.styling) currentForm.styling = {};
+  // Content-tab values (headline/subtext/submit_label, T2) survive theme
+  // changes — a palette swap must never rewrite the form's copy. Presets
+  // still carry a submit_label for legacy scratch forms with none set.
+  const priorContent = {};
+  for (const k of ['headline', 'subtext', 'submit_label']) {
+    const v = currentForm.styling[k];
+    if (typeof v === 'string' && v.trim() !== '') priorContent[k] = v;
+  }
   Object.assign(currentForm.styling, preset);
-  // Theme presets own the full palette - clear text-element overrides (T4)
+  // Theme presets own the visual palette — clear text-element overrides (T4)
   // so a preset applied after customizing doesn't leave stale values behind.
-  for (const k of ['heading_color','heading_size','heading_align','subtext_color','subtext_size','subtext_align','subtext','label_size','text_size']) {
+  for (const k of ['heading_color','heading_size','heading_align','subtext_color','subtext_size','subtext_align','label_size','text_size']) {
     delete currentForm.styling[k];
   }
+  Object.assign(currentForm.styling, priorContent);
 
   // Re-render the style section to reflect new values
   const builder = document.getElementById('form-builder-overlay');
@@ -5023,6 +5122,27 @@ function renderFormPreview() {
   if (currentForm.templateHtml) {
     let html = currentForm.templateHtml;
     const tpl = FORM_TEMPLATES[currentForm.templateKey];
+    // Content-tab text swaps (Forms T2): headline, subtext, button label.
+    // Applied BEFORE styling overrides so text edits are always visible.
+    {
+      const esc = t => String(t == null ? '' : t)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // Slot selectors — per-template override (t5's inline widget has no <h1>)
+      const hSel = (tpl && tpl.contentSelectors && tpl.contentSelectors.headline) || /(<h1[^>]*>)[^<]*(<\/h1>)/;
+      const pSel = (tpl && tpl.contentSelectors && tpl.contentSelectors.subtext) || /(<\/h1>\s*<p[^>]*>)[^<]*(<\/p>)/;
+      // Headline — first heading slot in the template
+      if (typeof s.headline === 'string' && s.headline.trim() !== '' && tpl && s.headline !== tpl.headline) {
+        html = html.replace(hSel, `$1${esc(s.headline)}$2`);
+      }
+      // Subtext — the template's subheading line
+      if (typeof s.subtext === 'string' && s.subtext.trim() !== '' && tpl && s.subtext !== tpl.subtext) {
+        html = html.replace(pSel, `$1${esc(s.subtext)}$2`);
+      }
+      // Button label — first <button> in the template
+      if (typeof s.submit_label === 'string' && s.submit_label.trim() !== '' && tpl && s.submit_label !== tpl.submitLabel) {
+        html = html.replace(/(<button[^>]*>)[^<]*(<\/button>)/, `$1${esc(s.submit_label)}$2`);
+      }
+    }
     // Apply accent color override
     if (tpl && s.accent_color !== tpl.accent) {
       html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
@@ -5146,7 +5266,7 @@ ${googleFonts}
 </head>
 <body>
   <div class="az-card">
-    ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
+    ${currentForm.name || s.headline ? `<div class="az-form-title">${escapeHtml(s.headline && s.headline.trim() !== '' ? s.headline : currentForm.name)}</div>` : ''}
     ${s.subtext ? `<div class="az-form-subtext">${escapeHtml(s.subtext)}</div>` : ''}
     <form onsubmit="event.preventDefault();">
       ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
