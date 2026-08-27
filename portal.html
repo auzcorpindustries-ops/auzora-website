@@ -408,6 +408,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 /* ── VOICE GRID ────────────────────────────────────────────────────────── */
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
+/* Section headers + add-on notice span both columns inside the grid */
+.voice-grid > div[style*="grid-column:1/-1"] { margin-bottom: 2px; }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
 .voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
 .voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
@@ -435,9 +437,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   color: #f59e0b; background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.30);
 }
 .voice-locked {
-  opacity: 0.55; cursor: not-allowed; pointer-events: none;
+  opacity: 0.55; cursor: not-allowed;
 }
-.voice-locked .play-btn { opacity: 0.4; cursor: not-allowed; }
+/* Previews are FREE for every voice — the lock only blocks selection, so the
+   play button must stay clickable on locked cards. */
+.voice-locked .play-btn { opacity: 1; cursor: pointer; pointer-events: auto; }
 .play-btn {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
   width: 22px; height: 22px; cursor: pointer;
@@ -2525,26 +2529,30 @@ let portalServices = [];
 let portalSpecialties = [];
 let portalHoursMode = 'custom';
 
-let VOICES = []; // Populated from ElevenLabs API
+let VOICES = []; // Populated from /api/voices (all providers)
 let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let VOICE_PROVIDERS = { elevenlabs: { label: 'ElevenLabs' } }; // providers map
+let currentVoiceProvider = 'elevenlabs'; // active provider tab
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
 
-// Fetch ElevenLabs voices
+// Fetch voice catalog (ElevenLabs + OpenAI)
 async function loadVoices() {
   try {
     const res = await fetch(`${API}/api/voices`);
     if (!res.ok) throw new Error('Failed to fetch voices');
     const data = await res.json();
     DEFAULT_VOICE_ID = data.default_voice_id || null;
+    VOICE_PROVIDERS = data.providers || VOICE_PROVIDERS;
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
+      provider: v.provider || 'elevenlabs',
       preview_url: v.preview_url,
       isDefault: v.is_default === true || v.isDefault === true
     }));
@@ -2557,12 +2565,12 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (Starter = default only)
 function isVoiceLocked(voiceId) {
-  if (!portalTierVoices) return false; // no tier info loaded = show all (fallback)
-  if (portalTierVoices.access && portalTierVoices.access.includes('all')) return false;
-  // 'default' only — lock everything except the default voice
-  const defaultId = portalTierVoices.defaultVoiceId || DEFAULT_VOICE_ID;
-  if (defaultId && voiceId === defaultId) return false;
-  return true;
+  // ElevenLabs voices are a $49/mo add-on on ANY tier. OpenAI voices are
+  // included with every plan. Locked = EL voice without the add-on.
+  const voice = VOICES.find(v => v.id === voiceId);
+  const provider = voice?.provider || 'elevenlabs';
+  if (provider !== 'elevenlabs') return false; // OpenAI always selectable
+  return !(portalTierVoices?.elevenlabsAddon === true);
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -3029,8 +3037,12 @@ async function fetchEntitlements() {
     sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     applyTierVisibility();
-    // Re-render voice grid if it's currently visible, to apply tier gating
-    if (currentPortalVoiceId) {
+    // Re-render voice grid if it's currently visible, to apply add-on gating.
+    // Check the grid itself, not just currentPortalVoiceId — the grid can be
+    // rendered with no selection yet (currentPortalVoiceId === null), and a
+    // late entitlements fetch must still lift/apply the lock state.
+    const voiceGrid = document.getElementById('portal-voice-grid');
+    if (currentPortalVoiceId || (voiceGrid && voiceGrid.children.length > 0)) {
       renderPortalVoiceGrid(currentPortalVoiceId);
     }
   } catch(e) {
@@ -3650,6 +3662,8 @@ const FORM_TEMPLATES = {
     accent: '#333333',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: 'Request access',
+    subtext: "Tell us who you are and we'll set up your account.",
     fields: [
           {
                 "type": "text",
@@ -3706,6 +3720,8 @@ const FORM_TEMPLATES = {
     accent: '#c2410c',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: "Let's start the conversation.",
+    subtext: 'Share a few details and a specialist will reach out within one business day.',
     fields: [
           {
                 "type": "text",
@@ -3776,6 +3792,8 @@ const FORM_TEMPLATES = {
     accent: '#0ea5e9',
     font: "'Space Grotesk', sans-serif",
     submitLabel: 'Get Started',
+    headline: 'Join the client portal',
+    subtext: 'Get provisioned access to dashboards, reports, and support.',
     fields: [
           {
                 "type": "text",
@@ -3831,6 +3849,8 @@ const FORM_TEMPLATES = {
     accent: '#9333ea',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Continue',
+    headline: 'First, the basics',
+    subtext: "We'll ask about your project next.",
     fields: [
           {
                 "type": "text",
@@ -3890,6 +3910,13 @@ const FORM_TEMPLATES = {
     accent: '#0d9488',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Quick contact',
+    subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.',
+    // Inline widget has no <h1> — content slots map to its label span + trailing note
+    contentSelectors: {
+      headline: /(<span style="font-size:15px;font-weight:600;[^>]*>)[^<]*(<\/span>)/,
+      subtext: /(<p style="font-size:12px;[^>]*>)[^<]*(<\/p>)/,
+    },
     fields: [
           {
                 "type": "text",
@@ -3942,6 +3969,8 @@ const FORM_TEMPLATES = {
     accent: '#000000',
     font: 'ui-monospace, monospace',
     submitLabel: 'GET STARTED',
+    headline: 'SIGN UP NOW',
+    subtext: 'NO FLUFF. JUST FILL IT OUT.',
     fields: [
           {
                 "type": "text",
@@ -4005,6 +4034,8 @@ const FORM_TEMPLATES = {
     accent: '#a16207',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
+    headline: 'Private Client Access',
+    subtext: 'By invitation and referral only. Please share your details for consideration.',
     fields: [
           {
                 "type": "text",
@@ -4057,6 +4088,8 @@ const FORM_TEMPLATES = {
     accent: '#ea580c',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Get Started',
+    headline: 'Hey there! 👋',
+    subtext: "Tell us a bit about you, we can't wait to chat.",
     fields: [
           {
                 "type": "text",
@@ -4130,6 +4163,8 @@ const FORM_TEMPLATES = {
     accent: '#3730a3',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Talk to our team',
+    subtext: 'Complete the form and an account representative will contact you within 24 hours.',
     fields: [
           {
                 "type": "text",
@@ -4210,6 +4245,8 @@ const FORM_TEMPLATES = {
     accent: '#7c3aed',
     font: 'inherit',
     submitLabel: 'Get Started',
+    headline: 'Create your account',
+    subtext: 'Takes about a minute.',
     fields: [
           {
                 "type": "text",
@@ -4505,11 +4542,12 @@ function useTemplateFromDrawer() {
   currentForm = {
     name: tpl.name,
     templateKey: drawerState.templateKey,
-    templateHtml: tpl.html,
+    // templateHtml intentionally NOT carried (Forms T5): the preview renders
+    // through the live embed renderer; templateKey stays as provenance only.
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    styling: { headline: tpl.headline || tpl.name, subtext: tpl.subtext || '', accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
@@ -4542,10 +4580,11 @@ function openFormBuilder(formId) {
         currentForm = JSON.parse(JSON.stringify(form));
         if (!currentForm.fields) currentForm.fields = [];
         if (!currentForm.field_mapping) currentForm.field_mapping = {};
-        // Restore template HTML from saved templateKey
-        if (currentForm.templateKey && FORM_TEMPLATES[currentForm.templateKey]) {
-          currentForm.templateHtml = FORM_TEMPLATES[currentForm.templateKey].html;
-        }
+        // Forms T5: templateHtml is no longer re-derived from the static
+        // FORM_TEMPLATES const on edit — the saved record (fields + styling)
+        // is the single source of truth. Saved forms lacking content seeds
+        // (created before T2) fall back naturally: the renderer uses
+        // styling.headline || form.name and skips empty subtext.
         renderFormBuilder();
       })
       .catch(err => showToast('Failed to load form: ' + err.message, 'error'));
@@ -4615,6 +4654,13 @@ function renderFormBuilder() {
       <div style="display:flex;gap:0;flex:1;overflow:hidden;">
         <!-- Left: Config -->
         <div style="flex:1;min-width:0;padding:20px;overflow-y:auto;">
+          <!-- Builder tabs: Content | Style (Forms T2) -->
+          <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:20px;">
+            <button onclick="switchBuilderTab('content')" id="fb-tab-content" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${builderTab === 'content' ? 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);' : 'background:none;color:var(--muted);font-weight:600;'}">Content</button>
+            <button onclick="switchBuilderTab('style')" id="fb-tab-style" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${builderTab === 'style' ? 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);' : 'background:none;color:var(--muted);font-weight:600;'}">Style</button>
+          </div>
+
+          <div id="fb-pane-content" style="${builderTab === 'content' ? '' : 'display:none;'}">
           <!-- Form name -->
           <div style="margin-bottom:20px;">
             <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Form Name</label>
@@ -4622,6 +4668,9 @@ function renderFormBuilder() {
               oninput="currentForm.name = this.value; updateFbSaveButton();"
               style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;" onfocus="this.style.borderColor='var(--purple)';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
           </div>
+
+          <!-- Content: headline / subtext / button label (Forms T2) -->
+          ${renderContentSection()}
 
           <!-- Fields -->
           <div style="margin-bottom:16px;">
@@ -4649,9 +4698,16 @@ function renderFormBuilder() {
               </div>
             </div>
           </div>
+          </div><!-- /fb-pane-content -->
 
+          <!-- Style pane (Forms T2 tab split). MUST be a sibling of
+               fb-pane-content, not nested inside it — an unclosed content
+               pane made switching to Style render blank (the pane hid with
+               its parent). Caught by e2e/forms.spec.js. -->
+          <div id="fb-pane-style" style="${builderTab === 'style' ? '' : 'display:none;'}">
           <!-- Style section -->
           ${renderStyleSection()}
+          </div>
         </div>
 
         <!-- Right: Live Preview -->
@@ -4698,6 +4754,67 @@ function renderFormBuilder() {
 }
 
 // ── Style customization ─────────────────────────────────────────────────────
+
+// Active builder tab: 'content' | 'style' (Forms T2). Defaults to Content —
+// the natural first stop when creating a form (name it, write its copy, then style it).
+let builderTab = 'content';
+
+function switchBuilderTab(tab) {
+  builderTab = tab;
+  const contentPane = document.getElementById('fb-pane-content');
+  const stylePane = document.getElementById('fb-pane-style');
+  const contentBtn = document.getElementById('fb-tab-content');
+  const styleBtn = document.getElementById('fb-tab-style');
+  if (contentPane) contentPane.style.display = tab === 'content' ? '' : 'none';
+  if (stylePane) stylePane.style.display = tab === 'style' ? '' : 'none';
+  const active = 'background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(16,24,38,0.08);';
+  const inactive = 'background:none;color:var(--muted);';
+  if (contentBtn) contentBtn.style.cssText = contentBtn.style.cssText.replace(/background:[^;]+;color:[^;]+;(box-shadow:[^;]+;)?/, tab === 'content' ? active : inactive);
+  if (styleBtn) styleBtn.style.cssText = styleBtn.style.cssText.replace(/background:[^;]+;color:[^;]+;(box-shadow:[^;]+;)?/, tab === 'style' ? active : inactive);
+}
+
+// Content tab (Forms T2): headline, subtext, and button label editing.
+// Values live in styling.* so they persist through the existing save path
+// (POST/PUT /portal/forms) and render via the same keys on live embeds.
+function renderContentSection() {
+  if (!currentForm.styling) currentForm.styling = {};
+  const s = currentForm.styling;
+
+  return `
+    <div style="margin-bottom:20px;border-top:1px solid var(--border);padding-top:20px;">
+      <label style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:block;">Content</label>
+
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Headline</label>
+        <input type="text" id="fb-headline" placeholder="${escapeHtmlAttr(currentForm.name || 'Shown as the form heading')}" value="${escapeHtml(s.headline || '')}" maxlength="100"
+          oninput="updateContentField('headline', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">The big heading visitors see. Leave empty to use the form name.</div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Subtext</label>
+        <input type="text" id="fb-subtext-content" placeholder="Optional — e.g. We reply within one business day" value="${escapeHtml(s.subtext || '')}" maxlength="300"
+          oninput="updateContentField('subtext', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Small line under the headline.</div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Button Label</label>
+        <input type="text" id="fb-submit-label-content" placeholder="Submit" value="${escapeHtml(s.submit_label || '')}" maxlength="50"
+          oninput="updateContentField('submit_label', this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Text on the submit button.</div>
+      </div>
+    </div>`;
+}
+
+function updateContentField(key, value) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = value;
+  updateFormPreview();
+}
 
 const THEME_PRESETS = {
   minimal: { accent_color: '#333333', background_color: '#ffffff', text_color: '#1a1a1a', input_border: '#d1d5db', border_radius: '4px', font_family: 'inherit', submit_label: 'Submit', submit_full_width: true },
@@ -4763,10 +4880,62 @@ function renderStyleSection() {
           ${FONT_OPTIONS.map(f => `<option value="${f.value}" ${s.font_family === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
           <option value="custom" ${!FONT_OPTIONS.some(f => f.value === s.font_family) && s.font_family !== 'inherit' ? 'selected' : ''}>Custom...</option>
         </select>
-        <input type="text" id="fb-font-custom" placeholder="e.g. 'Comic Sans MS', sans-serif"
-          value="${FONT_OPTIONS.some(f => f.value === s.font_family) || s.font_family === 'inherit' ? '' : escapeHtml(s.font_family)}"
-          oninput="updateStyling('font_family', this.value)"
-          style="display:none;width:100%;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      </div>
+
+      <!-- Text elements (Forms T4): heading, subtext, label & input text -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Text Elements</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${renderColorPicker('heading_color', 'Heading Color', s.heading_color || s.text_color)}
+          ${renderColorPicker('subtext_color', 'Subtext Color', s.subtext_color || s.text_color)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Heading Size</label>
+            <input type="range" min="12" max="42" value="${parseInt(s.heading_size) || 20}" oninput="updateTextSize('heading_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext Size</label>
+            <input type="range" min="10" max="24" value="${parseInt(s.subtext_size) || 14}" oninput="updateTextSize('subtext_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Label Size</label>
+            <input type="range" min="10" max="18" value="${parseInt(s.label_size) || 13}" oninput="updateTextSize('label_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Input Text Size</label>
+            <input type="range" min="12" max="20" value="${parseInt(s.text_size) || 14}" oninput="updateTextSize('text_size', this.value)"
+              style="width:100%;accent-color:var(--purple);" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Heading Align</label>
+            <div style="display:flex;gap:6px;">
+              <button onclick="updateAlignToggle('heading_align', 'left')" id="fb-ha-left"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${(!s.heading_align || s.heading_align === 'left') ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Left</button>
+              <button onclick="updateAlignToggle('heading_align', 'center')" id="fb-ha-center"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.heading_align === 'center' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Center</button>
+              <button onclick="updateAlignToggle('heading_align', 'right')" id="fb-ha-right"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.heading_align === 'right' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Right</button>
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;">Subtext Align</label>
+            <div style="display:flex;gap:6px;">
+              <button onclick="updateAlignToggle('subtext_align', 'left')" id="fb-sa-left"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${(!s.subtext_align || s.subtext_align === 'left') ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Left</button>
+              <button onclick="updateAlignToggle('subtext_align', 'center')" id="fb-sa-center"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.subtext_align === 'center' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Center</button>
+              <button onclick="updateAlignToggle('subtext_align', 'right')" id="fb-sa-right"
+                style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${s.subtext_align === 'right' ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Right</button>
+            </div>
+          </div>
+        </div>
+        <!-- Forms T2: subtext text moved to the Content tab; only its styling lives here -->
       </div>
 
       <!-- Border radius slider -->
@@ -4779,13 +4948,20 @@ function renderStyleSection() {
           style="width:100%;accent-color:var(--purple);" />
       </div>
 
-      <!-- Button options -->
-      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:180px;">
-          <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Text</label>
-          <input type="text" id="fb-submit-label" value="${escapeHtml(s.submit_label)}" oninput="updateStyling('submit_label', this.value)"
-            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:inherit;" />
+      <!-- Container mode: card vs form-only (transparent) -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Container</label>
+        <div style="display:flex;gap:6px;">
+          <button onclick="updateStyling('form_only', false)" id="fb-container-card"
+            style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${!s.form_only ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Card</button>
+          <button onclick="updateStyling('form_only', true)" id="fb-container-formonly"
+            style="flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;${s.form_only ? 'background:var(--accent);color:#fff;border:none;' : 'background:var(--surface2);border:1px solid var(--border);color:var(--text);'}">Form Only</button>
         </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">Form Only renders the form with a transparent background — it blends into the surrounding section on your website.</div>
+      </div>
+
+      <!-- Button options (Forms T2: Button Text moved to the Content tab) -->
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
         <div style="min-width:140px;">
           <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Button Width</label>
           <div style="display:flex;gap:6px;">
@@ -4857,6 +5033,21 @@ function updateStyling(key, value) {
     }
   }
 
+  // Update container mode toggle visuals
+  if (key === 'form_only') {
+    const cardBtn = document.getElementById('fb-container-card');
+    const formOnlyBtn = document.getElementById('fb-container-formonly');
+    if (cardBtn && formOnlyBtn) {
+      if (value) {
+        cardBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+        formOnlyBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+      } else {
+        cardBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;';
+        formOnlyBtn.style.cssText = 'flex:1;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--surface2);border:1px solid var(--border);color:var(--text);';
+      }
+    }
+  }
+
   updateFormPreview();
 }
 
@@ -4868,11 +5059,46 @@ function updateBorderRadius(val) {
   updateFormPreview();
 }
 
+function updateTextSize(key, val) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = parseInt(val) || undefined;
+  updateFormPreview();
+}
+
+function updateAlignToggle(key, val) {
+  if (!currentForm.styling) currentForm.styling = {};
+  currentForm.styling[key] = val;
+  // Re-render the style section so toggle button states stay in sync
+  const builder = document.getElementById('form-builder-overlay');
+  if (builder) {
+    const styleSection = builder.querySelector('[data-style-section]');
+    if (styleSection) {
+      styleSection.outerHTML = renderStyleSection();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  updateFormPreview();
+}
+
 function applyThemePreset(name) {
   const preset = THEME_PRESETS[name];
   if (!preset) return;
   if (!currentForm.styling) currentForm.styling = {};
+  // Content-tab values (headline/subtext/submit_label, T2) survive theme
+  // changes — a palette swap must never rewrite the form's copy. Presets
+  // still carry a submit_label for legacy scratch forms with none set.
+  const priorContent = {};
+  for (const k of ['headline', 'subtext', 'submit_label']) {
+    const v = currentForm.styling[k];
+    if (typeof v === 'string' && v.trim() !== '') priorContent[k] = v;
+  }
   Object.assign(currentForm.styling, preset);
+  // Theme presets own the visual palette — clear text-element overrides (T4)
+  // so a preset applied after customizing doesn't leave stale values behind.
+  for (const k of ['heading_color','heading_size','heading_align','subtext_color','subtext_size','subtext_align','label_size','text_size']) {
+    delete currentForm.styling[k];
+  }
+  Object.assign(currentForm.styling, priorContent);
 
   // Re-render the style section to reflect new values
   const builder = document.getElementById('form-builder-overlay');
@@ -4892,82 +5118,62 @@ function updateFormPreview() {
   window._fbPreviewDebounce = setTimeout(renderFormPreview, 200);
 }
 
+// Renders the builder's live preview through the SAME renderer as the
+// customer-facing embed widget (form-renderer.js, served from the API host).
+// Single source of truth (Forms T5): what you style in the builder is exactly
+// what the embed renders. The old dual path — patched templateHtml for
+// template forms, a hand-rolled .az-card doc for scratch forms — drifted from
+// the live widget (which renders only fields + styling) and leaned on
+// fragile </head> string-patching with stale-override bugs. Deleted.
+let _previewRendererLoading = null;
+function loadPreviewRenderer() {
+  if (window.AuzoraFormRenderer) return Promise.resolve();
+  if (_previewRendererLoading) return _previewRendererLoading;
+  const s = document.createElement('script');
+  s.src = API + '/js/form-renderer.js';
+  _previewRendererLoading = new Promise((resolve, reject) => {
+    s.onload = () => resolve();
+    s.onerror = () => { _previewRendererLoading = null; reject(new Error('form-renderer.js failed to load from ' + API)); };
+  });
+  document.head.appendChild(s);
+  return _previewRendererLoading;
+}
+
 function renderFormPreview() {
   const iframe = document.getElementById('fb-preview-iframe');
   if (!iframe || !currentForm) return;
 
   const s = currentForm.styling || {};
 
-  // If we have a template HTML (from "Use Template"), render it with customizations
-  if (currentForm.templateHtml) {
-    let html = currentForm.templateHtml;
-    const tpl = FORM_TEMPLATES[currentForm.templateKey];
-    // Apply accent color override
-    if (tpl && s.accent_color !== tpl.accent) {
-      html = html.replace('</head>', `<style>button{background:${s.accent_color} !important;}</style></head>`);
-    }
-    // Apply font override — also load the font file itself; a font-family
-    // override alone silently falls back when the family isn't loaded.
-    if (s.font_family && s.font_family !== 'inherit' && tpl && s.font_family !== tpl.font) {
-      html = html.replace('</head>', `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet"><style>*{font-family:'${s.font_family}',sans-serif !important;}</style></head>`);
-    }
-    // Apply container bg override
-    if (s.container_bg) {
-      html = html.replace('</head>', `<style>.form-container{background:${s.container_bg} !important;}</style></head>`);
-    }
-    // Apply background color (page bg) override
-    if (s.background_color && s.background_color !== '#ffffff') {
-      html = html.replace('</head>', `<style>body{background:${s.background_color} !important;}</style></head>`);
-    }
-    iframe.srcdoc = html;
-    return;
-  }
+  loadPreviewRenderer().then(() => {
+    const R = window.AuzoraFormRenderer;
+    if (!R) throw new Error('renderer unavailable');
 
-  // Fallback: generic form builder preview (for "Start from scratch")
-  const fields = currentForm.fields || [];
-  const fontStack = s.font_family && s.font_family !== 'inherit'
-    ? `'${s.font_family}', sans-serif`
-    : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  const radius = s.border_radius || '8px';
-  const submitLabel = escapeHtml(s.submit_label || 'Submit');
-  const submitWidth = s.submit_full_width === false ? 'auto' : '100%';
+    // Render through the live renderer into a probe div, then inline the
+    // result into the sandboxed iframe (no network inside the sandbox).
+    // brand_name powers the SMS consent line exactly like the live embed.
+    const probe = document.createElement('div');
+    R.renderForm(probe, {
+      form_id: currentForm.form_id || 'preview',
+      name: currentForm.name,
+      brand_name: (portalClient && portalClient.business_name) || currentForm.name || 'the business',
+      fields: currentForm.fields || [],
+      styling: s,
+    });
+    const inner = probe.innerHTML;
 
-  // Build field HTML
-  const fieldsHTML = fields.map(f => {
-    const req = f.required ? '<span style="color:#ef4444;">*</span>' : '';
-    const label = f.label ? `<label style="display:block;font-size:14px;font-weight:500;margin-bottom:5px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.label)} ${req}</label>` : '';
-    const ph = f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : '';
-    const inputStyle = `width:100%;padding:10px 12px;border:1px solid ${s.input_border || '#d1d5db'};border-radius:${radius};font-size:14px;font-family:${fontStack};outline:none;box-sizing:border-box;background:${s.input_background || '#ffffff'};color:${s.text_color || '#1a1a1a'};`;
+    const googleFonts = s.font_family && s.font_family !== 'inherit'
+      ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
+      : '';
 
-    let input = '';
-    switch (f.type) {
-      case 'textarea':
-        input = `<textarea ${ph} rows="3" style="${inputStyle}resize:vertical;"></textarea>`;
-        break;
-      case 'select':
-        input = `<select style="${inputStyle}appearance:none;">
-          ${(f.options || ['Option 1']).map(o => `<option>${escapeHtml(o)}</option>`).join('')}
-        </select>`;
-        break;
-      case 'checkbox':
-        input = `<div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" style="width:18px;height:18px;accent-color:${s.accent_color || '#22c55e'};" /> <span style="font-size:14px;color:${s.text_color || '#1a1a1a'};">${escapeHtml(f.placeholder || 'Check this box')}</span></div>`;
-        break;
-      case 'date':
-        input = `<input type="date" style="${inputStyle}" />`;
-        break;
-      default:
-        input = `<input type="${f.type || 'text'}" ${ph} style="${inputStyle}" />`;
-    }
+    // Transparent Form Only forms blend into the host page — approximate a
+    // host section behind them. Card forms sit on a neutral page like a real
+    // host site; the renderer paints the card itself (container_bg).
+    const previewBodyBg = s.form_only === true
+      ? 'linear-gradient(135deg, #e8edf3 0%, #dfe7f1 100%)'
+      : '#ffffff';
 
-    return `<div style="margin-bottom:14px;">${label}${input}</div>`;
-  }).join('');
-
-  // Build full HTML document
-  const googleFonts = s.font_family && s.font_family !== 'inherit'
-    ? `<link href="${buildGoogleFontsUrl(s.font_family)}" rel="stylesheet">`
-    : '';
-
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -4975,35 +5181,18 @@ function renderFormPreview() {
 ${googleFonts}
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: ${fontStack}; background: ${s.background_color || '#ffffff'}; color: ${s.text_color || '#1a1a1a'}; padding: 20px; }
-  .az-form-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: ${s.text_color || '#1a1a1a'}; }
-  .az-submit-btn {
-    ${submitWidth === 'auto' ? '' : 'width: 100%;'}
-    padding: 12px 24px;
-    background: ${s.accent_color || '#22c55e'};
-    color: #fff;
-    border: none;
-    border-radius: ${radius};
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: ${fontStack};
-    transition: opacity 0.15s;
-  }
-  .az-submit-btn:hover { opacity: 0.9; }
-  ${s.custom_css || ''}
+  body { background: ${previewBodyBg}; padding: 20px; }
 </style>
 </head>
 <body>
-  ${currentForm.name ? `<div class="az-form-title">${escapeHtml(currentForm.name)}</div>` : ''}
-  <form onsubmit="event.preventDefault();">
-    ${fieldsHTML || '<div style="text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;">Add fields to see them here</div>'}
-    <button type="submit" class="az-submit-btn" style="width:${submitWidth};">${submitLabel}</button>
-  </form>
+  ${inner}
 </body>
 </html>`;
 
-  iframe.srcdoc = html;
+    iframe.srcdoc = html;
+  }).catch(err => {
+    iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font:13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#6b7280;padding:24px;">Preview unavailable: ${escapeHtml(err.message)}</body></html>`;
+  });
 }
 
 function setPreviewViewport(size) {
@@ -6685,8 +6874,11 @@ async function loadSettings() {
   portalSpecialties = [...(c.specialties || [])];
   renderSpecialtyTags();
 
-  // Load ElevenLabs voices then render grid (async — non-blocking for data)
+  // Load voice catalog (ElevenLabs + OpenAI) then render grid (async — non-blocking for data)
   loadVoices().then(() => {
+    // Both provider sections render together now; the saved provider just
+    // seeds which voice the client record maps to.
+    currentVoiceProvider = c.voice_provider === 'openai' ? 'openai' : (c.voice_provider || 'elevenlabs');
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
 
@@ -6762,14 +6954,32 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  if (VOICES.length === 0) {
-    document.getElementById('portal-voice-grid').innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
-    return;
-  }
-  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  // Both providers render as separate labeled sections (ticket
+  // zeus_1787667146591_6dc83474): OpenAI first (included with every plan),
+  // then ElevenLabs (paid add-on — previewable without it, selectable with it).
+  const hasAddon = portalTierVoices?.elevenlabsAddon === true;
+  const openaiVoices = VOICES.filter(v => v.provider === 'openai');
+  const elevenlabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
+
+  // Keep the selected highlight inside the client's saved provider when the
+  // saved voice is still selectable there. A saved-but-locked voice (add-on
+  // absent or revoked) must NOT stay selected — saving it would 403, so the
+  // default voice becomes the active selection instead.
+  let activeVoiceId = selected;
+  if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) activeVoiceId = null;
+  if (activeVoiceId && isVoiceLocked(activeVoiceId)) activeVoiceId = DEFAULT_VOICE_ID || null;
   currentPortalVoiceId = activeVoiceId;
-  const leftVoices = VOICES.filter(v => v.gender === 'female');
-  const rightVoices = VOICES.filter(v => v.gender === 'male');
+  if (activeVoiceId) {
+    const activeVoice = VOICES.find(v => v.id === activeVoiceId);
+    if (activeVoice) currentVoiceProvider = activeVoice.provider || 'elevenlabs';
+  }
+
+  const sectionHeader = (title, noteHtml) => `
+    <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">${title}</div>
+      ${noteHtml}
+    </div>`;
+
   const renderColumn = (voices, tone) => `
     <div class="voice-column ${tone}">
       ${voices.map(v => {
@@ -6780,43 +6990,91 @@ function renderPortalVoiceGrid(selected) {
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
-              ${locked ? '<span class="voice-badge voice-badge-locked">Upgrade</span>' : ''}
+              ${locked ? '<span class="voice-badge voice-badge-locked" title="ElevenLabs voices are a $49/mo add-on to any plan">Add-on</span>' : ''}
             </div>
-            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" ${locked?'disabled':''}>▶</button>
+            <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" title="Preview — free for every voice">▶</button>
           </div>
           ${v.desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${v.desc}</div>` : ''}
         </div>`;
       }).join('')}
     </div>`;
-  document.getElementById('portal-voice-grid').innerHTML = `${renderColumn(leftVoices, 'left')}${renderColumn(rightVoices, 'right')}`;
+
+  const openaiNote = '<span style="font-size:11px;color:var(--green);font-weight:600;">Included with every plan</span>';
+  const elevenlabsNote = hasAddon
+    ? '<span style="font-size:11px;color:var(--green);font-weight:600;">Add-on active</span>'
+    : `<span style="font-size:11px;color:#f59e0b;font-weight:600;">Available as an add-on for $49.99 per month</span>`;
+
+  let html = '';
+  if (openaiVoices.length > 0) {
+    html += sectionHeader('OpenAI Voices', openaiNote);
+    html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
+    html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
+  }
+  if (elevenlabsVoices.length > 0) {
+    html += sectionHeader('ElevenLabs Voices', elevenlabsNote);
+    if (!hasAddon) {
+      html += `<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;font-size:12px;color:var(--text);">
+        <span style="color:#f59e0b;font-weight:700;">Add-on</span>
+        <span>ElevenLabs premium voices are available as an add-on for $49.99 per month. Previews are free — upgrade to unlock selection.</span>
+      </div>`;
+    }
+    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'female'), 'left');
+    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'male'), 'right');
+  }
+  if (!html) {
+    html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
+  }
+  document.getElementById('portal-voice-grid').innerHTML = html;
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+// Selecting a voice also switches the active provider so saves persist the
+// matching provider alongside the voice id.
 function selectPortalVoice(id) {
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
+  const voice = VOICES.find(v => v.id === id);
+  if (voice) currentVoiceProvider = voice.provider || 'elevenlabs';
   currentPortalVoiceId = id;
-  VOICES.forEach(v => {
-    const card = document.getElementById(`pvc-${v.id}`);
-    if (!card) return;
+  document.querySelectorAll('#portal-voice-grid .voice-card').forEach(card => {
+    const idAttr = card.id.replace('pvc-', '');
+    const v = VOICES.find(x => x.id === idAttr);
+    if (!v) return;
     const tone = v.gender === 'female' ? 'left' : 'right';
-    card.className = `voice-card voice-tone-${tone} ${v.id===id?'selected':''}`;
-    card.style.setProperty('--voice-accent', tone === 'left' ? 'var(--accent)' : 'var(--accent2)');
+    const locked = isVoiceLocked(v.id);
+    card.className = `voice-card voice-tone-${tone} ${idAttr===id?'selected':''} ${locked?'voice-locked':''}`;
   });
   setDirty();
 }
 
-function playPortalVoice(id) {
+async function playPortalVoice(id) {
   if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; }
   VOICES.forEach(v => { const b = document.getElementById(`ppb-${v.id}`); if(b) b.textContent='▶'; });
   const btn = document.getElementById(`ppb-${id}`);
   const voice = VOICES.find(v => v.id === id);
-  if (!voice || !voice.preview_url) return;
-  const audio = new Audio(voice.preview_url);
-  activeAudio = audio;
-  btn.textContent = '⏸';
-  audio.play();
-  audio.onended = () => { btn.textContent = '▶'; activeAudio = null; };
+  if (!voice || !portalToken) return;
+  btn.textContent = '⋯';
+  btn.disabled = true;
+  try {
+    // Live synthesis preview — works for every provider (preview_url is empty
+    // in the catalog for most voices).
+    const res = await fetch(`${API}/portal/voice-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ voice: id, provider: voice.provider || 'elevenlabs' })
+    });
+    if (!res.ok) throw new Error(`Preview failed (${res.status})`);
+    const blob = await res.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    activeAudio = audio;
+    btn.textContent = '⏸';
+    audio.onended = () => { btn.textContent = '▶'; btn.disabled = false; activeAudio = null; URL.revokeObjectURL(audio.src); };
+    audio.play();
+  } catch (e) {
+    console.error('Voice preview failed:', e);
+    btn.textContent = '▶';
+    btn.disabled = false;
+  }
 }
 
 // Avoid tags
@@ -7137,6 +7395,7 @@ async function saveSettings() {
       specialties:         specialtiesToSave,
       escalation_phone:    document.getElementById('s-escalation-phone').value,
       voice:               voice || portalClient?.voice || portalClient?.voice_id || undefined,
+      voice_provider:      currentVoiceProvider,
       custom_greeting:     document.getElementById('s-greeting').value,
       escalation_rules:    document.getElementById('s-escalation').value,
       topics_to_avoid:     portalAvoidTopics,
