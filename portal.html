@@ -3274,7 +3274,12 @@ async function loadForms() {
 }
 
 function showFormBuilder() {
-  showTemplatePicker();
+  // Check if there are no forms yet - auto-select default template
+  if (!forms || forms.length === 0) {
+    openCustomizeDrawer('auzoraSite');
+  } else {
+    showTemplatePicker();
+  }
 }
 
 function editForm(formId) {
@@ -4210,6 +4215,54 @@ const FORM_TEMPLATES = {
           }
     ],
   },
+
+  auzoraSite: {
+    name: 'Auzora Website',
+    isDefault: true,
+    headline: 'Start the conversation.',
+    subtext: 'Interested in a demo? Fill out the form and we\'ll reach out shortly to schedule it with you.',
+    html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;font-family:'Inter',sans-serif;}</style></head><body style="margin:0;background:radial-gradient(800px 400px at 50% 100%,rgba(124,58,237,.07),transparent 65%);"><section style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;"><div class="form-container" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(10px);border:1px solid rgba(16,24,38,0.08);border-radius:24px;padding:32px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 36px rgba(16,24,38,.06);"><h2 style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.02em;color:#101826;margin:0 0 8px;">Start the conversation.</h2><p style="font-size:15px;color:#5f687a;margin:0 0 20px;line-height:1.6;">Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Name<input type="text" placeholder="Jane Smith" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Business<input type="text" placeholder="Smith Plumbing Co." style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Phone<input type="tel" placeholder="(555) 123-4567" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Email<input type="email" placeholder="jane@business.com" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label></div><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">What do you want Auzora to handle?<textarea placeholder="Tell us about your call volume and what you'd like automated…" rows="3" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;min-height:120px;resize:vertical;"></textarea></label><button style="background:linear-gradient(90deg,#3B82F6,#7C3AED,#EC4899);color:#fff;padding:15px;border:none;border-radius:99px;font-weight:600;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 20px rgba(124,58,237,.3);">Request a demo</button></div></section></body></html>`,
+    accent: '#7C3AED',
+    font: "'Inter', sans-serif",
+    submitLabel: 'Request a demo',
+    fields: [
+      {
+        "type": "text",
+        "label": "Name",
+        "placeholder": "Jane Smith",
+        "required": true,
+        "maps_to": "name"
+      },
+      {
+        "type": "text",
+        "label": "Business",
+        "placeholder": "Smith Plumbing Co.",
+        "required": true,
+        "maps_to": "company"
+      },
+      {
+        "type": "tel",
+        "label": "Phone",
+        "placeholder": "(555) 123-4567",
+        "required": false,
+        "maps_to": "phone"
+      },
+      {
+        "type": "email",
+        "label": "Email",
+        "placeholder": "jane@business.com",
+        "required": true,
+        "maps_to": "email"
+      },
+      {
+        "type": "textarea",
+        "label": "What do you want Auzora to handle?",
+        "placeholder": "Tell us about your call volume and what you'd like automated…",
+        "required": false,
+        "maps_to": "notes"
+      }
+    ],
+  },
   t10: {
     name: 'Floating Label',
     html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;}input::placeholder,textarea::placeholder{color:inherit;opacity:.45;}</style></head><body style="margin:0;"><section id="t10" style="min-height:100%;background:oklch(0.97 0.005 260);display:flex;align-items:center;justify-content:center;padding:80px 24px;">
@@ -4292,6 +4345,7 @@ const TEMPLATE_FONTS = [
   { value: 'Georgia, serif', label: 'Georgia' },
   { value: "'Space Grotesk', sans-serif", label: 'Space Grotesk' },
   { value: "'Quicksand', sans-serif", label: 'Quicksand' },
+  { value: "'Inter', sans-serif", label: 'Inter' },
   { value: "ui-monospace, monospace", label: 'Monospace' },
 ];
 
@@ -4309,6 +4363,12 @@ function showTemplatePicker() {
   overlay.setAttribute('data-modal', '');
 
   const templates = Object.entries(FORM_TEMPLATES);
+  // Sort templates: default first, then by name
+  templates.sort(([, a], [, b]) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   overlay.innerHTML = `
     <div style="max-width:1100px;margin:0 auto;">
@@ -4321,6 +4381,7 @@ function showTemplatePicker() {
         ${templates.map(([key, tpl]) => `
           <div style="background:#fff;border:1px solid rgba(16,24,38,0.08);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;">
             <div style="position:relative;height:180px;overflow:hidden;border-bottom:1px solid rgba(16,24,38,0.06);">
+              ${tpl.isDefault ? '<span style="position:absolute;top:8px;left:8px;background:#7C3AED;color:#fff;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 8px;border-radius:6px;z-index:10;">Default</span>' : ''}
               ${tpl.html ? `<iframe srcdoc="${tpl.html.replace(/"/g, '&quot;')}" style="width:200%;height:200%;border:none;transform:scale(0.5);transform-origin:top left;pointer-events:none;" scrolling="no"></iframe>` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9aa3b2;font-size:13px;">Blank canvas</div>'}
             </div>
             <div style="padding:14px 16px 12px;flex:1;">
