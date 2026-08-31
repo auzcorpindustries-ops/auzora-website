@@ -3915,8 +3915,6 @@ const FORM_TEMPLATES = {
     accent: '#333333',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Request access',
-    subtext: "Tell us who you are and we'll set up your account.",
     fields: [
           {
                 "type": "text",
@@ -3973,8 +3971,6 @@ const FORM_TEMPLATES = {
     accent: '#c2410c',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: "Let's start the conversation.",
-    subtext: 'Share a few details and a specialist will reach out within one business day.',
     fields: [
           {
                 "type": "text",
@@ -4045,8 +4041,6 @@ const FORM_TEMPLATES = {
     accent: '#0ea5e9',
     font: "'Space Grotesk', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Join the client portal',
-    subtext: 'Get provisioned access to dashboards, reports, and support.',
     fields: [
           {
                 "type": "text",
@@ -4102,8 +4096,6 @@ const FORM_TEMPLATES = {
     accent: '#9333ea',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Continue',
-    headline: 'First, the basics',
-    subtext: "We'll ask about your project next.",
     fields: [
           {
                 "type": "text",
@@ -4163,13 +4155,6 @@ const FORM_TEMPLATES = {
     accent: '#0d9488',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Quick contact',
-    subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.',
-    // Inline widget has no <h1> — content slots map to its label span + trailing note
-    contentSelectors: {
-      headline: /(<span style="font-size:15px;font-weight:600;[^>]*>)[^<]*(<\/span>)/,
-      subtext: /(<p style="font-size:12px;[^>]*>)[^<]*(<\/p>)/,
-    },
     fields: [
           {
                 "type": "text",
@@ -4222,8 +4207,6 @@ const FORM_TEMPLATES = {
     accent: '#000000',
     font: 'ui-monospace, monospace',
     submitLabel: 'GET STARTED',
-    headline: 'SIGN UP NOW',
-    subtext: 'NO FLUFF. JUST FILL IT OUT.',
     fields: [
           {
                 "type": "text",
@@ -4287,8 +4270,6 @@ const FORM_TEMPLATES = {
     accent: '#a16207',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Private Client Access',
-    subtext: 'By invitation and referral only. Please share your details for consideration.',
     fields: [
           {
                 "type": "text",
@@ -4341,8 +4322,6 @@ const FORM_TEMPLATES = {
     accent: '#ea580c',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Hey there! 👋',
-    subtext: "Tell us a bit about you, we can't wait to chat.",
     fields: [
           {
                 "type": "text",
@@ -4416,8 +4395,6 @@ const FORM_TEMPLATES = {
     accent: '#3730a3',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Talk to our team',
-    subtext: 'Complete the form and an account representative will contact you within 24 hours.',
     fields: [
           {
                 "type": "text",
@@ -4546,8 +4523,6 @@ const FORM_TEMPLATES = {
     accent: '#7c3aed',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Create your account',
-    subtext: 'Takes about a minute.',
     fields: [
           {
                 "type": "text",
@@ -4856,7 +4831,11 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { headline: tpl.headline || tpl.name, subtext: tpl.subtext || '', accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    // Headline/subtext intentionally NOT seeded (ticket zeus_1787953124244_ef38b255):
+    // lead capture templates render intake fields only. The renderer falls
+    // back to the form name for the title; subtext stays unset. The Content
+    // tab still allows per-form overrides for pre-existing/edited forms.
+    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
