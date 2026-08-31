@@ -3273,13 +3273,22 @@ async function loadForms() {
   }
 }
 
-function showFormBuilder() {
-  // Check if there are no forms yet - auto-select default template
-  if (!forms || forms.length === 0) {
-    openCustomizeDrawer('auzoraSite');
-  } else {
-    showTemplatePicker();
+async function showFormBuilder() {
+  try {
+    // Auto-select the default template only when this client has no forms yet.
+    // (Fetched here — no module-level `forms` variable exists; see loadForms().)
+    const res = await fetch(`${API}/portal/forms`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const forms = Array.isArray(data) ? data : (data.forms || []);
+    if (!forms || forms.length === 0) {
+      openCustomizeDrawer('auzoraSite');
+      return;
+    }
+  } catch (err) {
+    console.warn('showFormBuilder: forms fetch failed, falling back to template picker', err);
   }
+  showTemplatePicker();
 }
 
 function editForm(formId) {
