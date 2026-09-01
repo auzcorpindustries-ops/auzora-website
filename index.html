@@ -201,10 +201,42 @@
     .az-pricing-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; }
     .az-pricing-features .check { width: 18px; height: 18px; border-radius: 99px; display: grid; place-items: center; font-size: 11px; color: #fff; background: linear-gradient(135deg, #3B82F6, #7C3AED); flex: none; }
     .az-pricing-features.pro-features .check { color: #7C3AED; background: rgba(124,58,237,.12); }
-    .az-pricing-btn { display: block; text-align: center; padding: 14px; border-radius: 99px; font-weight: 600; font-size: 16px; }
-    .az-pricing-btn.starter { color: #fff !important; background: var(--accent); box-shadow: 0 6px 20px rgba(124,58,237,.3); transition: box-shadow 180ms ease; }
+    .az-pricing-btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 99px; font-weight: 600; font-size: 16px; font-family: Inter, system-ui, sans-serif; cursor: pointer; transition: box-shadow 180ms ease, background 180ms ease; }
+    .az-pricing-btn.starter { color: #fff; background: var(--accent); box-shadow: 0 6px 20px rgba(124,58,237,.3); }
     .az-pricing-btn.starter:hover { box-shadow: 0 10px 28px rgba(124,58,237,.45); color: #fff; }
-    .az-pricing-btn.pro { color: #5f687a; background: rgba(16,24,38,.05); cursor: default; }
+    .az-pricing-btn.starter[aria-expanded="true"] { background: #6D28D9; box-shadow: 0 10px 28px rgba(124,58,237,.45); }
+    .az-pricing-btn:focus-visible, .az-tier-row:focus-visible { outline: 3px solid rgba(124,58,237,.45); outline-offset: 2px; }
+    .az-tier-panel { display: none; grid-column: 1 / -1; margin-top: -6px; align-self: start; }
+    .az-tier-panel.open { display: block; }
+    /* Open panel (desktop): full-width block anchored under the card row so
+       the other two cards keep their positions — no grid holes. Mobile (<861px)
+       keeps natural flow: the panel stacks directly beneath its own card. */
+    @media (min-width: 861px) {
+      .az-pricing { grid-template-rows: auto auto; }
+      .az-pricing > .az-pricing-card { grid-row: 1; }
+      .az-pricing > .az-tier-panel { grid-row: 2; }
+      .az-pricing { position: relative; }
+      .az-tier-panel.open { position: absolute; top: calc(100% + 8px); left: 0; right: 0; margin-top: 0; }
+    }
+    .az-tier-panel-inner { background: #fff; border: 1px solid rgba(124,58,237,.18); border-radius: 20px; box-shadow: 0 12px 36px rgba(124,58,237,.10); padding: 10px; }
+    .az-tier-panel-title { font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7C3AED; margin: 10px 14px 8px; }
+    .az-tier-row { display: flex; align-items: center; gap: 18px; padding: 16px 18px; border-radius: 14px; text-decoration: none; min-height: 44px; transition: background 160ms ease; }
+    .az-tier-row + .az-tier-row { margin-top: 4px; }
+    .az-tier-row:not(.disabled):hover { background: rgba(124,58,237,.06); }
+    .az-tier-name { font-family: Inter, system-ui, sans-serif; font-weight: 700; font-size: 15.5px; min-width: 128px; }
+    .az-tier-usage { font-size: 13.5px; color: #5f687a; line-height: 1.45; flex: 1; }
+    .az-tier-price { font-family: Inter, system-ui, sans-serif; font-weight: 800; font-size: 20px; white-space: nowrap; }
+    .az-tier-price .az-tier-period { font-size: 12.5px; font-weight: 600; color: #5f687a; margin-left: 2px; }
+    .az-tier-cta { font-size: 13.5px; font-weight: 700; color: #7C3AED; white-space: nowrap; }
+    .az-tier-row.disabled { cursor: not-allowed; opacity: .6; }
+    .az-tier-coming { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #7C3AED; background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.25); border-radius: 99px; padding: 4px 12px; white-space: nowrap; }
+    @media (max-width: 860px) {
+      .az-tier-row { flex-wrap: wrap; gap: 8px 12px; padding: 14px 16px; }
+      .az-tier-name { width: 100%; min-width: 0; }
+      .az-tier-price { order: 1; }
+      .az-tier-cta, .az-tier-coming { order: 2; margin-left: auto; }
+      .az-tier-usage { flex: 1 1 100%; order: 3; }
+    }
     .az-pricing-note { font-size: 14px; color: #5f687a; margin: 28px 0 0; max-width: 680px; line-height: 1.6; }
 
     /* ── FAQ ── */
@@ -567,31 +599,36 @@
     <div class="az-section-inner">
       <div class="az-kicker blue">Pricing</div>
       <h2 class="az-h2">Simple pricing. No surprises.</h2>
-      <p class="az-section-lead">Three tiers — Starter, Pro, and Premium. No contracts — cancel anytime.</p>
+      <p class="az-section-lead">Three plans — Starter, Pro, and Premium — each with usage tiers built in. Pick a plan to compare its tiers. No contracts — cancel anytime.</p>
       <div class="az-pricing">
         <div class="az-pricing-card starter">
           <div class="az-pricing-tier">Starter</div>
           <div class="az-pricing-amount">
-            <span class="price">$199</span><span class="period">/ month</span>
+            <span class="price">$89.99</span><span class="period">/ month</span>
           </div>
-          <div class="az-pricing-setup">$100 setup · Cancel anytime</div>
+          <div class="az-pricing-setup">Unlimited voice &amp; SMS · Cancel anytime</div>
           <p class="desc">Everything you need to stop missing calls and start booking more appointments automatically.</p>
           <ul class="az-pricing-features">
             <li><span class="check">✓</span>Default voice (Liz)</li>
             <li><span class="check">✓</span>Dedicated AI phone line</li>
             <li><span class="check">✓</span>24/7 call answering</li>
             <li><span class="check">✓</span>Calendar appointment booking</li>
-            <li><span class="check">✓</span>Custom greeting & FAQs</li>
+            <li><span class="check">✓</span>Custom greeting &amp; FAQs</li>
             <li><span class="check">✓</span>Client portal access</li>
           </ul>
-          <a href="/checkout.html?plan=starter" class="az-pricing-btn starter">Get Started →</a>
+          <button type="button" id="az-pricing-btn-starter" class="az-pricing-btn starter" data-plan="starter" aria-expanded="false" aria-controls="az-tiers-starter">Choose your Starter tier ↓</button>
+        </div>
+        <div id="az-tiers-starter" class="az-tier-panel" role="region" aria-labelledby="az-pricing-btn-starter">
+          <div class="az-tier-panel-inner">
+            <div class="az-tier-panel-title">Starter tiers</div>
+          </div>
         </div>
         <div class="az-pricing-card pro">
           <div class="az-pricing-tier">Pro</div>
           <div class="az-pricing-amount">
-            <span class="price">$299</span><span class="period">/ month</span>
+            <span class="price">$149</span><span class="period">/ month</span>
           </div>
-          <div class="az-pricing-setup">$150 setup · Cancel anytime</div>
+          <div class="az-pricing-setup">From $149/mo · 3 usage tiers · Cancel anytime</div>
           <p class="desc">Lead capture with external CRM integration and AI-powered follow-up calls and SMS.</p>
           <ul class="az-pricing-features pro-features">
             <li><span class="check">✓</span>Everything in Starter Plan</li>
@@ -601,15 +638,20 @@
             <li><span class="check">✓</span>AI follow-up calls on leads</li>
             <li><span class="check">✓</span>AI follow-up SMS on leads</li>
           </ul>
-          <a href="/checkout.html?plan=pro" class="az-pricing-btn starter">Get Started →</a>
+          <button type="button" id="az-pricing-btn-pro" class="az-pricing-btn starter" data-plan="pro" aria-expanded="false" aria-controls="az-tiers-pro">Choose your Pro tier ↓</button>
+        </div>
+        <div id="az-tiers-pro" class="az-tier-panel" role="region" aria-labelledby="az-pricing-btn-pro">
+          <div class="az-tier-panel-inner">
+            <div class="az-tier-panel-title">Pro tiers</div>
+          </div>
         </div>
         <div class="az-pricing-card pro">
           <div class="az-pricing-badge-soon">Best Value</div>
           <div class="az-pricing-tier">Premium</div>
           <div class="az-pricing-amount">
-            <span class="price">$499</span><span class="period">/ month</span>
+            <span class="price">$249</span><span class="period">/ month</span>
           </div>
-          <div class="az-pricing-setup">$300 setup · Cancel anytime</div>
+          <div class="az-pricing-setup">From $249/mo · Native CRM included · Cancel anytime</div>
           <p class="desc">Built-in CRM with bulk SMS and call campaigns — no external system required.</p>
           <ul class="az-pricing-features pro-features">
             <li><span class="check">✓</span>Everything in Pro Plan</li>
@@ -619,7 +661,12 @@
             <li><span class="check">✓</span>Manual outbound calls</li>
             <li><span class="check">✓</span>Priority support</li>
           </ul>
-          <a href="/checkout.html?plan=premium" class="az-pricing-btn starter">Get Started →</a>
+          <button type="button" id="az-pricing-btn-premium" class="az-pricing-btn starter" data-plan="premium" aria-expanded="false" aria-controls="az-tiers-premium">Choose your Premium tier ↓</button>
+        </div>
+        <div id="az-tiers-premium" class="az-tier-panel" role="region" aria-labelledby="az-pricing-btn-premium">
+          <div class="az-tier-panel-inner">
+            <div class="az-tier-panel-title">Premium tiers</div>
+          </div>
         </div>
       </div>
       <p class="az-pricing-note">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. Questions? <a href="#contact">Talk to us first.</a></p>
@@ -700,6 +747,97 @@
   </footer>
 
   <script>
+    // ── Pricing: plan → tier accordion ──────────────────────────────────────
+    // PRICING_TIERS mirrors atlas-ai src/config/tiers.js (new pricing model,
+    // 2026-08-31). KEEP IN SYNC with atlas-ai src/config/tiers.js — paymentLinkUrl
+    // values are the PROD Stripe Payment Links from ticket B.
+    //
+    // linksEnabled: Stripe Payment Links ship INACTIVE (Auzi, 2026-08-31) —
+    // tier rows render disabled "Coming Soon" until links go live. Flipping
+    // live = set linksEnabled: true (+ the matching Stripe activation in
+    // ticket B). No structural UI change needed.
+    const PRICING_TIERS = {
+      linksEnabled: false,
+      plans: {
+        starter: [
+          { key: 'starter', name: 'Starter', priceLabel: '$89.99', usage: 'Unlimited voice minutes · SMS messages per month', paymentLinkUrl: 'https://buy.stripe.com/7sYdR164g2MienugcM1ZS05' },
+        ],
+        pro: [
+          { key: 'pro_basic', name: 'Pro Basic', priceLabel: '$149', usage: '2,500 voice minutes · SMS messages per month', paymentLinkUrl: 'https://buy.stripe.com/dRmbITgIU0Ea93agcM1ZS06' },
+          { key: 'pro_standard', name: 'Pro Standard', priceLabel: '$249', usage: '5,000 voice minutes · SMS messages per month', paymentLinkUrl: 'https://buy.stripe.com/14A8wH8coaeK4MUaSs1ZS07' },
+          { key: 'pro_enterprise', name: 'Pro Enterprise', priceLabel: '$349', usage: '10,000 voice minutes · SMS messages per month', paymentLinkUrl: 'https://buy.stripe.com/cNi3cn2S486CdjqbWw1ZS08' },
+        ],
+        premium: [
+          { key: 'premium_basic', name: 'Premium Basic', priceLabel: '$249', usage: '2,500 voice minutes · SMS messages per month · Native CRM included', paymentLinkUrl: 'https://buy.stripe.com/00w3cnakwfz45QY5y81ZS09' },
+          { key: 'premium_standard', name: 'Premium Standard', priceLabel: '$349', usage: '5,000 voice minutes · SMS messages per month · Native CRM included', paymentLinkUrl: 'https://buy.stripe.com/7sY3cn3W8aeK1AI0dO1ZS0a' },
+          { key: 'premium_enterprise', name: 'Premium Enterprise', priceLabel: '$449', usage: '10,000 voice minutes · SMS messages per month · Native CRM included', paymentLinkUrl: 'https://buy.stripe.com/fZufZ950cgD80wE9Oo1ZS0b' },
+        ],
+      },
+    };
+
+    // Render tier rows into a panel: real <a> links carrying the real href —
+    // while linksEnabled is false they render in the "Coming Soon" disabled
+    // style (aria-disabled, click prevented), matching checkout.html's
+    // disabled-button pattern.
+    function renderTierPanel(planKey) {
+      const panel = document.getElementById(`az-tiers-${planKey}`);
+      if (!panel) return;
+      const inner = panel.querySelector('.az-tier-panel-inner');
+      inner.querySelectorAll('.az-tier-row').forEach(r => r.remove());
+      PRICING_TIERS.plans[planKey].forEach(tier => {
+        const row = document.createElement('a');
+        row.className = 'az-tier-row';
+        row.href = tier.paymentLinkUrl;
+        row.target = '_blank';
+        row.rel = 'noopener';
+        row.setAttribute('data-tier-key', tier.key);
+        if (!PRICING_TIERS.linksEnabled) {
+          row.classList.add('disabled');
+          row.setAttribute('aria-disabled', 'true');
+          row.addEventListener('click', e => e.preventDefault());
+        }
+        row.innerHTML = `
+          <span class="az-tier-name">${tier.name}</span>
+          <span class="az-tier-usage">${tier.usage}</span>
+          <span class="az-tier-price">${tier.priceLabel}<span class="az-tier-period">/ mo</span></span>
+          ${PRICING_TIERS.linksEnabled ? '<span class="az-tier-cta">Continue →</span>' : '<span class="az-tier-coming">Coming Soon</span>'}
+        `;
+        inner.appendChild(row);
+      });
+    }
+    Object.keys(PRICING_TIERS.plans).forEach(renderTierPanel);
+
+    // Accordion: one plan expanded at a time. Card buttons never navigate.
+    function togglePricingPanel(planKey) {
+      const btn = document.getElementById(`az-pricing-btn-${planKey}`);
+      const panel = document.getElementById(`az-tiers-${planKey}`);
+      if (!btn || !panel) return;
+      const willOpen = !panel.classList.contains('open');
+      document.querySelectorAll('.az-tier-panel.open').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.az-pricing-btn[data-plan]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+      if (willOpen) {
+        panel.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+    document.querySelectorAll('.az-pricing-btn[data-plan]').forEach(btn => {
+      btn.addEventListener('click', () => togglePricingPanel(btn.dataset.plan));
+    });
+
+    // Deep link: /index.html#pricing?plan=pro (or #pricing&plan=pro) opens
+    // that plan's panel directly — used by the checkout.html bookmark redirect.
+    (function openPricingFromHash() {
+      const m = (window.location.hash || '').match(/plan=(starter|pro|premium)/i);
+      if (m) {
+        const planKey = m[1].toLowerCase();
+        const btn = document.getElementById(`az-pricing-btn-${planKey}`);
+        if (btn) {
+          togglePricingPanel(planKey);
+          document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    })();
+
     // ── FAQ toggle ──
     function toggleFaq(btn) {
       const item = btn.parentElement;
