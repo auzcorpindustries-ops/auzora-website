@@ -1,11 +1,11 @@
 ---
 title: Account tiers & plans
-last_updated: 2026-07-31
+last_updated: 2026-09-01
 ---
 
 # Account tiers & plans
 
-Auzora offers three account tiers — **Starter**, **Pro**, and **Premium** — so you can match your AI receptionist's capabilities to your business needs. Every tier includes a dedicated AI phone line, 24/7 call answering, and full client portal access. Higher tiers add lead capture and outbound follow-up capabilities.
+Auzora offers three account tiers — **Starter**, **Pro**, and **Premium** — so you can match your AI receptionist's capabilities to your business needs. Every tier includes a dedicated AI phone line, 24/7 call answering, and full client portal access. Higher tiers add lead capture and outbound follow-up capabilities with expanded usage limits.
 
 ## TL;DR
 
@@ -18,10 +18,12 @@ Auzora offers three account tiers — **Starter**, **Pro**, and **Premium** — 
 | Calendar appointment booking | ✓ | ✓ | ✓ |
 | Custom greeting & FAQs | ✓ | ✓ | ✓ |
 | Client portal access | ✓ | ✓ | ✓ |
-| External CRM lead capture integration | — | ✓ | ✓ |
-| Internal lead capture CRM | — | — | ✓ |
+| CRM integration | — | External only | Native + External |
 | AI follow-up calls on leads | — | ✓ | ✓ |
 | AI follow-up SMS on leads | — | ✓ | ✓ |
+| Bulk SMS campaigns | — | — | ✓ |
+| Bulk call campaigns | — | — | ✓ |
+| Manual outbound calls | — | — | ✓ |
 | Priority support | — | — | ✓ |
 
 ---
@@ -38,12 +40,11 @@ Everything you need to stop missing calls and start booking more appointments au
 - **Calendar appointment booking** — callers can book appointments directly on your Google Calendar
 - **Custom greeting & FAQs** — your agent greets callers by your business name and answers common questions you define
 - **Client portal access** — manage your agent settings, view call logs, and update your configuration anytime
+- **Unlimited voice minutes & SMS** — no caps on call duration or text messages
 
 ### Who it's for
 
 Small businesses and solo operators who need a reliable AI receptionist to answer calls, book appointments, and never miss a lead — without the complexity of CRM integrations or outbound campaigns.
-
-- Go live within 48 hours of completing your onboarding form
 
 ---
 
@@ -60,6 +61,16 @@ Everything in Starter, plus lead capture with external CRM integration and AI-po
 - **External CRM lead capture integration** — when a caller provides their name, phone number, or other details, your AI agent automatically pushes the lead into your existing external CRM via webhook or API integration
 - **AI follow-up calls on leads** — your AI receptionist automatically calls leads back to qualify, schedule, or nurture them, using the same natural conversation as inbound calls
 - **AI follow-up SMS on leads** — leads receive an instant SMS follow-up after their call, and you can run bulk SMS campaigns to re-engage cold leads
+
+### Usage tiers
+
+Choose the Pro tier that fits your volume:
+
+| Tier | Monthly price | Voice minutes | SMS messages |
+|---|---|---|---|
+| Pro Basic | $149 | 2,500 | 2,500 |
+| Pro Plus | $249 | 5,000 | 5,000 |
+| Pro Max | $349 | 10,000 | 10,000 |
 
 ### How external CRM integration works
 
@@ -89,7 +100,18 @@ Everything in Pro, plus Auzora's built-in lead capture CRM with bulk outbound ca
 - **Internal lead capture CRM** — every lead your AI agent captures is stored in your Auzora portal's built-in CRM, with full contact details, call history, and lead status — no external system required
 - **Bulk SMS campaigns** — upload up to 200 leads per campaign with personalization fields
 - **Bulk call campaigns** — AI dials a lead list with custom script context
+- **Manual outbound calls** — Quick Call any number from the Outbound tab
 - **Priority support** — faster response times from our team when you need help
+
+### Usage tiers
+
+Choose the Premium tier that fits your volume:
+
+| Tier | Monthly price | Voice minutes | SMS messages |
+|---|---|---|---|
+| Premium Basic | $249 | 2,500 | 2,500 |
+| Premium Plus | $349 | 5,000 | 5,000 |
+| Premium Max | $449 | 10,000 | 10,000 |
 
 ### How the internal CRM works
 
@@ -145,19 +167,28 @@ Businesses that want a complete, hands-off lead management system — a built-in
 ## FAQ
 
 **Can I start on Starter and upgrade later?**
+
 Yes. Most businesses start on Starter and upgrade as their needs grow. Your agent configuration, phone number, and call history all carry over.
 
 **Do I need an external CRM to use the Pro plan?**
+
 No. The Pro plan works without an external CRM — you simply won't use the webhook integration. But Pro's main value is lead capture with external CRM integration plus AI follow-up calls and SMS, so it's best if you have a CRM to push leads into.
 
 **What's the difference between Pro and Premium lead capture?**
+
 Pro pushes leads to an external CRM and includes AI follow-up calls and SMS. Premium adds Auzora's built-in CRM so leads are stored in your portal with full contact details, call history, and lead status — plus bulk SMS and call campaigns for re-engaging cold leads at scale.
 
 **Can I use both an external CRM and the internal CRM on Premium?**
+
 Yes. Premium includes everything in Pro, so you can push leads to an external CRM *and* use the internal CRM with follow-up calls and SMS simultaneously.
 
 **Do follow-up calls and SMS respect business hours?**
+
 SMS sends regardless of business hours. Outbound calls only run inside your business hours, which you set on your portal's **Scheduling** tab. See [SMS campaigns & AI callbacks](/docs/outbound-sms-and-callbacks/) for details.
+
+**What happens if I exceed my usage limit?**
+
+If you exceed your voice minute or SMS cap for your tier, additional usage will incur overage charges. We recommend upgrading to the next tier if you consistently hit your limits.
 
 ---
 
