@@ -3,3 +3,27 @@
 /redesign-light /redesign-light/index.html 200
 /redesign-light/ /redesign-light/index.html 200
 /docs /docs/index.html 200
+
+# ── Client-facing friendly paths (defensive) ──────────────────────────────
+# The client portal is served at /portal.html. Clients (and stale emails,
+# bookmarks, or typed URLs) land on /portal, /login, /signup, /account,
+# /billing, /usage, /dashboard, /onboard, /app — none of which existed as
+# files, producing Netlify default 404s. Redirect them all to the portal.
+# Pretty-URL handling: /portal itself resolves via implicit pretty-URL
+# rewrite, but is included explicitly for clarity and case variants.
+/portal                      /portal.html          301
+/portal/*                    /portal.html          301
+/login                       /portal.html          301
+/signup                      /portal.html          301
+/account                     /portal.html          301
+/billing                     /portal.html          301
+/usage                       /portal.html          301
+/dashboard                   /portal.html          301
+/onboard                     /portal.html          301
+/app                         /portal.html          301
+/Portal                      /portal.html          301
+/Portal.html                 /portal.html          301
+/PORTAL                      /portal.html          301
+/portal.html/                /portal.html          301
+/checkout                    /checkout.html        301
+/Checkout                    /checkout.html        301
