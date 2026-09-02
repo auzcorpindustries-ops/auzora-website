@@ -319,6 +319,28 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .stat-value { font-size: 29px; font-weight: 800; letter-spacing: -.8px; margin: 7px 0 9px; }
 .stat-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
+/* ── Usage card (pricing ticket F) ── */
+.usage-card { margin-top: 18px; background: var(--card-bg, #fff); border: 1px solid var(--border, rgba(16,24,38,.08)); border-radius: 16px; padding: 20px 22px; }
+.usage-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.usage-card-title { font-size: 15px; font-weight: 700; }
+.usage-card-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.usage-plan-badge { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--purple, #7C3AED); background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.25); border-radius: 99px; padding: 3px 10px; margin-top: 6px; }
+.usage-card-period { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.usage-row { margin-bottom: 12px; }
+.usage-row:last-child { margin-bottom: 0; }
+.usage-row-label { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; }
+.usage-row-counts { font-weight: 500; color: var(--muted); }
+.usage-bar { height: 10px; border-radius: 99px; background: rgba(16,24,38,.07); overflow: hidden; }
+.usage-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #3B82F6, #7C3AED); transition: width 500ms ease; min-width: 0; }
+.usage-bar-fill.warn { background: linear-gradient(90deg, #F59E0B, #F97316); }
+.usage-bar-fill.over { background: linear-gradient(90deg, #EF4444, #DC2626); }
+.usage-card.over .usage-card-title::after { content: " · Over cap"; color: #DC2626; font-weight: 700; }
+.usage-unlimited-line { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.usage-unlimited-badge { font-size: 11.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #059669; background: rgba(5,150,105,.1); border: 1px solid rgba(5,150,105,.3); border-radius: 99px; padding: 4px 12px; }
+.usage-unlimited-text { font-size: 13.5px; color: var(--muted); }
+.usage-unlimited-stats { font-size: 13px; color: var(--muted); }
+@media (max-width: 640px) { .usage-card { padding: 16px; } }
+
 /* ── TABLE ─────────────────────────────────────────────────────────────── */
 .table-wrap {
   background: var(--surface); border: 1px solid var(--border);
@@ -720,6 +742,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="stat-label">Active Phone</div>
           <div class="stat-value" style="font-size:20px;margin-top:10px;" id="stat-phone">—</div>
           <div class="stat-sub">Your AI line</div>
+        </div>
+      </div>
+
+      <!-- USAGE CARD (pricing ticket F) — monthly voice/SMS usage vs plan limits -->
+      <div class="usage-card" id="usage-card" style="display:none;">
+        <div class="usage-card-head">
+          <div>
+            <div class="usage-card-title">Usage this month</div>
+            <div class="usage-card-sub" id="usage-plan-badge">—</div>
+          </div>
+          <div class="usage-card-period" id="usage-period"></div>
+        </div>
+        <div id="usage-unlimited" style="display:none;">
+          <div class="usage-unlimited-line">
+            <span class="usage-unlimited-badge">Unlimited</span>
+            <span class="usage-unlimited-text">Unlimited voice &amp; SMS on your plan — no caps to worry about.</span>
+          </div>
+          <div class="usage-unlimited-stats" id="usage-unlimited-stats"></div>
+        </div>
+        <div id="usage-bars">
+          <div class="usage-row">
+            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts"></span></div>
+            <div class="usage-bar"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+          </div>
+          <div class="usage-row">
+            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts"></span></div>
+            <div class="usage-bar"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
 
@@ -3036,6 +3086,7 @@ async function fetchEntitlements() {
     portalTierVoices = data.tierVoices || null;
     sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
+    renderUsageCard(data); // pricing ticket F — usage card lives on the same payload
     applyTierVisibility();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
     // Check the grid itself, not just currentPortalVoiceId — the grid can be
@@ -3048,6 +3099,72 @@ async function fetchEntitlements() {
   } catch(e) {
     // Non-blocking — fall back to hiding nothing (all nav visible)
   }
+}
+
+// ── USAGE CARD (pricing ticket F) ────────────────────────────────────────────
+// Renders the dashboard usage card from the /portal/entitlements payload
+// (the canonical usage endpoint). Usage shape comes from usageService.getUsage:
+//   { voiceMinutes, smsMessages, limits: {voiceMinutes, smsMessages},
+//     percentUsed: {voice, sms}, period, unlimited }
+// Starter/legacy plans return unlimited:true → "Unlimited voice & SMS" state.
+// percentUsed > 100 (overage, inbound is never gated) gets the distinct
+// over-cap style; >=80 shows the warn style.
+function renderUsageCard(entitlementsPayload) {
+  const card = document.getElementById('usage-card');
+  if (!card) return;
+  const usage = entitlementsPayload && entitlementsPayload.usage;
+  if (!usage) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  // Plan + tier badge: 'Pro Standard' tier under the 'Pro' plan collapses to
+  // a single badge; bare plan names render alone.
+  const plan = entitlementsPayload.plan || 'Starter';
+  const tier = entitlementsPayload.tier || '';
+  const badgeEl = document.getElementById('usage-plan-badge');
+  badgeEl.textContent = (tier && tier !== plan) ? `${plan} · ${tier}` : plan;
+
+  const periodLabel = document.getElementById('usage-period');
+  if (periodLabel && usage.period) {
+    const [y, m] = usage.period.split('-');
+    const monthName = new Date(Date.UTC(Number(y), Number(m) - 1, 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+    periodLabel.textContent = `${monthName} ${y}`;
+  }
+
+  const unlimitedBox = document.getElementById('usage-unlimited');
+  const barsBox = document.getElementById('usage-bars');
+  card.classList.remove('over');
+
+  if (usage.unlimited) {
+    unlimitedBox.style.display = 'block';
+    barsBox.style.display = 'none';
+    const stats = document.getElementById('usage-unlimited-stats');
+    if (stats) {
+      stats.textContent = `This month so far: ${Number(usage.voiceMinutes || 0).toLocaleString()} voice minutes · ${Number(usage.smsMessages || 0).toLocaleString()} SMS messages`;
+    }
+    return;
+  }
+
+  unlimitedBox.style.display = 'none';
+  barsBox.style.display = 'block';
+
+  const rows = [
+    { fill: 'usage-voice-fill', counts: 'usage-voice-counts', used: usage.voiceMinutes || 0, pct: usage.percentUsed?.voice ?? 0, unit: 'min' },
+    { fill: 'usage-sms-fill', counts: 'usage-sms-counts', used: usage.smsMessages || 0, pct: usage.percentUsed?.sms ?? 0, unit: 'msg' },
+  ];
+  let anyOver = false;
+  rows.forEach(r => {
+    const fill = document.getElementById(r.fill);
+    const counts = document.getElementById(r.counts);
+    if (!fill || !counts) return;
+    const clamped = Math.min(100, Math.max(0, r.pct));
+    fill.style.width = clamped + '%';
+    fill.classList.remove('warn', 'over');
+    if (r.pct > 100) { fill.classList.add('over'); anyOver = true; }
+    else if (r.pct >= 80) { fill.classList.add('warn'); }
+    const limitLabel = (r.pct > 100) ? 'over cap' : 'cap';
+    counts.textContent = `${Number(r.used).toLocaleString()} / ${Number(usage.limits?.[r.fill === 'usage-voice-fill' ? 'voiceMinutes' : 'smsMessages']).toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
+  });
+  if (anyOver) card.classList.add('over');
 }
 
 // Apply tier-based visibility to sidebar nav items.

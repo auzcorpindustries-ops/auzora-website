@@ -1535,23 +1535,41 @@ async function openDetail(clientId) {
         <textarea id="edit-notes">${c.notes||''}</textarea>
       </div>
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Tier &amp; Entitlements</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Tier &amp; Entitlements</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Plan</label>
+          <select id="edit-plan" onchange="onEditPlanChange()">
+            <option value="starter" ${c.plan==='starter'?'selected':''}>Starter — $89.99/mo</option>
+            <option value="pro" ${c.plan==='pro'?'selected':''}>Pro — from $149/mo</option>
+            <option value="premium" ${c.plan==='premium'?'selected':''}>Premium — from $249/mo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tier</label>
+          <select id="edit-tier"></select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:end;gap:8px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="edit-override-toggle" onchange="toggleOverrideControls(this.checked)" style="cursor:pointer;" />
+            Override entitlements
+          </label>
+        </div>
+      </div>
+      <div id="usage-readout" class="usage-readout" style="margin:10px 0 4px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:12.5px;color:var(--muted);">Loading usage…</div>
+      <div id="usage-override-box" style="display:none;margin:8px 0 4px;padding:10px 12px;background:var(--surface2);border-radius:8px;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;">Usage limit override <span style="font-weight:400;color:var(--muted);">(admin-set caps; blank = plan ladder)</span></div>
         <div class="form-row">
           <div class="form-group">
-            <label>Plan</label>
-            <select id="edit-plan">
-              <option value="starter" ${c.plan==='starter'?'selected':''}>Starter — $89.99/mo</option>
-              <option value="pro" ${c.plan==='pro'?'selected':''}>Pro — from $149/mo</option>
-              <option value="premium" ${c.plan==='premium'?'selected':''}>Premium — from $249/mo</option>
-            </select>
+            <label>Voice minutes</label>
+            <input type="number" id="edit-usage-override-voice" min="0" placeholder="plan ladder" />
           </div>
-          <div class="form-group" style="display:flex;align-items:end;gap:8px;">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <input type="checkbox" id="edit-override-toggle" onchange="toggleOverrideControls(this.checked)" style="cursor:pointer;" />
-              Override entitlements
-            </label>
+          <div class="form-group">
+            <label>SMS messages</label>
+            <input type="number" id="edit-usage-override-sms" min="0" placeholder="plan ladder" />
           </div>
         </div>
+      </div>
         <div id="entitlements-grid" style="display:none;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;">
           ${[
             ['inboundCallAnswering','Inbound call answering'],
@@ -1596,6 +1614,61 @@ function toggleOverrideControls(checked) {
   grid.style.display = checked ? 'grid' : 'none';
 }
 
+// ── Plan → tier cascade + usage readout (pricing ticket F) ──────────────────
+// Mirrors atlas-ai src/config/tiers.js (KEEP IN SYNC). The backend rejects
+// tier/plan mismatches (adminRouter validatePlanTierUpdate), so the cascade
+// keeps the modal honest client-side too.
+const PLAN_TIERS = {
+  starter: [{ value: 'starter', label: 'Starter' }],
+  pro: [
+    { value: 'pro_basic', label: 'Pro Basic — 2,500 voice min · SMS' },
+    { value: 'pro_standard', label: 'Pro Standard — 5,000 voice min · SMS' },
+    { value: 'pro_enterprise', label: 'Pro Enterprise — 10,000 voice min · SMS' },
+  ],
+  premium: [
+    { value: 'premium_basic', label: 'Premium Basic — 2,500 voice min · SMS · CRM' },
+    { value: 'premium_standard', label: 'Premium Standard — 5,000 voice min · SMS · CRM' },
+    { value: 'premium_enterprise', label: 'Premium Enterprise — 10,000 voice min · SMS · CRM' },
+  ],
+};
+
+function onEditPlanChange() {
+  const planSelect = document.getElementById('edit-plan');
+  const tierSelect = document.getElementById('edit-tier');
+  if (!planSelect || !tierSelect) return;
+  const tiers = PLAN_TIERS[planSelect.value] || PLAN_TIERS.starter;
+  const previous = tierSelect.value;
+  tierSelect.innerHTML = tiers.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+  // Preserve a still-valid selection (plan switch resets to the first tier).
+  if (previous && tiers.some(t => t.value === previous)) tierSelect.value = previous;
+}
+
+function renderUsageReadout(usage, usageOverride) {
+  const box = document.getElementById('usage-readout');
+  if (!box) return;
+  if (!usage) { box.textContent = 'Usage unavailable'; return; }
+  const used = `${Number(usage.voiceMinutes || 0).toLocaleString()} voice min · ${Number(usage.smsMessages || 0).toLocaleString()} SMS`;
+  if (usage.unlimited) {
+    box.innerHTML = `<strong>This month:</strong> ${used} — <span style="color:#059669;font-weight:600;">Unlimited plan</span>`;
+  } else {
+    const pct = Math.max(usage.percentUsed?.voice ?? 0, usage.percentUsed?.sms ?? 0);
+    const color = pct > 100 ? '#DC2626' : pct >= 80 ? '#F59E0B' : 'inherit';
+    box.innerHTML = `<strong>This month:</strong> ${used} — caps ${Number(usage.limits?.voiceMinutes).toLocaleString()} / ${Number(usage.limits?.smsMessages).toLocaleString()} <span style="color:${color};font-weight:600;">(${Math.round(pct)}% peak)</span>${usageOverride ? ' · <em>override active</em>' : ''}`;
+  }
+}
+
+function loadUsageOverrideInputs(usageOverride) {
+  const box = document.getElementById('usage-override-box');
+  const voice = document.getElementById('edit-usage-override-voice');
+  const sms = document.getElementById('edit-usage-override-sms');
+  if (!box || !voice || !sms) return;
+  // The override box is always editable (an admin can add caps to an
+  // unlimited plan or raise a capped one); blank inputs mean plan ladder.
+  box.style.display = 'block';
+  voice.value = (usageOverride && usageOverride.voiceMinutes != null) ? usageOverride.voiceMinutes : '';
+  sms.value = (usageOverride && usageOverride.smsMessages != null) ? usageOverride.smsMessages : '';
+}
+
 async function loadClientEntitlements(clientId) {
   try {
     const res = await fetch(`${API}/clients/${clientId}/entitlements`, {
@@ -1604,9 +1677,16 @@ async function loadClientEntitlements(clientId) {
     if (!res.ok) return;
     const data = await res.json();
 
-    // Set plan dropdown
+    // Set plan dropdown + cascaded tier select (ticket F)
     const planSelect = document.getElementById('edit-plan');
     if (planSelect) planSelect.value = data.plan || 'starter';
+    onEditPlanChange();
+    const tierSelect = document.getElementById('edit-tier');
+    if (tierSelect && data.tier) tierSelect.value = data.tier;
+
+    // Current-usage readout + usage-limit override inputs (ticket F)
+    renderUsageReadout(data.usage, data.usage_limits_override);
+    loadUsageOverrideInputs(data.usage_limits_override);
 
     // Set override toggle + grid
     const toggle = document.getElementById('edit-override-toggle');
@@ -1653,7 +1733,27 @@ async function saveClientEdit() {
     twilio_number: document.getElementById('edit-twilio-number').value.trim() || null,
     notes: document.getElementById('edit-notes').value,
     plan: document.getElementById('edit-plan').value,
+    // Tier (ticket F): sent with the plan so the backend consistency check
+    // never sees an orphaned plan-without-tier change.
+    tier: document.getElementById('edit-tier') ? document.getElementById('edit-tier').value : undefined,
   };
+
+  // Usage limit override (ticket F): blank inputs clear the override (null)
+  // so admins can return a client to the plan ladder; values persist as-is.
+  const overrideVoice = document.getElementById('edit-usage-override-voice');
+  const overrideSms = document.getElementById('edit-usage-override-sms');
+  if (overrideVoice && overrideSms) {
+    const v = overrideVoice.value.trim();
+    const s = overrideSms.value.trim();
+    if (v === '' && s === '') {
+      updates.usage_limits_override = null;
+    } else {
+      updates.usage_limits_override = {
+        voiceMinutes: v === '' ? null : Number(v),
+        smsMessages: s === '' ? null : Number(s),
+      };
+    }
+  }
 
   // Include entitlements override if toggle is on
   const overrideToggle = document.getElementById('edit-override-toggle');
