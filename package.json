@@ -1,0 +1,12 @@
+{
+  "name": "auzora-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Auzora marketing site + client portal (static, no build step). Test-only package.json — no runtime dependencies.",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
