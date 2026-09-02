@@ -3915,8 +3915,6 @@ const FORM_TEMPLATES = {
     accent: '#333333',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Request access',
-    subtext: "Tell us who you are and we'll set up your account.",
     fields: [
           {
                 "type": "text",
@@ -3973,8 +3971,6 @@ const FORM_TEMPLATES = {
     accent: '#c2410c',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: "Let's start the conversation.",
-    subtext: 'Share a few details and a specialist will reach out within one business day.',
     fields: [
           {
                 "type": "text",
@@ -4045,8 +4041,6 @@ const FORM_TEMPLATES = {
     accent: '#0ea5e9',
     font: "'Space Grotesk', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Join the client portal',
-    subtext: 'Get provisioned access to dashboards, reports, and support.',
     fields: [
           {
                 "type": "text",
@@ -4102,8 +4096,6 @@ const FORM_TEMPLATES = {
     accent: '#9333ea',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Continue',
-    headline: 'First, the basics',
-    subtext: "We'll ask about your project next.",
     fields: [
           {
                 "type": "text",
@@ -4163,13 +4155,6 @@ const FORM_TEMPLATES = {
     accent: '#0d9488',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Quick contact',
-    subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.',
-    // Inline widget has no <h1> — content slots map to its label span + trailing note
-    contentSelectors: {
-      headline: /(<span style="font-size:15px;font-weight:600;[^>]*>)[^<]*(<\/span>)/,
-      subtext: /(<p style="font-size:12px;[^>]*>)[^<]*(<\/p>)/,
-    },
     fields: [
           {
                 "type": "text",
@@ -4222,8 +4207,6 @@ const FORM_TEMPLATES = {
     accent: '#000000',
     font: 'ui-monospace, monospace',
     submitLabel: 'GET STARTED',
-    headline: 'SIGN UP NOW',
-    subtext: 'NO FLUFF. JUST FILL IT OUT.',
     fields: [
           {
                 "type": "text",
@@ -4287,8 +4270,6 @@ const FORM_TEMPLATES = {
     accent: '#a16207',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Private Client Access',
-    subtext: 'By invitation and referral only. Please share your details for consideration.',
     fields: [
           {
                 "type": "text",
@@ -4341,8 +4322,6 @@ const FORM_TEMPLATES = {
     accent: '#ea580c',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Hey there! 👋',
-    subtext: "Tell us a bit about you, we can't wait to chat.",
     fields: [
           {
                 "type": "text",
@@ -4416,8 +4395,6 @@ const FORM_TEMPLATES = {
     accent: '#3730a3',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Talk to our team',
-    subtext: 'Complete the form and an account representative will contact you within 24 hours.',
     fields: [
           {
                 "type": "text",
@@ -4467,8 +4444,6 @@ const FORM_TEMPLATES = {
   auzoraSite: {
     name: 'Auzora Website',
     isDefault: true,
-    headline: 'Start the conversation.',
-    subtext: 'Interested in a demo? Fill out the form and we\'ll reach out shortly to schedule it with you.',
     html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;font-family:'Inter',sans-serif;}</style></head><body style="margin:0;background:radial-gradient(800px 400px at 50% 100%,rgba(124,58,237,.07),transparent 65%);"><section style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;"><div class="form-container" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(10px);border:1px solid rgba(16,24,38,0.08);border-radius:24px;padding:32px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 36px rgba(16,24,38,.06);"><h2 style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.02em;color:#101826;margin:0 0 8px;">Start the conversation.</h2><p style="font-size:15px;color:#5f687a;margin:0 0 20px;line-height:1.6;">Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Name<input type="text" placeholder="Jane Smith" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Business<input type="text" placeholder="Smith Plumbing Co." style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Phone<input type="tel" placeholder="(555) 123-4567" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Email<input type="email" placeholder="jane@business.com" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label></div><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">What do you want Auzora to handle?<textarea placeholder="Tell us about your call volume and what you'd like automated…" rows="3" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;min-height:120px;resize:vertical;"></textarea></label><button style="background:linear-gradient(90deg,#3B82F6,#7C3AED,#EC4899);color:#fff;padding:15px;border:none;border-radius:99px;font-weight:600;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 20px rgba(124,58,237,.3);">Request a demo</button></div></section></body></html>`,
     accent: '#7C3AED',
     font: "'Inter', sans-serif",
@@ -4546,8 +4521,6 @@ const FORM_TEMPLATES = {
     accent: '#7c3aed',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Create your account',
-    subtext: 'Takes about a minute.',
     fields: [
           {
                 "type": "text",
@@ -4856,7 +4829,11 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { headline: tpl.headline || tpl.name, subtext: tpl.subtext || '', accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    // Headline/subtext intentionally NOT seeded (ticket zeus_1787953124244_ef38b255):
+    // lead capture templates render intake fields only. The renderer falls
+    // back to the form name for the title; subtext stays unset. The Content
+    // tab still allows per-form overrides for pre-existing/edited forms.
+    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
