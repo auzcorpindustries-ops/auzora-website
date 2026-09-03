@@ -728,6 +728,43 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   .stat-card { padding: 14px 12px; }
 }
 
+
+/* ── Dashboard D6 — Leads & Conversion (funnel + intents + leads table) ── */
+.dconv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 96px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 12.5px; padding: 18px; text-align: center; }
+.dconv-empty svg { width: 20px; height: 20px; opacity: .7; }
+.dconv-funnel { display: flex; flex-direction: column; gap: 2px; }
+.dconv-stage { margin: 0; }
+.dconv-stage-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.dconv-stage-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.dconv-stage-count { font-family: var(--dchart-mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.dconv-stage-track { height: 12px; border-radius: 7px; background: var(--tint); overflow: hidden; }
+.dconv-stage-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 500ms ease; min-width: 3px; }
+.dconv-stage-fill.zero { background: var(--border); min-width: 0; }
+.dconv-arrow { display: flex; align-items: center; gap: 8px; margin: 5px 0 5px 18px; }
+.dconv-arrow-line { width: 14px; height: 2px; border-left: 2px solid var(--border); border-bottom: 2px solid var(--border); border-bottom-left-radius: 4px; flex-shrink: 0; }
+.dconv-arrow-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.dconv-hint { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+.dconv-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dconv-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
+.dconv-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.dconv-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dconv-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dconv-chip-count { font-family: var(--dchart-mono); font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.dconv-lead-table .dconv-lead-row { cursor: pointer; }
+.dconv-lead-table .dconv-lead-row:hover td, .dconv-lead-table .dconv-lead-row:focus-visible td { background: var(--tint); }
+.dconv-lead-table .dconv-lead-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dconv-lead-name { font-weight: 600; }
+.dconv-lead-phone { font-family: var(--dchart-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+.dconv-lead-intent, .dconv-lead-when { color: var(--muted); font-size: 12.5px; }
+.dconv-lead-score { font-family: var(--dchart-mono); font-weight: 700; font-size: 12.5px; }
+.dconv-source-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--accent2); background: var(--tint); border: 1px solid var(--border); border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
+.dconv-lead-detail td { background: var(--tint); padding: 10px 14px !important; }
+.dconv-detail-grid { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.dconv-detail-grid b { color: var(--text); font-weight: 600; margin-right: 4px; }
+.dconv-detail-note { font-size: 11.5px; font-style: italic; }
+.dconv-attn { display: inline-flex; font-size: 10.5px; font-weight: 700; color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.35); border-radius: 99px; padding: 1px 8px; margin-left: 4px; }
+.dconv-table-scroll { overflow-x: auto; }
+@media (max-width: 640px) { .dconv-lead-intent, .dconv-lead-table th:nth-child(4), .dconv-lead-table .dconv-lead-row td:nth-child(5), .dconv-lead-table th:nth-child(5) { display: none; } .dconv-lead-table td, .dconv-lead-table th { padding-left: 6px; padding-right: 6px; } } @media (max-width: 480px) { .dconv-lead-when, .dconv-lead-table th:nth-child(6) { display: none; } }
 </style>
 </head>
 <body>
@@ -942,9 +979,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div id="dash-leads-table">
               <div class="empty" style="padding:24px 16px;">Loading recent leads…</div>
             </div>
-            <div class="dash-slot-empty" id="dash-funnel-slot">
-              <i data-lucide="filter"></i>
-              <span>Conversion funnel &amp; top intents — coming in the next dashboard update</span>
+            <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+              <div id="dash-funnel-slot">
+                <div class="empty" style="padding:24px 16px;"><i data-lucide="filter"></i> Loading booking funnel…</div>
+              </div>
+              <div id="dash-intents-slot"></div>
             </div>
           </div>
         </div>
@@ -2679,6 +2718,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 </div>
 
 <script src="js/dashboard-charts.js"></script>
+<script src="js/dashboard-conversion.js"></script>
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -6086,35 +6126,19 @@ function renderWeekdayBars(weekday) {
   if (window.lucide) lucide.createIcons();
 }
 
-// LEADS & CONVERSION — recent leads table (top 8 by capture time).
+// LEADS & CONVERSION — recent leads table (D6, ticket zeus_1788322144357_b0cc6c65).
+// 10 most recent by capture time; PII-safe (phones masked to last 4 via
+// DashboardConversion); expandable detail rows (no lead-detail modal exists);
+// full contact info stays in Leads & CRM. Rendering + toggle logic live in
+// js/dashboard-conversion.js (unit-tested pure functions).
 function renderDashboardLeads(leads) {
   const tableEl = document.getElementById('dash-leads-table');
   const countEl = document.getElementById('dash-leads-count');
-  if (!tableEl) return;
+  if (!tableEl || !window.DashboardConversion) return;
   const list = Array.isArray(leads) ? leads.slice() : [];
   list.sort((a, b) => new Date(b.captured_at || 0) - new Date(a.captured_at || 0));
   if (countEl) countEl.textContent = list.length ? `${list.length} total` : '';
-  if (!list.length) {
-    tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">No leads captured yet. When someone calls or fills a form, they show up here.</div>';
-    return;
-  }
-  const recent = list.slice(0, 8);
-  tableEl.innerHTML = `<table class="dash-mini-table"><thead><tr>
-      <th>Name</th><th>Intent</th><th>Source</th><th>Captured</th>
-    </tr></thead><tbody>` +
-    recent.map(l => {
-      const name = escapeHtml(l.name || l.email || l.phone || 'Unknown');
-      const intent = escapeHtml(l.intent || l.lead_context || '—');
-      const source = escapeHtml(l.source || '—');
-      const when = l.captured_at ? new Date(l.captured_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
-      return `<tr>
-        <td style="font-weight:600;">${name}</td>
-        <td>${intent}</td>
-        <td>${source}</td>
-        <td style="color:var(--muted);">${when}</td>
-      </tr>`;
-    }).join('') +
-    `</tbody></table>`;
+  DashboardConversion.renderLeadRows(list);
 }
 
 // Reset all D4 chart slots to a clean empty state (used when the summary
@@ -6148,6 +6172,7 @@ async function loadDashboardSummary() {
         if (el) el.textContent = '—';
       });
       resetDashboardCharts();
+      resetConversionSlots();
       return;
     }
     const summary = await res.json();
@@ -6167,6 +6192,11 @@ async function loadDashboardSummary() {
       DashboardCharts.renderSourceStrip(summary.leads && summary.leads.by_source);
       DashboardCharts.renderUsageSparkline(summary.usage_trend);
     }
+    // D6 — booking funnel + top intents from the same summary payload.
+    if (window.DashboardConversion) {
+      DashboardConversion.renderFunnel(summary);
+      DashboardConversion.renderIntentChips(summary.leads && summary.leads.by_intent);
+    }
     if (window.lucide) lucide.createIcons();
   } catch (e) {
     console.error('[Auzora] Dashboard summary error:', e.message);
@@ -6175,18 +6205,33 @@ async function loadDashboardSummary() {
       if (el) el.textContent = '—';
     });
     resetDashboardCharts();
+    resetConversionSlots();
   }
 }
 
-// Recent leads are fetched separately (additive; failure leaves the empty state).
+// D6 degraded state — funnel + intents never keep a stale or "Loading…"
+// view when the summary fetch fails (mirrors resetDashboardCharts()).
+function resetConversionSlots() {
+  if (!window.DashboardConversion) return;
+  DashboardConversion.renderFunnel(null);
+  DashboardConversion.renderIntentChips({});
+}
+
+// Recent leads are fetched separately (additive; failure shows a truthful
+// unavailable state rather than a stuck "Loading…" row — D6).
 async function loadDashboardLeads() {
+  const tableEl = document.getElementById('dash-leads-table');
   try {
     const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
-    if (!res.ok) return;
+    if (!res.ok) {
+      if (tableEl) tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
+      return;
+    }
     const leads = await res.json();
     renderDashboardLeads(Array.isArray(leads) ? leads : []);
   } catch (e) {
     console.error('[Auzora] Dashboard leads error:', e.message);
+    if (tableEl) tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
   }
 }
 
