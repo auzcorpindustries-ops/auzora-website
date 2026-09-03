@@ -882,43 +882,43 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="page active" id="page-dashboard">
 
       <!-- 1. KPI ROW (D3) — values from /portal/dashboard/summary -->
-      <div class="stats-grid">
+      <div class="stats-grid" role="region" aria-label="Key performance indicators">
         <div class="stat-card">
           <div class="stat-label">Calls Answered</div>
-          <div class="stat-value" id="kpi-calls">—</div>
+          <div class="stat-value" id="kpi-calls" aria-live="polite">—</div>
           <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-calls-delta">—</span>
+            <span class="stat-delta flat" id="kpi-calls-delta" aria-live="polite">—</span>
             <span class="stat-sub" id="kpi-calls-sub">vs. last period</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Voice Minutes</div>
-          <div class="stat-value" id="kpi-minutes">—</div>
+          <div class="stat-value" id="kpi-minutes" aria-live="polite">—</div>
           <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-minutes-delta">—</span>
+            <span class="stat-delta flat" id="kpi-minutes-delta" aria-live="polite">—</span>
             <span class="stat-sub" id="kpi-minutes-sub">vs. last period</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">SMS Messages</div>
-          <div class="stat-value" id="kpi-sms">—</div>
+          <div class="stat-value" id="kpi-sms" aria-live="polite">—</div>
           <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-sms-delta">—</span>
+            <span class="stat-delta flat" id="kpi-sms-delta" aria-live="polite">—</span>
             <span class="stat-sub" id="kpi-sms-sub">vs. last period</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Leads Captured</div>
-          <div class="stat-value" id="kpi-leads">—</div>
+          <div class="stat-value" id="kpi-leads" aria-live="polite">—</div>
           <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-leads-delta">—</span>
+            <span class="stat-delta flat" id="kpi-leads-delta" aria-live="polite">—</span>
             <span class="stat-sub" id="kpi-leads-sub">vs. last period</span>
           </div>
         </div>
       </div>
 
       <!-- KPI-section strip (D4): leads by source mini-bars, same period as KPIs -->
-      <div class="dash-source-strip" id="dash-source-strip">
+      <div class="dash-source-strip" id="dash-source-strip" role="region" aria-label="Leads by source distribution">
         <div class="dash-slot-empty" id="dash-source-slot">
           <i data-lucide="users"></i>
           <span>Loading lead sources…</span>
@@ -926,7 +926,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
 
       <!-- 2. ACTIVITY (D3 shell — chart arrives in D4) -->
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-label="Activity metrics">
         <div class="table-header">
           <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="activity" style="width:17px;height:17px;color:var(--purple);"></i> Activity</h2>
           <select id="dash-activity-range-select" class="dash-select" onchange="setDashboardPeriod(this.value)" aria-label="Activity period">
@@ -937,11 +937,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
         <div style="padding:16px 20px;">
           <div class="dash-activity-grid">
-            <div class="dash-slot-empty dash-slot-tall" id="dash-activity-chart-slot">
+            <div class="dash-slot-empty dash-slot-tall" id="dash-activity-chart-slot" role="img" aria-label="Activity trend chart loading">
               <i data-lucide="line-chart"></i>
               <span>Loading activity…</span>
             </div>
-            <div class="dash-slot-empty" id="dash-weekday-slot">
+            <div class="dash-slot-empty" id="dash-weekday-slot" role="img" aria-label="Weekday activity chart loading">
               <i data-lucide="bar-chart-3"></i>
               <span>Loading weekday activity…</span>
             </div>
@@ -950,7 +950,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
 
       <!-- 3. PLAN & USAGE — existing usage card (pricing ticket F) + D5 gauge slot -->
-      <div class="usage-card" id="usage-card" style="display:none;">
+      <div class="usage-card" id="usage-card" style="display:none;" role="region" aria-label="Plan usage and limits">
         <div class="usage-card-head">
           <div>
             <div class="usage-card-title">Usage this month</div>
@@ -967,12 +967,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
         <div id="usage-bars">
           <div class="usage-row">
-            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts"></span></div>
-            <div class="usage-bar"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
+            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
           </div>
           <div class="usage-row">
-            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts"></span></div>
-            <div class="usage-bar"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
+            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
           </div>
         </div>
         <!-- D5: Usage gauge ring -->
@@ -982,45 +982,45 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
 
       <!-- 4. LEADS & CONVERSION (D3 shell — funnel/top intents arrive in D6) -->
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-label="Leads and conversion metrics">
         <div class="table-header">
           <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="users" style="width:17px;height:17px;color:var(--purple);"></i> Leads &amp; Conversion</h2>
-          <span style="font-size:12px;color:var(--muted);" id="dash-leads-count"></span>
+          <span style="font-size:12px;color:var(--muted);" id="dash-leads-count" aria-live="polite"></span>
         </div>
         <div style="padding:16px 20px;">
           <div class="dash-leads-grid">
-            <div id="dash-leads-table">
+            <div id="dash-leads-table" role="region" aria-label="Recent leads table">
               <div class="empty" style="padding:24px 16px;">Loading recent leads…</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
-              <div id="dash-funnel-slot">
+              <div id="dash-funnel-slot" role="img" aria-label="Booking funnel chart loading">
                 <div class="empty" style="padding:24px 16px;"><i data-lucide="filter"></i> Loading booking funnel…</div>
               </div>
-              <div id="dash-intents-slot"></div>
+              <div id="dash-intents-slot" role="img" aria-label="Top intents chart loading"></div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 5. AGENT STATUS (D7 — agent health card) -->
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-label="Agent status and configuration">
         <div class="table-header">
           <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="bot" style="width:17px;height:17px;color:var(--purple);"></i> Agent Status</h2>
         </div>
         <div style="padding:16px 20px;">
-          <div id="dash-agent-card">
+          <div id="dash-agent-card" role="status" aria-live="polite">
             <div class="empty" style="padding:24px 16px;"><i data-lucide="bot"></i> Loading agent status…</div>
           </div>
         </div>
       </div>
 
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-label="Recent appointments">
         <div class="table-header">
           <h2>Recent Appointments</h2>
           <div class="dash-appt-chips">
-            <span class="dash-chip" title="All appointments on record"><b id="stat-appts">—</b>&nbsp;booked all time</span>
-            <span class="dash-chip" title="Bookings this month"><b id="stat-month">—</b>&nbsp;this month</span>
-            <span style="font-size:12px;color:var(--muted);" id="dash-appt-count"></span>
+            <span class="dash-chip" title="All appointments on record"><b id="stat-appts" aria-live="polite">—</b>&nbsp;booked all time</span>
+            <span class="dash-chip" title="Bookings this month"><b id="stat-month" aria-live="polite">—</b>&nbsp;this month</span>
+            <span style="font-size:12px;color:var(--muted);" id="dash-appt-count" aria-live="polite"></span>
           </div>
         </div>
         <div id="dash-appt-list"></div>
@@ -1028,7 +1028,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
       <span id="stat-month-label" style="display:none;">April appointments</span>
 
-      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;">
+      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;" role="alert" aria-live="polite">
         <div class="table-header">
           <h2 style="color:var(--red);">⚠ Unconfirmed Appointments</h2>
           <span style="font-size:12px;color:var(--muted);" id="dash-unconfirmed-count"></span>
