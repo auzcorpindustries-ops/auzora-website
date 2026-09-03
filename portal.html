@@ -163,6 +163,19 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 }
 .pulse { width: 6px; height: 6px; background: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.35); } }
+
+/* Agent status pills (D7) */
+.agent-status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 5px 11px;
+}
+.agent-status-pill-live {
+  color: #16a34a; background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.22);
+}
+.agent-status-pill-setup {
+  color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
+}
+.agent-status-pill-setup .pulse { display: none; }
 .bell-btn {
   width: 42px; height: 42px; border: 1px solid rgba(16,24,38,0.12);
   background: var(--surface); border-radius: 11px; color: var(--muted);
@@ -989,15 +1002,15 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- 5. AGENT STATUS (D3 shell — richer status rail arrives in D7) -->
+      <!-- 5. AGENT STATUS (D7 — agent health card) -->
       <div class="table-wrap">
         <div class="table-header">
           <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="bot" style="width:17px;height:17px;color:var(--purple);"></i> Agent Status</h2>
         </div>
-        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
-          <div class="dash-agent-line"><span class="dash-dot"></span><span>Your AI agent is live and answering calls</span></div>
-          <div class="dash-agent-line"><span>Active phone:</span> <span class="dash-agent-phone" id="stat-phone">—</span></div>
-          <div class="dash-agent-line" id="dash-agent-numbers"></div>
+        <div style="padding:16px 20px;">
+          <div id="dash-agent-card">
+            <div class="empty" style="padding:24px 16px;"><i data-lucide="bot"></i> Loading agent status…</div>
+          </div>
         </div>
       </div>
 
@@ -2719,6 +2732,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
 <script src="js/dashboard-charts.js"></script>
 <script src="js/dashboard-conversion.js"></script>
+<script src="js/dashboard-agent.js"></script>
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -6239,6 +6253,9 @@ async function loadDashboard() {
   loadDashboardSummary();
   loadDashboardLeads();
 
+  // Render agent health card (D7)
+  renderAgentCard();
+
   try {
     const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
     if (res.status === 401) {
@@ -6299,6 +6316,20 @@ async function loadDashboard() {
 
   // Load unconfirmed appointments for the dashboard section
   loadUnconfirmedAppointments();
+}
+
+// ── AGENT HEALTH CARD (D7) ─────────────────────────────────────────────────────
+// Render the agent health status card from portalClient and VOICES catalog.
+function renderAgentCard() {
+  const cardEl = document.getElementById('dash-agent-card');
+  if (!cardEl) return;
+
+  // Build HTML from portalClient and VOICES
+  const html = window.DashboardAgent.buildAgentCard(portalClient, VOICES);
+  cardEl.innerHTML = html;
+
+  // Re-render lucide icons if present
+  if (window.lucide) lucide.createIcons();
 }
 
 // ── UNCONFIRMED APPOINTMENTS (dashboard) ───────────────────────────────────
