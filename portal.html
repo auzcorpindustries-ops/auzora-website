@@ -375,6 +375,25 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .dash-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); background: var(--tint); border: 1px solid var(--border); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
 .dash-chip b { color: var(--text); font-weight: 700; }
 .dash-appt-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* ── Dashboard D5 — Usage gauge ring ───────────────────────────────────── */
+.usage-gauge-wrap { display: flex; align-items: center; gap: 16px; padding: 12px 14px; background: var(--tint); border-radius: 12px; }
+.usage-gauge-svg { width: 88px; height: 88px; flex-shrink: 0; }
+.usage-gauge-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+.usage-gauge-ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 500ms ease; transform: rotate(-90deg); transform-origin: center; }
+.usage-gauge-ring-fill.on-track { stroke: url(#gaugeGradientOnTrack); }
+.usage-gauge-ring-fill.warn { stroke: url(#gaugeGradientWarn); }
+.usage-gauge-ring-fill.over { stroke: url(#gaugeGradientOver); }
+.usage-gauge-text-wrap { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 1; }
+.usage-gauge-pct-wrap { display: flex; align-items: baseline; gap: 4px; }
+.usage-gauge-pct { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+.usage-gauge-pct.over { color: #DC2626; }
+.usage-gauge-pct.warn { color: #F97316; }
+.usage-gauge-label { font-size: 13px; color: var(--muted); }
+.usage-gauge-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.usage-gauge-wrap.clickable { cursor: pointer; }
+.usage-gauge-wrap.clickable:hover { background: rgba(124,58,237,.08); }
+.usage-gauge-wrap.clickable:hover .usage-gauge-sub { color: var(--purple); text-decoration: underline; }
+@media (max-width: 640px) { .usage-gauge-wrap { padding: 10px 12px; } .usage-gauge-svg { width: 80px; height: 80px; } .usage-gauge-pct { font-size: 24px; } }
 .dash-gauge-slot { margin-top: 14px; }
 @media (max-width: 900px) { .dash-activity-grid, .dash-leads-grid { grid-template-columns: 1fr; } }
 
@@ -906,12 +925,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div class="usage-bar"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
           </div>
         </div>
-        <div class="dash-gauge-slot" id="dash-gauge-slot">
-          <div class="dash-slot-empty dash-slot-compact" id="dash-gauge-slot-inner">
-            <i data-lucide="gauge"></i>
-            <span>Plan usage gauge — coming in the next dashboard update</span>
-          </div>
-        </div>
+        <!-- D5: Usage gauge ring -->
+        <div class="dash-gauge-slot" id="dash-gauge-slot"></div>
         <!-- D4: 6-month minutes+SMS sparkline from summary usage_trend -->
         <div class="dash-usage-spark" id="dash-usage-spark-slot"></div>
       </div>
@@ -3346,6 +3361,73 @@ function renderUsageCard(entitlementsPayload) {
     counts.textContent = `${Number(r.used).toLocaleString()} / ${Number(usage.limits?.[r.fill === 'usage-voice-fill' ? 'voiceMinutes' : 'smsMessages']).toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
   });
   if (anyOver) card.classList.add('over');
+
+  // Render usage gauge (D5)
+  renderUsageGauge(entitlementsPayload);
+}
+
+// Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
+function renderUsageGauge(entitlementsPayload) {
+  const slot = document.getElementById('dash-gauge-slot');
+  if (!slot) return;
+
+  const usage = entitlementsPayload?.usage;
+  if (!usage || usage.unlimited) {
+    slot.innerHTML = '';
+    return;
+  }
+
+  const voicePct = usage.percentUsed?.voice ?? 0;
+  const smsPct = usage.percentUsed?.sms ?? 0;
+  const voiceLimit = usage.limits?.voiceMinutes ?? 0;
+  const smsLimit = usage.limits?.smsMessages ?? 0;
+
+  // Use the tighter (smaller) cap for the combined percentage
+  // If one cap is smaller, it represents the bottleneck
+  const isVoiceTighter = voiceLimit > 0 && voiceLimit <= smsLimit;
+  const combinedPct = isVoiceTighter ? voicePct : smsPct;
+
+  const clampedPct = Math.min(100, Math.max(0, combinedPct));
+  const isWarn = combinedPct >= 80 && combinedPct <= 100;
+  const isOver = combinedPct > 100;
+
+  let stateClass = 'on-track';
+  if (isOver) stateClass = 'over';
+  else if (isWarn) stateClass = 'warn';
+
+  const circumference = 2 * Math.PI * 34; // radius 34
+  const offset = circumference - (clampedPct / 100) * circumference;
+
+  slot.innerHTML = `
+    <div class="usage-gauge-wrap clickable" onclick="document.getElementById('usage-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('usage-card').focus();">
+      <svg class="usage-gauge-svg" viewBox="0 0 88 88" role="img" aria-label="Plan usage gauge: ${Math.round(clampedPct)}% used">
+        <defs>
+          <linearGradient id="gaugeGradientOnTrack" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#3B82F6" />
+            <stop offset="100%" style="stop-color:#7C3AED" />
+          </linearGradient>
+          <linearGradient id="gaugeGradientWarn" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#F59E0B" />
+            <stop offset="100%" style="stop-color:#F97316" />
+          </linearGradient>
+          <linearGradient id="gaugeGradientOver" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#EF4444" />
+            <stop offset="100%" style="stop-color:#DC2626" />
+          </linearGradient>
+        </defs>
+        <circle class="usage-gauge-ring-bg" cx="44" cy="44" r="34"></circle>
+        <circle class="usage-gauge-ring-fill ${stateClass}" cx="44" cy="44" r="34"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+      </svg>
+      <div class="usage-gauge-text-wrap">
+        <div class="usage-gauge-pct-wrap">
+          <span class="usage-gauge-pct ${stateClass}">${Math.round(clampedPct)}%</span>
+          <span class="usage-gauge-label">${isOver ? 'over plan' : 'of plan used'}</span>
+        </div>
+        <div class="usage-gauge-sub">Click for details</div>
+      </div>
+    </div>
+  `;
 }
 
 // Apply tier-based visibility to sidebar nav items.
