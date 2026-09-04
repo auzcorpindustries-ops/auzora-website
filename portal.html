@@ -21,6 +21,7 @@
   --green: #22c55e; --yellow: #b45309; --orange: #F97316; --red: #EF4444;
   --blue: #3B82F6; --purple: #7C3AED; --pink: #EC4899;
   --text: #101826; --muted: #5f687a; --faint: #9aa3b2; --tint: rgba(16,24,38,0.035);
+  --dchart-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
   --shadow: 0 24px 60px rgba(24,33,47,0.08);
   --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -162,6 +163,19 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 }
 .pulse { width: 6px; height: 6px; background: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.35); } }
+
+/* Agent status pills (D7) */
+.agent-status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 5px 11px;
+}
+.agent-status-pill-live {
+  color: #16a34a; background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.22);
+}
+.agent-status-pill-setup {
+  color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
+}
+.agent-status-pill-setup .pulse { display: none; }
 .bell-btn {
   width: 42px; height: 42px; border: 1px solid rgba(16,24,38,0.12);
   background: var(--surface); border-radius: 11px; color: var(--muted);
@@ -340,6 +354,108 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-unlimited-text { font-size: 13.5px; color: var(--muted); }
 .usage-unlimited-stats { font-size: 13px; color: var(--muted); }
 @media (max-width: 640px) { .usage-card { padding: 16px; } }
+
+/* ── Dashboard D3 — KPI deltas + section shells ────────────────────────── */
+.stat-kpi-foot { display: flex; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+.stat-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; border-radius: 99px; padding: 2px 9px; line-height: 1.4; }
+.stat-delta.up { color: var(--green); background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); }
+.stat-delta.down { color: var(--red); background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3); }
+.stat-delta.flat { color: var(--muted); background: var(--tint); border: 1px solid var(--border); }
+.dash-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.dash-section-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+.dash-section-title svg { width: 17px; height: 17px; color: var(--purple); }
+.dash-range { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.dash-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; color: var(--text); outline: none; cursor: pointer; }
+.dash-slot-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 120px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 12.5px; padding: 18px; text-align: center; }
+.dash-slot-empty svg { width: 20px; height: 20px; opacity: .7; }
+.dash-slot-tall { min-height: 220px; }
+.dash-slot-compact { min-height: 0; flex-direction: row; padding: 10px 14px; }
+.dash-activity-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.dash-leads-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+.dash-wd-row { display: grid; grid-template-columns: 34px 1fr 30px; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dash-wd-row:last-child { margin-bottom: 0; }
+.dash-wd-label { font-size: 11.5px; color: var(--muted); }
+.dash-wd-track { height: 8px; border-radius: 99px; background: var(--tint); overflow: hidden; }
+.dash-wd-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.dash-wd-count { font-size: 11.5px; color: var(--muted); text-align: right; }
+.dash-mini-table { width: 100%; min-width: 0; border-collapse: collapse; }
+.dash-mini-table th { font-size: 12.5px; color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 500; white-space: nowrap; }
+.dash-mini-table td { font-size: 13px; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+.dash-mini-table tr:last-child td { border-bottom: none; }
+.dash-agent-line { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); flex-wrap: wrap; }
+.dash-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,.15); flex-shrink: 0; }
+.dash-agent-phone { font-weight: 700; color: var(--text); font-size: 14px; }
+.dash-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); background: var(--tint); border: 1px solid var(--border); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+.dash-chip b { color: var(--text); font-weight: 700; }
+.dash-appt-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* ── Dashboard D5 — Usage gauge ring ───────────────────────────────────── */
+.usage-gauge-wrap { display: flex; align-items: center; gap: 16px; padding: 12px 14px; background: var(--tint); border-radius: 12px; }
+.usage-gauge-svg { width: 88px; height: 88px; flex-shrink: 0; }
+.usage-gauge-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+.usage-gauge-ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 500ms ease; transform: rotate(-90deg); transform-origin: center; }
+.usage-gauge-ring-fill.on-track { stroke: url(#gaugeGradientOnTrack); }
+.usage-gauge-ring-fill.warn { stroke: url(#gaugeGradientWarn); }
+.usage-gauge-ring-fill.over { stroke: url(#gaugeGradientOver); }
+.usage-gauge-text-wrap { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 1; }
+.usage-gauge-pct-wrap { display: flex; align-items: baseline; gap: 4px; }
+.usage-gauge-pct { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+.usage-gauge-pct.over { color: #DC2626; }
+.usage-gauge-pct.warn { color: #F97316; }
+.usage-gauge-label { font-size: 13px; color: var(--muted); }
+.usage-gauge-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.usage-gauge-wrap.clickable { cursor: pointer; }
+.usage-gauge-wrap.clickable:hover { background: rgba(124,58,237,.08); }
+.usage-gauge-wrap.clickable:hover .usage-gauge-sub { color: var(--purple); text-decoration: underline; }
+@media (max-width: 640px) { .usage-gauge-wrap { padding: 10px 12px; } .usage-gauge-svg { width: 80px; height: 80px; } .usage-gauge-pct { font-size: 24px; } }
+.dash-gauge-slot { margin-top: 14px; }
+@media (max-width: 900px) { .dash-activity-grid, .dash-leads-grid { grid-template-columns: 1fr; } }
+
+/* ── DASHBOARD CHARTS (D4) — dependency-free SVG ───────────────────────── */
+.dchart { display: block; width: 100%; height: auto; }
+.dchart-activity { width: 100%; height: 230px; }
+.dchart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+.dchart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dchart-minutes { stroke: var(--accent); }
+.dchart-calls { stroke: var(--accent2); }
+.dchart-sms { stroke: var(--accent2); }
+.dchart-area { fill: var(--accent); fill-opacity: 0.10; stroke: none; }
+.dchart-bar { fill: var(--tint); stroke: none; }
+.dchart-bar.max { fill: var(--accent); }
+.dchart-bar-label { font-family: var(--dchart-mono); font-size: 9.5px; font-weight: 700; fill: var(--text); }
+.dchart-hbar-track { fill: var(--tint); }
+.dchart-hbar { fill: var(--accent2); fill-opacity: .55; }
+.dchart-hbar.max { fill: var(--accent2); fill-opacity: 1; }
+.dchart-dot { stroke-width: 0; }
+.dchart-dot.dchart-minutes { fill: var(--accent); }
+.dchart-dot.dchart-calls { fill: var(--accent2); }
+.dchart-last { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.dchart-tick { font-family: var(--dchart-mono); font-size: 9px; fill: var(--muted); }
+.dchart-tick.strong { fill: var(--text); font-weight: 700; }
+.dchart-tick.dchart-y { font-size: 8.5px; }
+.dchart-tick.dchart-x { font-size: 8.5px; letter-spacing: .02em; }
+.dchart-tick.dchart-spark-val { fill: var(--accent); font-weight: 700; font-size: 8.5px; }
+.dchart-tick.dchart-spark-val.sms { fill: var(--accent2); }
+.dchart-label { font-size: 10.5px; fill: var(--text); font-weight: 500; }
+.dchart-count { font-family: var(--dchart-mono); font-size: 10px; font-weight: 700; fill: var(--text); }
+.dchart-hit { fill: transparent; stroke: none; }
+.dchart-hit:hover { fill: var(--accent); fill-opacity: .06; }
+.dchart-legend { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; font-size: 11.5px; color: var(--muted); }
+.dchart-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.dchart-legend-inline { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-size: 10.5px; color: var(--muted); font-weight: 500; }
+.dchart-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2.5px; flex-shrink: 0; }
+.dchart-swatch.minutes { background: var(--accent); }
+.dchart-swatch.calls { background: var(--accent2); }
+.dchart-swatch.leads { background: var(--pink); }
+.dchart-slot-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; }
+.dchart-tip { position: fixed; z-index: 1000; display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; box-shadow: var(--shadow); font-size: 12px; color: var(--text); pointer-events: none; max-width: 200px; }
+.dchart-tip b { display: block; margin-bottom: 4px; font-size: 12.5px; }
+.dchart-tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.7; color: var(--muted); }
+.dchart-tip-row b { margin: 0 0 0 auto; color: var(--text); font-family: var(--dchart-mono); font-size: 11.5px; }
+.dash-source-strip { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 14px 16px; }
+.dash-source-strip .dash-slot-empty { border: none; padding: 22px 14px; }
+.dash-usage-spark { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.dash-usage-spark svg { flex: 0 1 260px; min-width: 200px; }
+.dash-usage-spark .dash-slot-empty { border: none; padding: 10px 0; min-height: 0; flex-direction: row; justify-content: flex-start; }
 
 /* ── TABLE ─────────────────────────────────────────────────────────────── */
 .table-wrap {
@@ -625,6 +741,43 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   .stat-card { padding: 14px 12px; }
 }
 
+
+/* ── Dashboard D6 — Leads & Conversion (funnel + intents + leads table) ── */
+.dconv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 96px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 12.5px; padding: 18px; text-align: center; }
+.dconv-empty svg { width: 20px; height: 20px; opacity: .7; }
+.dconv-funnel { display: flex; flex-direction: column; gap: 2px; }
+.dconv-stage { margin: 0; }
+.dconv-stage-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.dconv-stage-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.dconv-stage-count { font-family: var(--dchart-mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.dconv-stage-track { height: 12px; border-radius: 7px; background: var(--tint); overflow: hidden; }
+.dconv-stage-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 500ms ease; min-width: 3px; }
+.dconv-stage-fill.zero { background: var(--border); min-width: 0; }
+.dconv-arrow { display: flex; align-items: center; gap: 8px; margin: 5px 0 5px 18px; }
+.dconv-arrow-line { width: 14px; height: 2px; border-left: 2px solid var(--border); border-bottom: 2px solid var(--border); border-bottom-left-radius: 4px; flex-shrink: 0; }
+.dconv-arrow-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.dconv-hint { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+.dconv-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dconv-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
+.dconv-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.dconv-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dconv-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dconv-chip-count { font-family: var(--dchart-mono); font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.dconv-lead-table .dconv-lead-row { cursor: pointer; }
+.dconv-lead-table .dconv-lead-row:hover td, .dconv-lead-table .dconv-lead-row:focus-visible td { background: var(--tint); }
+.dconv-lead-table .dconv-lead-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dconv-lead-name { font-weight: 600; }
+.dconv-lead-phone { font-family: var(--dchart-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+.dconv-lead-intent, .dconv-lead-when { color: var(--muted); font-size: 12.5px; }
+.dconv-lead-score { font-family: var(--dchart-mono); font-weight: 700; font-size: 12.5px; }
+.dconv-source-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--accent2); background: var(--tint); border: 1px solid var(--border); border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
+.dconv-lead-detail td { background: var(--tint); padding: 10px 14px !important; }
+.dconv-detail-grid { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.dconv-detail-grid b { color: var(--text); font-weight: 600; margin-right: 4px; }
+.dconv-detail-note { font-size: 11.5px; font-style: italic; }
+.dconv-attn { display: inline-flex; font-size: 10.5px; font-weight: 700; color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.35); border-radius: 99px; padding: 1px 8px; margin-left: 4px; }
+.dconv-table-scroll { overflow-x: auto; }
+@media (max-width: 640px) { .dconv-lead-intent, .dconv-lead-table th:nth-child(4), .dconv-lead-table .dconv-lead-row td:nth-child(5), .dconv-lead-table th:nth-child(5) { display: none; } .dconv-lead-table td, .dconv-lead-table th { padding-left: 6px; padding-right: 6px; } } @media (max-width: 480px) { .dconv-lead-when, .dconv-lead-table th:nth-child(6) { display: none; } }
 </style>
 </head>
 <body>
@@ -727,26 +880,77 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="stats-grid">
+
+      <!-- 1. KPI ROW (D3) — values from /portal/dashboard/summary -->
+      <div class="stats-grid" role="region" aria-label="Key performance indicators">
         <div class="stat-card">
-          <div class="stat-label">Total Appointments Booked</div>
-          <div class="stat-value" id="stat-appts">—</div>
-          <div class="stat-sub">All time</div>
+          <div class="stat-label">Calls Answered</div>
+          <div class="stat-value" id="kpi-calls" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-calls-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-calls-sub">vs. last period</span>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Bookings This Month</div>
-          <div class="stat-value" id="stat-month">—</div>
-          <div class="stat-sub" id="stat-month-label">April appointments</div>
+          <div class="stat-label">Voice Minutes</div>
+          <div class="stat-value" id="kpi-minutes" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-minutes-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-minutes-sub">vs. last period</span>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Active Phone</div>
-          <div class="stat-value" style="font-size:20px;margin-top:10px;" id="stat-phone">—</div>
-          <div class="stat-sub">Your AI line</div>
+          <div class="stat-label">SMS Messages</div>
+          <div class="stat-value" id="kpi-sms" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-sms-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-sms-sub">vs. last period</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Leads Captured</div>
+          <div class="stat-value" id="kpi-leads" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-leads-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-leads-sub">vs. last period</span>
+          </div>
         </div>
       </div>
 
-      <!-- USAGE CARD (pricing ticket F) — monthly voice/SMS usage vs plan limits -->
-      <div class="usage-card" id="usage-card" style="display:none;">
+      <!-- KPI-section strip (D4): leads by source mini-bars, same period as KPIs -->
+      <div class="dash-source-strip" id="dash-source-strip" role="region" aria-label="Leads by source distribution">
+        <div class="dash-slot-empty" id="dash-source-slot">
+          <i data-lucide="users"></i>
+          <span>Loading lead sources…</span>
+        </div>
+      </div>
+
+      <!-- 2. ACTIVITY (D3 shell — chart arrives in D4) -->
+      <div class="table-wrap" role="region" aria-label="Activity metrics">
+        <div class="table-header">
+          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="activity" style="width:17px;height:17px;color:var(--purple);"></i> Activity</h2>
+          <select id="dash-activity-range-select" class="dash-select" onchange="setDashboardPeriod(this.value)" aria-label="Activity period">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </div>
+        <div style="padding:16px 20px;">
+          <div class="dash-activity-grid">
+            <div class="dash-slot-empty dash-slot-tall" id="dash-activity-chart-slot" role="img" aria-label="Activity trend chart loading">
+              <i data-lucide="line-chart"></i>
+              <span>Loading activity…</span>
+            </div>
+            <div class="dash-slot-empty" id="dash-weekday-slot" role="img" aria-label="Weekday activity chart loading">
+              <i data-lucide="bar-chart-3"></i>
+              <span>Loading weekday activity…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. PLAN & USAGE — existing usage card (pricing ticket F) + D5 gauge slot -->
+      <div class="usage-card" id="usage-card" style="display:none;" role="region" aria-label="Plan usage and limits">
         <div class="usage-card-head">
           <div>
             <div class="usage-card-title">Usage this month</div>
@@ -763,25 +967,68 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
         <div id="usage-bars">
           <div class="usage-row">
-            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts"></span></div>
-            <div class="usage-bar"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
+            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
           </div>
           <div class="usage-row">
-            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts"></span></div>
-            <div class="usage-bar"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
+            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <!-- D5: Usage gauge ring -->
+        <div class="dash-gauge-slot" id="dash-gauge-slot"></div>
+        <!-- D4: 6-month minutes+SMS sparkline from summary usage_trend -->
+        <div class="dash-usage-spark" id="dash-usage-spark-slot"></div>
+      </div>
+
+      <!-- 4. LEADS & CONVERSION (D3 shell — funnel/top intents arrive in D6) -->
+      <div class="table-wrap" role="region" aria-label="Leads and conversion metrics">
+        <div class="table-header">
+          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="users" style="width:17px;height:17px;color:var(--purple);"></i> Leads &amp; Conversion</h2>
+          <span style="font-size:12px;color:var(--muted);" id="dash-leads-count" aria-live="polite"></span>
+        </div>
+        <div style="padding:16px 20px;">
+          <div class="dash-leads-grid">
+            <div id="dash-leads-table" role="region" aria-label="Recent leads table">
+              <div class="empty" style="padding:24px 16px;">Loading recent leads…</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+              <div id="dash-funnel-slot" role="img" aria-label="Booking funnel chart loading">
+                <div class="empty" style="padding:24px 16px;"><i data-lucide="filter"></i> Loading booking funnel…</div>
+              </div>
+              <div id="dash-intents-slot" role="img" aria-label="Top intents chart loading"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="table-wrap">
+      <!-- 5. AGENT STATUS (D7 — agent health card) -->
+      <div class="table-wrap" role="region" aria-label="Agent status and configuration">
+        <div class="table-header">
+          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="bot" style="width:17px;height:17px;color:var(--purple);"></i> Agent Status</h2>
+        </div>
+        <div style="padding:16px 20px;">
+          <div id="dash-agent-card" role="status" aria-live="polite">
+            <div class="empty" style="padding:24px 16px;"><i data-lucide="bot"></i> Loading agent status…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Recent appointments">
         <div class="table-header">
           <h2>Recent Appointments</h2>
-          <span style="font-size:12px;color:var(--muted);" id="dash-appt-count"></span>
+          <div class="dash-appt-chips">
+            <span class="dash-chip" title="All appointments on record"><b id="stat-appts" aria-live="polite">—</b>&nbsp;booked all time</span>
+            <span class="dash-chip" title="Bookings this month"><b id="stat-month" aria-live="polite">—</b>&nbsp;this month</span>
+            <span style="font-size:12px;color:var(--muted);" id="dash-appt-count" aria-live="polite"></span>
+          </div>
         </div>
         <div id="dash-appt-list"></div>
       </div>
 
-      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;">
+      <span id="stat-month-label" style="display:none;">April appointments</span>
+
+      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;" role="alert" aria-live="polite">
         <div class="table-header">
           <h2 style="color:var(--red);">⚠ Unconfirmed Appointments</h2>
           <span style="font-size:12px;color:var(--muted);" id="dash-unconfirmed-count"></span>
@@ -2483,6 +2730,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   </div>
 </div>
 
+<script src="js/dashboard-charts.js"></script>
+<script src="js/dashboard-conversion.js"></script>
+<script src="js/dashboard-agent.js"></script>
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -3165,6 +3415,73 @@ function renderUsageCard(entitlementsPayload) {
     counts.textContent = `${Number(r.used).toLocaleString()} / ${Number(usage.limits?.[r.fill === 'usage-voice-fill' ? 'voiceMinutes' : 'smsMessages']).toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
   });
   if (anyOver) card.classList.add('over');
+
+  // Render usage gauge (D5)
+  renderUsageGauge(entitlementsPayload);
+}
+
+// Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
+function renderUsageGauge(entitlementsPayload) {
+  const slot = document.getElementById('dash-gauge-slot');
+  if (!slot) return;
+
+  const usage = entitlementsPayload?.usage;
+  if (!usage || usage.unlimited) {
+    slot.innerHTML = '';
+    return;
+  }
+
+  const voicePct = usage.percentUsed?.voice ?? 0;
+  const smsPct = usage.percentUsed?.sms ?? 0;
+  const voiceLimit = usage.limits?.voiceMinutes ?? 0;
+  const smsLimit = usage.limits?.smsMessages ?? 0;
+
+  // Use the tighter (smaller) cap for the combined percentage
+  // If one cap is smaller, it represents the bottleneck
+  const isVoiceTighter = voiceLimit > 0 && voiceLimit <= smsLimit;
+  const combinedPct = isVoiceTighter ? voicePct : smsPct;
+
+  const clampedPct = Math.min(100, Math.max(0, combinedPct));
+  const isWarn = combinedPct >= 80 && combinedPct <= 100;
+  const isOver = combinedPct > 100;
+
+  let stateClass = 'on-track';
+  if (isOver) stateClass = 'over';
+  else if (isWarn) stateClass = 'warn';
+
+  const circumference = 2 * Math.PI * 34; // radius 34
+  const offset = circumference - (clampedPct / 100) * circumference;
+
+  slot.innerHTML = `
+    <div class="usage-gauge-wrap clickable" onclick="document.getElementById('usage-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('usage-card').focus();">
+      <svg class="usage-gauge-svg" viewBox="0 0 88 88" role="img" aria-label="Plan usage gauge: ${Math.round(clampedPct)}% used">
+        <defs>
+          <linearGradient id="gaugeGradientOnTrack" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#3B82F6" />
+            <stop offset="100%" style="stop-color:#7C3AED" />
+          </linearGradient>
+          <linearGradient id="gaugeGradientWarn" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#F59E0B" />
+            <stop offset="100%" style="stop-color:#F97316" />
+          </linearGradient>
+          <linearGradient id="gaugeGradientOver" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#EF4444" />
+            <stop offset="100%" style="stop-color:#DC2626" />
+          </linearGradient>
+        </defs>
+        <circle class="usage-gauge-ring-bg" cx="44" cy="44" r="34"></circle>
+        <circle class="usage-gauge-ring-fill ${stateClass}" cx="44" cy="44" r="34"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+      </svg>
+      <div class="usage-gauge-text-wrap">
+        <div class="usage-gauge-pct-wrap">
+          <span class="usage-gauge-pct ${stateClass}">${Math.round(clampedPct)}%</span>
+          <span class="usage-gauge-label">${isOver ? 'over plan' : 'of plan used'}</span>
+        </div>
+        <div class="usage-gauge-sub">Click for details</div>
+      </div>
+    </div>
+  `;
 }
 
 // Apply tier-based visibility to sidebar nav items.
@@ -3793,8 +4110,6 @@ const FORM_TEMPLATES = {
     accent: '#333333',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Request access',
-    subtext: "Tell us who you are and we'll set up your account.",
     fields: [
           {
                 "type": "text",
@@ -3851,8 +4166,6 @@ const FORM_TEMPLATES = {
     accent: '#c2410c',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: "Let's start the conversation.",
-    subtext: 'Share a few details and a specialist will reach out within one business day.',
     fields: [
           {
                 "type": "text",
@@ -3923,8 +4236,6 @@ const FORM_TEMPLATES = {
     accent: '#0ea5e9',
     font: "'Space Grotesk', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Join the client portal',
-    subtext: 'Get provisioned access to dashboards, reports, and support.',
     fields: [
           {
                 "type": "text",
@@ -3980,8 +4291,6 @@ const FORM_TEMPLATES = {
     accent: '#9333ea',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Continue',
-    headline: 'First, the basics',
-    subtext: "We'll ask about your project next.",
     fields: [
           {
                 "type": "text",
@@ -4041,13 +4350,6 @@ const FORM_TEMPLATES = {
     accent: '#0d9488',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Quick contact',
-    subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.',
-    // Inline widget has no <h1> — content slots map to its label span + trailing note
-    contentSelectors: {
-      headline: /(<span style="font-size:15px;font-weight:600;[^>]*>)[^<]*(<\/span>)/,
-      subtext: /(<p style="font-size:12px;[^>]*>)[^<]*(<\/p>)/,
-    },
     fields: [
           {
                 "type": "text",
@@ -4100,8 +4402,6 @@ const FORM_TEMPLATES = {
     accent: '#000000',
     font: 'ui-monospace, monospace',
     submitLabel: 'GET STARTED',
-    headline: 'SIGN UP NOW',
-    subtext: 'NO FLUFF. JUST FILL IT OUT.',
     fields: [
           {
                 "type": "text",
@@ -4165,8 +4465,6 @@ const FORM_TEMPLATES = {
     accent: '#a16207',
     font: 'Georgia, serif',
     submitLabel: 'Get Started',
-    headline: 'Private Client Access',
-    subtext: 'By invitation and referral only. Please share your details for consideration.',
     fields: [
           {
                 "type": "text",
@@ -4219,8 +4517,6 @@ const FORM_TEMPLATES = {
     accent: '#ea580c',
     font: "'Quicksand', sans-serif",
     submitLabel: 'Get Started',
-    headline: 'Hey there! 👋',
-    subtext: "Tell us a bit about you, we can't wait to chat.",
     fields: [
           {
                 "type": "text",
@@ -4294,8 +4590,6 @@ const FORM_TEMPLATES = {
     accent: '#3730a3',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Talk to our team',
-    subtext: 'Complete the form and an account representative will contact you within 24 hours.',
     fields: [
           {
                 "type": "text",
@@ -4345,8 +4639,6 @@ const FORM_TEMPLATES = {
   auzoraSite: {
     name: 'Auzora Website',
     isDefault: true,
-    headline: 'Start the conversation.',
-    subtext: 'Interested in a demo? Fill out the form and we\'ll reach out shortly to schedule it with you.',
     html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;font-family:'Inter',sans-serif;}</style></head><body style="margin:0;background:radial-gradient(800px 400px at 50% 100%,rgba(124,58,237,.07),transparent 65%);"><section style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;"><div class="form-container" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(10px);border:1px solid rgba(16,24,38,0.08);border-radius:24px;padding:32px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 36px rgba(16,24,38,.06);"><h2 style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.02em;color:#101826;margin:0 0 8px;">Start the conversation.</h2><p style="font-size:15px;color:#5f687a;margin:0 0 20px;line-height:1.6;">Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Name<input type="text" placeholder="Jane Smith" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Business<input type="text" placeholder="Smith Plumbing Co." style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Phone<input type="tel" placeholder="(555) 123-4567" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Email<input type="email" placeholder="jane@business.com" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label></div><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">What do you want Auzora to handle?<textarea placeholder="Tell us about your call volume and what you'd like automated…" rows="3" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;min-height:120px;resize:vertical;"></textarea></label><button style="background:linear-gradient(90deg,#3B82F6,#7C3AED,#EC4899);color:#fff;padding:15px;border:none;border-radius:99px;font-weight:600;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 20px rgba(124,58,237,.3);">Request a demo</button></div></section></body></html>`,
     accent: '#7C3AED',
     font: "'Inter', sans-serif",
@@ -4424,8 +4716,6 @@ const FORM_TEMPLATES = {
     accent: '#7c3aed',
     font: 'inherit',
     submitLabel: 'Get Started',
-    headline: 'Create your account',
-    subtext: 'Takes about a minute.',
     fields: [
           {
                 "type": "text",
@@ -4734,7 +5024,11 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    styling: { headline: tpl.headline || tpl.name, subtext: tpl.subtext || '', accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    // Headline/subtext intentionally NOT seeded (ticket zeus_1787953124244_ef38b255):
+    // lead capture templates render intake fields only. The renderer falls
+    // back to the form name for the title; subtext stays unset. The Content
+    // tab still allows per-form overrides for pre-existing/edited forms.
+    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
@@ -5784,7 +6078,184 @@ function escapeHtml(str) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
+// ── Dashboard D3: layout + KPI wiring ──────────────────────────────────────
+// KPI row renders from /portal/dashboard/summary (D1, atlas-ai PR #517).
+// Appointments table + unconfirmed block keep their existing behavior
+// (computed client-side from /portal/appointments, untouched).
+let dashPeriodDays = 30; // dashboard summary window (7 | 30 | 90)
+
+function setDashboardPeriod(days) {
+  const n = parseInt(days, 10);
+  if (![7, 30, 90].includes(n)) return;
+  dashPeriodDays = n;
+  loadDashboardSummary();
+}
+
+// One delta pill: class + text from { current, previous, delta_pct }.
+// delta_pct is null when the previous period was 0 (undefined %).
+function setKpiDelta(id, kpi) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!kpi || typeof kpi.current !== 'number') {
+    el.className = 'stat-delta flat';
+    el.textContent = '—';
+    return;
+  }
+  if (kpi.delta_pct === null || kpi.delta_pct === undefined) {
+    el.className = 'stat-delta flat';
+    el.textContent = 'new';
+    return;
+  }
+  const round1 = v => Math.round(v * 10) / 10;
+  if (kpi.delta_pct > 0) {
+    el.className = 'stat-delta up';
+    el.textContent = '▲ ' + round1(kpi.delta_pct) + '%';
+  } else if (kpi.delta_pct < 0) {
+    el.className = 'stat-delta down';
+    el.textContent = '▼ ' + round1(Math.abs(kpi.delta_pct)) + '%';
+  } else {
+    el.className = 'stat-delta flat';
+    el.textContent = '0%';
+  }
+}
+
+function setKpiValue(id, kpi) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = (kpi && typeof kpi.current === 'number') ? Number(kpi.current).toLocaleString() : '—';
+}
+
+function setKpiPeriodLabel(days) {
+  const label = `vs. last ${days} days`;
+  ['kpi-calls-sub', 'kpi-minutes-sub', 'kpi-sms-sub', 'kpi-leads-sub'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+}
+
+// ACTIVITY side rail — weekday calls bar chart (D4: now inline SVG from
+// js/dashboard-charts.js; the D3 pure-DOM bars were replaced by the ticket's
+// "7 vertical bars Mon-Sun, max-day emphasized" SVG chart).
+function renderWeekdayBars(weekday) {
+  if (window.DashboardCharts) DashboardCharts.renderWeekdayChart(weekday);
+  if (window.lucide) lucide.createIcons();
+}
+
+// LEADS & CONVERSION — recent leads table (D6, ticket zeus_1788322144357_b0cc6c65).
+// 10 most recent by capture time; PII-safe (phones masked to last 4 via
+// DashboardConversion); expandable detail rows (no lead-detail modal exists);
+// full contact info stays in Leads & CRM. Rendering + toggle logic live in
+// js/dashboard-conversion.js (unit-tested pure functions).
+function renderDashboardLeads(leads) {
+  const tableEl = document.getElementById('dash-leads-table');
+  const countEl = document.getElementById('dash-leads-count');
+  if (!tableEl || !window.DashboardConversion) return;
+  const list = Array.isArray(leads) ? leads.slice() : [];
+  list.sort((a, b) => new Date(b.captured_at || 0) - new Date(a.captured_at || 0));
+  if (countEl) countEl.textContent = list.length ? `${list.length} total` : '';
+  DashboardConversion.renderLeadRows(list);
+}
+
+// Reset all D4 chart slots to a clean empty state (used when the summary
+// fetch fails so charts never show stale data from a previous period).
+function resetDashboardCharts() {
+  if (!window.DashboardCharts) return;
+  DashboardCharts.renderActivityChart([], dashPeriodDays);
+  DashboardCharts.renderSourceStrip({});
+  DashboardCharts.renderUsageSparkline([]);
+  renderWeekdayBars([]);
+}
+
+async function loadDashboardSummary() {
+  ['kpi-calls', 'kpi-minutes', 'kpi-sms', 'kpi-leads'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '…';
+  });
+  setKpiPeriodLabel(dashPeriodDays);
+  try {
+    const res = await fetch(`${API}/portal/dashboard/summary?days=${dashPeriodDays}`, {
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (res.status === 401) {
+      console.warn('[Auzora] Dashboard summary: session expired (401)');
+      return; // 401 interceptor will handle redirect
+    }
+    if (!res.ok) {
+      console.error('[Auzora] Dashboard summary: fetch failed', { status: res.status, statusText: res.statusText });
+      ['kpi-calls', 'kpi-minutes', 'kpi-sms', 'kpi-leads'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+      resetDashboardCharts();
+      resetConversionSlots();
+      return;
+    }
+    const summary = await res.json();
+    const k = summary.kpis || {};
+    setKpiValue('kpi-calls', k.calls_answered);
+    setKpiValue('kpi-minutes', k.voice_minutes);
+    setKpiValue('kpi-sms', k.sms_messages);
+    setKpiValue('kpi-leads', k.leads_captured);
+    setKpiDelta('kpi-calls-delta', k.calls_answered);
+    setKpiDelta('kpi-minutes-delta', k.voice_minutes);
+    setKpiDelta('kpi-sms-delta', k.sms_messages);
+    setKpiDelta('kpi-leads-delta', k.leads_captured);
+    renderWeekdayBars(summary.weekday);
+    // D4 charts — activity area chart, leads-by-source strip, usage sparkline.
+    if (window.DashboardCharts) {
+      DashboardCharts.renderActivityChart(summary.daily, dashPeriodDays);
+      DashboardCharts.renderSourceStrip(summary.leads && summary.leads.by_source);
+      DashboardCharts.renderUsageSparkline(summary.usage_trend);
+    }
+    // D6 — booking funnel + top intents from the same summary payload.
+    if (window.DashboardConversion) {
+      DashboardConversion.renderFunnel(summary);
+      DashboardConversion.renderIntentChips(summary.leads && summary.leads.by_intent);
+    }
+    if (window.lucide) lucide.createIcons();
+  } catch (e) {
+    console.error('[Auzora] Dashboard summary error:', e.message);
+    ['kpi-calls', 'kpi-minutes', 'kpi-sms', 'kpi-leads'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
+    resetDashboardCharts();
+    resetConversionSlots();
+  }
+}
+
+// D6 degraded state — funnel + intents never keep a stale or "Loading…"
+// view when the summary fetch fails (mirrors resetDashboardCharts()).
+function resetConversionSlots() {
+  if (!window.DashboardConversion) return;
+  DashboardConversion.renderFunnel(null);
+  DashboardConversion.renderIntentChips({});
+}
+
+// Recent leads are fetched separately (additive; failure shows a truthful
+// unavailable state rather than a stuck "Loading…" row — D6).
+async function loadDashboardLeads() {
+  const tableEl = document.getElementById('dash-leads-table');
+  try {
+    const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
+    if (!res.ok) {
+      if (tableEl) tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
+      return;
+    }
+    const leads = await res.json();
+    renderDashboardLeads(Array.isArray(leads) ? leads : []);
+  } catch (e) {
+    console.error('[Auzora] Dashboard leads error:', e.message);
+    if (tableEl) tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
+  }
+}
+
 async function loadDashboard() {
+  loadDashboardSummary();
+  loadDashboardLeads();
+
+  // Render agent health card (D7)
+  renderAgentCard();
+
   try {
     const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
     if (res.status === 401) {
@@ -5799,10 +6270,9 @@ async function loadDashboard() {
     const appts = data.appointments || [];
     const now = new Date();
 
-  // Stat: total appointments (all time)
+  // Legacy stat hooks (E2E-pinned) — now appointment chips in the table header.
   document.getElementById('stat-appts').textContent = appts.length;
 
-  // Stat: bookings this month (by booking date / created_at)
   const thisMonth = appts.filter(a => {
     const d = new Date(a.created_at || a.booked_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -5815,8 +6285,13 @@ async function loadDashboard() {
     phoneEl.textContent = portalClient.twilio_number;
   } else {
     phoneEl.textContent = 'Not yet assigned';
-    phoneEl.style.fontSize = '14px';
     phoneEl.style.color = 'var(--muted)';
+  }
+  const agentNumbers = document.getElementById('dash-agent-numbers');
+  if (agentNumbers) {
+    agentNumbers.innerHTML = portalClient.twilio_number
+      ? `<span class="dash-chip">Calls answered &amp; texted from <b>${escapeHtml(portalClient.twilio_number)}</b></span>`
+      : '<span class="dash-chip">Phone number provisioning in progress</span>';
   }
 
   // Recent Appointments: last 14 days, ordered by booking date (newest first)
@@ -5841,6 +6316,20 @@ async function loadDashboard() {
 
   // Load unconfirmed appointments for the dashboard section
   loadUnconfirmedAppointments();
+}
+
+// ── AGENT HEALTH CARD (D7) ─────────────────────────────────────────────────────
+// Render the agent health status card from portalClient and VOICES catalog.
+function renderAgentCard() {
+  const cardEl = document.getElementById('dash-agent-card');
+  if (!cardEl) return;
+
+  // Build HTML from portalClient and VOICES
+  const html = window.DashboardAgent.buildAgentCard(portalClient, VOICES);
+  cardEl.innerHTML = html;
+
+  // Re-render lucide icons if present
+  if (window.lucide) lucide.createIcons();
 }
 
 // ── UNCONFIRMED APPOINTMENTS (dashboard) ───────────────────────────────────
