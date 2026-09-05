@@ -4765,6 +4765,28 @@ const TEMPLATE_FONTS = [
   { value: "ui-monospace, monospace", label: 'Monospace' },
 ];
 
+// Per-template display copy (ticket zeus_1788623683873_e753f694): seeded into
+// styling.headline / styling.subtext when a template is used, so the editor —
+// and the live embed through the same renderer — re-presents the selected
+// template's own headline and subline instead of a generic name-derived title.
+// Values are lifted verbatim from each template's html (title + subline). The
+// form name stays editable and the builder Content tab still allows per-form
+// overrides; templateHtml itself is still not carried (Forms T5 doctrine —
+// the saved record remains the single source of truth).
+const TEMPLATE_DISPLAY = {
+  t1: { headline: 'Request access', subtext: "Tell us who you are and we'll set up your account." },
+  t2: { headline: "Let's start the conversation.", subtext: 'Share a few details and a specialist will reach out within one business day.' },
+  t3: { headline: 'Join the client portal', subtext: 'Get provisioned access to dashboards, reports, and support.' },
+  t4: { headline: 'First, the basics', subtext: "We'll ask about your project next." },
+  t5: { headline: 'Dashboard', subtext: 'Designed to sit inline within an existing portal page, not as a standalone screen.' },
+  t6: { headline: 'SIGN UP NOW', subtext: 'NO FLUFF. JUST FILL IT OUT.' },
+  t7: { headline: 'Private Client Access', subtext: 'By invitation and referral only. Please share your details for consideration.' },
+  t8: { headline: 'Hey there! 👋', subtext: "Tell us a bit about you, we can't wait to chat." },
+  t9: { headline: 'Talk to our team', subtext: 'Complete the form and an account representative will contact you within 24 hours.' },
+  auzoraSite: { headline: 'Start the conversation.', subtext: "Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you." },
+  t10: { headline: 'Create your account', subtext: 'Takes about a minute.' },
+};
+
 let drawerState = { templateKey: null, accent: '#3B82F6', containerBg: null, fontIdx: 0, fields: [], dragIdx: null };
 
 const TEMPLATE_CONTAINER_SWATCHES = ['#ffffff', '#f8fafc', '#f1f5f9', '#fef3c7', '#ecfdf5', '#fce7f3', '#e0e7ff', '#1e293b'];
@@ -5016,6 +5038,14 @@ function useTemplateFromDrawer() {
   if (!tpl) return;
   const font = TEMPLATE_FONTS[drawerState.fontIdx].value;
   const activeFields = drawerState.fields.filter(f => f.on);
+  // Template display copy (ticket zeus_1788623683873_e753f694): headline +
+  // subtext are seeded from the template's own content so the editor and the
+  // live embed re-present the selected template (its heading + subline),
+  // not a generic name-derived title. Without this the saved record carries
+  // no display copy and the renderer falls back to form.name — the "generic
+  // basic form" the edit path showed. The builder Content tab still lets the
+  // client override both per form.
+  const display = TEMPLATE_DISPLAY[drawerState.templateKey] || {};
   currentForm = {
     name: tpl.name,
     templateKey: drawerState.templateKey,
@@ -5024,11 +5054,10 @@ function useTemplateFromDrawer() {
     fields: activeFields.map(f => ({ ...f, id: 'fld_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
     field_mapping: {},
     status: 'active',
-    // Headline/subtext intentionally NOT seeded (ticket zeus_1787953124244_ef38b255):
-    // lead capture templates render intake fields only. The renderer falls
-    // back to the form name for the title; subtext stays unset. The Content
-    // tab still allows per-form overrides for pre-existing/edited forms.
-    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true },
+    // Headline/subtext seeded from the template's own display copy (see
+    // TEMPLATE_DISPLAY). The Content tab allows per-form overrides, and the
+    // renderer's fallback chain is untouched for forms without seeds.
+    styling: { accent_color: drawerState.accent, background_color: '#ffffff', container_bg: drawerState.containerBg, text_color: '#101826', input_border: 'rgba(16,24,38,0.14)', border_radius: '8px', font_family: font, submit_label: tpl.submitLabel, submit_full_width: true, headline: display.headline || '', subtext: display.subtext || '' },
   };
   activeFields.forEach(f => { if (f.maps_to) { const field = currentForm.fields.find(cf => cf.label === f.label && cf.type === f.type); if (field) currentForm.field_mapping[f.maps_to] = field.id; } });
   const drawer = document.getElementById('customize-drawer-overlay');
@@ -5144,7 +5173,7 @@ function renderFormBuilder() {
           <div id="fb-pane-content" style="${builderTab === 'content' ? '' : 'display:none;'}">
           <!-- Form name -->
           <div style="margin-bottom:20px;">
-            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Form Name</label>
+            <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Form Name <span style="font-weight:600;color:var(--muted);">(optional)</span></label>
             <input type="text" id="fb-name" value="${escapeHtml(currentForm.name)}" placeholder="e.g. Contact Us" maxlength="100"
               oninput="currentForm.name = this.value; updateFbSaveButton();"
               style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;" onfocus="this.style.borderColor='var(--purple)';this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.12)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
@@ -5211,8 +5240,8 @@ function renderFormBuilder() {
       <!-- Footer -->
       <div style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;">
         <button class="btn-secondary" onclick="document.getElementById('form-builder-overlay').remove()" style="font-size:14px;padding:10px 18px;">Cancel</button>
-        <button id="fb-save-btn" onclick="saveFormBuilder()" ${currentForm.name ? '' : 'disabled'}
-          style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#22c55e;${currentForm.name ? '' : 'opacity:0.5;cursor:not-allowed;'}">
+        <button id="fb-save-btn" onclick="saveFormBuilder()"
+          style="display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;background:#22c55e;">
           ${isEditing ? 'Save Changes' : 'Create Form'}
         </button>
       </div>
@@ -5930,26 +5959,22 @@ function updateFieldCardHeader(fieldId) {
 }
 
 function updateFbSaveButton() {
+  // Name is optional (ticket zeus_1788623683873_e753f694): the save button no
+  // longer tracks the name field. Kept as a no-op hook so existing oninput
+  // wiring continues to work.
   const btn = document.getElementById('fb-save-btn');
   if (!btn) return;
-  if (currentForm.name && currentForm.name.trim()) {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.style.cursor = 'pointer';
-  } else {
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
-    btn.style.cursor = 'not-allowed';
-  }
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
 }
 
 async function saveFormBuilder() {
   const btn = document.getElementById('fb-save-btn');
   if (!btn) return;
-  if (!currentForm.name || !currentForm.name.trim()) {
-    showToast('Form name is required', 'error');
-    return;
-  }
+  // Form name is OPTIONAL (ticket zeus_1788623683873_e753f694) — not every
+  // form needs a title. Empty/absent names are stored as provided; display
+  // surfaces fall back to the template headline or a neutral default.
   if (currentForm.fields.length === 0) {
     showToast('Add at least one field', 'error');
     return;
@@ -5957,7 +5982,7 @@ async function saveFormBuilder() {
 
   // Build payload — match the API's expected shape
   const payload = {
-    name: currentForm.name.trim(),
+    name: (currentForm.name || '').trim(),
     templateKey: currentForm.templateKey || null,
     fields: currentForm.fields.map(f => {
       const field = {
