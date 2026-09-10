@@ -234,6 +234,7 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
   display: flex; align-items: center; gap: 13px; padding: 11px 14px;
   border-radius: 11px; font-size: 15px; font-weight: 500; color: var(--muted);
   cursor: pointer; border: none; transition: background .15s, color .15s;
+  min-height: 40px; /* V3 §7 — 40px minimum hit target */
 }
 .nav-item:hover { color: var(--text); background: rgba(16,24,38,0.035); }
 .nav-item.active {
@@ -358,9 +359,17 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 /* ── Dashboard D3 — KPI deltas + section shells ────────────────────────── */
 .stat-kpi-foot { display: flex; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
 .stat-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; border-radius: 99px; padding: 2px 9px; line-height: 1.4; }
-.stat-delta.up { color: var(--green); background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); }
-.stat-delta.down { color: var(--red); background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3); }
+/* DASHBOARD-V3 §7 — the pill text is 12px, so it is bound by the 4.5:1 rule.
+   The palette's --green (#22c55e, 2.1:1) and --red (#EF4444, 3.4:1) both fail
+   on the pill's near-white tint, so the pills use the darker AA-passing
+   variants (#15803d 4.5:1 / #b91c1c 5.9:1) in light mode. Dark mode inverts
+   the relationship — there the bright tokens are the readable ones — so
+   :root.dark restores them below. */
+.stat-delta.up { color: #15803d; background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.3); }
+.stat-delta.down { color: #b91c1c; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.3); }
 .stat-delta.flat { color: var(--muted); background: var(--tint); border: 1px solid var(--border); }
+:root.dark .stat-delta.up { color: var(--green); }
+:root.dark .stat-delta.down { color: var(--red); }
 .dash-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .dash-section-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
 .dash-section-title svg { width: 17px; height: 17px; color: var(--purple); }
@@ -370,8 +379,9 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .dash-slot-empty svg { width: 20px; height: 20px; opacity: .7; }
 .dash-slot-tall { min-height: 220px; }
 .dash-slot-compact { min-height: 0; flex-direction: row; padding: 10px 14px; }
-.dash-activity-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
-.dash-leads-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+/* .dash-activity-grid / .dash-leads-grid retired in DASHBOARD-V3: the weekday
+   chart moved to the rail and the funnel/intents moved under the leads table,
+   so neither side-by-side grid has anything left to split. */
 .dash-wd-row { display: grid; grid-template-columns: 34px 1fr 30px; align-items: center; gap: 8px; margin-bottom: 8px; }
 .dash-wd-row:last-child { margin-bottom: 0; }
 .dash-wd-label { font-size: 11.5px; color: var(--muted); }
@@ -396,19 +406,19 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-gauge-ring-fill.on-track { stroke: url(#gaugeGradientOnTrack); }
 .usage-gauge-ring-fill.warn { stroke: url(#gaugeGradientWarn); }
 .usage-gauge-ring-fill.over { stroke: url(#gaugeGradientOver); }
-.usage-gauge-text-wrap { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 1; }
-.usage-gauge-pct-wrap { display: flex; align-items: baseline; gap: 4px; }
-.usage-gauge-pct { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
-.usage-gauge-pct.over { color: #DC2626; }
-.usage-gauge-pct.warn { color: #F97316; }
-.usage-gauge-label { font-size: 13px; color: var(--muted); }
-.usage-gauge-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
-.usage-gauge-wrap.clickable { cursor: pointer; }
-.usage-gauge-wrap.clickable:hover { background: rgba(124,58,237,.08); }
-.usage-gauge-wrap.clickable:hover .usage-gauge-sub { color: var(--purple); text-decoration: underline; }
-@media (max-width: 640px) { .usage-gauge-wrap { padding: 10px 12px; } .usage-gauge-svg { width: 80px; height: 80px; } .usage-gauge-pct { font-size: 24px; } }
+.usage-gauge-text-wrap { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 1 1 150px; gap: 3px; }
+/* V3 §4 — the percentage sits IN the ring as SVG <text>, mono 23px/700, with
+   "of plan" 11px dim beneath it. The old HTML overlay outside the ring is gone. */
+.usage-gauge-val { font-family: var(--dchart-mono); font-size: 23px; font-weight: 700; fill: var(--text); }
+.usage-gauge-val.over { fill: #DC2626; }
+.usage-gauge-val.warn { fill: #B45309; }
+.usage-gauge-cap { font-size: 11px; fill: var(--muted); }
+.usage-gauge-state { font-size: 13px; font-weight: 600; color: var(--text); }
+.usage-gauge-state.over { color: #DC2626; }
+.usage-gauge-state.warn { color: #B45309; }
+.usage-gauge-note { font-size: 12.5px; color: var(--muted); }
+@media (max-width: 640px) { .usage-gauge-wrap { padding: 10px 12px; } .usage-gauge-svg { width: 80px; height: 80px; } }
 .dash-gauge-slot { margin-top: 14px; }
-@media (max-width: 900px) { .dash-activity-grid, .dash-leads-grid { grid-template-columns: 1fr; } }
 
 /* ── DASHBOARD CHARTS (D4) — dependency-free SVG ───────────────────────── */
 .dchart { display: block; width: 100%; height: auto; }
@@ -433,8 +443,11 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .dchart-tick.strong { fill: var(--text); font-weight: 700; }
 .dchart-tick.dchart-y { font-size: 8.5px; }
 .dchart-tick.dchart-x { font-size: 8.5px; letter-spacing: .02em; }
-.dchart-tick.dchart-spark-val { fill: var(--accent); font-weight: 700; font-size: 8.5px; }
+/* 8.5px value labels on the usage sparkline: --accent (#3B82F6) is 3.68:1 on
+   the card and fails AA at this size (V3 §7). Use the darker blue/violet. */
+.dchart-tick.dchart-spark-val { fill: #1d4ed8; font-weight: 700; font-size: 8.5px; }
 .dchart-tick.dchart-spark-val.sms { fill: var(--accent2); }
+:root.dark .dchart-tick.dchart-spark-val { fill: #93c5fd; }
 .dchart-label { font-size: 10.5px; fill: var(--text); font-weight: 500; }
 .dchart-count { font-family: var(--dchart-mono); font-size: 10px; font-weight: 700; fill: var(--text); }
 .dchart-hit { fill: transparent; stroke: none; }
@@ -456,6 +469,117 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .dash-usage-spark { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .dash-usage-spark svg { flex: 0 1 260px; min-width: 200px; }
 .dash-usage-spark .dash-slot-empty { border: none; padding: 10px 0; min-height: 0; flex-direction: row; justify-content: flex-start; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ── DASHBOARD V3 — hierarchy: KPI row over a main-column / rail split ────
+   Replaces seven equal-weight stacked full-width cards. One card component
+   (14px radius, 1px border) is shared by .table-wrap, .usage-card and
+   .dash-rail-card so they stop reading as three different things.
+   Chart slot ids and their DOM shape are unchanged — js/dashboard-charts.js,
+   js/dashboard-conversion.js and js/dashboard-agent.js still own the charts. */
+
+/* Page header — owns the period select, which drives both the KPIs and the
+   Activity chart, so it belongs at page level rather than inside one card. */
+.dash-page-head { display: flex; align-items: flex-end; gap: 14px 20px; flex-wrap: wrap; }
+.dash-page-head .page-header { flex: 1 1 300px; min-width: 0; }
+.dash-period-label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.dash-period-label .dash-select { min-height: 40px; padding: 9px 11px; font-size: 13.5px; border-radius: 9px; }
+
+/* Unconfirmed banner — moved from the page bottom to the top; it is the one
+   thing on this page that needs action. role="alert" + ids preserved. */
+.dash-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.26); border-radius: 13px; padding: 14px 18px; }
+.dash-alert-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(239,68,68,0.10); color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dash-alert-icon svg { width: 17px; height: 17px; }
+.dash-alert-body { flex: 1 1 260px; min-width: 0; }
+.dash-alert-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.dash-alert-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.dash-alert-btn { border: 1px solid rgba(239,68,68,0.35); background: var(--surface); border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; color: #dc2626; cursor: pointer; min-height: 40px; flex-shrink: 0; }
+.dash-alert-btn:hover { background: #dc2626; color: #fff; }
+.dash-alert-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dash-alert-list { flex: 1 1 100%; min-width: 0; }
+.dash-alert-list:not([hidden]) { margin-top: 4px; padding-top: 12px; border-top: 1px solid rgba(239,68,68,0.20); }
+
+/* KPI cards — icon tile + label, big value, delta pill, then a sparkline.
+   The handoff asks for a 4-card row at auto-fit minmax(232px, 1fr), but 232px
+   does not fit four across at the real content width. Measured (headless
+   Chrome, this layout): the grid is 944px at a 1280px viewport and 845px at
+   1181px — the tightest point, just above the 1180px breakpoint where the
+   sidebar comes back into flow. 232px wrapped the row to 3 + 1 orphan at both.
+   200px fits four everywhere the sidebar is in flow ((845 - 42) / 4 = 200.75px)
+   and still floors the card wide enough for the 31px value plus delta pill. */
+.stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.kpi-card { display: flex; flex-direction: column; border-radius: 14px; padding: 17px 18px 14px; }
+.kpi-card-top { display: flex; align-items: center; gap: 9px; }
+.kpi-card-top .stat-label { font-size: 13.5px; font-weight: 500; min-width: 0; }
+.kpi-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(59,130,246,.10); color: var(--accent); }
+.kpi-icon svg { width: 15px; height: 15px; }
+.kpi-icon.violet { background: rgba(124,58,237,.10); color: var(--accent2); }
+.kpi-icon.pink { background: rgba(236,72,153,.10); color: var(--pink); }
+.kpi-icon.orange { background: rgba(249,115,22,.12); color: var(--orange); }
+.kpi-card .stat-value { font-size: 31px; letter-spacing: -1px; line-height: 1.15; margin: 9px 0 0; }
+.kpi-card .stat-kpi-foot { margin-top: 6px; }
+.kpi-card .stat-sub { font-size: 12.5px; margin-top: 0; }
+.kpi-spark { margin-top: 12px; min-height: 36px; }
+.kpi-spark svg.dchart-kpi-spark { width: 100%; height: 36px; display: block; }
+
+/* Main column / rail split. 1.62fr gives the dense charts and the leads table
+   the width they need; the rail stays scannable reference. */
+.dash-cols { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.dash-main-col, .dash-rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* Shared card chrome. */
+.table-wrap, .usage-card, .dash-rail-card, .dash-source-strip { border-radius: 14px; }
+.dash-cols .table-wrap { background: var(--surface); border: 1px solid var(--border); }
+.dash-cols .table-header { padding: 16px 20px; flex-wrap: wrap; }
+.dash-cols .table-header h2 { display: flex; align-items: center; gap: 9px; font-size: 15.5px; font-weight: 700; }
+.dash-cols .table-header h2 svg { width: 17px; height: 17px; color: var(--purple); flex-shrink: 0; }
+.dash-card-body { padding: 16px 20px 18px; min-width: 0; }
+.dash-head-note { font-size: 12.5px; color: var(--muted); }
+/* Funnel + top intents sit under the leads table rather than beside it. */
+.dash-card-foot { display: flex; flex-wrap: wrap; gap: 18px 24px; padding: 18px 20px; border-top: 1px solid var(--border); }
+.dash-card-foot > * { flex: 1 1 240px; min-width: 0; }
+
+/* Rail cards — title row then content, no header border. */
+.dash-rail-card { background: var(--surface); border: 1px solid var(--border); padding: 18px 20px; min-width: 0; }
+.dash-rail-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.dash-rail-head svg { width: 17px; height: 17px; color: var(--purple); flex-shrink: 0; }
+.dash-rail-head span { font-size: 15.5px; font-weight: 700; flex: 1; min-width: 0; }
+/* Both of these carry a desktop margin-top from their standalone era. */
+.dash-rail .usage-card, .dash-rail .dash-source-strip { margin-top: 0; }
+.dash-rail .dash-source-strip { padding: 18px 20px; }
+.dash-rail .dash-slot-empty { min-height: 96px; }
+.dash-rail .dash-gauge-slot { margin-top: 0; margin-bottom: 16px; }
+/* Gauge row + bars form one unit; below 520px the ring stacks over the bars. */
+.dash-gauge-slot:empty { display: none; }
+.dash-rail .usage-card-head { margin-bottom: 16px; }
+
+/* Gauge value sits in the ring; mono numerals per the D4 chart convention. */
+.dash-rail .usage-gauge-wrap { gap: 18px; }
+.dash-rail .usage-card { background: var(--surface); padding: 18px 20px; }
+
+/* Every table keeps a horizontal scroller so its min-width never blows out
+   the card at narrow widths (#dash-appt-list previously had none). */
+#dash-appt-list, .dash-appt-scroll { overflow-x: auto; }
+#dash-appt-list table { min-width: 520px; }
+
+/* Responsive ladder — see the §7 note at the site-wide 1180px breakpoint,
+   which collapses the sidebar to the hamburger drawer. */
+@media (max-width: 1020px) {
+  .dash-cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .dash-page-head { align-items: flex-start; }
+  .dash-cols { gap: 14px; }
+  .dash-main-col, .dash-rail { gap: 14px; }
+  .dash-card-body, .dash-card-foot { padding: 14px; }
+  .dash-cols .table-header { padding: 14px; }
+  .dash-rail-card, .dash-rail .usage-card, .dash-rail .dash-source-strip { padding: 14px; }
+  .kpi-card { padding: 14px; }
+  .kpi-card .stat-value { font-size: 27px; }
+  .dash-alert { padding: 13px 14px; }
+  .dash-alert-btn { flex: 1 1 100%; }
+}
 
 /* ── TABLE ─────────────────────────────────────────────────────────────── */
 .table-wrap {
@@ -719,7 +843,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 #toast.error { border-color: var(--red); color: var(--red); }
 
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
-@media (max-width: 1100px) {
+/* DASHBOARD-V3 §7 ladder: 1180 (sidebar → drawer) / 1020 (rail folds under the
+   main column) / 760 (KPIs to one column, header stacks, padding to 14px).
+   Raised from 1100px: the dashboard's main-column/rail split needs the
+   sidebar's width back before 1100, or the 1101–1180px band renders a full
+   sidebar beside a two-column dashboard and the charts get squeezed. */
+@media (max-width: 1180px) {
   .hamburger { display: flex; }
   .sidebar { position: fixed; left: 0; top: 0; bottom: 0; height: auto; overflow-y: auto; z-index: 110; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3); background: var(--panel); }
   .sidebar.open { transform: translateX(0); }
@@ -767,6 +896,15 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .dconv-lead-table .dconv-lead-row:hover td, .dconv-lead-table .dconv-lead-row:focus-visible td { background: var(--tint); }
 .dconv-lead-table .dconv-lead-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .dconv-lead-name { font-weight: 600; }
+/* Row-expand hint (V3 §5). Rotated by a CSS transform on this wrapper keyed off
+   the row's aria-expanded — NOT by swapping the lucide icon name, because
+   lucide.createIcons() replaces the <i> node and re-running it on an attribute
+   change is fragile. */
+.dconv-lead-name-wrap { display: inline-flex; align-items: center; gap: 8px; }
+.dconv-lead-chevron { display: inline-flex; width: 14px; height: 14px; flex-shrink: 0; color: var(--muted); transition: transform .15s ease; }
+.dconv-lead-chevron svg { width: 14px; height: 14px; }
+.dconv-lead-row[aria-expanded="true"] .dconv-lead-chevron { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .dconv-lead-chevron { transition: none; } }
 .dconv-lead-phone { font-family: var(--dchart-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
 .dconv-lead-intent, .dconv-lead-when { color: var(--muted); font-size: 12.5px; }
 .dconv-lead-score { font-family: var(--dchart-mono); font-weight: 700; font-size: 12.5px; }
@@ -775,8 +913,15 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .dconv-detail-grid { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 12.5px; color: var(--muted); align-items: center; }
 .dconv-detail-grid b { color: var(--text); font-weight: 600; margin-right: 4px; }
 .dconv-detail-note { font-size: 11.5px; font-style: italic; }
-.dconv-attn { display: inline-flex; font-size: 10.5px; font-weight: 700; color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.35); border-radius: 99px; padding: 1px 8px; margin-left: 4px; }
+.dconv-attn { display: inline-flex; font-size: 10.5px; font-weight: 700; color: #b45309; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.35); border-radius: 99px; padding: 1px 8px; margin-left: 4px; }
+:root.dark .dconv-attn { color: #fbbf24; }
 .dconv-table-scroll { overflow-x: auto; }
+/* V3 §7 — the table keeps a min-width at every breakpoint and scrolls inside
+   its card, rather than crushing six columns into a phone viewport. Paired
+   with the column-dropping rules below, which lower the min-width in step. */
+.dconv-lead-table { min-width: 620px; }
+@media (max-width: 640px) { .dconv-lead-table { min-width: 420px; } }
+@media (max-width: 480px) { .dconv-lead-table { min-width: 320px; } }
 @media (max-width: 640px) { .dconv-lead-intent, .dconv-lead-table th:nth-child(4), .dconv-lead-table .dconv-lead-row td:nth-child(5), .dconv-lead-table th:nth-child(5) { display: none; } .dconv-lead-table td, .dconv-lead-table th { padding-left: 6px; padding-right: 6px; } } @media (max-width: 480px) { .dconv-lead-when, .dconv-lead-table th:nth-child(6) { display: none; } }
 </style>
 </head>
@@ -881,160 +1026,217 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
 
-      <!-- 1. KPI ROW (D3) — values from /portal/dashboard/summary -->
-      <div class="stats-grid" role="region" aria-label="Key performance indicators">
-        <div class="stat-card">
-          <div class="stat-label">Calls Answered</div>
-          <div class="stat-value" id="kpi-calls" aria-live="polite">—</div>
-          <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-calls-delta" aria-live="polite">—</span>
-            <span class="stat-sub" id="kpi-calls-sub">vs. last period</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Voice Minutes</div>
-          <div class="stat-value" id="kpi-minutes" aria-live="polite">—</div>
-          <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-minutes-delta" aria-live="polite">—</span>
-            <span class="stat-sub" id="kpi-minutes-sub">vs. last period</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">SMS Messages</div>
-          <div class="stat-value" id="kpi-sms" aria-live="polite">—</div>
-          <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-sms-delta" aria-live="polite">—</span>
-            <span class="stat-sub" id="kpi-sms-sub">vs. last period</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Leads Captured</div>
-          <div class="stat-value" id="kpi-leads" aria-live="polite">—</div>
-          <div class="stat-kpi-foot">
-            <span class="stat-delta flat" id="kpi-leads-delta" aria-live="polite">—</span>
-            <span class="stat-sub" id="kpi-leads-sub">vs. last period</span>
-          </div>
-        </div>
-      </div>
+      <!-- ── DASHBOARD V3 ─────────────────────────────────────────────────
+           Layout/CSS redesign per patch/DASHBOARD-V3-HANDOFF.md. Hierarchy,
+           not paint: an unconfirmed alert banner, a KPI row, then a
+           main-column / rail split. Every chart slot id and its DOM shape is
+           unchanged — the charts stay owned by js/dashboard-charts.js and
+           js/dashboard-conversion.js, the agent card by js/dashboard-agent.js.
+           ───────────────────────────────────────────────────────────────── -->
 
-      <!-- KPI-section strip (D4): leads by source mini-bars, same period as KPIs -->
-      <div class="dash-source-strip" id="dash-source-strip" role="region" aria-label="Leads by source distribution">
-        <div class="dash-slot-empty" id="dash-source-slot">
-          <i data-lucide="users"></i>
-          <span>Loading lead sources…</span>
+      <!-- Page header — owns the period select (drives KPIs + Activity). -->
+      <div class="dash-page-head">
+        <div class="page-header">
+          <h1><i data-lucide="layout-dashboard" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Dashboard</h1>
+          <p>Live view of your AI agent's calls, leads and bookings</p>
         </div>
-      </div>
-
-      <!-- 2. ACTIVITY (D3 shell — chart arrives in D4) -->
-      <div class="table-wrap" role="region" aria-label="Activity metrics">
-        <div class="table-header">
-          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="activity" style="width:17px;height:17px;color:var(--purple);"></i> Activity</h2>
+        <label class="dash-period-label" for="dash-activity-range-select">
+          <span>Period</span>
           <select id="dash-activity-range-select" class="dash-select" onchange="setDashboardPeriod(this.value)" aria-label="Activity period">
             <option value="7">Last 7 days</option>
             <option value="30" selected>Last 30 days</option>
             <option value="90">Last 90 days</option>
           </select>
+        </label>
+      </div>
+
+      <!-- UNCONFIRMED — banner at the top; shown only when count > 0. -->
+      <div class="dash-alert" id="dash-unconfirmed-wrap" style="display:none;" role="alert" aria-live="polite">
+        <span class="dash-alert-icon" aria-hidden="true"><i data-lucide="alert-triangle"></i></span>
+        <div class="dash-alert-body">
+          <h2 class="dash-alert-title" id="dash-unconfirmed-count">Unconfirmed appointments</h2>
+          <p class="dash-alert-sub">These bookings were captured but never confirmed with the customer.</p>
         </div>
-        <div style="padding:16px 20px;">
-          <div class="dash-activity-grid">
-            <div class="dash-slot-empty dash-slot-tall" id="dash-activity-chart-slot" role="img" aria-label="Activity trend chart loading">
-              <i data-lucide="line-chart"></i>
-              <span>Loading activity…</span>
-            </div>
-            <div class="dash-slot-empty" id="dash-weekday-slot" role="img" aria-label="Weekday activity chart loading">
-              <i data-lucide="bar-chart-3"></i>
-              <span>Loading weekday activity…</span>
-            </div>
+        <button type="button" class="dash-alert-btn" id="dash-unconfirmed-toggle"
+                aria-expanded="false" aria-controls="dash-unconfirmed-list"
+                onclick="toggleUnconfirmedList()">Review</button>
+        <div class="dash-alert-list" id="dash-unconfirmed-list" hidden></div>
+      </div>
+
+      <!-- KPI ROW (D3) — values from /portal/dashboard/summary; each card's
+           sparkline is rendered from the same payload's `daily` array. -->
+      <div class="stats-grid" role="region" aria-label="Key performance indicators">
+        <div class="stat-card kpi-card">
+          <div class="kpi-card-top">
+            <span class="kpi-icon" aria-hidden="true"><i data-lucide="phone-call"></i></span>
+            <span class="stat-label">Calls Answered</span>
           </div>
+          <div class="stat-value" id="kpi-calls" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-calls-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-calls-sub">vs. last period</span>
+          </div>
+          <div class="kpi-spark" id="kpi-calls-spark"></div>
+        </div>
+        <div class="stat-card kpi-card">
+          <div class="kpi-card-top">
+            <span class="kpi-icon violet" aria-hidden="true"><i data-lucide="clock"></i></span>
+            <span class="stat-label">Voice Minutes</span>
+          </div>
+          <div class="stat-value" id="kpi-minutes" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-minutes-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-minutes-sub">vs. last period</span>
+          </div>
+          <div class="kpi-spark" id="kpi-minutes-spark"></div>
+        </div>
+        <div class="stat-card kpi-card">
+          <div class="kpi-card-top">
+            <span class="kpi-icon pink" aria-hidden="true"><i data-lucide="message-square"></i></span>
+            <span class="stat-label">SMS Messages</span>
+          </div>
+          <div class="stat-value" id="kpi-sms" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-sms-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-sms-sub">vs. last period</span>
+          </div>
+          <div class="kpi-spark" id="kpi-sms-spark"></div>
+        </div>
+        <div class="stat-card kpi-card">
+          <div class="kpi-card-top">
+            <span class="kpi-icon orange" aria-hidden="true"><i data-lucide="user-plus"></i></span>
+            <span class="stat-label">Leads Captured</span>
+          </div>
+          <div class="stat-value" id="kpi-leads" aria-live="polite">—</div>
+          <div class="stat-kpi-foot">
+            <span class="stat-delta flat" id="kpi-leads-delta" aria-live="polite">—</span>
+            <span class="stat-sub" id="kpi-leads-sub">vs. last period</span>
+          </div>
+          <div class="kpi-spark" id="kpi-leads-spark"></div>
         </div>
       </div>
 
-      <!-- 3. PLAN & USAGE — existing usage card (pricing ticket F) + D5 gauge slot -->
-      <div class="usage-card" id="usage-card" style="display:none;" role="region" aria-label="Plan usage and limits">
-        <div class="usage-card-head">
-          <div>
-            <div class="usage-card-title">Usage this month</div>
-            <div class="usage-card-sub" id="usage-plan-badge">—</div>
-          </div>
-          <div class="usage-card-period" id="usage-period"></div>
-        </div>
-        <div id="usage-unlimited" style="display:none;">
-          <div class="usage-unlimited-line">
-            <span class="usage-unlimited-badge">Unlimited</span>
-            <span class="usage-unlimited-text">Unlimited voice &amp; SMS on your plan — no caps to worry about.</span>
-          </div>
-          <div class="usage-unlimited-stats" id="usage-unlimited-stats"></div>
-        </div>
-        <div id="usage-bars">
-          <div class="usage-row">
-            <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
-            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
-          </div>
-          <div class="usage-row">
-            <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
-            <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
-          </div>
-        </div>
-        <!-- D5: Usage gauge ring -->
-        <div class="dash-gauge-slot" id="dash-gauge-slot"></div>
-        <!-- D4: 6-month minutes+SMS sparkline from summary usage_trend -->
-        <div class="dash-usage-spark" id="dash-usage-spark-slot"></div>
-      </div>
+      <div class="dash-cols">
 
-      <!-- 4. LEADS & CONVERSION (D3 shell — funnel/top intents arrive in D6) -->
-      <div class="table-wrap" role="region" aria-label="Leads and conversion metrics">
-        <div class="table-header">
-          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="users" style="width:17px;height:17px;color:var(--purple);"></i> Leads &amp; Conversion</h2>
-          <span style="font-size:12px;color:var(--muted);" id="dash-leads-count" aria-live="polite"></span>
-        </div>
-        <div style="padding:16px 20px;">
-          <div class="dash-leads-grid">
+        <!-- MAIN COLUMN — the things that need width. -->
+        <div class="dash-main-col">
+
+          <!-- ACTIVITY — trend chart + its own legend (rendered by the module). -->
+          <div class="table-wrap" role="region" aria-label="Activity metrics">
+            <div class="table-header">
+              <h2><i data-lucide="activity"></i> Activity</h2>
+            </div>
+            <div class="dash-card-body">
+              <div class="dash-slot-empty dash-slot-tall" id="dash-activity-chart-slot" role="img" aria-label="Activity trend chart loading">
+                <i data-lucide="line-chart"></i>
+                <span>Loading activity…</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEADS &amp; CONVERSION — leads table, then funnel + intents below. -->
+          <div class="table-wrap" role="region" aria-label="Leads and conversion metrics">
+            <div class="table-header">
+              <h2><i data-lucide="users"></i> Leads &amp; Conversion</h2>
+              <span class="dash-head-note" id="dash-leads-count" aria-live="polite"></span>
+            </div>
             <div id="dash-leads-table" role="region" aria-label="Recent leads table">
               <div class="empty" style="padding:24px 16px;">Loading recent leads…</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+            <div class="dash-card-foot">
               <div id="dash-funnel-slot" role="img" aria-label="Booking funnel chart loading">
                 <div class="empty" style="padding:24px 16px;"><i data-lucide="filter"></i> Loading booking funnel…</div>
               </div>
               <div id="dash-intents-slot" role="img" aria-label="Top intents chart loading"></div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 5. AGENT STATUS (D7 — agent health card) -->
-      <div class="table-wrap" role="region" aria-label="Agent status and configuration">
-        <div class="table-header">
-          <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="bot" style="width:17px;height:17px;color:var(--purple);"></i> Agent Status</h2>
-        </div>
-        <div style="padding:16px 20px;">
-          <div id="dash-agent-card" role="status" aria-live="polite">
-            <div class="empty" style="padding:24px 16px;"><i data-lucide="bot"></i> Loading agent status…</div>
+          <!-- RECENT APPOINTMENTS -->
+          <div class="table-wrap" role="region" aria-label="Recent appointments">
+            <div class="table-header">
+              <h2><i data-lucide="calendar-check"></i> Recent Appointments</h2>
+              <div class="dash-appt-chips">
+                <span class="dash-chip" title="All appointments on record"><b id="stat-appts" aria-live="polite">—</b>&nbsp;booked all time</span>
+                <span class="dash-chip" title="Bookings this month"><b id="stat-month" aria-live="polite">—</b>&nbsp;this month</span>
+                <span class="dash-head-note" id="dash-appt-count" aria-live="polite"></span>
+              </div>
+            </div>
+            <div id="dash-appt-list"></div>
           </div>
-        </div>
-      </div>
 
-      <div class="table-wrap" role="region" aria-label="Recent appointments">
-        <div class="table-header">
-          <h2>Recent Appointments</h2>
-          <div class="dash-appt-chips">
-            <span class="dash-chip" title="All appointments on record"><b id="stat-appts" aria-live="polite">—</b>&nbsp;booked all time</span>
-            <span class="dash-chip" title="Bookings this month"><b id="stat-month" aria-live="polite">—</b>&nbsp;this month</span>
-            <span style="font-size:12px;color:var(--muted);" id="dash-appt-count" aria-live="polite"></span>
+        </div>
+
+        <!-- RAIL — reference, scannable. -->
+        <aside class="dash-rail">
+
+          <!-- PLAN &amp; USAGE — gauge ring, usage bars, 6-month trend. -->
+          <div class="usage-card" id="usage-card" style="display:none;" role="region" aria-label="Plan usage and limits">
+            <div class="usage-card-head">
+              <div>
+                <div class="usage-card-title">Usage this month</div>
+                <div class="usage-card-sub" id="usage-plan-badge">—</div>
+              </div>
+              <div class="usage-card-period" id="usage-period"></div>
+            </div>
+            <div id="usage-unlimited" style="display:none;">
+              <div class="usage-unlimited-line">
+                <span class="usage-unlimited-badge">Unlimited</span>
+                <span class="usage-unlimited-text">Unlimited voice &amp; SMS on your plan — no caps to worry about.</span>
+              </div>
+              <div class="usage-unlimited-stats" id="usage-unlimited-stats"></div>
+            </div>
+            <!-- D5: Usage gauge ring. Ordered ABOVE the bars (V3 §4 / mock):
+                 the ring is the at-a-glance answer, the bars are the detail.
+                 The slot id and the module contract are unchanged. -->
+            <div class="dash-gauge-slot" id="dash-gauge-slot"></div>
+            <div id="usage-bars">
+              <div class="usage-row">
+                <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
+                <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+              </div>
+              <div class="usage-row">
+                <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
+                <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+              </div>
+            </div>
+            <!-- D4: 6-month minutes+SMS sparkline from summary usage_trend -->
+            <div class="dash-usage-spark" id="dash-usage-spark-slot"></div>
           </div>
-        </div>
-        <div id="dash-appt-list"></div>
+
+          <!-- AGENT STATUS (D7) -->
+          <div class="dash-rail-card" role="region" aria-label="Agent status and configuration">
+            <div class="dash-rail-head"><i data-lucide="bot"></i><span>Agent Status</span></div>
+            <div id="dash-agent-card" role="status" aria-live="polite">
+              <div class="empty" style="padding:24px 16px;"><i data-lucide="bot"></i> Loading agent status…</div>
+            </div>
+          </div>
+
+          <!-- LEADS BY SOURCE (D4) — was the full-width strip under the KPIs. -->
+          <div class="dash-source-strip dash-rail-card" id="dash-source-strip" role="region" aria-label="Leads by source distribution">
+            <div class="dash-slot-empty" id="dash-source-slot">
+              <i data-lucide="users"></i>
+              <span>Loading lead sources…</span>
+            </div>
+          </div>
+
+          <!-- CALLS BY WEEKDAY (D4) — moved out of the Activity card's grid. -->
+          <div class="dash-rail-card" role="region" aria-label="Calls by weekday">
+            <div class="dash-slot-empty" id="dash-weekday-slot" role="img" aria-label="Weekday activity chart loading">
+              <i data-lucide="bar-chart-3"></i>
+              <span>Loading weekday activity…</span>
+            </div>
+          </div>
+
+        </aside>
       </div>
 
-      <span id="stat-month-label" style="display:none;">April appointments</span>
-
-      <div class="table-wrap" id="dash-unconfirmed-wrap" style="display:none;" role="alert" aria-live="polite">
-        <div class="table-header">
-          <h2 style="color:var(--red);">⚠ Unconfirmed Appointments</h2>
-          <span style="font-size:12px;color:var(--muted);" id="dash-unconfirmed-count"></span>
-        </div>
-        <div id="dash-unconfirmed-list"></div>
-      </div>
+      <!-- Legacy E2E-pinned hook. Kept as a visually-hidden live region rather
+           than display:none so it still reports the real month once
+           loadDashboard() writes it. Ships EMPTY: it used to carry a hardcoded
+           "April appointments" string, which was stale sample data visible in
+           the DOM (and read out by a screen reader) on every non-April load
+           and whenever the appointments fetch failed before writing it. -->
+      <span id="stat-month-label" class="sr-only" aria-live="polite"></span>
     </div>
 
     <!-- APPOINTMENTS -->
@@ -3330,7 +3532,15 @@ async function fetchEntitlements() {
     const res = await fetch(`${API}/portal/entitlements`, {
       headers: { 'X-Portal-Token': portalToken }
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      // Previously a bare `return`: the usage card kept its markup default of
+      // display:none, so Plan & Usage — gauge, bars and the 6-month trend —
+      // silently vanished from the dashboard with nothing in the console to
+      // say why. Report it and show a truthful unavailable state instead.
+      console.error('[Auzora] Entitlements: fetch failed', { status: res.status, statusText: res.statusText });
+      showUsageCardUnavailable();
+      return;
+    }
     const data = await res.json();
     portalEntitlements = data.entitlements || null;
     portalTierVoices = data.tierVoices || null;
@@ -3347,8 +3557,36 @@ async function fetchEntitlements() {
       renderPortalVoiceGrid(currentPortalVoiceId);
     }
   } catch(e) {
-    // Non-blocking — fall back to hiding nothing (all nav visible)
+    // Nav gating stays permissive (all nav visible) — but the usage card must
+    // not be left as an invisible hole in the dashboard rail.
+    console.error('[Auzora] Entitlements error:', e.message);
+    showUsageCardUnavailable();
   }
+}
+
+// Degraded Plan & Usage state — the card stays visible and says what is true
+// rather than disappearing. Mirrors resetDashboardCharts()/resetConversionSlots().
+function showUsageCardUnavailable() {
+  const card = document.getElementById('usage-card');
+  if (!card) return;
+  card.style.display = 'block';
+  card.classList.remove('over');
+  const badge = document.getElementById('usage-plan-badge');
+  if (badge) badge.textContent = 'Plan details unavailable';
+  const period = document.getElementById('usage-period');
+  if (period) period.textContent = '';
+  const unlimited = document.getElementById('usage-unlimited');
+  if (unlimited) unlimited.style.display = 'none';
+  const bars = document.getElementById('usage-bars');
+  if (bars) bars.style.display = 'none';
+  const gauge = document.getElementById('dash-gauge-slot');
+  if (gauge) {
+    gauge.innerHTML = '<div class="dash-slot-empty"><i data-lucide="gauge"></i>' +
+      '<span>Usage unavailable right now — refresh to try again.</span></div>';
+  }
+  const spark = document.getElementById('dash-usage-spark-slot');
+  if (spark) spark.innerHTML = '';
+  if (window.lucide) lucide.createIcons();
 }
 
 // ── USAGE CARD (pricing ticket F) ────────────────────────────────────────────
@@ -3384,6 +3622,11 @@ function renderUsageCard(entitlementsPayload) {
   const barsBox = document.getElementById('usage-bars');
   card.classList.remove('over');
 
+  // Reconcile the gauge on EVERY render, before any early return. Previously
+  // this only ran at the end of the capped-plan path, so an unlimited payload
+  // left whatever ring the last capped payload had drawn on screen.
+  renderUsageGauge(entitlementsPayload);
+
   if (usage.unlimited) {
     unlimitedBox.style.display = 'block';
     barsBox.style.display = 'none';
@@ -3411,13 +3654,27 @@ function renderUsageCard(entitlementsPayload) {
     fill.classList.remove('warn', 'over');
     if (r.pct > 100) { fill.classList.add('over'); anyOver = true; }
     else if (r.pct >= 80) { fill.classList.add('warn'); }
-    const limitLabel = (r.pct > 100) ? 'over cap' : 'cap';
-    counts.textContent = `${Number(r.used).toLocaleString()} / ${Number(usage.limits?.[r.fill === 'usage-voice-fill' ? 'voiceMinutes' : 'smsMessages']).toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
+    // Keep the progressbar's aria-valuenow tracking the rendered fill width
+    // (DASHBOARD-V3 §7) — it was left at the markup default of 0 forever.
+    const bar = fill.parentElement;
+    if (bar && bar.getAttribute('role') === 'progressbar') {
+      bar.setAttribute('aria-valuenow', String(Math.round(clamped)));
+    }
+    // A missing or partial `limits` object used to render the literal string
+    // "NaN" as the cap. Show the real number when we have one, and say so
+    // plainly when we do not, rather than printing a broken value.
+    const limitKey = r.fill === 'usage-voice-fill' ? 'voiceMinutes' : 'smsMessages';
+    const rawLimit = usage.limits ? usage.limits[limitKey] : undefined;
+    const limit = Number(rawLimit);
+    const used = Number(r.used).toLocaleString();
+    if (Number.isFinite(limit) && limit > 0) {
+      const limitLabel = (r.pct > 100) ? 'over cap' : 'cap';
+      counts.textContent = `${used} / ${limit.toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
+    } else {
+      counts.textContent = `${used} used · cap unavailable`;
+    }
   });
   if (anyOver) card.classList.add('over');
-
-  // Render usage gauge (D5)
-  renderUsageGauge(entitlementsPayload);
 }
 
 // Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
@@ -3431,15 +3688,23 @@ function renderUsageGauge(entitlementsPayload) {
     return;
   }
 
-  const voicePct = usage.percentUsed?.voice ?? 0;
-  const smsPct = usage.percentUsed?.sms ?? 0;
-  const voiceLimit = usage.limits?.voiceMinutes ?? 0;
-  const smsLimit = usage.limits?.smsMessages ?? 0;
+  const voicePct = Number(usage.percentUsed?.voice) || 0;
+  const smsPct = Number(usage.percentUsed?.sms) || 0;
+  const voiceLimit = Number(usage.limits?.voiceMinutes) || 0;
+  const smsLimit = Number(usage.limits?.smsMessages) || 0;
 
-  // Use the tighter (smaller) cap for the combined percentage
-  // If one cap is smaller, it represents the bottleneck
-  const isVoiceTighter = voiceLimit > 0 && voiceLimit <= smsLimit;
-  const combinedPct = isVoiceTighter ? voicePct : smsPct;
+  // The ring reports the BOTTLENECK — the metric closest to its own cap — not
+  // the metric with the smaller absolute cap. Comparing raw limits (minutes vs
+  // messages) compared different units: a 500-minute / 2000-SMS plan always
+  // picked voice, so a client at 10% voice and 130% SMS saw a green "10% of
+  // plan" ring while they were actually 30% over on SMS. Percentages are
+  // unit-free and are what the ring already displays.
+  const haveVoice = voiceLimit > 0;
+  const haveSms = smsLimit > 0;
+  if (!haveVoice && !haveSms) { slot.innerHTML = ''; return; }
+  const useVoice = haveVoice && (!haveSms || voicePct >= smsPct);
+  const combinedPct = useVoice ? voicePct : smsPct;
+  const bottleneck = useVoice ? 'voice minutes' : 'SMS messages';
 
   const clampedPct = Math.min(100, Math.max(0, combinedPct));
   const isWarn = combinedPct >= 80 && combinedPct <= 100;
@@ -3449,12 +3714,20 @@ function renderUsageGauge(entitlementsPayload) {
   if (isOver) stateClass = 'over';
   else if (isWarn) stateClass = 'warn';
 
+  const stateLabel = isOver ? 'Over plan' : (isWarn ? 'Approaching cap' : 'On track');
+  const pctText = Math.round(combinedPct) + '%';
+
   const circumference = 2 * Math.PI * 34; // radius 34
   const offset = circumference - (clampedPct / 100) * circumference;
 
+  // The percentage lives INSIDE the ring as SVG <text> (V3 §4). No click
+  // handler: the gauge now sits in the same rail card as the usage bars it
+  // used to scroll to, so "click for details" was a scroll-to-self no-op and
+  // .focus() on a non-focusable <div> did nothing.
   slot.innerHTML = `
-    <div class="usage-gauge-wrap clickable" onclick="document.getElementById('usage-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('usage-card').focus();">
-      <svg class="usage-gauge-svg" viewBox="0 0 88 88" role="img" aria-label="Plan usage gauge: ${Math.round(clampedPct)}% used">
+    <div class="usage-gauge-wrap">
+      <svg class="usage-gauge-svg" viewBox="0 0 88 88" role="img"
+           aria-label="Plan usage: ${pctText} of the ${escapeHtml(bottleneck)} allowance used. ${stateLabel}.">
         <defs>
           <linearGradient id="gaugeGradientOnTrack" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" style="stop-color:#3B82F6" />
@@ -3472,13 +3745,14 @@ function renderUsageGauge(entitlementsPayload) {
         <circle class="usage-gauge-ring-bg" cx="44" cy="44" r="34"></circle>
         <circle class="usage-gauge-ring-fill ${stateClass}" cx="44" cy="44" r="34"
           stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+        <text class="usage-gauge-val ${stateClass}" x="44" y="43" text-anchor="middle"
+              dominant-baseline="middle">${pctText}</text>
+        <text class="usage-gauge-cap" x="44" y="58" text-anchor="middle"
+              dominant-baseline="middle">of plan</text>
       </svg>
       <div class="usage-gauge-text-wrap">
-        <div class="usage-gauge-pct-wrap">
-          <span class="usage-gauge-pct ${stateClass}">${Math.round(clampedPct)}%</span>
-          <span class="usage-gauge-label">${isOver ? 'over plan' : 'of plan used'}</span>
-        </div>
-        <div class="usage-gauge-sub">Click for details</div>
+        <span class="usage-gauge-state ${stateClass}">${stateLabel}</span>
+        <span class="usage-gauge-note">${escapeHtml(bottleneck)} is closest to your cap this period</span>
       </div>
     </div>
   `;
@@ -6173,10 +6447,23 @@ function renderWeekdayBars(weekday) {
 function renderDashboardLeads(leads) {
   const tableEl = document.getElementById('dash-leads-table');
   const countEl = document.getElementById('dash-leads-count');
-  if (!tableEl || !window.DashboardConversion) return;
+  if (!tableEl) return;
+  // Previously a silent early return, which left the "Loading recent leads…"
+  // placeholder on screen permanently if the module had not loaded.
+  if (!window.DashboardConversion) {
+    console.error('[Auzora] Dashboard leads: js/dashboard-conversion.js did not load');
+    tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
+    return;
+  }
   const list = Array.isArray(leads) ? leads.slice() : [];
   list.sort((a, b) => new Date(b.captured_at || 0) - new Date(a.captured_at || 0));
-  if (countEl) countEl.textContent = list.length ? `${list.length} total` : '';
+  // The table renders the 10 most recent; label the count honestly so "12
+  // total" next to 10 rows is not read as missing data.
+  if (countEl) {
+    countEl.textContent = list.length
+      ? (list.length > 10 ? `showing 10 of ${list.length}` : `${list.length} total`)
+      : '';
+  }
   DashboardConversion.renderLeadRows(list);
 }
 
@@ -6187,6 +6474,7 @@ function resetDashboardCharts() {
   DashboardCharts.renderActivityChart([], dashPeriodDays);
   DashboardCharts.renderSourceStrip({});
   DashboardCharts.renderUsageSparkline([]);
+  DashboardCharts.renderKpiSparklines([]);
   renderWeekdayBars([]);
 }
 
@@ -6230,6 +6518,8 @@ async function loadDashboardSummary() {
       DashboardCharts.renderActivityChart(summary.daily, dashPeriodDays);
       DashboardCharts.renderSourceStrip(summary.leads && summary.leads.by_source);
       DashboardCharts.renderUsageSparkline(summary.usage_trend);
+      // V3 §6 — one sparkline per KPI card, from the same `daily` array.
+      DashboardCharts.renderKpiSparklines(summary.daily);
     }
     // D6 — booking funnel + top intents from the same summary payload.
     if (window.DashboardConversion) {
@@ -6305,19 +6595,14 @@ async function loadDashboard() {
   document.getElementById('stat-month').textContent = thisMonth.length;
   document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US',{month:'long'}) + ' appointments';
 
-  const phoneEl = document.getElementById('stat-phone');
-  if (portalClient.twilio_number) {
-    phoneEl.textContent = portalClient.twilio_number;
-  } else {
-    phoneEl.textContent = 'Not yet assigned';
-    phoneEl.style.color = 'var(--muted)';
-  }
-  const agentNumbers = document.getElementById('dash-agent-numbers');
-  if (agentNumbers) {
-    agentNumbers.innerHTML = portalClient.twilio_number
-      ? `<span class="dash-chip">Calls answered &amp; texted from <b>${escapeHtml(portalClient.twilio_number)}</b></span>`
-      : '<span class="dash-chip">Phone number provisioning in progress</span>';
-  }
+  // The agent phone number is rendered (masked) by the D7 agent card via
+  // js/dashboard-agent.js. The #stat-phone / #dash-agent-numbers writes that
+  // used to live here targeted elements that no longer exist on the page:
+  // the unguarded #stat-phone write threw a TypeError, and because it sits
+  // above the appointment rendering below, it aborted this whole try block —
+  // Recent Appointments, #dash-appt-count and setApptData() (which backs the
+  // appointment detail modal) never ran. It also wrote the unmasked number
+  // over the masked one the agent card had just rendered.
 
   // Recent Appointments: last 14 days, ordered by booking date (newest first)
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -6329,9 +6614,13 @@ async function loadDashboard() {
     .sort((a, b) => new Date(b.created_at || b.booked_at || 0) - new Date(a.created_at || a.booked_at || 0));
 
   document.getElementById('dash-appt-count').textContent = recent.length + ' in last 14 days';
-  document.getElementById('dash-appt-list').innerHTML = recent.length
+  const apptListEl = document.getElementById('dash-appt-list');
+  apptListEl.innerHTML = recent.length
     ? apptTableRows(recent, true)
-    : '<div class="empty">No appointments in the last 14 days.</div>';
+    : '<div class="empty" style="padding:24px 16px;">No appointments in the last 14 days.</div>';
+  // Only scroll when there is a table to scroll; the empty state should not
+  // inherit a horizontal scroller.
+  apptListEl.classList.toggle('dash-appt-scroll', recent.length > 0);
 
   // Store all appointments for the detail modal
   setApptData(appts);
@@ -6348,6 +6637,15 @@ async function loadDashboard() {
 function renderAgentCard() {
   const cardEl = document.getElementById('dash-agent-card');
   if (!cardEl) return;
+
+  // Guarded: an unguarded deref here threw when js/dashboard-agent.js failed
+  // to load, leaving a permanent "Loading agent status…" and a bare TypeError
+  // in the console. Say what is actually true instead.
+  if (!window.DashboardAgent || typeof window.DashboardAgent.buildAgentCard !== 'function') {
+    console.error('[Auzora] Agent card: js/dashboard-agent.js did not load');
+    cardEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Agent status unavailable right now.</div>';
+    return;
+  }
 
   // Build HTML from portalClient and VOICES
   const html = window.DashboardAgent.buildAgentCard(portalClient, VOICES);
@@ -6378,7 +6676,16 @@ async function loadUnconfirmedAppointments() {
     }
 
     wrap.style.display = '';
-    countEl.textContent = events.length + ' pending';
+    // The count IS the banner headline in V3 (the ⚠ emoji was replaced by the
+    // alert-triangle tile), so it reads as a sentence rather than "N pending".
+    if (countEl) {
+      countEl.textContent = events.length === 1
+        ? '1 appointment needs confirmation'
+        : events.length + ' appointments need confirmation';
+    }
+    // Collapse the disclosure on each load so the button state and the list
+    // visibility can never drift apart across refreshes.
+    setUnconfirmedListOpen(false);
 
     const tz = portalClient?.timezone || 'America/Chicago';
     const rows = events.map(ev => {
@@ -6405,6 +6712,23 @@ async function loadUnconfirmedAppointments() {
     console.error('[Auzora] Unconfirmed load error:', e.message);
     wrap.style.display = 'none';
   }
+}
+
+// Unconfirmed banner disclosure (V3). The banner is the headline + Review
+// button; the actionable list with its Confirm buttons expands beneath it.
+function setUnconfirmedListOpen(open) {
+  const listEl = document.getElementById('dash-unconfirmed-list');
+  const btn = document.getElementById('dash-unconfirmed-toggle');
+  if (!listEl || !btn) return;
+  listEl.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.textContent = open ? 'Hide' : 'Review';
+}
+
+function toggleUnconfirmedList() {
+  const btn = document.getElementById('dash-unconfirmed-toggle');
+  if (!btn) return;
+  setUnconfirmedListOpen(btn.getAttribute('aria-expanded') !== 'true');
 }
 
 // Confirm a native calendar event — works from both the dashboard and the calendar day detail.
@@ -6460,10 +6784,14 @@ function apptTableRows(appts, compact) {
       <td style="font-size:11px;color:var(--muted);">${hasCalendarSync ? 'Calendar synced' : (isPast ? '' : 'No calendar sync')}</td>
     </tr>`;
   }).join('');
+  // scope="col" on every header + a visually-hidden caption (DASHBOARD-V3 §7).
   const headers = compact
-    ? '<tr><th>Name</th><th>Service</th><th>Date & Time</th><th>Status</th><th></th></tr>'
-    : '<tr><th>Name</th><th>Service</th><th>Phone</th><th>Date & Time</th><th>Notes</th><th>Status</th><th>Calendar</th></tr>';
-  return `<table>${headers}<tbody>${rows}</tbody></table>`;
+    ? '<tr><th scope="col">Name</th><th scope="col">Service</th><th scope="col">Date &amp; Time</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Calendar sync</span></th></tr>'
+    : '<tr><th scope="col">Name</th><th scope="col">Service</th><th scope="col">Phone</th><th scope="col">Date &amp; Time</th><th scope="col">Notes</th><th scope="col">Status</th><th scope="col">Calendar</th></tr>';
+  const caption = compact
+    ? '<caption class="sr-only">Appointments booked in the last 14 days</caption>'
+    : '<caption class="sr-only">All appointments</caption>';
+  return `<table>${caption}<thead>${headers}</thead><tbody>${rows}</tbody></table>`;
 }
 
 // ── APPOINTMENT DETAIL MODAL ─────────────────────────────────────────────────
@@ -11841,7 +12169,13 @@ function closeLeadTimeline() {
 }
 </script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script>lucide.createIcons();
+<script>
+// Guarded like every other createIcons() call site in this file. This one was
+// bare, and it is the FIRST statement of a script block that also defines
+// loadConversations() and everything below it — so a failed/blocked CDN load
+// threw a ReferenceError here and none of those functions were ever defined,
+// taking out unrelated pages with a single uncaught error.
+if (typeof lucide !== 'undefined') lucide.createIcons();
 // ── CONVERSATIONS (MCH-003: Human SMS Takeover) ──────────────────────────────
 let convSelectedLeadId = null;
 
