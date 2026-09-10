@@ -654,6 +654,52 @@
     setSlot(el, '<div class="dchart-slot-title">Calls by weekday</div>' + weekdayBarsSVG(weekday), false);
   }
 
+  // ── Busiest hour (replacement metric) ──────────────────────────────────────
+  //
+  // Added to fill the slot vacated by the deduped "Top intents" echoes. The
+  // dashboard had no time-of-day view anywhere: weekday bars answer "which
+  // DAY is busy", nothing answered "which HOUR". That is the actionable one
+  // for staffing and for judging whether after-hours handling is needed.
+  //
+  // Values come pre-computed from GET /portal/dashboard/summary
+  // (busiest_hour: {hour_utc, calls, label, share_pct}) — the label is
+  // already localized to the client's timezone server-side, so this stays a
+  // dumb renderer and no timezone maths happens in the browser.
+
+  /**
+   * Busiest-hour panel HTML (pure).
+   * @param {object} bh summary.busiest_hour
+   */
+  function busiestHourHTML(bh) {
+    var b = (bh && typeof bh === 'object') ? bh : {};
+    var calls = Math.max(0, Number(b.calls) || 0);
+    // hour_utc is null (and calls 0) when the period had no calls at all.
+    if (b.hour_utc === null || b.hour_utc === undefined || calls <= 0 || !b.label) {
+      return emptySlotHTML('clock', 'Busiest hour appears once calls come in');
+    }
+    var share = Math.max(0, Math.min(100, Number(b.share_pct) || 0));
+    var callWord = calls === 1 ? ' call' : ' calls';
+    var aria = 'Busiest hour: ' + b.label + ', ' + calls + callWord + ', ' +
+      share + ' percent of all calls in this period.';
+    return '<div class="dchart-slot-title">Busiest hour</div>' +
+      '<div class="dchart-bighour" role="img" aria-label="' + esc(aria) + '">' +
+      '<div class="dchart-bighour-value">' + esc(b.label) + '</div>' +
+      '<div class="dchart-bighour-sub">' + calls + callWord +
+      ' · ' + share + '% of this period</div>' +
+      '</div>';
+  }
+
+  /** Render the busiest-hour panel into #dash-busiest-hour-slot. */
+  function renderBusiestHour(busiestHour) {
+    var el = document.getElementById('dash-busiest-hour-slot');
+    if (!el) return;
+    var b = (busiestHour && typeof busiestHour === 'object') ? busiestHour : {};
+    var isEmpty = b.hour_utc === null || b.hour_utc === undefined ||
+      !(Number(b.calls) > 0) || !b.label;
+    setSlot(el, busiestHourHTML(busiestHour), isEmpty);
+    if (global.lucide) global.lucide.createIcons();
+  }
+
   /** Render #3 into the KPI-strip source slot. */
   function renderSourceStrip(bySource) {
     var el = document.getElementById('dash-source-slot');
@@ -716,12 +762,14 @@
     kpiSparkSVG: kpiSparkSVG,
     dailySeries: dailySeries,
     KPI_SPARKS: KPI_SPARKS,
+    busiestHourHTML: busiestHourHTML,
     // DOM render fns
     renderActivityChart: renderActivityChart,
     renderWeekdayChart: renderWeekdayChart,
     renderSourceStrip: renderSourceStrip,
     renderUsageSparkline: renderUsageSparkline,
     renderKpiSparklines: renderKpiSparklines,
+    renderBusiestHour: renderBusiestHour,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

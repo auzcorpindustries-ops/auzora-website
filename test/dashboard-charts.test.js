@@ -636,3 +636,61 @@ describe('KPI_SPARKS wiring table', () => {
     expect(new Set(colors).size).toBe(4);
   });
 });
+
+// ── busiestHourHTML (replacement metric) ─────────────────────────────────────
+// Added to fill the panel slot vacated by the deduped "Top intents" echoes.
+// Nothing else on the dashboard answered "which HOUR is busy" — weekday bars
+// only answer "which DAY". The label arrives pre-localized to the client's
+// timezone from GET /portal/dashboard/summary, so this renderer does no
+// timezone maths and must not invent one.
+describe('busiestHourHTML', () => {
+  test('renders the localized label, call count and share', () => {
+    const html = C.busiestHourHTML({ hour_utc: 18, calls: 9, label: '1 PM', share_pct: 16.7 });
+    expect(html).toContain('Busiest hour');
+    expect(html).toContain('1 PM');
+    expect(html).toContain('9 calls');
+    expect(html).toContain('16.7%');
+    // Accessible summary, same convention as the SVG charts.
+    expect(html).toContain('role="img"');
+    expect(html).toContain('aria-label="Busiest hour: 1 PM, 9 calls, 16.7 percent');
+  });
+
+  test('singularizes a single call', () => {
+    const html = C.busiestHourHTML({ hour_utc: 9, calls: 1, label: '4 AM', share_pct: 100 });
+    expect(html).toContain('1 call ·');
+    expect(html).not.toContain('1 calls');
+  });
+
+  test('null hour → truthful empty state, never a fake midnight', () => {
+    // The backend sends hour_utc: null when the period has no calls. Rendering
+    // a "12 AM" peak there would be a fabricated metric.
+    const empty = C.busiestHourHTML({ hour_utc: null, calls: 0, label: null, share_pct: 0 });
+    expect(empty).toContain('Busiest hour appears once calls come in');
+    expect(empty).not.toContain('12 AM');
+    expect(empty).not.toContain('dchart-bighour-value');
+  });
+
+  test('missing/garbage payloads degrade to the empty state', () => {
+    for (const bad of [null, undefined, {}, 'nope', 42, []]) {
+      expect(C.busiestHourHTML(bad)).toContain('Busiest hour appears once calls come in');
+    }
+  });
+
+  test('a label without calls is not rendered as a peak', () => {
+    // Defensive: calls must be > 0 for the panel to claim a busiest hour.
+    expect(C.busiestHourHTML({ hour_utc: 13, calls: 0, label: '8 AM', share_pct: 0 }))
+      .toContain('Busiest hour appears once calls come in');
+  });
+
+  test('share_pct is clamped into 0..100 and never NaN', () => {
+    expect(C.busiestHourHTML({ hour_utc: 1, calls: 3, label: '7 PM', share_pct: 999 })).toContain('100%');
+    expect(C.busiestHourHTML({ hour_utc: 1, calls: 3, label: '7 PM', share_pct: -5 })).toContain('0%');
+    expect(C.busiestHourHTML({ hour_utc: 1, calls: 3, label: '7 PM', share_pct: 'x' })).toContain('0%');
+  });
+
+  test('escapes the label — it is server-supplied text', () => {
+    const html = C.busiestHourHTML({ hour_utc: 3, calls: 2, label: '<img src=x onerror=1>', share_pct: 5 });
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img');
+  });
+});

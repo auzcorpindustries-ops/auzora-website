@@ -105,6 +105,64 @@ describe('buildTopIntents', () => {
     expect(DC.buildTopIntents([1, 2])).toEqual([]);
     expect(DC.buildTopIntents({})).toEqual([]);
   });
+
+  // ── DEDUPE: intents that merely echo a lead source ────────────────────────
+  // The automated lead paths (triggered_call, triggered_sms, missed_call_sms)
+  // write the SOURCE string into the intent field verbatim, so the Top intents
+  // chips restated the Leads-by-source bars — same records, same counts, just
+  // raw snake_case keys. Verified on prod: 15 of 58 lead records had intent
+  // identical to source. These tests pin that only the echoes are dropped.
+  test('drops intents whose key matches a lead source key', () => {
+    const byIntent = {
+      triggered_call: 2,
+      triggered_sms: 2,
+      'book a compounding consultation': 1,
+      'book a cleaning appointment': 1,
+    };
+    const bySource = { inbound_call: 4, triggered_call: 2, triggered_sms: 2 };
+    const top = DC.buildTopIntents(byIntent, 5, bySource);
+    expect(top.map(r => r.key)).toEqual([
+      'book a cleaning appointment',
+      'book a compounding consultation',
+    ]);
+    expect(top.map(r => r.key)).not.toContain('triggered_call');
+    expect(top.map(r => r.key)).not.toContain('triggered_sms');
+  });
+
+  test('real conversational intents SURVIVE the dedupe', () => {
+    // Conservative by design: the panel is not removed, only the echoes.
+    const byIntent = { 'book a consultation': 3, inbound_call: 4 };
+    const top = DC.buildTopIntents(byIntent, 5, { inbound_call: 4 });
+    expect(top).toHaveLength(1);
+    expect(top[0].label).toBe('book a consultation');
+    expect(top[0].count).toBe(3);
+  });
+
+  test('dedupe is case-insensitive, like the intent grouping', () => {
+    const top = DC.buildTopIntents({ Triggered_SMS: 2, 'book a demo': 1 }, 5, { triggered_sms: 2 });
+    expect(top.map(r => r.key)).toEqual(['book a demo']);
+  });
+
+  test('a source with a ZERO count does not suppress its intent', () => {
+    // Nothing is being duplicated if the source panel is not showing the bar.
+    const top = DC.buildTopIntents({ triggered_sms: 2 }, 5, { triggered_sms: 0 });
+    expect(top.map(r => r.key)).toEqual(['triggered_sms']);
+  });
+
+  test('omitting bySource preserves the original behaviour exactly', () => {
+    const byIntent = { triggered_call: 2, 'book a demo': 1 };
+    expect(DC.buildTopIntents(byIntent, 5)).toHaveLength(2);
+    expect(DC.buildTopIntents(byIntent, 5, null)).toHaveLength(2);
+    expect(DC.buildTopIntents(byIntent, 5, [])).toHaveLength(2);
+  });
+
+  test('every intent echoing a source → empty panel, not a duplicated one', () => {
+    const top = DC.buildTopIntents(
+      { triggered_call: 2, triggered_sms: 2 }, 5,
+      { triggered_call: 2, triggered_sms: 2 },
+    );
+    expect(top).toEqual([]);
+  });
 });
 
 // ── buildFunnel ──────────────────────────────────────────────────────────────

@@ -129,16 +129,48 @@
    * by count with an alphabetical tiebreak (stable for tests), capped at
    * `max` (default 5). Rows: [{ key, label, count }] — label is the
    * first-seen spelling.
+   *
+   * ── DEDUPE against "Leads by source" ─────────────────────────────────────
+   * `bySource` is optional. When supplied, any intent whose key matches a
+   * SOURCE key is dropped, because such a chip carries no information the
+   * Leads-by-source panel is not already showing.
+   *
+   * This is not hypothetical. Automated lead paths (triggered_call,
+   * triggered_sms, missed_call_sms …) write the source string into the intent
+   * field verbatim, so a real client's dashboard rendered:
+   *
+   *   Leads by source :  Voice call 4 | Follow-up call 2 | Follow-up SMS 2
+   *   Top intents     :  triggered_call 2 | triggered_sms 2 | book a …
+   *
+   * The first two chips ARE the last two bars — same records, same counts,
+   * just un-humanized snake_case keys leaking into the UI. Verified on prod:
+   * 15 of 58 lead records had intent identical to source.
+   *
+   * Only the echoes are dropped, never the whole panel: real conversational
+   * intents ('book a compounding consultation') are genuinely new
+   * information and are exactly what this panel is for.
    */
-  function buildTopIntents(byIntent, max) {
+  function buildTopIntents(byIntent, max, bySource) {
     var src = (byIntent && typeof byIntent === 'object' && !Array.isArray(byIntent)) ? byIntent : {};
     var cap = Math.max(1, Number(max) || 5);
+
+    // Source keys to suppress, normalized the same way intents are.
+    var sourceKeys = {};
+    if (bySource && typeof bySource === 'object' && !Array.isArray(bySource)) {
+      for (var s in bySource) {
+        if (!Object.prototype.hasOwnProperty.call(bySource, s)) continue;
+        if (Number(bySource[s]) > 0) sourceKeys[intentKey(s)] = true;
+      }
+    }
+
     var groups = {};
     for (var k in src) {
       if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
       var c = Number(src[k]);
       if (!isFinite(c) || c <= 0) continue;
       var key = intentKey(k) || 'unknown';
+      // Drop the source echoes — see DEDUPE above.
+      if (sourceKeys[key]) continue;
       if (!groups[key]) groups[key] = { key: key, label: String(k).trim() || 'unknown', count: 0 };
       groups[key].count += c;
     }
@@ -413,11 +445,21 @@
     if (global.lucide) global.lucide.createIcons();
   }
 
-  /** Render the top-intents chips into #dash-intents-slot. */
-  function renderIntentChips(byIntent) {
+  /**
+   * Render the top-intents chips into #dash-intents-slot.
+   *
+   * Takes the whole leads object ({by_intent, by_source}) so the dedupe in
+   * buildTopIntents() can suppress intents that merely echo a lead source.
+   * A bare by_intent map is still accepted for backwards compatibility.
+   */
+  function renderIntentChips(leads) {
     var el = document.getElementById('dash-intents-slot');
     if (!el) return;
-    var rows = buildTopIntents(byIntent, 5);
+    var l = (leads && typeof leads === 'object') ? leads : {};
+    // Either the {by_intent, by_source} container, or a bare by_intent map.
+    var byIntent = l.by_intent !== undefined ? l.by_intent : l;
+    var bySource = l.by_source;
+    var rows = buildTopIntents(byIntent, 5, bySource);
     setSlot(el,
       '<div class="dconv-slot-title">Top intents</div>' + intentChipsHTML(rows),
       rows.length === 0);
