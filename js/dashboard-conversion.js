@@ -186,8 +186,14 @@
   /**
    * Normalize one lead record into dashboard-row data (pure). Name falls back
    * email → masked phone → 'Unknown'; the phone column is ALWAYS masked.
+   *
+   * `now` is injectable (same contract as relTime) so the derived `rel` label
+   * is deterministic under test. Without it the row data silently depended on
+   * Date.now(), which made any fixed captured_at fixture a time bomb: a lead
+   * dated "recently" when the test was written drifts into the absolute
+   * month-day bucket a week later and the assertion flips.
    */
-  function leadRowData(lead) {
+  function leadRowData(lead, now) {
     var l = lead || {};
     var masked = maskPhone(l.phone);
     return {
@@ -199,7 +205,7 @@
       intent: l.intent || l.lead_context || '—',
       score: (l.score === 0 || l.score) ? String(l.score) : '—',
       capturedAt: l.captured_at || '',
-      rel: relTime(l.captured_at),
+      rel: relTime(l.captured_at, now),
       status: l.status || '',
       needsAttention: l.needs_agent_attention === true,
       nextAction: l.next_action_display || '',
@@ -302,7 +308,13 @@
       return '<div class="dconv-empty"><i data-lucide="users"></i>' +
         '<span>No leads captured yet. When someone calls or fills a form, they show up here.</span></div>';
     }
-    var html = '<div class="dconv-table-scroll"><table class="dash-mini-table dconv-lead-table"><thead><tr>' +
+    var html = '<div class="dconv-table-scroll"><table class="dash-mini-table dconv-lead-table">' +
+      // V3 §7 — every table gets a caption; this one had none. Visually hidden
+      // (.sr-only), so it is an assistive-tech-only description of a table
+      // whose rows expand and whose phone column is deliberately masked.
+      '<caption class="sr-only">Ten most recent leads. Each row expands for detail. ' +
+      'Phone numbers are masked; full contact info lives in Leads and CRM.</caption>' +
+      '<thead><tr>' +
       '<th scope="col">Name</th><th scope="col">Phone</th><th scope="col">Source</th>' +
       '<th scope="col">Intent</th><th scope="col">Score</th><th scope="col">Captured</th>' +
       '</tr></thead><tbody>';
@@ -312,7 +324,9 @@
       html += '<tr class="dconv-lead-row" data-lead-row="' + i + '"' +
         ' tabindex="0" role="button" aria-expanded="false" aria-controls="' + detailId + '"' +
         ' title="Show lead details">' +
-        '<td class="dconv-lead-name">' + esc(r.name) + '</td>' +
+        '<td class="dconv-lead-name"><span class="dconv-lead-name-wrap">' +
+        '<span class="dconv-lead-chevron" aria-hidden="true"><i data-lucide="chevron-right"></i></span>' +
+        esc(r.name) + '</span></td>' +
         '<td class="dconv-lead-phone">' + esc(r.phoneMasked || '—') + '</td>' +
         '<td><span class="dconv-source-badge">' + esc(r.source) + '</span></td>' +
         '<td class="dconv-lead-intent">' + esc(r.intent) + '</td>' +
@@ -369,7 +383,14 @@
     var rowsData = [];
     for (var i = 0; i < list.length && i < 10; i++) rowsData.push(leadRowData(list[i]));
     setSlot(el, leadTableHTML(rowsData), rowsData.length === 0);
-    if (rowsData.length) {
+    // Bind the delegated handlers EXACTLY ONCE. They live on #dash-leads-table,
+    // which setSlot() only refills — the element itself survives every render —
+    // so the old unconditional addEventListener stacked a new pair on each
+    // call. loadDashboard() runs on login, on nav back to Dashboard and after
+    // a booking, so by the second render one click ran toggleLeadRow twice:
+    // open then immediately closed, and row-expand looked broken.
+    if (!el.dataset.dconvBound) {
+      el.dataset.dconvBound = '1';
       el.addEventListener('click', function (ev) {
         var row = ev.target && ev.target.closest ? ev.target.closest('.dconv-lead-row') : null;
         if (row) toggleLeadRow(row);

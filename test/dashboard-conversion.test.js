@@ -160,6 +160,13 @@ describe('buildFunnel', () => {
 
 // ── leadRowData ──────────────────────────────────────────────────────────────
 describe('leadRowData', () => {
+  // Fixed clock: the captured_at fixtures below are dated relative to it, so
+  // the derived `rel` label is deterministic instead of drifting with
+  // wall-clock time. Previously this suite asserted a relative bucket against
+  // a hardcoded 2026-09-01 fixture and Date.now(), so it passed the week it
+  // was written and failed permanently 7 days later.
+  const NOW_ROW = Date.UTC(2026, 8, 2, 18, 0, 0); // Sep 2 2026 18:00 UTC
+
   test('maps a full lead record; phone masked, name fallbacks', () => {
     const r = DC.leadRowData({
       lead_id: 'l1',
@@ -173,7 +180,7 @@ describe('leadRowData', () => {
       status: 'new',
       needs_agent_attention: true,
       next_action_display: 'SMS follow-up in 2h',
-    });
+    }, NOW_ROW);
     expect(r.name).toBe('Dana Reyes');
     expect(r.phoneMasked).toBe('•••• 7891');
     expect(r.source).toBe('Voice call');
@@ -181,8 +188,15 @@ describe('leadRowData', () => {
     expect(r.score).toBe('82');
     expect(r.needsAttention).toBe(true);
     expect(r.nextAction).toBe('SMS follow-up in 2h');
-    // Captured near "now" in test data → must land in a sane relative bucket.
+    // Captured 27h before the injected clock → the hours/days bucket.
     expect(r.rel).toMatch(/^(just now|\d+[mhd] ago)$/);
+  });
+
+  test('rel derives from the injected clock, not Date.now()', () => {
+    const iso = new Date(NOW_ROW - 3 * 3600000).toISOString();
+    expect(DC.leadRowData({ captured_at: iso }, NOW_ROW).rel).toBe('3h ago');
+    // Same record read two weeks later → absolute label, no drift surprise.
+    expect(DC.leadRowData({ captured_at: iso }, NOW_ROW + 14 * 86400000).rel).toBe('Sep 2');
   });
 
   test('name falls back email → masked phone → Unknown', () => {
@@ -268,12 +282,13 @@ describe('intentChipsHTML', () => {
 });
 
 describe('leadTableHTML', () => {
+  const NOW_TBL = Date.UTC(2026, 8, 2, 18, 0, 0); // pinned; see leadRowData above
   const rows = [
     DC.leadRowData({
       lead_id: 'l1', name: 'Dana Reyes', phone: '+11234567891', source: 'inbound_call',
       intent: 'book an appointment', score: 82, captured_at: '2026-09-01T15:00:00Z',
-    }),
-    DC.leadRowData({ lead_id: 'l2', phone: '+15551230000', captured_at: '2026-08-20T10:00:00Z', needs_agent_attention: true }),
+    }, NOW_TBL),
+    DC.leadRowData({ lead_id: 'l2', phone: '+15551230000', captured_at: '2026-08-20T10:00:00Z', needs_agent_attention: true }, NOW_TBL),
   ];
 
   test('renders header columns + one row per lead, phones masked', () => {
@@ -322,5 +337,36 @@ describe('leadTableHTML', () => {
     }
     const html = DC.leadTableHTML(many);
     expect(html.match(/dconv-lead-row/g)).toHaveLength(10);
+  });
+
+  // ── V3 §5 — the row-expand chevron hint ───────────────────────────────────
+  test('every row gets a chevron hint in the Name cell', () => {
+    const html = DC.leadTableHTML(rows);
+    expect(html.match(/dconv-lead-chevron/g)).toHaveLength(rows.length);
+    // Wrapped so CSS can rotate it off the row's aria-expanded.
+    expect(html).toContain('dconv-lead-name-wrap');
+  });
+
+  test('chevron is decorative and never announced', () => {
+    const html = DC.leadTableHTML(rows);
+    expect(html).toContain('<span class="dconv-lead-chevron" aria-hidden="true">');
+  });
+
+  test('chevron ships one fixed icon name — rotation is CSS, not an icon swap', () => {
+    const html = DC.leadTableHTML(rows);
+    // lucide.createIcons() replaces the <i> node, so swapping data-lucide on an
+    // attribute change is fragile; the transform keys off aria-expanded instead.
+    expect(html.match(/data-lucide="chevron-right"/g)).toHaveLength(rows.length);
+    expect(html).not.toContain('chevron-down');
+  });
+
+  test('name still renders as escaped text beside the chevron', () => {
+    const html = DC.leadTableHTML([DC.leadRowData({ name: 'A <b>Bell</b>' })]);
+    expect(html).toContain('A &lt;b&gt;Bell&lt;/b&gt;');
+    expect(html).not.toContain('<b>Bell</b>');
+  });
+
+  test('empty state renders no chevrons', () => {
+    expect(DC.leadTableHTML([])).not.toContain('dconv-lead-chevron');
   });
 });
