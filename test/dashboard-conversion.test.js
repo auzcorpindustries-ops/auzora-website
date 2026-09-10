@@ -338,4 +338,35 @@ describe('leadTableHTML', () => {
     const html = DC.leadTableHTML(many);
     expect(html.match(/dconv-lead-row/g)).toHaveLength(10);
   });
+
+  // ── V3 §5 — the row-expand chevron hint ───────────────────────────────────
+  test('every row gets a chevron hint in the Name cell', () => {
+    const html = DC.leadTableHTML(rows);
+    expect(html.match(/dconv-lead-chevron/g)).toHaveLength(rows.length);
+    // Wrapped so CSS can rotate it off the row's aria-expanded.
+    expect(html).toContain('dconv-lead-name-wrap');
+  });
+
+  test('chevron is decorative and never announced', () => {
+    const html = DC.leadTableHTML(rows);
+    expect(html).toContain('<span class="dconv-lead-chevron" aria-hidden="true">');
+  });
+
+  test('chevron ships one fixed icon name — rotation is CSS, not an icon swap', () => {
+    const html = DC.leadTableHTML(rows);
+    // lucide.createIcons() replaces the <i> node, so swapping data-lucide on an
+    // attribute change is fragile; the transform keys off aria-expanded instead.
+    expect(html.match(/data-lucide="chevron-right"/g)).toHaveLength(rows.length);
+    expect(html).not.toContain('chevron-down');
+  });
+
+  test('name still renders as escaped text beside the chevron', () => {
+    const html = DC.leadTableHTML([DC.leadRowData({ name: 'A <b>Bell</b>' })]);
+    expect(html).toContain('A &lt;b&gt;Bell&lt;/b&gt;');
+    expect(html).not.toContain('<b>Bell</b>');
+  });
+
+  test('empty state renders no chevrons', () => {
+    expect(DC.leadTableHTML([])).not.toContain('dconv-lead-chevron');
+  });
 });
