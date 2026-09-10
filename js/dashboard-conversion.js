@@ -186,8 +186,14 @@
   /**
    * Normalize one lead record into dashboard-row data (pure). Name falls back
    * email → masked phone → 'Unknown'; the phone column is ALWAYS masked.
+   *
+   * `now` is injectable (same contract as relTime) so the derived `rel` label
+   * is deterministic under test. Without it the row data silently depended on
+   * Date.now(), which made any fixed captured_at fixture a time bomb: a lead
+   * dated "recently" when the test was written drifts into the absolute
+   * month-day bucket a week later and the assertion flips.
    */
-  function leadRowData(lead) {
+  function leadRowData(lead, now) {
     var l = lead || {};
     var masked = maskPhone(l.phone);
     return {
@@ -199,7 +205,7 @@
       intent: l.intent || l.lead_context || '—',
       score: (l.score === 0 || l.score) ? String(l.score) : '—',
       capturedAt: l.captured_at || '',
-      rel: relTime(l.captured_at),
+      rel: relTime(l.captured_at, now),
       status: l.status || '',
       needsAttention: l.needs_agent_attention === true,
       nextAction: l.next_action_display || '',

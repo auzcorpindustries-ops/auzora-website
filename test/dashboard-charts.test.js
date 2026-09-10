@@ -481,12 +481,13 @@ describe('usageSparkSVG', () => {
 });
 
 // ── cross-cutting: accessibility + zero deps on every chart ─────────────────
-describe('all four charts: accessibility + zero dependencies', () => {
+describe('all charts: accessibility + zero dependencies', () => {
   const svgs = {
     activity: C.activityChartSVG(makeDaily(7, '2026-08-27'), 7),
     weekday: C.weekdayBarsSVG(WEEKDAY),
     source: C.sourceBarsSVG(BY_SOURCE),
     spark: C.usageSparkSVG(makeUsageTrend()),
+    kpiSpark: C.kpiSparkSVG(C.dailySeries(makeDaily(14, '2026-08-20'), 'calls'), 'var(--accent)', 'Calls answered'),
   };
 
   for (const [name, svg] of Object.entries(svgs)) {
@@ -506,4 +507,132 @@ describe('all four charts: accessibility + zero dependencies', () => {
       expect(svg).not.toContain('src=');
     });
   }
+});
+
+// ── KPI sparklines (DASHBOARD-V3 §6) ────────────────────────────────────────
+describe('dailySeries', () => {
+  test('extracts one field per day, in order', () => {
+    const daily = makeDaily(5, '2026-08-25');
+    expect(C.dailySeries(daily, 'calls')).toEqual(daily.map(d => d.calls));
+    expect(C.dailySeries(daily, 'minutes')).toEqual(daily.map(d => d.minutes));
+  });
+
+  test('missing field reads as 0 (partial payload still renders)', () => {
+    expect(C.dailySeries([{ date: 'x' }, { date: 'y' }], 'sms')).toEqual([0, 0]);
+  });
+
+  test('negatives clamp to 0; non-array input → []', () => {
+    expect(C.dailySeries([{ calls: -4 }, { calls: 2 }], 'calls')).toEqual([0, 2]);
+    expect(C.dailySeries(null, 'calls')).toEqual([]);
+    expect(C.dailySeries(undefined, 'calls')).toEqual([]);
+  });
+});
+
+describe('buildKpiSparkGeometry', () => {
+  test('reports n, max and hasSignal for a real series', () => {
+    const g = C.buildKpiSparkGeometry([0, 3, 9, 4]);
+    expect(g.n).toBe(4);
+    expect(g.max).toBe(9);
+    expect(g.hasSignal).toBe(true);
+  });
+
+  test('all-zero series has no signal (nothing to plot, not an error)', () => {
+    const g = C.buildKpiSparkGeometry([0, 0, 0]);
+    expect(g.n).toBe(3);
+    expect(g.max).toBe(0);
+    expect(g.hasSignal).toBe(false);
+  });
+
+  test('single point has no signal (a line needs 2+ points)', () => {
+    expect(C.buildKpiSparkGeometry([7]).hasSignal).toBe(false);
+  });
+
+  test('empty / non-array input is safe', () => {
+    expect(C.buildKpiSparkGeometry([]).hasSignal).toBe(false);
+    expect(C.buildKpiSparkGeometry(null).n).toBe(0);
+    expect(C.buildKpiSparkGeometry(undefined).max).toBe(0);
+  });
+
+  test('coerces junk values to 0 rather than NaN', () => {
+    const g = C.buildKpiSparkGeometry([null, 'abc', undefined, 5]);
+    expect(g.values).toEqual([0, 0, 0, 5]);
+    expect(g.max).toBe(5);
+  });
+});
+
+describe('kpiSparkSVG', () => {
+  const values = C.dailySeries(makeDaily(30, '2026-08-04'), 'minutes');
+
+  test('renders an area + line path when there is signal', () => {
+    const svg = C.kpiSparkSVG(values, 'var(--accent)', 'Voice minutes');
+    expect(svg).toContain('dchart-kpi-area');
+    expect(svg).toContain('dchart-kpi-line');
+    expect(svg).toMatch(/d="M[\d.\s,LM-]+"/);
+  });
+
+  test('applies the caller tint to both stroke and fill', () => {
+    const svg = C.kpiSparkSVG(values, 'var(--pink)', 'SMS messages');
+    expect(svg).toContain('stroke="var(--pink)"');
+    expect(svg).toContain('fill="var(--pink)"');
+  });
+
+  test('empty period → flat baseline, no fabricated line', () => {
+    const svg = C.kpiSparkSVG([0, 0, 0, 0], 'var(--accent)', 'Calls answered');
+    expect(svg).toContain('dchart-kpi-flat');
+    expect(svg).not.toContain('dchart-kpi-line');
+    expect(svg).toContain('no data in this period');
+  });
+
+  test('aria-label names the metric and states the peak', () => {
+    const svg = C.kpiSparkSVG([1, 8, 3], 'var(--accent)', 'Calls answered');
+    expect(svg).toContain('role="img"');
+    expect(svg).toContain('Calls answered trend');
+    expect(svg).toContain('peak 8');
+  });
+
+  test('defaults are safe with no color/label supplied', () => {
+    const svg = C.kpiSparkSVG([1, 2], undefined, undefined);
+    expect(svg).toContain('var(--accent)');
+    expect(svg).toContain('Trend trend');
+    expect(svg).not.toContain('undefined');
+  });
+
+  test('never leaks NaN/undefined, even on hostile input', () => {
+    const svg = C.kpiSparkSVG([null, 'x', {}, 4], 'var(--orange)', 'Leads captured');
+    expect(svg).not.toContain('NaN');
+    expect(svg).not.toContain('undefined');
+  });
+
+  test('label is escaped (no HTML injection through aria-label)', () => {
+    const svg = C.kpiSparkSVG([1, 2], 'var(--accent)', '<b>evil</b>');
+    expect(svg).toContain('&lt;b&gt;evil&lt;/b&gt;');
+    expect(svg).not.toContain('<b>evil</b>');
+  });
+});
+
+describe('KPI_SPARKS wiring table', () => {
+  test('one entry per KPI card, each mapping to a real daily field', () => {
+    expect(C.KPI_SPARKS).toHaveLength(4);
+    expect(C.KPI_SPARKS.map(k => k.field)).toEqual(['calls', 'minutes', 'sms', 'leads']);
+  });
+
+  test('slot ids match the KPI card sparkline slots in portal.html', () => {
+    expect(C.KPI_SPARKS.map(k => k.slot)).toEqual([
+      'kpi-calls-spark', 'kpi-minutes-spark', 'kpi-sms-spark', 'kpi-leads-spark',
+    ]);
+  });
+
+  test('every field resolves against a real summary daily row', () => {
+    const daily = makeDaily(7, '2026-08-27');
+    C.KPI_SPARKS.forEach(cfg => {
+      const series = C.dailySeries(daily, cfg.field);
+      expect(series).toHaveLength(7);
+      series.forEach(v => expect(Number.isFinite(v)).toBe(true));
+    });
+  });
+
+  test('each card gets a distinct tint', () => {
+    const colors = C.KPI_SPARKS.map(k => k.color);
+    expect(new Set(colors).size).toBe(4);
+  });
 });

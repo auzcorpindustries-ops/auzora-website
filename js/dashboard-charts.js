@@ -464,11 +464,97 @@
     return svg;
   }
 
+  // ── 5. KPI sparkline (DASHBOARD-V3 §6) ───────────────────────────────────
+
+  /**
+   * Build KPI sparkline geometry (pure). Values are the per-day series for
+   * one KPI, pulled from the D1 summary's `daily` array.
+   *
+   * @param {Array<number>} values
+   * @returns {{n:number, max:number, values:Array<number>, hasSignal:boolean}}
+   */
+  function buildKpiSparkGeometry(values) {
+    var raw = Array.isArray(values) ? values : [];
+    var out = [];
+    var max = 0;
+    for (var i = 0; i < raw.length; i++) {
+      var v = Math.max(0, Number(raw[i]) || 0);
+      out.push(v);
+      if (v > max) max = v;
+    }
+    return { n: out.length, max: max, values: out, hasSignal: out.length >= 2 && max > 0 };
+  }
+
+  /**
+   * A 36px-tall KPI card sparkline (pure): filled area + line, no axes.
+   *
+   * Tinted per card via `color` (the card's icon color) — the fill reuses the
+   * same hue at low opacity. Renders an empty (but still labelled) SVG when
+   * there is no signal so the card keeps its height and never collapses.
+   *
+   * @param {Array<number>} values  per-day series for this KPI
+   * @param {string} color          CSS color for the stroke (e.g. 'var(--accent)')
+   * @param {string} [label]        aria-label prefix, e.g. 'Calls answered'
+   * @returns {string} SVG markup
+   */
+  function kpiSparkSVG(values, color, label) {
+    var g = buildKpiSparkGeometry(values);
+    var w = 200, h = 40;
+    var padT = 3, padB = 3;
+    var y0 = h - padB, y1 = padT;
+    var stroke = color || 'var(--accent)';
+    var name = label ? String(label) : 'Trend';
+    var aria = g.hasSignal
+      ? name + ' trend over the last ' + g.n + ' days, peak ' + g.max + '.'
+      : name + ' trend: no data in this period.';
+    var svg = '<svg class="dchart dchart-kpi-spark" viewBox="0 0 ' + w + ' ' + h + '"' +
+      ' preserveAspectRatio="none" role="img" aria-label="' + esc(aria) + '" focusable="false">';
+    if (g.hasSignal) {
+      var xS = linearScale(0, Math.max(1, g.n - 1), 0, w);
+      var yS = linearScale(0, g.max, y0, y1);
+      var pts = [];
+      for (var i = 0; i < g.n; i++) pts.push([xS.map(i), yS.map(g.values[i])]);
+      svg += '<path class="dchart-kpi-area" d="' + areaPath(pts, y0) + '" fill="' + esc(stroke) + '" fill-opacity="0.12"/>';
+      svg += '<path class="dchart-kpi-line" d="' + pointsToPath(pts) + '" fill="none" stroke="' + esc(stroke) +
+        '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    } else {
+      // Flat baseline keeps the card's vertical rhythm without faking data.
+      svg += '<line class="dchart-kpi-flat" x1="0" x2="' + w + '" y1="' + num(y0) + '" y2="' + num(y0) +
+        '" stroke="' + esc(stroke) + '" stroke-opacity="0.18" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+    }
+    svg += '</svg>';
+    return svg;
+  }
+
+  // KPI id → { field in each `daily` row, stroke color, aria label }.
+  // Colors match each card's icon tile (blue / violet / pink / orange).
+  var KPI_SPARKS = [
+    { slot: 'kpi-calls-spark', field: 'calls', color: 'var(--accent)', label: 'Calls answered' },
+    { slot: 'kpi-minutes-spark', field: 'minutes', color: 'var(--accent2)', label: 'Voice minutes' },
+    { slot: 'kpi-sms-spark', field: 'sms', color: 'var(--pink)', label: 'SMS messages' },
+    { slot: 'kpi-leads-spark', field: 'leads', color: 'var(--orange)', label: 'Leads captured' },
+  ];
+
+  /**
+   * Pull one KPI's per-day series out of the summary `daily` array (pure).
+   * Missing fields read as 0 so a partial payload still renders a real line
+   * for the fields it does carry.
+   */
+  function dailySeries(daily, field) {
+    var rows = Array.isArray(daily) ? daily : [];
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      out.push(Math.max(0, Number(rows[i] && rows[i][field]) || 0));
+    }
+    return out;
+  }
+
   // ── DOM wiring (the only non-pure surface) ────────────────────────────────
 
   function emptySlotHTML(icon, text) {
     return '<i data-lucide="' + icon + '"></i><span>' + text + '</span>';
   }
+
 
   function setSlot(el, html, isEmpty) {
     if (!el) return;
@@ -595,6 +681,16 @@
       '<i class="dchart-swatch calls"></i>SMS</span></div>' + usageSparkSVG(usageTrend), false);
   }
 
+  /** Render #5 — one sparkline per KPI card, from the summary `daily` array. */
+  function renderKpiSparklines(daily) {
+    for (var i = 0; i < KPI_SPARKS.length; i++) {
+      var cfg = KPI_SPARKS[i];
+      var el = document.getElementById(cfg.slot);
+      if (!el) continue;
+      el.innerHTML = kpiSparkSVG(dailySeries(daily, cfg.field), cfg.color, cfg.label);
+    }
+  }
+
   // Export — module for jest, window global for the portal.
   var api = {
     // pure helpers (tested)
@@ -616,11 +712,16 @@
     sourceBarsSVG: sourceBarsSVG,
     buildSparkGeometry: buildSparkGeometry,
     usageSparkSVG: usageSparkSVG,
+    buildKpiSparkGeometry: buildKpiSparkGeometry,
+    kpiSparkSVG: kpiSparkSVG,
+    dailySeries: dailySeries,
+    KPI_SPARKS: KPI_SPARKS,
     // DOM render fns
     renderActivityChart: renderActivityChart,
     renderWeekdayChart: renderWeekdayChart,
     renderSourceStrip: renderSourceStrip,
     renderUsageSparkline: renderUsageSparkline,
+    renderKpiSparklines: renderKpiSparklines,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
