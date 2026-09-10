@@ -460,6 +460,11 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .dchart-swatch.calls { background: var(--accent2); }
 .dchart-swatch.leads { background: var(--pink); }
 .dchart-slot-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; }
+/* Busiest hour panel — a single big value, not a chart. Sits in the rail
+   under the weekday bars; replaces the deduped "Top intents" chips. */
+.dchart-bighour { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 4px 0 2px; }
+.dchart-bighour-value { font-size: 26px; font-weight: 800; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
+.dchart-bighour-sub { font-size: 12px; color: var(--muted); }
 .dchart-tip { position: fixed; z-index: 1000; display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; box-shadow: var(--shadow); font-size: 12px; color: var(--text); pointer-events: none; max-width: 200px; }
 .dchart-tip b { display: block; margin-bottom: 4px; font-size: 12.5px; }
 .dchart-tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.7; color: var(--muted); }
@@ -1224,6 +1229,18 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <div class="dash-slot-empty" id="dash-weekday-slot" role="img" aria-label="Weekday activity chart loading">
               <i data-lucide="bar-chart-3"></i>
               <span>Loading weekday activity…</span>
+            </div>
+          </div>
+
+          <!-- BUSIEST HOUR — replaces the deduped "Top intents" echoes.
+               Weekday bars answer "which DAY is busy"; nothing on the
+               dashboard answered "which HOUR" until now. Rendered from
+               summary.busiest_hour, whose label is already localized to the
+               client's timezone server-side. -->
+          <div class="dash-rail-card" role="region" aria-label="Busiest hour of day">
+            <div class="dash-slot-empty" id="dash-busiest-hour-slot">
+              <i data-lucide="clock"></i>
+              <span>Loading busiest hour…</span>
             </div>
           </div>
 
@@ -6475,6 +6492,9 @@ function resetDashboardCharts() {
   DashboardCharts.renderSourceStrip({});
   DashboardCharts.renderUsageSparkline([]);
   DashboardCharts.renderKpiSparklines([]);
+  // Busiest hour has to reset too, or a failed refresh leaves the previous
+  // period's peak hour on screen looking current.
+  DashboardCharts.renderBusiestHour(null);
   renderWeekdayBars([]);
 }
 
@@ -6520,11 +6540,17 @@ async function loadDashboardSummary() {
       DashboardCharts.renderUsageSparkline(summary.usage_trend);
       // V3 §6 — one sparkline per KPI card, from the same `daily` array.
       DashboardCharts.renderKpiSparklines(summary.daily);
+      // Busiest hour — the replacement for the deduped intent echoes.
+      DashboardCharts.renderBusiestHour(summary.busiest_hour);
     }
     // D6 — booking funnel + top intents from the same summary payload.
     if (window.DashboardConversion) {
       DashboardConversion.renderFunnel(summary);
-      DashboardConversion.renderIntentChips(summary.leads && summary.leads.by_intent);
+      // Pass the whole leads object: renderIntentChips needs by_source too so
+      // it can drop intents that merely echo a lead source (the automated
+      // lead paths write the source string into the intent field verbatim,
+      // so those chips restated the Leads-by-source bars exactly).
+      DashboardConversion.renderIntentChips(summary.leads);
     }
     if (window.lucide) lucide.createIcons();
   } catch (e) {
@@ -6571,6 +6597,24 @@ async function loadDashboard() {
   // Render agent health card (D7)
   renderAgentCard();
 
+  // #dash-appt-list ships empty in the markup and every failure path below
+  // used to return without writing to it, so a failed /portal/appointments
+  // left the Recent Appointments card as a blank white box with a header and
+  // nothing inside — indistinguishable from "you have no appointments".
+  // Show a loading state now and a truthful unavailable state on failure.
+  const apptListEl = document.getElementById('dash-appt-list');
+  if (apptListEl && !apptListEl.innerHTML.trim()) {
+    apptListEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Loading appointments…</div>';
+  }
+  const apptUnavailable = () => {
+    if (apptListEl) {
+      apptListEl.classList.remove('dash-appt-scroll');
+      apptListEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Appointments unavailable right now.</div>';
+    }
+    const countEl = document.getElementById('dash-appt-count');
+    if (countEl) countEl.textContent = '';
+  };
+
   try {
     const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
     if (res.status === 401) {
@@ -6579,6 +6623,7 @@ async function loadDashboard() {
     }
     if (!res.ok) {
       console.error('[Auzora] Dashboard: fetch failed', { status: res.status, statusText: res.statusText });
+      apptUnavailable();
       return;
     }
     const data = await res.json();
@@ -6614,7 +6659,6 @@ async function loadDashboard() {
     .sort((a, b) => new Date(b.created_at || b.booked_at || 0) - new Date(a.created_at || a.booked_at || 0));
 
   document.getElementById('dash-appt-count').textContent = recent.length + ' in last 14 days';
-  const apptListEl = document.getElementById('dash-appt-list');
   apptListEl.innerHTML = recent.length
     ? apptTableRows(recent, true)
     : '<div class="empty" style="padding:24px 16px;">No appointments in the last 14 days.</div>';
@@ -6626,6 +6670,7 @@ async function loadDashboard() {
   setApptData(appts);
   } catch (e) {
     console.error('[Auzora] Dashboard load error:', e.message);
+    apptUnavailable();
   }
 
   // Load unconfirmed appointments for the dashboard section
@@ -6634,7 +6679,25 @@ async function loadDashboard() {
 
 // ── AGENT HEALTH CARD (D7) ─────────────────────────────────────────────────────
 // Render the agent health status card from portalClient and VOICES catalog.
-function renderAgentCard() {
+// `await`s the voice catalog because the card's Voice row is looked up in it:
+// VOICES is only ever filled by loadVoices(), which used to run exclusively
+// from the AI Agent settings page render. On a fresh login the dashboard is
+// the first page shown, so VOICES was still [] here and getVoiceLabel()
+// resolved every client's voice to the literal "—" — a real configured voice
+// reported as unset. loadVoices() is idempotent and cached below, so this
+// costs one request per session and none on re-render.
+let voiceCatalogPromise = null;
+function ensureVoiceCatalog() {
+  if (!voiceCatalogPromise) {
+    voiceCatalogPromise = loadVoices().catch((e) => {
+      console.error('[Auzora] Agent card: voice catalog unavailable', e && e.message);
+      return [];
+    });
+  }
+  return voiceCatalogPromise;
+}
+
+async function renderAgentCard() {
   const cardEl = document.getElementById('dash-agent-card');
   if (!cardEl) return;
 
@@ -6646,6 +6709,11 @@ function renderAgentCard() {
     cardEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Agent status unavailable right now.</div>';
     return;
   }
+
+  // Resolve the voice catalog first so the Voice row shows the real voice
+  // name. A failed catalog fetch still renders the card — getVoiceLabel()
+  // falls back to '—' for the one row rather than blocking the whole card.
+  await ensureVoiceCatalog();
 
   // Build HTML from portalClient and VOICES
   const html = window.DashboardAgent.buildAgentCard(portalClient, VOICES);
@@ -7904,7 +7972,9 @@ async function loadSettings() {
   renderSpecialtyTags();
 
   // Load voice catalog (ElevenLabs + OpenAI) then render grid (async — non-blocking for data)
-  loadVoices().then(() => {
+  // Shares ensureVoiceCatalog()'s cached promise with the dashboard agent card
+  // so the catalog is fetched once per session, not once per page visit.
+  ensureVoiceCatalog().then(() => {
     // Both provider sections render together now; the saved provider just
     // seeds which voice the client record maps to.
     currentVoiceProvider = c.voice_provider === 'openai' ? 'openai' : (c.voice_provider || 'elevenlabs');
