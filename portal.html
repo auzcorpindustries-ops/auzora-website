@@ -2684,6 +2684,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="form-group" style="display:flex;align-items:end;">
             <div style="font-size:11px;color:var(--muted);">
               <div><strong>Twilio Number:</strong> <span id="ac-twilio">—</span></div>
+              <div><strong>Client ID:</strong> <span id="ac-client-id" style="font-family:monospace;">—</span></div>
               <div><strong>Plan:</strong> <span id="ac-plan" style="text-transform:capitalize;">—</span></div>
               <div><strong>Member Since:</strong> <span id="ac-created">—</span></div>
             </div>
@@ -9293,6 +9294,7 @@ async function loadAccount() {
     document.getElementById('ac-industry').value = acct.industry || '';
     if (acct.timezone) document.getElementById('ac-timezone').value = acct.timezone;
     document.getElementById('ac-twilio').textContent = acct.twilio_number || 'Not assigned';
+    document.getElementById('ac-client-id').textContent = portalClient?.client_id || portalClient?.id || '—';
     document.getElementById('ac-plan').textContent = acct.plan || '—';
     document.getElementById('ac-created').textContent = acct.created_at ? new Date(acct.created_at).toLocaleDateString() : '—';
 
