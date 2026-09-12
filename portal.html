@@ -11223,7 +11223,13 @@ async function submitTestWorkflow() {
   Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
   try {
-    const res = await fetch(`${API}/portal/workflows/${wfTestTemplateId}/test`, {
+    // AUT-7: use /portal/automations/:id/test for automation IDs, /portal/workflows/:id/test for legacy templates
+    const isAutomationId = wfTestTemplateId.startsWith('auto_');
+    const url = isAutomationId
+      ? `${API}/portal/automations/${wfTestTemplateId}/test`
+      : `${API}/portal/workflows/${wfTestTemplateId}/test`;
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
