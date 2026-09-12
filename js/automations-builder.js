@@ -645,8 +645,20 @@
   // ── Browser wiring (no-ops without a DOM; exercised by .validate harness) ──
 
   function hasDom() { return typeof document !== 'undefined' && !!document.getElementById; }
-  function api() { return global.API; }
-  function token() { return global.portalToken; }
+  // portal.html declares `const API` / `let portalToken` at script top level —
+  // global-lexical scope, which does NOT attach to window/globalThis. So fall
+  // back to bare references in the browser (typeof guard keeps jest happy,
+  // where neither exists). Same pattern the harness needs to mock them.
+  function api() {
+    if (typeof global.API !== 'undefined') return global.API;
+    if (typeof API !== 'undefined') return API; // eslint-disable-line no-undef
+    return '';
+  }
+  function token() {
+    if (typeof global.portalToken !== 'undefined') return global.portalToken;
+    if (typeof portalToken !== 'undefined') return portalToken; // eslint-disable-line no-undef
+    return null;
+  }
   function toast(msg, kind) { if (typeof global.showToast === 'function') global.showToast(msg, kind || 'success'); }
   function icons() { if (global.lucide && typeof global.lucide.createIcons === 'function') global.lucide.createIcons(); }
 
@@ -716,6 +728,16 @@
     state.serverErrors = null;
 
     var host = document.getElementById(panelId);
+    if (!host && mode === 'create' && hasDom()) {
+      // Create mode has no per-card editor host — insert one at the top of
+      // the list so '+ Add automation' opens the builder above the sections.
+      var container = document.getElementById('automations-list');
+      if (!container) return;
+      host = document.createElement('div');
+      host.id = panelId;
+      host.style.cssText = 'border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;background:#fff;';
+      container.insertBefore(host, container.firstChild);
+    }
     if (!host) return;
     host.style.display = 'block';
     renderBuilder();
@@ -726,7 +748,16 @@
     var b = state.builder;
     if (b && b.panelId && hasDom()) {
       var host = document.getElementById(b.panelId);
-      if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+      if (host) {
+        // Create-mode hosts are dynamically inserted — remove them outright;
+        // per-card hosts stay hidden in the DOM for the next open.
+        if (b.mode === 'create' && b.panelId.indexOf('ab-editor-new-') === 0) {
+          if (host.remove) host.remove();
+        } else {
+          host.style.display = 'none';
+          host.innerHTML = '';
+        }
+      }
     }
     state.builder = null;
     state.serverErrors = null;
