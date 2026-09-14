@@ -2472,14 +2472,24 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <span style="font-size:14px;line-height:1.6;color:#101826;">Automated call-back and follow-up workflows. Request activation — an admin will review and enable.</span>
       </div>
 
-      <!-- Your Automations (AUT-6): one unified section for the three customizable types (Call / SMS / Hybrid), rendered by js/automations-builder.js from GET /portal/automations. The legacy preset lists (#ob-workflow-list / #sms-workflow-list) were removed — presets render here with the 'Preset' badge through the same builder timeline. -->
+      <!-- Call Automations -->
       <div style="margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-          <i data-lucide="workflow" style="width:18px;height:18px;color:#7C3AED"></i>
-          <span style="font-size:17px;font-weight:700;">Your Automations</span>
+          <i data-lucide="phone-outgoing" style="width:18px;height:18px;color:#3B82F6"></i>
+          <span style="font-size:17px;font-weight:700;">Call Automations</span>
         </div>
-        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Your call, SMS, and hybrid automations — up to one active per type. Build a sequence of SMS, AI call, and wait steps; an admin reviews each activation request.</div>
-        <div id="automations-list" style="display:flex;flex-direction:column;"></div>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Automated call-back and follow-up workflows.</div>
+        <div id="ob-workflow-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- SMS Automations -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <i data-lucide="message-square" style="width:18px;height:18px;color:#EC4899"></i>
+          <span style="font-size:17px;font-weight:700;">SMS Automations</span>
+        </div>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Automated SMS follow-up workflows.</div>
+        <div id="sms-workflow-list" style="display:flex;flex-direction:column;gap:12px;"></div>
       </div>
 
       <!-- Lead Webhook (moved from Integrations) -->
@@ -2943,7 +2953,6 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script src="js/dashboard-charts.js"></script>
 <script src="js/dashboard-conversion.js"></script>
 <script src="js/dashboard-agent.js"></script>
-<script src="js/automations-builder.js"></script>
 <script>
 const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -3907,7 +3916,7 @@ function showPage(name) {
     applyTierVisibility();
     loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity();
   }
-  if (name === 'automations') { if (window.AUT) AUT.load(); }
+  if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'analytics') { loadLeadAnalytics(); loadActivity(); }
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
@@ -11223,13 +11232,7 @@ async function submitTestWorkflow() {
   Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
   try {
-    // AUT-7: use /portal/automations/:id/test for automation IDs, /portal/workflows/:id/test for legacy templates
-    const isAutomationId = wfTestTemplateId.startsWith('auto_');
-    const url = isAutomationId
-      ? `${API}/portal/automations/${wfTestTemplateId}/test`
-      : `${API}/portal/workflows/${wfTestTemplateId}/test`;
-
-    const res = await fetch(url, {
+    const res = await fetch(`${API}/portal/workflows/${wfTestTemplateId}/test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
