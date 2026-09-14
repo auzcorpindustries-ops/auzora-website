@@ -888,23 +888,12 @@ tr:hover td { background: var(--tint); }
     <!-- WORKFLOWS PAGE -->
     <div class="page" id="page-workflows">
       <div class="page-header">
-        <h1>Automation Requests</h1>
-        <p>Review and approve client-built custom automations (AUT-7)</p>
+        <h1>Workflow Requests</h1>
+        <p>Review and approve client n8n automation requests</p>
       </div>
-
-      <!-- CUSTOM AUTOMATIONS (AUT-7) -->
-      <div class="table-card" style="margin-bottom:20px;">
-        <div class="table-toolbar">
-          <h2>Pending Custom Automations</h2>
-          <button onclick="loadPendingAutomations()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
-        </div>
-        <div id="automations-pending-list"><div class="loading">Loading...</div></div>
-      </div>
-
-      <!-- LEGACY PRESET WORKFLOWS (kept during AUT-5 migration) -->
       <div class="table-card">
         <div class="table-toolbar">
-          <h2>Legacy Preset Requests</h2>
+          <h2>Pending Requests</h2>
           <button onclick="loadWorkflowRequests()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
         </div>
         <div id="workflow-pending-list"><div class="loading">Loading...</div></div>
@@ -2499,141 +2488,6 @@ async function rejectWorkflow(clientId, templateId) {
     }
     toast('Workflow rejected', 'info');
     loadWorkflowRequests();
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-}
-
-// ─── AUT-7: PENDING CUSTOM AUTOMATIONS ──────────────────────────────
-
-async function loadPendingAutomations() {
-  const apiKey = localStorage.getItem('atlas_admin_key') || '';
-  const container = document.getElementById('automations-pending-list');
-  container.innerHTML = '<div class="loading">Loading...</div>';
-
-  try {
-    const res = await fetch(`${API}/automations/pending`, { headers: { 'x-api-key': apiKey } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const pending = data.pending || [];
-
-    if (pending.length === 0) {
-      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">No pending automation requests.</div>';
-      return;
-    }
-
-    // Render the IR timeline using the same visual language as the portal builder
-    container.innerHTML = pending.map(r => {
-      const stepsHtml = renderAutomationTimeline(r.definition);
-      const hashBadge = r.hash_changed
-        ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,.15);color:#f59e0b;margin-left:6px;" title="Definition changed from active version">Revision</span>'
-        : r.revision
-        ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.15);color:#22c55e;margin-left:6px;" title="Re-submitted with no changes">Unchanged</span>'
-        : '';
-
-      return `
-        <div style="border-bottom:1px solid var(--border);padding:18px 16px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:0;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                <span style="font-weight:700;font-size:14px;">${r.name || r.type + ' automation'}</span>
-                <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;font-weight:600;">${r.type.toUpperCase()}</span>
-                ${hashBadge}
-              </div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">${r.business_name} · ${r.client_id}</div>
-              <div style="font-size:11px;color:var(--muted);">
-                Trigger: ${r.trigger} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleString() : '—'}
-              </div>
-              ${r.definition_hash_short ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:monospace;">hash: ${r.definition_hash_short}</div>` : ''}
-              ${r.webhook_path ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:monospace;">webhook: /${r.webhook_path}</div>` : ''}
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button onclick="approveAutomation('${r.client_id}', '${r.automation_id}')" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve</button>
-              <button onclick="rejectAutomation('${r.client_id}', '${r.automation_id}')" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
-            </div>
-          </div>
-          <!-- IR Timeline (read-only, same visual language as portal builder) -->
-          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Step Sequence</div>
-            ${stepsHtml}
-          </div>
-        </div>`;
-    }).join('');
-  } catch (err) {
-    container.innerHTML = `<div style="padding:20px;color:var(--red);">Error: ${err.message}</div>`;
-  }
-}
-
-// Render the IR as a read-only timeline (reuses portal builder visual language)
-function renderAutomationTimeline(def) {
-  if (!def || !Array.isArray(def.steps)) return '<div style="color:var(--muted);font-size:12px;">No steps defined</div>';
-  if (def.steps.length === 0) return '<div style="color:var(--muted);font-size:12px;">No steps defined</div>';
-
-  const kindMeta = {
-    sms: { icon: '💬', label: 'SMS', color: '#EC4899' },
-    call: { icon: '📞', label: 'AI Call', color: '#3B82F6' },
-    wait: { icon: '⏱', label: 'Wait', color: '#F59E0B' },
-  };
-
-  return def.steps.map((s, i) => {
-    const m = kindMeta[s.kind] || { icon: '•', label: s.kind, color: 'var(--muted)' };
-    const stepNum = i + 1;
-    const details = s.kind === 'wait'
-      ? (s.mode === 'specificTime' ? `at ${s.at}` : `${s.value} ${s.unit}`)
-      : s.template ? s.template.substring(0, 80) + (s.template.length > 80 ? '...' : '') : '';
-
-    return `
-      <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;">
-        <div style="display:flex;flex-direction:column;align-items:center;min-width:24px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:${m.color};color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;">${stepNum}</div>
-          ${i < def.steps.length - 1 ? '<div style="width:1px;height:20px;background:var(--border);margin-top:4px;"></div>' : ''}
-        </div>
-        <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-            <span style="font-size:11px;color:${m.color};font-weight:600;">${m.icon} ${m.label}</span>
-            ${details ? `<span style="font-size:11px;color:var(--muted);">· ${details}</span>` : ''}
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function approveAutomation(clientId, automationId) {
-  const apiKey = localStorage.getItem('atlas_admin_key') || '';
-  if (!confirm('Approve this automation? It will be compiled to n8n and activated.')) return;
-  try {
-    const res = await fetch(`${API}/automations/${clientId}/${automationId}/approve`, {
-      method: 'PATCH',
-      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.error || 'Failed to approve');
-      return;
-    }
-    toast('Automation approved & activated ✓', 'success');
-    loadPendingAutomations();
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-}
-
-async function rejectAutomation(clientId, automationId) {
-  const apiKey = localStorage.getItem('atlas_admin_key') || '';
-  const reason = prompt('Reason for rejection (optional):') || 'Request rejected by admin';
-  try {
-    const res = await fetch(`${API}/automations/${clientId}/${automationId}/reject`, {
-      method: 'PATCH',
-      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.error || 'Failed to reject');
-      return;
-    }
-    toast('Automation request rejected', 'info');
-    loadPendingAutomations();
   } catch (err) {
     alert('Error: ' + err.message);
   }
