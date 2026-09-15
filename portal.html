@@ -2945,7 +2945,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script src="js/dashboard-agent.js"></script>
 <script src="js/automations-builder.js"></script>
 <script>
-const API = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
+const API = location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
 let acProfilePhoto = null;
 let acProfilePhotoDirty = false; // true when user explicitly uploaded/removed photo
