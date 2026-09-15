@@ -2953,6 +2953,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script src="js/dashboard-charts.js"></script>
 <script src="js/dashboard-conversion.js"></script>
 <script src="js/dashboard-agent.js"></script>
+<script src="js/workflow-grid.js"></script>
 <script>
 const API = location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -3021,8 +3022,14 @@ function buildGoogleFontsUrl(fontFamily) {
   return `https://fonts.googleapis.com/css2?family=${query}:wght@400;500;600;700&display=swap`;
 }
 
-// n8n workflow constants — declared early so loadWorkflows() can use them
-// before the rest of the script finishes executing.
+// n8n workflow constants — declared early (with `var`, like the constants
+// above) because a restored session can run showPage('automations') →
+// loadWorkflows() → loadWorkflowParams() BEFORE the rest of the script has
+// finished executing.
+// TRG-4: legacy preset display meta. The Automations grid's 8 offering cards
+// take name/summary/description from the API (TRG-3 registry); this block is
+// now the fallback meta for legacy preset cards (clients with active legacy
+// clones) and the step-order parser for the params editor.
 var SMS_WORKFLOW_IDS = [1, 2, 5];
 var OB_WORKFLOW_IDS = [3, 4, 6];
 var WORKFLOW_META = {
@@ -11021,7 +11028,12 @@ function switchCampaignTab(tab) {
 }
 
 // ── n8n WORKFLOW MANAGEMENT ────────────────────────────────────
-// (Constants moved to top of script — see SMS_WORKFLOW_IDS etc.)
+// TRG-4: the Automations page renders 8 offering cards (4 trigger types x
+// Call/SMS sections) from the API-provided meta (GET /portal/workflows —
+// TRG-3 offering registry), plus any legacy preset the client still has
+// active (Legacy badge). js/workflow-grid.js holds the pure split/normalize
+// helpers and the offline fallback registry; WORKFLOW_META (top of script)
+// is now the fallback display meta for legacy cards + the params step parser.
 
 // Templates that require entitlements beyond the base Starter plan.
 // Keys not listed here are available to all tiers.
@@ -11030,11 +11042,87 @@ var WORKFLOW_TEMPLATE_ENTITLEMENTS = {
   4: 'bulkCallCampaigns',   // Outreach Campaign Follow Up
 };
 
+// JS-literal form of a workflow reference for inline onclick handlers:
+// numeric templateIds stay bare, offering keys are single-quoted.
+function wfRefLiteral(wfRef) {
+  return typeof wfRef === 'number' ? String(wfRef) : `'${String(wfRef).replace(/'/g, "\\'")}'`;
+}
+
+// Shared card renderer for offering + legacy workflow rows.
+// Contract: name/summary are RAW text (escaped here); descHtml is pre-built
+// safe HTML (callers escape each line). domId is a numeric templateId or an
+// offering key and is safe for DOM ids / onclick refs.
+// locked=true renders the disabled tier-gate card (unless status==='active',
+// which renders as grandfathered); legacyBadge/gate are optional HTML/object.
+function workflowCardHtml(opts) {
+  const { domId, name, summary, descHtml, status, rejectionReason, locked, gate, legacyBadge, testable } = opts;
+  const ref = wfRefLiteral(domId);
+  const badgeColor = {
+    off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
+    rejected: '#ef4444', cancelled: 'var(--muted)', failed: '#ef4444',
+  }[status] || 'var(--muted)';
+  const badgeText = { off: 'Off', requested: 'Pending', active: 'Active', rejected: 'Rejected', cancelled: 'Off', failed: 'Failed' }[status] || 'Off';
+  const toggleLabel = status === 'off' || status === 'rejected' || status === 'cancelled' || status === 'failed' ? 'Request' : status === 'requested' ? 'Pending' : 'Disable';
+  const toggleDisabled = status === 'requested';
+  const toggleAction = status === 'active' ? `toggleWorkflow(${ref}, false)` : (status === 'requested' ? '' : `toggleWorkflow(${ref}, true)`);
+
+  const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
+    ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${escapeHtmlAttr(rejectionReason)}</div>`
+    : '';
+
+  // ── Locked rendering (tier-gated, not grandfathered) ──
+  if (locked && status !== 'active') {
+    const requiredTier = (gate && gate.tier) || 'Pro';
+    return `
+        <div style="border:1px solid var(--border);border-radius:12px;opacity:0.65;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;">${escapeHtmlAttr(name)}
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">${requiredTier}</span>
+              </div>
+              ${summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${escapeHtmlAttr(summary)}</div>` : ''}
+              <div style="color:var(--muted);font-size:12px;margin-top:4px;">${descHtml}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;">Locked</span>
+              <button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">Upgrade to ${requiredTier}</button>
+            </div>
+          </div>
+        </div>`;
+  }
+
+  // ── Normal (unlocked or grandfathered) rendering ──
+  const lockedBadge = locked && status === 'active'
+    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(245,158,11,.12);color:#f59e0b;margin-left:6px;vertical-align:middle;" title="This automation is active from a previous plan. Disabling it will require an upgrade to re-enable.">Grandfathered</span>`
+    : '';
+
+  return `
+        <div style="border:1px solid var(--border);border-radius:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;">${escapeHtmlAttr(name)}${legacyBadge || ''}${lockedBadge}</div>
+              ${summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${escapeHtmlAttr(summary)}</div>` : ''}
+              <div style="color:var(--muted);font-size:12px;margin-top:4px;" id="wf-steps-${domId}">${descHtml}</div>
+              ${reasonBanner}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
+              ${toggleDisabled
+                ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
+                : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
+              }
+              ${testable && status === 'active' ? `<button onclick="openTestModal(${ref}, '${escapeHtmlAttr(name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
+              <button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
+            </div>
+          </div>
+          <div id="wf-params-${domId}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>
+        </div>`;
+}
+
 async function loadWorkflows(page) {
   const containerId = page === 'sms' ? 'sms-workflow-list' : 'ob-workflow-list';
   const container = document.getElementById(containerId);
   if (!container) return;
-  const ids = page === 'sms' ? SMS_WORKFLOW_IDS : OB_WORKFLOW_IDS;
 
   // Guard: if portalToken is null (session expired or not yet restored), don't
   // attempt the fetch. The global 401 interceptor handles redirecting to login
@@ -11063,86 +11151,38 @@ async function loadWorkflows(page) {
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText || 'Failed to load workflows'}`);
     const data = await res.json();
-    const wfMap = {};
-    (data.workflows || []).forEach(w => { wfMap[w.templateId] = w; });
+    const { offerings, legacy } = WorkflowGrid.normalizeWorkflows(data.workflows || []);
 
-    container.innerHTML = ids.map(id => {
-      const meta = WORKFLOW_META[id];
-      const wf = wfMap[id];
-      const status = wf?.status || 'off';
-      const rejectionReason = wf?.rejection_reason;
+    const channel = page === 'sms' ? 'sms' : 'call';
+    const channelOfferings = WorkflowGrid.offeringsForChannel(offerings, channel);
+    const channelLegacy = WorkflowGrid.legacyForChannel(legacy, page === 'sms' ? SMS_WORKFLOW_IDS : OB_WORKFLOW_IDS);
 
-      // ── TIER-005: Check if this template requires a higher tier ──
-      const requiredEntitlement = WORKFLOW_TEMPLATE_ENTITLEMENTS[id];
-      const hasEntitlement = !requiredEntitlement ||
-        (portalEntitlements && portalEntitlements[requiredEntitlement]);
-      const isLocked = !hasEntitlement;
-
-      // If the workflow is already active (grandfathered from a previous tier),
-      // show it as active even if the current tier wouldn't allow it.
-      const isGrandfathered = isLocked && status === 'active';
-
-      const badgeColor = {
-        off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
-        rejected: '#ef4444', cancelled: 'var(--muted)', failed: '#ef4444',
-      }[status] || 'var(--muted)';
-      const badgeText = { off: 'Off', requested: 'Pending', active: 'Active', rejected: 'Rejected', cancelled: 'Off', failed: 'Failed' }[status] || 'Off';
-      const toggleLabel = status === 'off' || status === 'rejected' || status === 'cancelled' || status === 'failed' ? 'Request' : status === 'requested' ? 'Pending' : 'Disable';
-      const toggleDisabled = status === 'requested';
-      const toggleAction = status === 'active' ? `toggleWorkflow(${id}, false)` : (status === 'requested' ? '' : `toggleWorkflow(${id}, true)`);
-
-      const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
-        ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${rejectionReason}</div>`
-        : '';
-
-      // ── Locked template rendering (tier-gated, not grandfathered) ──
-      if (isLocked && !isGrandfathered) {
-        const requiredTier = requiredEntitlement === 'bulkCallCampaigns' ? 'Premium' : 'Pro';
-        return `
-        <div style="border:1px solid var(--border);border-radius:12px;opacity:0.65;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-            <div style="flex:1;">
-              <div style="font-weight:600;font-size:14px;">${meta.name}
-                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">${requiredTier}</span>
-              </div>
-              ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
-              <div style="color:var(--muted);font-size:12px;margin-top:4px;">${meta.desc}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;">Locked</span>
-              <button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">Upgrade to ${requiredTier}</button>
-            </div>
-          </div>
-        </div>`;
-      }
-
-      // ── Normal (unlocked or grandfathered) rendering ──
-      const lockedBadge = isGrandfathered
-        ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(245,158,11,.12);color:#f59e0b;margin-left:6px;vertical-align:middle;" title="This automation is active from a previous plan. Disabling it will require an upgrade to re-enable.">Grandfathered</span>`
-        : '';
-
-      return `
-        <div style="border:1px solid var(--border);border-radius:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-            <div style="flex:1;">
-              <div style="font-weight:600;font-size:14px;">${meta.name}${lockedBadge}</div>
-              ${meta.summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${meta.summary}</div>` : ''}
-              <div style="color:var(--muted);font-size:12px;margin-top:4px;" id="wf-steps-${id}">${meta.desc}</div>
-              ${reasonBanner}
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
-              ${toggleDisabled
-                ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
-                : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
-              }
-              ${status === 'active' ? `<button onclick="openTestModal(${id}, '${escapeHtmlAttr(meta.name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
-              <button onclick="toggleWorkflowParams(${id})" id="wf-cfg-btn-${id}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
-            </div>
-          </div>
-          <div id="wf-params-${id}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>
-        </div>`;
-    }).join('');
+    container.innerHTML = channelOfferings.map(of => {
+      const gate = WorkflowGrid.requiredEntitlement(of, WORKFLOW_TEMPLATE_ENTITLEMENTS);
+      const hasEntitlement = !gate || (portalEntitlements && portalEntitlements[gate.feature]);
+      const [descLine1, descLine2] = WorkflowGrid.offeringDescLines(of);
+      const descHtml = [
+        descLine1 ? `<div>${escapeHtmlAttr(descLine1)}</div>` : '',
+        `<div>${escapeHtmlAttr(descLine2)}</div>`,
+      ].join('');
+      return workflowCardHtml({
+        domId: of.offeringKey, name: of.name || of.offeringKey, summary: of.summary || '',
+        descHtml, status: of.status || 'off', rejectionReason: of.rejection_reason,
+        locked: !hasEntitlement, gate, testable: true,
+      });
+    }).concat(channelLegacy.map(w => {
+      const meta = WORKFLOW_META[w.templateId] || {};
+      const gate = WorkflowGrid.requiredEntitlement(w, WORKFLOW_TEMPLATE_ENTITLEMENTS);
+      const hasEntitlement = !gate || (portalEntitlements && portalEntitlements[gate.feature]);
+      const legacyBadge = `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(100,116,139,.14);color:#64748b;margin-left:6px;vertical-align:middle;" title="Legacy preset — replaced by the new trigger-based automations above. Fully functional; migration comes later.">Legacy</span>`;
+      const descHtml = `<div>${escapeHtmlAttr(meta.desc || '')}</div>`;
+      return workflowCardHtml({
+        domId: w.templateId, name: meta.name || w.name || `Preset ${w.templateId}`,
+        summary: meta.summary || '', descHtml,
+        status: w.status || 'off', rejectionReason: w.rejection_reason,
+        locked: !hasEntitlement, gate, legacyBadge, testable: true,
+      });
+    })).join('');
   } catch (err) {
     console.error('[Auzora] loadWorkflows failed:', { page, error: err.message, endpoint: `${API}/portal/workflows`, hasToken: !!portalToken });
     container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Unable to load workflows. <a href="#" onclick="loadWorkflows('${page}');return false;" style="color:var(--accent);text-decoration:underline;">Retry</a></div>`;
