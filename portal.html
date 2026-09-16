@@ -3058,14 +3058,14 @@ let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from /api/voices (all providers)
 let DEFAULT_VOICE_ID = null; // Set from /api/voices response
-let VOICE_PROVIDERS = { elevenlabs: { label: 'ElevenLabs' } }; // providers map
-let currentVoiceProvider = 'elevenlabs'; // active provider tab
+let VOICE_PROVIDERS = { openai: { label: 'OpenAI' } }; // DISABLED (ELE-4) — ElevenLabs retired; removal ELE-6
+let currentVoiceProvider = 'openai'; // DISABLED (ELE-4) — provider tabs retired; removal ELE-6
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
 
-// Fetch voice catalog (ElevenLabs + OpenAI)
+// Fetch voice catalog (OpenAI only; DISABLED ELE-4 — ElevenLabs retired; removal ELE-6)
 async function loadVoices() {
   try {
     const res = await fetch(`${API}/api/voices`);
@@ -3092,12 +3092,12 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (Starter = default only)
 function isVoiceLocked(voiceId) {
-  // ElevenLabs voices are a $49/mo add-on on ANY tier. OpenAI voices are
-  // included with every plan. Locked = EL voice without the add-on.
+  // DISABLED (ELE-4) — ElevenLabs retired; OpenAI voices are included with every plan.
   const voice = VOICES.find(v => v.id === voiceId);
-  const provider = voice?.provider || 'elevenlabs';
-  if (provider !== 'elevenlabs') return false; // OpenAI always selectable
-  return !(portalTierVoices?.elevenlabsAddon === true);
+  const provider = voice?.provider || 'openai';
+  if (provider === 'openai') return false; // OpenAI always selectable
+  // Legacy ElevenLabs voices: always treat as locked (cannot be selected)
+  return true;
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -7979,13 +7979,12 @@ async function loadSettings() {
   portalSpecialties = [...(c.specialties || [])];
   renderSpecialtyTags();
 
-  // Load voice catalog (ElevenLabs + OpenAI) then render grid (async — non-blocking for data)
+  // Load voice catalog (OpenAI only; DISABLED ELE-4 — ElevenLabs retired; removal ELE-6) then render grid (async — non-blocking for data)
   // Shares ensureVoiceCatalog()'s cached promise with the dashboard agent card
   // so the catalog is fetched once per session, not once per page visit.
   ensureVoiceCatalog().then(() => {
-    // Both provider sections render together now; the saved provider just
-    // seeds which voice the client record maps to.
-    currentVoiceProvider = c.voice_provider === 'openai' ? 'openai' : (c.voice_provider || 'elevenlabs');
+    // DISABLED (ELE-4) — default to OpenAI for all clients; legacy ElevenLabs voices render as unavailable
+    currentVoiceProvider = 'openai';
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
 
@@ -8061,16 +8060,15 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  // Both providers render as separate labeled sections (ticket
-  // zeus_1787667146591_6dc83474): OpenAI first (included with every plan),
-  // then ElevenLabs (paid add-on — previewable without it, selectable with it).
-  const hasAddon = portalTierVoices?.elevenlabsAddon === true;
+  // DISABLED (ELE-4) — OpenAI voices only; ElevenLabs section removed; removal ELE-6.
+  // Legacy clients with ElevenLabs voices render them in the OpenAI grid with
+  // the current voice preserved but locked for new selection.
   const openaiVoices = VOICES.filter(v => v.provider === 'openai');
-  const elevenlabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
+  const legacyElevenLabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
 
   // Keep the selected highlight inside the client's saved provider when the
-  // saved voice is still selectable there. A saved-but-locked voice (add-on
-  // absent or revoked) must NOT stay selected — saving it would 403, so the
+  // saved voice is still selectable there. A saved-but-locked voice (legacy
+  // ElevenLabs) must NOT stay selected — saving it would 403, so the
   // default voice becomes the active selection instead.
   let activeVoiceId = selected;
   if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) activeVoiceId = null;
@@ -8078,7 +8076,7 @@ function renderPortalVoiceGrid(selected) {
   currentPortalVoiceId = activeVoiceId;
   if (activeVoiceId) {
     const activeVoice = VOICES.find(v => v.id === activeVoiceId);
-    if (activeVoice) currentVoiceProvider = activeVoice.provider || 'elevenlabs';
+    if (activeVoice) currentVoiceProvider = 'openai';
   }
 
   const sectionHeader = (title, noteHtml) => `
@@ -8097,7 +8095,7 @@ function renderPortalVoiceGrid(selected) {
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
-              ${locked ? '<span class="voice-badge voice-badge-locked" title="ElevenLabs voices are a $49/mo add-on to any plan">Add-on</span>' : ''}
+              ${locked ? '<span class="voice-badge voice-badge-locked" title="This voice is no longer available">Unavailable</span>' : ''}
             </div>
             <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" title="Preview — free for every voice">▶</button>
           </div>
@@ -8107,9 +8105,6 @@ function renderPortalVoiceGrid(selected) {
     </div>`;
 
   const openaiNote = '<span style="font-size:11px;color:var(--green);font-weight:600;">Included with every plan</span>';
-  const elevenlabsNote = hasAddon
-    ? '<span style="font-size:11px;color:var(--green);font-weight:600;">Add-on active</span>'
-    : `<span style="font-size:11px;color:#f59e0b;font-weight:600;">Available as an add-on for $49.99 per month</span>`;
 
   let html = '';
   if (openaiVoices.length > 0) {
@@ -8117,16 +8112,17 @@ function renderPortalVoiceGrid(selected) {
     html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
     html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
   }
-  if (elevenlabsVoices.length > 0) {
-    html += sectionHeader('ElevenLabs Voices', elevenlabsNote);
-    if (!hasAddon) {
-      html += `<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;font-size:12px;color:var(--text);">
-        <span style="color:#f59e0b;font-weight:700;">Add-on</span>
-        <span>ElevenLabs premium voices are available as an add-on for $49.99 per month. Previews are free — upgrade to unlock selection.</span>
-      </div>`;
+  // DISABLED (ELE-4) — ElevenLabs section hidden; removal ELE-6
+  // Legacy ElevenLabs voices are rendered in the OpenAI grid if they were the
+  // client's saved voice, to avoid breaking existing configurations.
+  if (legacyElevenLabsVoices.length > 0) {
+    // Only show legacy voices if they include the currently selected voice
+    const activeIsLegacy = activeVoiceId && legacyElevenLabsVoices.some(v => v.id === activeVoiceId);
+    if (activeIsLegacy) {
+      html += sectionHeader('Legacy Voices (Unavailable)', '<span style="font-size:11px;color:var(--red);font-weight:600;">No longer available</span>');
+      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'female'), 'left');
+      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'male'), 'right');
     }
-    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'female'), 'left');
-    html += renderColumn(elevenlabsVoices.filter(v => v.gender === 'male'), 'right');
   }
   if (!html) {
     html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
@@ -8141,7 +8137,7 @@ function selectPortalVoice(id) {
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
   const voice = VOICES.find(v => v.id === id);
-  if (voice) currentVoiceProvider = voice.provider || 'elevenlabs';
+  if (voice) currentVoiceProvider = voice.provider || 'openai';
   currentPortalVoiceId = id;
   document.querySelectorAll('#portal-voice-grid .voice-card').forEach(card => {
     const idAttr = card.id.replace('pvc-', '');
