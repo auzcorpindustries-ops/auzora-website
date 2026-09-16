@@ -9,7 +9,7 @@
 
 1. [Twilio](#twilio) - Phone & SMS
 2. [OpenAI](#openai) - AI Conversation & TTS
-3. [ElevenLabs](#elevenlabs) - Text-to-Speech
+3. [ElevenLabs](#elevenlabs) - Text-to-Speech — **DISABLED September 2026 (ELE plan)**
 4. [Google](#google) - Calendar & OAuth
 5. [Square](#square) - Payments & Calendar
 6. [Stripe](#stripe) - Billing
@@ -148,6 +148,11 @@
 
 ## ElevenLabs
 
+> **DISABLED September 2026 (ELE plan) — retained in codebase for future removal (atlas-ai ELE-6).** The ElevenLabs kill-switch (`ELEVENLABS_DISABLED=true`, ELE-1) is active in atlas-ai `elevenlabs.js`: no api.elevenlabs.io call is attempted and no ElevenLabs usage is metered. The historical integration reference below is quoted as-is and no longer describes live behavior.
+
+<details>
+<summary>Historical reference — ElevenLabs integration as documented before the September 2026 disable (click to expand)</summary>
+
 ### Purpose & Related Features
 - **Primary TTS:** High-quality text-to-speech for AI voice (default for all clients)
 - **Voice Catalog:** Multiple voice options (e.g., 'uMM5TEnpKKgD758knVJO' - default)
@@ -197,6 +202,8 @@
 - **Rate Limits:** ElevenLabs enforces RPM; handled with retries
 - **Failure Handling:** Graceful fallback to OpenAI TTS on any error
 - **Billing:** Usage captured from response header (empirically verified 2026-08-30)
+
+</details>
 
 ---
 
