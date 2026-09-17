@@ -1066,7 +1066,7 @@ tr:hover td { background: var(--tint); }
 <div id="toast"></div>
 
 <script>
-const API = (location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/admin';
+const API = (location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/admin';
 let allClients = [];
 let editingClientId = null;
 
@@ -1179,7 +1179,8 @@ async function loadLiveCosts(forceRefresh) {
       cards.push(disabledCard('🤖', 'OpenAI', oa.reason));
     }
 
-    // ElevenLabs
+    // ElevenLabs — DISABLED (ELE-4) — retired; removal ELE-6
+    /*
     const el = data.elevenlabs;
     if (el.enabled) {
       const usedPct = parseFloat(el.usedPercent) || 0;
@@ -1202,6 +1203,7 @@ async function loadLiveCosts(forceRefresh) {
     } else {
       cards.push(disabledCard('🔊', 'ElevenLabs', el.reason));
     }
+    */
 
     // AWS
     const aws = data.aws;
@@ -1591,6 +1593,9 @@ async function openDetail(clientId) {
             </label>
           `).join('')}
         </div>
+        <!-- DISABLED (ELE-4) — ElevenLabs add-on control retired; removal ELE-6
+             Backend still accepts the PATCH field via ELE-3 allowlist entry -->
+        <!--
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
             <input type="checkbox" id="edit-voice-addon-elevenlabs" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
@@ -1598,6 +1603,7 @@ async function openDetail(clientId) {
           </label>
           <span style="font-size:12px;color:var(--muted);">Admin override: unlocks premium ElevenLabs voices for this client, bypassing the paywall.</span>
         </div>
+        -->
       </div>
     </div>
   `;
@@ -1708,6 +1714,7 @@ async function loadClientEntitlements(clientId) {
 }
 
 // Load the ElevenLabs add-on override state into the edit modal toggle.
+// DISABLED (ELE-4) — control retired; removal ELE-6
 // Reads the raw client record (snake_case field straight from DynamoDB via
 // GET /admin/clients), not the entitlements payload — the add-on is a
 // separate paid flag, not part of the tier entitlements matrix.
@@ -1767,7 +1774,8 @@ async function saveClientEdit() {
     updates.entitlements_override = null;
   }
 
-  // ElevenLabs add-on override (admin-only, bypasses the $49/mo paywall)
+  // ElevenLabs add-on override — DISABLED (ELE-4) — control retired; removal ELE-6
+  // Backend still accepts the PATCH field via ELE-3 allowlist entry
   const addonToggle = document.getElementById('edit-voice-addon-elevenlabs');
   if (addonToggle) updates.voice_addon_elevenlabs = addonToggle.checked;
 
@@ -1851,7 +1859,7 @@ async function confirmDeleteClient() {
 // ─── VOICE & PERSONA ──────────────────────────────────────────────────────────
 // Use the same base + API key as the rest of the admin portal so requests are authorized.
 const ATLAS_API = API;
-const VOICES_API = (location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/api/voices';
+const VOICES_API = (location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/api/voices';
 function adminAuthHeaders(extra = {}) {
   return Object.assign({ 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }, extra);
 }
