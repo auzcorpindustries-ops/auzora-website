@@ -3058,6 +3058,7 @@ let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from /api/voices (all providers)
 let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let LEGACY_VOICE_MAP = {}; // retired OpenAI id → Live equivalent, from /api/voices (GPTL-3)
 let VOICE_PROVIDERS = { openai: { label: 'OpenAI' } }; // DISABLED (ELE-4) — ElevenLabs retired; removal ELE-6
 let currentVoiceProvider = 'openai'; // DISABLED (ELE-4) — provider tabs retired; removal ELE-6
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
@@ -3073,6 +3074,10 @@ async function loadVoices() {
     const data = await res.json();
     DEFAULT_VOICE_ID = data.default_voice_id || null;
     VOICE_PROVIDERS = data.providers || VOICE_PROVIDERS;
+    // GPTL-3: the backend maps retired ids (nova/onyx/fable) to their
+    // GPT-Live equivalents so a saved legacy selection renders on the synced
+    // grid instead of silently resetting to the default.
+    LEGACY_VOICE_MAP = data.legacy_voice_map || {};
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
@@ -8071,6 +8076,13 @@ function renderPortalVoiceGrid(selected) {
   // ElevenLabs) must NOT stay selected — saving it would 403, so the
   // default voice becomes the active selection instead.
   let activeVoiceId = selected;
+  if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) {
+    // GPTL-3: retired OpenAI id (nova/onyx/fable) → its GPT-Live equivalent
+    // (gleam/stone/verse) so the client's saved voice stays highlighted and
+    // is preserved on the next save. Truly unknown ids fall through to the
+    // default (backend mapVoice keeps calls safe either way).
+    activeVoiceId = LEGACY_VOICE_MAP[String(activeVoiceId).toLowerCase()] || null;
+  }
   if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) activeVoiceId = null;
   if (activeVoiceId && isVoiceLocked(activeVoiceId)) activeVoiceId = DEFAULT_VOICE_ID || null;
   currentPortalVoiceId = activeVoiceId;

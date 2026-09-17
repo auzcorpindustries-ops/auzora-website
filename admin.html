@@ -1863,7 +1863,8 @@ const VOICES_API = (location.hostname.includes('netlify.app') || location.hostna
 function adminAuthHeaders(extra = {}) {
   return Object.assign({ 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }, extra);
 }
-let DEFAULT_VOICE_ID = 'uMM5TEnpKKgD758knVJO';
+let DEFAULT_VOICE_ID = 'alloy'; // synced with /api/voices default (GPTL-3)
+let LEGACY_VOICE_MAP = {}; // retired OpenAI id → GPT-Live equivalent, from /api/voices (GPTL-3)
 
 let VOICES = [];
 let currentPersonaClient = null;
@@ -1890,6 +1891,9 @@ async function loadVoices() {
   const data = await res.json();
   const all = Array.isArray(data.voices) ? data.voices : [];
   DEFAULT_VOICE_ID = data.default_voice_id || DEFAULT_VOICE_ID;
+  // GPTL-3: retired OpenAI ids (nova/onyx/fable) → GPT-Live equivalents, so a
+  // client saved before the catalog sync renders its (mapped) voice selected.
+  LEGACY_VOICE_MAP = data.legacy_voice_map || {};
   VOICES = all
     .filter(v => v && v.active !== false)
     .map(v => ({
@@ -2011,7 +2015,11 @@ function renderAdminVoiceGrid(selected) {
     container.innerHTML = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
     return;
   }
-  const activeVoiceId = VOICES.some(v => v.id === selected) ? selected : VOICES[0]?.id;
+  const activeVoiceId = VOICES.some(v => v.id === selected)
+    ? selected
+    : (LEGACY_VOICE_MAP[String(selected || '').toLowerCase()] && VOICES.some(v => v.id === LEGACY_VOICE_MAP[String(selected).toLowerCase()])
+        ? LEGACY_VOICE_MAP[String(selected).toLowerCase()]
+        : VOICES[0]?.id);
   currentAdminVoiceId = activeVoiceId;
   const leftVoices = VOICES.filter(v => v.gender === 'female');
   const rightVoices = VOICES.filter(v => v.gender === 'male');
