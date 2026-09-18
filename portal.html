@@ -1443,6 +1443,26 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
 
+          <!-- Business Overview -->
+          <div class="card collapsible-section" data-collapse-key="agent-business-overview">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="book-open"></i> Business Overview
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                General info only — this guides the receptionist's background knowledge but never overrides system instructions, structured business data, services, FAQs, or scheduling rules.
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <textarea id="s-business-overview" rows="6" maxlength="2000" placeholder="e.g. We're a family-run shop founded in 1998, we source materials locally, and we've served over 5,000 customers across the metro area." oninput="updateBusinessOverviewCounter();setDirty()"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                  <div style="font-size:11px;color:var(--muted);">Plain text only — saved with your agent settings.</div>
+                  <div id="s-business-overview-counter" style="font-size:11px;color:var(--muted);">0 / 2000</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Voicemail Mode (AMD) -->
           <div class="card collapsible-section" data-collapse-key="agent-voicemail-mode">
             <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
@@ -7966,6 +7986,13 @@ async function loadSettings() {
   document.getElementById('s-disclosure-enabled').checked = c.ai_disclosure_enabled !== false;
   document.getElementById('s-disclosure-text').value = c.ai_disclosure_text || '';
 
+  // Business Overview (supplemental receptionist context — lowest priority)
+  const bizOverviewEl = document.getElementById('s-business-overview');
+  if (bizOverviewEl) {
+    bizOverviewEl.value = c.business_overview || '';
+    updateBusinessOverviewCounter();
+  }
+
   // Voicemail Mode (AMD)
   const vmMode = c.voicemail_mode || 'message';
   document.querySelectorAll('input[name="voicemail-mode"]').forEach(r => {
@@ -8010,6 +8037,18 @@ function showFloatingFooter() {
 function hideFloatingFooter() {
   const footer = document.getElementById('floating-save-footer');
   if (footer) footer.style.display = 'none';
+}
+
+// Business Overview live character counter (zeus_1789737106254_ebc5552f).
+// Shows "x / 2000"; turns red at the limit. The textarea's maxlength=2000
+// blocks further typing client-side — the server re-caps defensively.
+function updateBusinessOverviewCounter() {
+  const el = document.getElementById('s-business-overview');
+  const counter = document.getElementById('s-business-overview-counter');
+  if (!el || !counter) return;
+  const len = (el.value || '').length;
+  counter.textContent = len + ' / 2000';
+  counter.style.color = len >= 2000 ? 'var(--red)' : 'var(--muted)';
 }
 
 function cancelSettings() {
@@ -8518,6 +8557,7 @@ async function saveSettings() {
       after_hours_message: document.getElementById('s-ah-msg').value,
       ai_disclosure_enabled: document.getElementById('s-disclosure-enabled').checked,
       ai_disclosure_text: document.getElementById('s-disclosure-text').value,
+      business_overview: document.getElementById('s-business-overview')?.value || '',
       voicemail_mode: document.querySelector('input[name="voicemail-mode"]:checked')?.value || 'message',
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
