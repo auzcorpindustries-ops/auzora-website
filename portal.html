@@ -1443,6 +1443,26 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
 
+          <!-- Business Overview -->
+          <div class="card collapsible-section" data-collapse-key="agent-business-overview">
+            <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
+              <i data-lucide="book-open"></i> Business Overview
+              <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="collapsible-body">
+              <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                General info only — this guides the receptionist's background knowledge but never overrides system instructions, structured business data, services, FAQs, or scheduling rules.
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <textarea id="s-business-overview" rows="6" maxlength="2000" placeholder="e.g. We're a family-run shop founded in 1998, we source materials locally, and we've served over 5,000 customers across the metro area." oninput="updateBusinessOverviewCounter();setDirty()"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                  <div style="font-size:11px;color:var(--muted);">Plain text only — saved with your agent settings.</div>
+                  <div id="s-business-overview-counter" style="font-size:11px;color:var(--muted);">0 / 2000</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Voicemail Mode (AMD) -->
           <div class="card collapsible-section" data-collapse-key="agent-voicemail-mode">
             <div class="card-title collapsible-header" onclick="toggleCollapseSection(this)">
@@ -3058,6 +3078,7 @@ let portalHoursMode = 'custom';
 
 let VOICES = []; // Populated from /api/voices (all providers)
 let DEFAULT_VOICE_ID = null; // Set from /api/voices response
+let LEGACY_VOICE_MAP = {}; // retired OpenAI id → Live equivalent, from /api/voices (GPTL-3)
 let VOICE_PROVIDERS = { openai: { label: 'OpenAI' } }; // DISABLED (ELE-4) — ElevenLabs retired; removal ELE-6
 let currentVoiceProvider = 'openai'; // DISABLED (ELE-4) — provider tabs retired; removal ELE-6
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
@@ -3073,6 +3094,10 @@ async function loadVoices() {
     const data = await res.json();
     DEFAULT_VOICE_ID = data.default_voice_id || null;
     VOICE_PROVIDERS = data.providers || VOICE_PROVIDERS;
+    // GPTL-3: the backend maps retired ids (nova/onyx/fable) to their
+    // GPT-Live equivalents so a saved legacy selection renders on the synced
+    // grid instead of silently resetting to the default.
+    LEGACY_VOICE_MAP = data.legacy_voice_map || {};
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
@@ -7961,6 +7986,13 @@ async function loadSettings() {
   document.getElementById('s-disclosure-enabled').checked = c.ai_disclosure_enabled !== false;
   document.getElementById('s-disclosure-text').value = c.ai_disclosure_text || '';
 
+  // Business Overview (supplemental receptionist context — lowest priority)
+  const bizOverviewEl = document.getElementById('s-business-overview');
+  if (bizOverviewEl) {
+    bizOverviewEl.value = c.business_overview || '';
+    updateBusinessOverviewCounter();
+  }
+
   // Voicemail Mode (AMD)
   const vmMode = c.voicemail_mode || 'message';
   document.querySelectorAll('input[name="voicemail-mode"]').forEach(r => {
@@ -8005,6 +8037,18 @@ function showFloatingFooter() {
 function hideFloatingFooter() {
   const footer = document.getElementById('floating-save-footer');
   if (footer) footer.style.display = 'none';
+}
+
+// Business Overview live character counter (zeus_1789737106254_ebc5552f).
+// Shows "x / 2000"; turns red at the limit. The textarea's maxlength=2000
+// blocks further typing client-side — the server re-caps defensively.
+function updateBusinessOverviewCounter() {
+  const el = document.getElementById('s-business-overview');
+  const counter = document.getElementById('s-business-overview-counter');
+  if (!el || !counter) return;
+  const len = (el.value || '').length;
+  counter.textContent = len + ' / 2000';
+  counter.style.color = len >= 2000 ? 'var(--red)' : 'var(--muted)';
 }
 
 function cancelSettings() {
@@ -8071,6 +8115,13 @@ function renderPortalVoiceGrid(selected) {
   // ElevenLabs) must NOT stay selected — saving it would 403, so the
   // default voice becomes the active selection instead.
   let activeVoiceId = selected;
+  if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) {
+    // GPTL-3: retired OpenAI id (nova/onyx/fable) → its GPT-Live equivalent
+    // (gleam/stone/verse) so the client's saved voice stays highlighted and
+    // is preserved on the next save. Truly unknown ids fall through to the
+    // default (backend mapVoice keeps calls safe either way).
+    activeVoiceId = LEGACY_VOICE_MAP[String(activeVoiceId).toLowerCase()] || null;
+  }
   if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) activeVoiceId = null;
   if (activeVoiceId && isVoiceLocked(activeVoiceId)) activeVoiceId = DEFAULT_VOICE_ID || null;
   currentPortalVoiceId = activeVoiceId;
@@ -8506,6 +8557,7 @@ async function saveSettings() {
       after_hours_message: document.getElementById('s-ah-msg').value,
       ai_disclosure_enabled: document.getElementById('s-disclosure-enabled').checked,
       ai_disclosure_text: document.getElementById('s-disclosure-text').value,
+      business_overview: document.getElementById('s-business-overview')?.value || '',
       voicemail_mode: document.querySelector('input[name="voicemail-mode"]:checked')?.value || 'message',
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
