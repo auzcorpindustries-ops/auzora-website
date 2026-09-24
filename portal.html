@@ -1276,6 +1276,16 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
             <div class="collapsible-body">
               <div class="voice-grid" id="portal-voice-grid"></div>
+              <!-- ELE-7 (zeus_1790260436813_9f8dec8a): ElevenLabs Live add-on
+                   opt-in — hidden unless the client holds the add-on grant
+                   (renderElevenLabsOptInToggle controls visibility). -->
+              <div id="elevenlabs-optin" style="display:none;margin-top:14px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <input type="checkbox" id="s-el-optin" onchange="toggleElevenLabsOptIn()" style="width:16px;height:16px;cursor:pointer;">
+                  <label for="s-el-optin" style="font-size:13px;font-weight:600;cursor:pointer;margin:0;">Use my ElevenLabs premium voice on calls</label>
+                </div>
+                <div id="s-el-optin-label" style="font-size:11px;color:var(--muted);margin-top:6px;">Off — calls use the standard OpenAI voice</div>
+              </div>
             </div>
           </div>
 
@@ -3082,11 +3092,16 @@ let LEGACY_VOICE_MAP = {}; // retired OpenAI id → Live equivalent, from /api/v
 let VOICE_PROVIDERS = { openai: { label: 'OpenAI' } }; // DISABLED (ELE-4) — ElevenLabs retired; removal ELE-6
 let currentVoiceProvider = 'openai'; // DISABLED (ELE-4) — provider tabs retired; removal ELE-6
 let portalTierVoices = null; // { access: ['default'|'all'], defaultVoiceId } from /portal/entitlements
+// ELE-7 (zeus_1790260436813_9f8dec8a): true when the backend serves the
+// ElevenLabs catalog entries UN-disabled (ELEVENLABS_LIVE_ADDON=true). The
+// per-client grant/opt-in still gates selection — see isVoiceLocked.
+let elevenLabsCatalogEnabled = false;
 
 // Gender emoji mapping
 const GENDER_EMOJI = { male: '👨', female: '👩', unknown: '🎙️' };
 
-// Fetch voice catalog (OpenAI only; DISABLED ELE-4 — ElevenLabs retired; removal ELE-6)
+// Fetch voice catalog (OpenAI core; ElevenLabs entries ride along when the
+// Live add-on flag is on server-side — ELE-7)
 async function loadVoices() {
   try {
     const res = await fetch(`${API}/api/voices`);
@@ -3098,6 +3113,10 @@ async function loadVoices() {
     // GPT-Live equivalents so a saved legacy selection renders on the synced
     // grid instead of silently resetting to the default.
     LEGACY_VOICE_MAP = data.legacy_voice_map || {};
+    // ELE-7: the backend strips the ELE-1 disabled marker when the Live
+    // add-on flag is on. Catalog presence alone is NOT selectability — the
+    // client must hold the add-on grant (tierVoices.elevenlabsLiveAddon).
+    elevenLabsCatalogEnabled = (data.voices || []).some(v => v.provider === 'elevenlabs' && v.disabled !== true);
     VOICES = data.voices.map(v => ({
       id: v.id,
       label: v.label || v.voice_name || v.name || 'Voice',
@@ -3106,6 +3125,7 @@ async function loadVoices() {
       gender: v.gender || 'unknown',
       provider: v.provider || 'elevenlabs',
       preview_url: v.preview_url,
+      disabled: v.disabled === true,
       isDefault: v.is_default === true || v.isDefault === true
     }));
     return VOICES;
@@ -3117,12 +3137,19 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (Starter = default only)
 function isVoiceLocked(voiceId) {
-  // DISABLED (ELE-4) — ElevenLabs retired; OpenAI voices are included with every plan.
   const voice = VOICES.find(v => v.id === voiceId);
   const provider = voice?.provider || 'openai';
   if (provider === 'openai') return false; // OpenAI always selectable
-  // Legacy ElevenLabs voices: always treat as locked (cannot be selected)
-  return true;
+  // ELE-7 (zeus_1790260436813_9f8dec8a): ElevenLabs voices are selectable
+  // ONLY when the backend catalog carries them un-disabled (the Live add-on
+  // flag is on) AND this client holds the $49 add-on grant
+  // (tierVoices.elevenlabsLiveAddon from /portal/entitlements). Otherwise
+  // they render as unavailable — same as the ELE-4 legacy state.
+  if (provider === 'elevenlabs') {
+    const granted = !!(portalTierVoices && portalTierVoices.elevenlabsLiveAddon);
+    return !(elevenLabsCatalogEnabled && granted);
+  }
+  return true; // unknown providers stay locked
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -8104,11 +8131,13 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  // DISABLED (ELE-4) — OpenAI voices only; ElevenLabs section removed; removal ELE-6.
-  // Legacy clients with ElevenLabs voices render them in the OpenAI grid with
-  // the current voice preserved but locked for new selection.
+  // ELE-4 removed the ElevenLabs section; ELE-7 (zeus_1790260436813_9f8dec8a)
+  // re-adds it for clients holding the Live add-on grant: OpenAI voices stay
+  // the always-included set, ElevenLabs voices render as the premium add-on
+  // group (selectable only when the catalog + grant align — isVoiceLocked).
   const openaiVoices = VOICES.filter(v => v.provider === 'openai');
-  const legacyElevenLabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
+  const elVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
+  const elGranted = !!(portalTierVoices && portalTierVoices.elevenlabsLiveAddon);
 
   // Keep the selected highlight inside the client's saved provider when the
   // saved voice is still selectable there. A saved-but-locked voice (legacy
@@ -8163,23 +8192,52 @@ function renderPortalVoiceGrid(selected) {
     html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
     html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
   }
-  // DISABLED (ELE-4) — ElevenLabs section hidden; removal ELE-6
-  // Legacy ElevenLabs voices are rendered in the OpenAI grid if they were the
-  // client's saved voice, to avoid breaking existing configurations.
-  if (legacyElevenLabsVoices.length > 0) {
-    // Only show legacy voices if they include the currently selected voice
-    const activeIsLegacy = activeVoiceId && legacyElevenLabsVoices.some(v => v.id === activeVoiceId);
-    if (activeIsLegacy) {
-      html += sectionHeader('Legacy Voices (Unavailable)', '<span style="font-size:11px;color:var(--red);font-weight:600;">No longer available</span>');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'female'), 'left');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'male'), 'right');
-    }
+  // ELE-7: ElevenLabs premium voices — rendered ONLY for clients holding the
+  // Live add-on grant. Without the grant the section stays hidden entirely
+  // (identical to the ELE-4-era portal), so non-add-on clients see zero new
+  // UI. The opt-in toggle below the grid controls whether Live calls
+  // actually use the ElevenLabs voice (elevenlabs_enabled).
+  if (elVoices.length > 0 && elGranted) {
+    html += sectionHeader('ElevenLabs Premium Voices', '<span style="font-size:11px;color:var(--accent);font-weight:600;">Premium add-on</span>');
+    html += renderColumn(elVoices.filter(v => v.gender === 'female'), 'left');
+    html += renderColumn(elVoices.filter(v => v.gender === 'male'), 'right');
   }
   if (!html) {
     html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
   }
   document.getElementById('portal-voice-grid').innerHTML = html;
+  renderElevenLabsOptInToggle();
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── ELE-7 (zeus_1790260436813_9f8dec8a): ElevenLabs Live add-on opt-in ──────
+// Shown ONLY for add-on-granted clients (renderPortalVoiceGrid calls this
+// after confirming elGranted). The toggle persists elevenlabs_enabled via
+// PATCH /portal/settings; when ON, Live calls speak with the selected
+// ElevenLabs voice (voice_provider='elevenlabs' + the picked voice id),
+// falling back to the native Live voice on any ElevenLabs failure.
+function renderElevenLabsOptInToggle() {
+  const host = document.getElementById('elevenlabs-optin');
+  if (!host) return;
+  const granted = !!(portalTierVoices && portalTierVoices.elevenlabsLiveAddon);
+  if (!granted) { host.style.display = 'none'; return; }
+  host.style.display = 'block';
+  const toggle = document.getElementById('s-el-optin');
+  if (toggle) {
+    toggle.checked = portalClient?.elevenlabs_enabled === true;
+    toggle.disabled = false;
+  }
+  const label = document.getElementById('s-el-optin-label');
+  if (label) {
+    label.textContent = toggle && toggle.checked
+      ? 'On — calls use your ElevenLabs voice (falls back to the standard voice if ElevenLabs is unavailable)'
+      : 'Off — calls use the standard OpenAI voice';
+  }
+}
+
+function toggleElevenLabsOptIn() {
+  setDirty();
+  renderElevenLabsOptInToggle();
 }
 
 // Selecting a voice also switches the active provider so saves persist the
@@ -8190,6 +8248,16 @@ function selectPortalVoice(id) {
   const voice = VOICES.find(v => v.id === id);
   if (voice) currentVoiceProvider = voice.provider || 'openai';
   currentPortalVoiceId = id;
+  // ELE-7 (zeus_1790260436813_9f8dec8a): picking a premium ElevenLabs voice
+  // implies opting IN to the add-on voice path — leaving the toggle off
+  // while an EL voice is selected would save a voice the call never uses.
+  if (voice && voice.provider === 'elevenlabs') {
+    const elOptin = document.getElementById('s-el-optin');
+    if (elOptin && !elOptin.checked) {
+      elOptin.checked = true;
+      renderElevenLabsOptInToggle();
+    }
+  }
   document.querySelectorAll('#portal-voice-grid .voice-card').forEach(card => {
     const idAttr = card.id.replace('pvc-', '');
     const v = VOICES.find(x => x.id === idAttr);
@@ -8541,6 +8609,12 @@ async function saveSettings() {
   try {
     const voice = getPortalVoice();
     const bizName = document.getElementById('s-biz-name').value;
+    // ELE-7 (zeus_1790260436813_9f8dec8a): the opt-in toggle rides every save.
+    // Only sent when the toggle host is visible (add-on granted) — a
+    // non-granted client never writes the field.
+    const elOptinEl = document.getElementById('s-el-optin');
+    const elOptinVisible = document.getElementById('elevenlabs-optin')
+      && document.getElementById('elevenlabs-optin').style.display !== 'none';
     const payload = {
       business_name:       bizName || portalClient?.business_name || undefined,
       agent_name:          document.getElementById('s-agent-name').value,
@@ -8550,6 +8624,7 @@ async function saveSettings() {
       escalation_phone:    document.getElementById('s-escalation-phone').value,
       voice:               voice || portalClient?.voice || portalClient?.voice_id || undefined,
       voice_provider:      currentVoiceProvider,
+      elevenlabs_enabled:  elOptinVisible && elOptinEl ? elOptinEl.checked : undefined,
       custom_greeting:     document.getElementById('s-greeting').value,
       escalation_rules:    document.getElementById('s-escalation').value,
       topics_to_avoid:     portalAvoidTopics,
@@ -8586,7 +8661,16 @@ async function saveSettings() {
       if (typeof renderNativeCalendar === 'function') renderNativeCalendar();
       settingsDirty = false;
       hideFloatingFooter();
-    } else throw new Error(data.error || 'Save failed');
+    } else {
+      // ELE-7 (zeus_1790260436813_9f8dec8a): an ElevenLabs voice the backend
+      // could not verify gets its own clear error instead of a generic
+      // "Save failed" — the caller is told exactly which voice to re-pick.
+      if (data && data.feature === 'elevenlabsVoiceId') {
+        showToast(data.error || 'That ElevenLabs voice could not be verified. Pick another voice.', 'error');
+      } else {
+        throw new Error(data.error || 'Save failed');
+      }
+    }
   } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
 
   const fbtn = document.getElementById('floating-save-btn');
