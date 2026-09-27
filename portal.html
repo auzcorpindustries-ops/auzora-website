@@ -994,6 +994,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
     <div class="nav-item" onclick="showPage('campaigns')" id="nav-campaigns"><span class="nav-icon"><i data-lucide="megaphone"></i></span> Campaigns</div>
     <div class="nav-item" onclick="showPage('forms')" id="nav-forms"><span class="nav-icon"><i data-lucide="file-input"></i></span> Forms</div>
      <div class="nav-item" onclick="showPage('automations')" id="nav-automations"><span class="nav-icon"><i data-lucide="workflow"></i></span> Automations</div>
+    <div class="nav-item" onclick="showPage('actions')" id="nav-actions" style="display:none;"><span class="nav-icon"><i data-lucide="zap"></i></span> Actions</div>
     <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics"><span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> Analytics</div>
     <div class="sidebar-footer">
       <div class="nav-divider"></div>
@@ -2541,6 +2542,43 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       </div>
     </div>
 
+    <style>
+      .pca-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+      .pca-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+      .pca-slider { position: relative; display: inline-block; width: 40px; height: 22px; border-radius: 999px; border: 1px solid var(--faint); background: var(--faint); transition: background .15s, border-color .15s; }
+      .pca-knob { position: absolute; top: 2px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: left .15s; }
+      .pca-card { transition: border-color .15s; }
+      .pca-card:hover { border-color: rgba(124,58,237,0.35); }
+      .pca-merge-chip:hover { border-color: #7C3AED; color: #7C3AED; }
+    </style>
+    <!-- 3. Post-Call Actions (PCA) -->
+    <div class="page" id="page-actions">
+      <div class="page-header">
+        <h1><i data-lucide="zap" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Post-Call Actions</h1>
+        <p>Texts your AI agent sends automatically after a call ends</p>
+      </div>
+      <div id="pca-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:14px;">Loading&#8230;</div>
+      <div id="pca-conflict" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.30);border-radius:13px;padding:20px 22px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <i data-lucide="alert-triangle" style="width:18px;height:18px;color:#b45309;flex-shrink:0;"></i>
+          <span id="pca-conflict-title" style="font-size:16px;font-weight:700;">Settings changed elsewhere</span>
+        </div>
+        <div id="pca-conflict-desc" style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Another editor (or another tab) changed Post-Call Actions while you were working. Nothing was overwritten &mdash; reload to get the current version before making changes.</div>
+        <button onclick="PCA.reload()" style="background:#3B82F6;border:none;border-radius:10px;padding:11px 20px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Reload</button>
+        <span id="pca-conflict-rev" style="font-size:12px;color:var(--muted);margin-left:12px;"></span>
+      </div>
+      <div id="pca-content" style="display:none;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px;">
+          <span style="font-size:16px;font-weight:700;">Your actions</span>
+          <span id="pca-cap" style="font-size:13.5px;color:var(--muted);"></span>
+          <span style="flex:1;"></span>
+          <button onclick="PCA.openTypePicker()" style="display:inline-flex;align-items:center;gap:8px;border:none;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:700;color:#fff;background:#3B82F6;box-shadow:0 8px 18px rgba(59,130,246,0.22);cursor:pointer;"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add action</button>
+          <span id="pca-err" style="font-size:12px;color:var(--red,#EF4444);margin-left:4px;"></span>
+        </div>
+        <div id="pca-list" style="display:flex;flex-direction:column;gap:12px;max-width:1080px;"></div>
+      </div>
+    </div>
+
     <!-- ANALYTICS -->
     <div class="page" id="page-analytics">
       <div class="page-header">
@@ -3562,6 +3600,7 @@ function launchApp() {
   if (acProfilePhoto) applyProfilePhotoToPortal();
   // Fetch tier entitlements and apply nav visibility
   fetchEntitlements();
+  if (typeof initPcaPage === 'function') initPcaPage();
   loadDashboard();
   loadSquareStatus();
   loadLeadIntakeToken();
@@ -3928,6 +3967,7 @@ function showPage(name) {
     conversations: { title: 'Conversations', sub: 'Live SMS threads — take over from AI and respond personally' },
     campaigns: { title: 'Campaigns', sub: 'Bulk-dial and bulk-text your lead lists, with automatic retries' },
     automations: { title: 'Automations', sub: 'n8n follow-up workflows and your lead webhook' },
+    actions: { title: 'Post-Call Actions', sub: 'Texts your AI agent sends automatically after a call ends' },
     analytics: { title: 'Analytics', sub: 'Performance across calls, bookings and campaigns' },
     scheduling: { title: 'Scheduling', sub: 'View your calendar and configure office hours & booking requirements' },
     integrations: { title: 'Integrations', sub: 'Connect your calendars and lead destinations' },
@@ -3949,6 +3989,7 @@ function showPage(name) {
     loadCampaigns(); loadSmsCampaigns(); loadCampaignActivity();
   }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
+  if (name === 'actions') { PCA.load(); }
   if (name === 'analytics') { loadLeadAnalytics(); loadActivity(); }
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
@@ -8717,6 +8758,533 @@ async function runTestBooking() {
   btn.disabled = false;
   btn.textContent = '▶ Run Test Booking';
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ── POST-CALL ACTIONS (pca-3) ────────────────────────────────────────────────
+// Client-configured actions that fire after a call ends. Data + catalog come
+// from GET /portal/post-call-actions (pca-1). Every mutation carries the
+// revision the UI last saw; HTTP 409 = someone else saved first, so the UI
+// drops into a "Settings changed elsewhere — reload" state instead of
+// clobbering. Flag + entitlement aware: the nav entry and page stay hidden
+// until the API reports feature_flag_enabled && entitlement.available.
+// ═════════════════════════════════════════════════════════════════════════════
+const PCA = {
+  revision: 0,
+  max: 10,
+  catalog: [],
+  actions: [],
+  dragId: null,
+  pendingType: null,
+  TYPE_META: {
+    send_followup_sms:         { icon: 'message-square', tint: 'color:#EC4899;background:rgba(236,72,153,0.10);' },
+    send_scheduling_link:      { icon: 'calendar-days',  tint: 'color:#7C3AED;background:rgba(124,58,237,0.10);' },
+    send_confirmation_message: { icon: 'message-circle', tint: 'color:#3B82F6;background:rgba(59,130,246,0.10);' },
+  },
+  SEND_WHEN_LABELS: {
+    every_call: 'Every call',
+    booked: 'Only booked',
+    lead_captured: 'Only lead captured',
+    not_booked: 'Only not booked',
+  },
+
+  typeMeta(type) {
+    return this.TYPE_META[type] || { icon: 'zap', tint: 'color:#5f687a;background:rgba(16,24,38,0.06);' };
+  },
+
+  _headers() {
+    return { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken };
+  },
+
+  _icons() {
+    try { if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); } catch (e) {}
+  },
+
+  _showConflict(title, desc) {
+    const t = document.getElementById('pca-conflict-title');
+    const d = document.getElementById('pca-conflict-desc');
+    if (t) t.textContent = title;
+    if (d) d.textContent = desc;
+    const loading = document.getElementById('pca-loading');
+    if (loading) loading.style.display = 'none';
+    const content = document.getElementById('pca-content');
+    if (content) content.style.display = 'none';
+    const box = document.getElementById('pca-conflict');
+    if (box) box.style.display = 'block';
+    this._icons();
+  },
+
+  // 409 on any mutation: never silently clobber — surface the reload state.
+  _conflict(res) {
+    this._conflictRes = res;
+    this._showConflict(
+      'Settings changed elsewhere',
+      'Another editor (or another tab) changed Post-Call Actions while you were working. Nothing was overwritten — reload to get the current version before making changes.'
+    );
+    const rev = document.getElementById('pca-conflict-rev');
+    if (rev) rev.textContent = '';
+  },
+
+  reload() { this.load(); },
+
+  async load() {
+    if (!portalToken) return;
+    try {
+      const res = await fetch(API + '/portal/post-call-actions', { headers: { 'X-Portal-Token': portalToken } });
+      if (res.status === 401) return; // global interceptor redirects to login
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      this.catalog = data.catalog || [];
+      this.max = data.max || 10;
+      this.revision = data.revision || 0;
+      if (data.feature_flag_enabled === false) {
+        const nav = document.getElementById('nav-actions');
+        if (nav) nav.style.display = 'none';
+        this._showConflict('Post-call actions are not available', 'This feature is not enabled for your account.');
+        return;
+      }
+      const nav = document.getElementById('nav-actions');
+      if (nav) nav.style.display = '';
+      if (!data.entitlement || data.entitlement.available !== true) {
+        this._showConflict('Not available on your plan', 'Post-call actions are not enabled for this account. Contact Auzora support to add them.');
+        return;
+      }
+      const loading = document.getElementById('pca-loading');
+      if (loading) loading.style.display = 'none';
+      const box = document.getElementById('pca-conflict');
+      if (box) box.style.display = 'none';
+      const content = document.getElementById('pca-content');
+      if (content) content.style.display = 'block';
+      this.render(data.actions || []);
+    } catch (e) {
+      const el = document.getElementById('pca-loading');
+      if (el) el.innerHTML = '<span style="color:var(--red,#EF4444);">Unable to load post-call actions — ' +
+        escapeHtml(String((e && e.message) || e)) + '</span>';
+    }
+  },
+
+  render(actions) {
+    const list = document.getElementById('pca-list');
+    if (!list) return;
+    this.actions = actions || [];
+    if (!this.actions.length) {
+      list.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:44px 20px;text-align:center;">' +
+        '<div style="width:52px;height:52px;border-radius:14px;background:rgba(59,130,246,0.08);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i data-lucide="zap" style="width:24px;height:24px;color:#3B82F6;"></i></div>' +
+        '<div style="font-size:16px;font-weight:700;">No post-call actions yet</div>' +
+        '<div style="font-size:13.5px;color:var(--muted);margin-top:6px;">Add one and your AI agent will text callers automatically after each call.</div>' +
+        '</div>';
+    } else {
+      list.innerHTML = this.actions.map((a, i) => this.cardHtml(a, i, this.actions.length)).join('');
+    }
+    const cap = document.getElementById('pca-cap');
+    if (cap) cap.textContent = this.actions.length + ' of ' + this.max + ' used';
+    this.bindDnd();
+    this._icons();
+  },
+
+  _lastRunHtml(a) {
+    let lr = a && a.last_run;
+    if (!lr && a && a.post_call_actions_last_run && typeof a.post_call_actions_last_run === 'object') {
+      lr = a.post_call_actions_last_run[a.id] || null;
+    }
+    if (!lr) return '<span style="font-size:12.5px;color:var(--faint);">Never run</span>';
+    const when = lr.at ? new Date(lr.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const s = String(lr.status || '').toLowerCase();
+    const pill = {
+      sent:    'color:#15803d;background:rgba(34,197,94,0.12)',
+      skipped: 'color:#5f687a;background:rgba(16,24,38,0.06)',
+      failed:  'color:#dc2626;background:rgba(239,68,68,0.10)',
+    }[s] || 'color:#5f687a;background:rgba(16,24,38,0.06)';
+    return '<span style="font-size:12.5px;color:var(--muted);">Last run ' + escapeHtml(when) + ' &middot;</span> ' +
+      '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-radius:999px;padding:3px 9px;' + pill + '">' +
+      escapeHtml(s || 'unknown') + '</span>';
+  },
+
+  cardHtml(a, i, n) {
+    const tm = this.typeMeta(a.type);
+    const entry = this.catalog.find(c => c.type === a.type) || {};
+    const label = entry.label || a.type;
+    const sw = this.SEND_WHEN_LABELS[(a.params && a.params.send_when) || 'every_call'] || 'Every call';
+    const tmpl = (a.params && a.params.template) || '';
+    const prev = tmpl.length > 110 ? tmpl.slice(0, 110) + '\u2026' : tmpl;
+    const on = a.enabled !== false;
+    const tog = on ? 'background:#22c55e;border-color:#22c55e' : 'background:var(--faint);border-color:var(--faint)';
+    const knob = on ? 'left:20px;' : 'left:3px;';
+    const upDis = i === 0 ? 'disabled' : '';
+    const dnDis = i === n - 1 ? 'disabled' : '';
+    const upCur = i === 0 ? 'not-allowed' : 'pointer';
+    const dnCur = i === n - 1 ? 'not-allowed' : 'pointer';
+    return '<div class="pca-card" data-id="' + a.id + '" draggable="true" style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 18px;display:flex;align-items:center;gap:14px;' + (on ? '' : 'opacity:0.72;') + '">' +
+      '<span class="pca-drag" title="Drag to reorder" style="cursor:grab;color:var(--faint);display:flex;padding:4px 2px;"><i data-lucide="grip-vertical" style="width:16px;height:16px;"></i></span>' +
+      '<span style="width:26px;text-align:center;font-size:15px;font-weight:800;color:var(--muted);">' + (i + 1) + '</span>' +
+      '<span style="width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' + tm.tint + '"><i data-lucide="' + tm.icon + '" style="width:18px;height:18px;"></i></span>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<span style="font-size:15px;font-weight:700;">' + escapeHtml(label) + '</span>' +
+          '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-radius:999px;padding:3px 9px;color:#5f687a;background:rgba(16,24,38,0.06);">' + escapeHtml(sw) + '</span>' +
+          (on ? '' : '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-radius:999px;padding:3px 9px;color:#b45309;background:rgba(245,158,11,0.13);">Paused</span>') +
+        '</div>' +
+        '<div style="font-size:12.5px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px;">' + escapeHtml(prev || 'No template set') + '</div>' +
+        '<div style="margin-top:6px;">' + this._lastRunHtml(a) + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+        '<button onclick="PCA.move(' + i + ', -1)" aria-label="Move ' + escapeHtmlAttr(label) + ' up" title="Move up" ' + upDis + ' style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:' + upCur + ';display:flex;align-items:center;justify-content:center;"><i data-lucide="arrow-up" style="width:14px;height:14px;"></i></button>' +
+        '<button onclick="PCA.move(' + i + ', 1)" aria-label="Move ' + escapeHtmlAttr(label) + ' down" title="Move down" ' + dnDis + ' style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:' + dnCur + ';display:flex;align-items:center;justify-content:center;"><i data-lucide="arrow-down" style="width:14px;height:14px;"></i></button>' +
+        '<label class="pca-switch" title="' + (on ? 'Enabled — click to pause' : 'Paused — click to enable') + '">' +
+          '<input type="checkbox" ' + (on ? 'checked' : '') + ' aria-label="Enable ' + escapeHtmlAttr(label) + '" onchange="PCA.toggleEnabled(\'' + a.id + '\', this.checked)">' +
+          '<span class="pca-slider" style="' + tog + '"><span class="pca-knob" style="' + knob + '"></span></span>' +
+        '</label>' +
+        '<button onclick="PCA.openEditor(\'' + a.id + '\')" title="Edit" aria-label="Edit ' + escapeHtmlAttr(label) + '" style="width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;"><i data-lucide="pencil" style="width:15px;height:15px;"></i></button>' +
+        '<button onclick="PCA.confirmDelete(\'' + a.id + '\')" title="Delete" aria-label="Delete ' + escapeHtmlAttr(label) + '" style="width:32px;height:32px;border-radius:9px;border:1px solid rgba(239,68,68,0.25);background:var(--surface);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>' +
+      '</div>' +
+    '</div>';
+  },
+
+  // ── Reorder: HTML5 drag + up/down fallback. Optimistic render, CAS persist. ──
+  move(i, dir) {
+    const ids = this.actions.map(a => a.id);
+    const j = i + dir;
+    if (j < 0 || j >= ids.length) return;
+    const tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+    this.persistOrder(ids);
+  },
+
+  bindDnd() {
+    const list = document.getElementById('pca-list');
+    if (!list || list.dataset.dndBound === '1') return;
+    list.dataset.dndBound = '1';
+    list.addEventListener('dragstart', (e) => {
+      const card = e.target.closest ? e.target.closest('.pca-card') : null;
+      if (!card) return;
+      this.dragId = card.dataset.id;
+      try { e.dataTransfer.setData('text/plain', this.dragId); } catch (err) {}
+      e.dataTransfer.effectAllowed = 'move';
+      card.style.opacity = '0.45';
+    });
+    list.addEventListener('dragend', () => {
+      this.dragId = null;
+      document.querySelectorAll('.pca-card').forEach(c => { c.style.opacity = ''; c.style.outline = ''; });
+    });
+    list.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const over = e.target.closest ? e.target.closest('.pca-card') : null;
+      document.querySelectorAll('.pca-card').forEach(c => { c.style.outline = ''; });
+      if (over) over.style.outline = '2px dashed #7C3AED';
+    });
+    list.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const over = e.target.closest ? e.target.closest('.pca-card') : null;
+      document.querySelectorAll('.pca-card').forEach(c => { c.style.outline = ''; });
+      if (!over || !this.dragId || over.dataset.id === this.dragId) return;
+      const ids = this.actions.map(a => a.id);
+      const from = ids.indexOf(this.dragId);
+      const to = ids.indexOf(over.dataset.id);
+      if (from === -1 || to === -1) return;
+      ids.splice(to, 0, ids.splice(from, 1)[0]);
+      this.persistOrder(ids);
+    });
+  },
+
+  async persistOrder(orderedIds) {
+    if (this.actions.map(a => a.id).join(',') === orderedIds.join(',')) return;
+    const before = this.actions; // server-known order for snap-back
+    const byId = {};
+    this.actions.forEach(a => { byId[a.id] = a; });
+    const optimistic = orderedIds.map(id => byId[id]).filter(Boolean);
+    this.render(optimistic);
+    try {
+      const res = await fetch(API + '/portal/post-call-actions/reorder', {
+        method: 'PATCH',
+        headers: this._headers(),
+        body: JSON.stringify({ revision: this.revision, ordered_ids: orderedIds }),
+      });
+      if (res.status === 409) { this._conflict(res); return; }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      this.revision = data.revision;
+      this.render(data.actions || []);
+      showToast('Order saved', 'success');
+    } catch (e) {
+      showToast('Could not save order — ' + ((e && e.message) || 'try again'), 'error');
+      this.render(before); // snap back to the last server-known order
+    }
+  },
+
+  async toggleEnabled(id, enabled) {
+    try {
+      const res = await fetch(API + '/portal/post-call-actions/' + id, {
+        method: 'PATCH',
+        headers: this._headers(),
+        body: JSON.stringify({ revision: this.revision, enabled: !!enabled }),
+      });
+      if (res.status === 409) { this._conflict(res); return; }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      this.revision = data.revision;
+      this.render(data.actions || []);
+      showToast(enabled ? 'Action enabled' : 'Action paused', 'success');
+    } catch (e) {
+      showToast('Could not update — ' + ((e && e.message) || 'try again'), 'error');
+      this.render(this.actions); // snap the checkbox back
+    }
+  },
+
+  // ── Delete with confirm dialog ────────────────────────────────────────────
+  confirmDelete(id) {
+    const a = this.actions.find(x => x.id === id);
+    const entry = this.catalog.find(c => c.type === (a && a.type)) || {};
+    let overlay = document.getElementById('pca-confirm-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pca-confirm-overlay';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;">' +
+      '<div style="background:var(--surface);border-radius:16px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);padding:24px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+          '<div style="width:38px;height:38px;border-radius:11px;background:rgba(239,68,68,0.10);display:flex;align-items:center;justify-content:center;"><i data-lucide="trash-2" style="width:18px;height:18px;color:#ef4444;"></i></div>' +
+          '<span style="font-size:17px;font-weight:700;">Delete this action?</span>' +
+        '</div>' +
+        '<div style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:18px;">&ldquo;' + escapeHtml(entry.label || (a && a.type) || 'This action') + '&rdquo; will stop firing after calls. This cannot be undone.</div>' +
+        '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+          '<button onclick="document.getElementById(\'pca-confirm-overlay\').remove()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 18px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>' +
+          '<button onclick="PCA.doDelete(\'' + id + '\')" style="background:#ef4444;border:none;border-radius:10px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Delete</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    this._icons();
+  },
+
+  async doDelete(id) {
+    const ov = document.getElementById('pca-confirm-overlay');
+    if (ov) ov.remove();
+    try {
+      const res = await fetch(API + '/portal/post-call-actions/' + id, {
+        method: 'DELETE',
+        headers: this._headers(),
+        body: JSON.stringify({ revision: this.revision }),
+      });
+      if (res.status === 409) { this._conflict(res); return; }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      this.revision = data.revision;
+      this.render(data.actions || []);
+      showToast('Action deleted', 'success');
+    } catch (e) {
+      showToast('Could not delete — ' + ((e && e.message) || 'try again'), 'error');
+    }
+  },
+
+  // ── Add flow: type picker from the GET catalog, then the modal editor ──────
+  openTypePicker() {
+    if (this.actions.length >= this.max) {
+      showToast('Post-call action limit reached (' + this.max + '). Delete an action to add another.', 'error');
+      return;
+    }
+    let overlay = document.getElementById('pca-picker-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pca-picker-overlay';
+      document.body.appendChild(overlay);
+    }
+    const cards = this.catalog.map(c => {
+      const tm = this.typeMeta(c.type);
+      return '<button onclick="PCA.openEditor(null, \'' + c.type + '\')" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;width:100%;">' +
+        '<span style="width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' + tm.tint + '"><i data-lucide="' + tm.icon + '" style="width:18px;height:18px;"></i></span>' +
+        '<span style="min-width:0;flex:1;">' +
+          '<span style="display:block;font-size:15px;font-weight:700;color:var(--text);">' + escapeHtml(c.label || c.type) + '</span>' +
+          '<span style="display:block;font-size:13px;color:var(--muted);margin-top:3px;line-height:1.55;">' + escapeHtml(c.description || '') + '</span>' +
+        '</span>' +
+        '<i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--faint);flex-shrink:0;margin-top:10px;"></i>' +
+      '</button>';
+    }).join('');
+    overlay.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;">' +
+      '<div style="background:var(--surface);border-radius:16px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i data-lucide="zap" style="width:18px;height:18px;color:#3B82F6;"></i></div>' +
+            '<div style="font-size:17px;font-weight:700;">Add an action</div>' +
+          '</div>' +
+          '<button onclick="document.getElementById(\'pca-picker-overlay\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;"><i data-lucide="x" style="width:20px;height:20px;"></i></button>' +
+        '</div>' +
+        '<div style="padding:18px 24px 22px;display:flex;flex-direction:column;gap:10px;">' + cards + '</div>' +
+      '</div>' +
+    '</div>';
+    this._icons();
+  },
+
+  openEditor(id, type) {
+    const pick = document.getElementById('pca-picker-overlay');
+    if (pick) pick.remove();
+    const existing = id ? this.actions.find(x => x.id === id) : null;
+    const typeKey = existing ? existing.type : type;
+    if (typeKey) this.pendingType = typeKey;
+    const entry = this.catalog.find(c => c.type === this.pendingType);
+    if (!entry) { showToast('Unknown action type', 'error'); return; }
+    const params = (existing && existing.params) || {};
+    const template = params.template || entry.starter_template || '';
+    const sendWhen = params.send_when || 'every_call';
+    const enabled = existing ? existing.enabled !== false : true;
+    const tm = this.typeMeta(entry.type);
+
+    const schema = entry.param_schema && entry.param_schema.template;
+    // Chips: prefer an array merge_fields if the API grows one; else intersect
+    // the known token set with the documented string; else fall back to the
+    // tokens the template actually uses. All values API/template-derived.
+    const KNOWN_TOKENS = ['first_name', 'last_name', 'full_name', 'name', 'phone', 'email', 'service',
+      'appointment_datetime', 'appointment_date', 'appointment_time', 'business_name', 'agent_name',
+      'business_phone', 'booking_url'];
+    let mergeFields = (schema && Array.isArray(schema.merge_fields)) ? schema.merge_fields : [];
+    if (!mergeFields.length && schema && typeof schema.merge_fields === 'string') {
+      mergeFields = KNOWN_TOKENS.filter(t => schema.merge_fields.indexOf(t) !== -1);
+    }
+    if (!mergeFields.length && typeof template === 'string') {
+      mergeFields = KNOWN_TOKENS.filter(t => template.indexOf('{{' + t + '}}') !== -1);
+    }
+    const chips = mergeFields.map(f => {
+      const tok = typeof f === 'string' ? f : f.token;
+      return '<button type="button" class="pca-merge-chip" onclick="PCA.insertMerge(\'' + tok + '\')" ' +
+        'title="Insert {{' + tok + '}}" ' +
+        'style="border:1px solid var(--border);background:var(--surface2);border-radius:8px;padding:4px 9px;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;">{{' + escapeHtmlAttr(tok) + '}}</button>';
+    }).join(' ');
+
+    const sendWhenOptions = Object.keys(this.SEND_WHEN_LABELS).map(v =>
+      '<option value="' + v + '"' + (v === sendWhen ? ' selected' : '') + '>' + this.SEND_WHEN_LABELS[v] + '</option>'
+    ).join('');
+
+    let overlay = document.getElementById('pca-editor-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pca-editor-overlay';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;">' +
+      '<div style="background:var(--surface);border-radius:16px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;' + tm.tint + '"><i data-lucide="' + tm.icon + '" style="width:18px;height:18px;"></i></div>' +
+            '<div>' +
+              '<div style="font-size:17px;font-weight:700;">' + (existing ? 'Edit action' : 'New action') + '</div>' +
+              '<div style="font-size:12.5px;color:var(--muted);margin-top:1px;">' + escapeHtml(entry.label || '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<button onclick="document.getElementById(\'pca-editor-overlay\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;"><i data-lucide="x" style="width:20px;height:20px;"></i></button>' +
+        '</div>' +
+        '<div style="padding:18px 24px 22px;display:flex;flex-direction:column;gap:14px;">' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            '<label style="font-size:11.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);">Template body *</label>' +
+            '<textarea id="pca-template" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;resize:vertical;min-height:92px;font-family:inherit;">' + escapeHtml(template) + '</textarea>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' + chips + '</div>' +
+            '<span style="font-size:11.5px;color:var(--muted);line-height:1.5;">Unknown values are left out cleanly rather than showing a placeholder. &ldquo;Reply STOP to unsubscribe&rdquo; is auto-appended.</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
+            '<div style="display:flex;flex-direction:column;gap:6px;">' +
+              '<label style="font-size:11.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);">Send when</label>' +
+              '<select id="pca-send-when" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;">' + sendWhenOptions + '</select>' +
+              '<span style="font-size:11.5px;color:var(--muted);">When this action is allowed to fire.</span>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:6px;">' +
+              '<label style="font-size:11.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);">Enabled</label>' +
+              '<label class="pca-switch" style="margin-top:8px;">' +
+                '<input type="checkbox" id="pca-enabled"' + (enabled ? ' checked' : '') + '>' +
+                '<span class="pca-slider" style="' + (enabled ? 'background:#22c55e;border-color:#22c55e' : 'background:var(--faint);border-color:var(--faint)') + '"><span class="pca-knob" style="' + (enabled ? 'left:20px;' : 'left:3px;') + '"></span></span>' +
+              '</label>' +
+              '<span style="font-size:11.5px;color:var(--muted);">Paused actions keep their order but never fire.</span>' +
+            '</div>' +
+          '</div>' +
+          '<div id="pca-editor-err" style="display:none;font-size:12.5px;color:#ef4444;"></div>' +
+          '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">' +
+            '<button onclick="document.getElementById(\'pca-editor-overlay\').remove()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 18px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>' +
+            '<button id="pca-save-btn" onclick="PCA.save(\'' + (existing ? existing.id : '') + '\')" style="background:#3B82F6;border:none;border-radius:10px;padding:11px 20px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(59,130,246,0.22);">' + (existing ? 'Save changes' : 'Create action') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    const sw = overlay.querySelector('#pca-enabled');
+    if (sw) sw.addEventListener('change', () => {
+      const slider = sw.parentElement.querySelector('.pca-slider');
+      if (slider) {
+        slider.style.background = sw.checked ? '#22c55e' : 'var(--faint)';
+        slider.style.borderColor = sw.checked ? '#22c55e' : 'var(--faint)';
+        const knob = slider.querySelector('.pca-knob');
+        if (knob) knob.style.left = sw.checked ? '20px' : '3px';
+      }
+    });
+    this._icons();
+  },
+
+  insertMerge(token) {
+    const ta = document.getElementById('pca-template');
+    if (!ta) return;
+    const ins = '{{' + token + '}}';
+    const st = ta.selectionStart || 0;
+    const en = ta.selectionEnd || 0;
+    ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en);
+    const pos = st + ins.length;
+    ta.focus();
+    try { ta.setSelectionRange(pos, pos); } catch (e) {}
+  },
+
+  // ── Save: POST (create) / PATCH (edit), CAS on revision. 409 → conflict. ────
+  async save(id) {
+    const tEl = document.getElementById('pca-template');
+    const sEl = document.getElementById('pca-send-when');
+    const eEl = document.getElementById('pca-enabled');
+    const template = tEl ? tEl.value : '';
+    const sendWhen = sEl ? sEl.value : 'every_call';
+    const enabled = !!(eEl && eEl.checked);
+    const errBox = document.getElementById('pca-editor-err');
+    if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+    const url = API + '/portal/post-call-actions' + (id ? '/' + id : '');
+    const body = id
+      ? { revision: this.revision, params: { template: template, send_when: sendWhen }, enabled: enabled }
+      : { revision: this.revision, type: this.pendingType, params: { template: template, send_when: sendWhen }, enabled: enabled };
+    const btn = document.getElementById('pca-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
+    try {
+      const res = await fetch(url, {
+        method: id ? 'PATCH' : 'POST',
+        headers: this._headers(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        const ov = document.getElementById('pca-editor-overlay');
+        if (ov) ov.remove();
+        this._conflict(res);
+        return;
+      }
+      if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+      this.revision = data.revision;
+      const ov = document.getElementById('pca-editor-overlay');
+      if (ov) ov.remove();
+      this.render(data.actions || []);
+      showToast(id ? 'Action saved' : 'Action added', 'success');
+    } catch (e) {
+      if (errBox) { errBox.textContent = String((e && e.message) || e); errBox.style.display = 'block'; }
+      if (btn) { btn.disabled = false; btn.textContent = id ? 'Save changes' : 'Create action'; }
+    }
+  },
+
+  // ── launchApp hook: one cheap GET, then reveal/hide the nav entry ──────────
+  async init() {
+    if (!portalToken) return;
+    try {
+      const res = await fetch(API + '/portal/post-call-actions', { headers: { 'X-Portal-Token': portalToken } });
+      if (res.status === 401 || !res.ok) return;
+      const data = await res.json();
+      this.catalog = data.catalog || [];
+      this.max = data.max || 10;
+      this.revision = data.revision || 0;
+      const show = data.feature_flag_enabled === true && (!data.entitlement || data.entitlement.available === true);
+      const nav = document.getElementById('nav-actions');
+      if (nav) nav.style.display = show ? '' : 'none';
+    } catch (e) { /* nav stays hidden when the probe fails */ }
+  },
+};
+
+function initPcaPage() { PCA.init(); }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, type='success') {
