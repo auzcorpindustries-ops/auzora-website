@@ -753,11 +753,32 @@
     // 2026-08-31). KEEP IN SYNC with atlas-ai src/config/tiers.js — paymentLinkUrl
     // values are the PROD Stripe Payment Links from ticket B.
     //
-    // linksEnabled: Stripe Payment Links ship INACTIVE (Auzi, 2026-08-31) —
-    // tier rows render disabled "Coming Soon" until links go live. Flipping
-    // live = set linksEnabled: true (+ the matching Stripe activation in
-    // ticket B). No structural UI change needed.
+    // ── Stripe TEST mode on the develop deploy (BILL-1) ─────────────────────
+    // The develop Netlify deploy (develop--auzora.netlify.app, branch deploys)
+    // uses the ACTIVE TEST-mode payment links (buy.stripe.com/test_...) so
+    // billing E2E can purchase without touching live objects; production keeps
+    // live links. Selection is a build-time constant injected via Netlify
+    // env:  netlify.toml [context.develop.environment] sets
+    //   STRIPE_LINK_MODE = "test"
+    // and the site-wide [build.environment] default is "live". No other
+    // context sets it, so production branches keep live links.
+    // Test URLs are the ACTIVE links from atlas-ai scripts/stripe-links-test.json
+    // (generated 2026-09-01) — verified in sync by test/stripe-links.test.js.
+    const AZ_STRIPE_LINK_MODE = 'STRIPE_LINK_MODE' in window
+      ? String(window.STRIPE_LINK_MODE)
+      : 'live';
+    const AZ_STRIPE_TEST_LINKS = {
+      starter: 'https://buy.stripe.com/test_cNi3cn2S486CdjqbWw1ZS08',
+      pro_basic: 'https://buy.stripe.com/test_fZueV5csE72y4MU5y81ZS02',
+      pro_standard: 'https://buy.stripe.com/test_00w3cnakwfz45QY5y81ZS09',
+      pro_enterprise: 'https://buy.stripe.com/test_7sY3cn3W8aeK1AI0dO1ZS0a',
+      premium_basic: 'https://buy.stripe.com/test_7sYdR164g2MienugcM1ZS05',
+      premium_standard: 'https://buy.stripe.com/test_fZufZ950cgD80wE9Oo1ZS0b',
+      premium_enterprise: 'https://buy.stripe.com/test_5kQdR150cev0djq0dO1ZS0c',
+    };
     const PRICING_TIERS = {
+      // linksEnabled stays FALSE until Auzi's deliberate activation flip —
+      // BILL-1 only swaps which URL each row carries on the develop deploy.
       linksEnabled: false,
       plans: {
         starter: [
@@ -775,6 +796,16 @@
         ],
       },
     };
+    // BILL-1: on the develop deploy, swap every link for its TEST-mode URL
+    // (must run before renderTierPanel reads paymentLinkUrl).
+    if (AZ_STRIPE_LINK_MODE === 'test') {
+      for (const plan of Object.keys(PRICING_TIERS.plans)) {
+        PRICING_TIERS.plans[plan] = PRICING_TIERS.plans[plan].map(tier => ({
+          ...tier,
+          paymentLinkUrl: AZ_STRIPE_TEST_LINKS[tier.key] || tier.paymentLinkUrl,
+        }));
+      }
+    }
 
     // Render tier rows into a panel: real <a> links carrying the real href —
     // while linksEnabled is false they render in the "Coming Soon" disabled
