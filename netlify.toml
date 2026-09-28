@@ -1,0 +1,26 @@
+# Netlify configuration — auzora-website
+#
+# ── Stripe link mode (BILL-1) ────────────────────────────────────────────────
+# STRIPE_LINK_MODE is injected into index.html at build time as
+# window.STRIPE_LINK_MODE ("test" | "live"):
+#   - develop context (develop--auzora.netlify.app + PR previews): TEST-mode
+#     payment links (buy.stripe.com/test_...) for billing E2E.
+#   - every other context (production deploys from main): live links.
+# The site-wide default is "live"; only the develop context overrides it, so
+# production can never pick up test links by accident.
+[build]
+  publish = "."
+  command = "echo 'static site — no build step'"
+
+[build.environment]
+  STRIPE_LINK_MODE = "live"
+
+# BILL-1: injects window.STRIPE_LINK_MODE into index.html at build time.
+[[plugins]]
+  package = "./netlify/plugins/stripe-link-mode"
+
+[context.develop.environment]
+  STRIPE_LINK_MODE = "test"
+
+[context.deploy-preview.environment]
+  STRIPE_LINK_MODE = "test"
