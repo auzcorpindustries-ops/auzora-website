@@ -125,7 +125,32 @@ describe('netlify plugin stripe-link-mode', () => {
     const saved = process.env.STRIPE_LINK_MODE;
     process.env.STRIPE_LINK_MODE = mode;
     try {
-      pluginFactory({ constants: { PUBLISH_DIR: dir } }).onPreBuild();
+      // Real @netlify/build contract: the plugin factory receives NO
+      // constants — only the event handler does (plus netlifyConfig).
+      pluginFactory().onPreBuild({
+        constants: { PUBLISH_DIR: dir },
+        netlifyConfig: { build: { publish: dir } },
+      });
+    } finally {
+      if (saved === undefined) delete process.env.STRIPE_LINK_MODE;
+      else process.env.STRIPE_LINK_MODE = saved;
+    }
+    return fs.readFileSync(file, 'utf8');
+  }
+
+  // Simulates a Netlify build where the handler gets no usable constants —
+  // the publish dir must resolve from netlifyConfig.build.publish instead.
+  function runPluginViaNetlifyConfigOnly(mode, initialHtml) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bill1-plugin-'));
+    const file = path.join(dir, 'index.html');
+    fs.writeFileSync(file, initialHtml ?? FIXTURE);
+    const saved = process.env.STRIPE_LINK_MODE;
+    process.env.STRIPE_LINK_MODE = mode;
+    try {
+      pluginFactory().onPreBuild({
+        constants: {},
+        netlifyConfig: { build: { publish: dir } },
+      });
     } finally {
       if (saved === undefined) delete process.env.STRIPE_LINK_MODE;
       else process.env.STRIPE_LINK_MODE = saved;
@@ -162,11 +187,27 @@ describe('netlify plugin stripe-link-mode', () => {
     process.env.STRIPE_LINK_MODE = 'test';
     try {
       expect(() =>
-        pluginFactory({ constants: { PUBLISH_DIR: dir } }).onPreBuild()
+        pluginFactory().onPreBuild({
+          constants: { PUBLISH_DIR: dir },
+          netlifyConfig: { build: { publish: dir } },
+        })
       ).not.toThrow();
     } finally {
       if (saved === undefined) delete process.env.STRIPE_LINK_MODE;
       else process.env.STRIPE_LINK_MODE = saved;
     }
+  });
+
+  // Regression for the 2026-09-28 deploy-preview failure (PRs #362/#363,
+  // build exit code 3): @netlify/build calls the factory WITHOUT constants,
+  // so reading constants.PUBLISH_DIR in the factory scope crashed the build.
+  test('factory takes no arguments — reading constants there must not be required (exit-3 regression)', () => {
+    expect(() => pluginFactory()).not.toThrow();
+    expect(() => pluginFactory({})).not.toThrow();
+  });
+
+  test('falls back to netlifyConfig.build.publish when constants has no PUBLISH_DIR', () => {
+    const out = runPluginViaNetlifyConfigOnly('test');
+    expect(out).toContain("window.STRIPE_LINK_MODE = 'test';");
   });
 });

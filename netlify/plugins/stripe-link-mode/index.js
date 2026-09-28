@@ -7,13 +7,21 @@
 //
 // Index.html reads `window.STRIPE_LINK_MODE` and swaps PRICING_TIERS links to
 // the ACTIVE test-mode payment links when it equals "test".
+//
+// Contract note: @netlify/build invokes the plugin factory with the plugin
+// input ({ inputs, netlifyConfig, ... }) but does NOT include `constants`
+// there — `constants` is only passed to the event handlers. Reading it in the
+// factory scope crashes the build ("Cannot read properties of undefined
+// (reading 'PUBLISH_DIR')", build exit code 3).
 const fs = require('fs');
 const path = require('path');
 
-module.exports = function ({ constants }) {
+module.exports = function () {
   return {
-    onPreBuild: () => {
-      const publishDir = constants.PUBLISH_DIR;
+    onPreBuild: ({ constants, netlifyConfig }) => {
+      const publishDir = (constants && constants.PUBLISH_DIR) ||
+        (netlifyConfig && netlifyConfig.build && netlifyConfig.build.publish) ||
+        process.cwd();
       const indexHtml = path.join(publishDir, 'index.html');
       const mode = (process.env.STRIPE_LINK_MODE || 'live').trim().toLowerCase();
       const safe = mode === 'test' ? 'test' : 'live';
@@ -27,7 +35,7 @@ module.exports = function ({ constants }) {
       const marker = 'window.STRIPE_LINK_MODE';
       if (html.includes(`${marker} = `)) {
         html = html.replace(
-          new RegExp(`${marker}\\s*=\\s*['"](?:test|live)['"];?`),
+          new RegExp(`${marker}\\s*=\\s*['\"](?:test|live)['\"];?`),
           `${marker} = '${safe}';`
         );
       } else {
