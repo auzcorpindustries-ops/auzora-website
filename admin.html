@@ -1377,19 +1377,54 @@ function renderPhonesTable() {
       ? `<div class="client-name">${n.assignedTo.business_name || n.assignedTo.businessName || '—'}</div>
          <div class="client-email">${n.assignedTo.client_id || ''}</div>`
       : '—';
+    // True delete (ticket zeus_1790795230078_8124ab73): offered ONLY for
+    // In Queue / Unassigned rows — never for an Assigned number.
+    const actions = n.assignedTo
+      ? '—'
+      : `<button class="btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deletePhoneNumber('${n.sid}', '${n.phoneNumber}')">Delete</button>`;
     return `<tr>
       <td style="font-family:monospace;font-size:13px">${n.phoneNumber}</td>
       <td>${status}</td>
       <td>${client}</td>
       <td style="color:var(--muted);font-size:12px">${n.friendlyName || '—'}</td>
       <td style="font-size:11px;color:var(--muted)">${n.sid}</td>
+      <td>${actions}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('phones-table-body').innerHTML = `
     <table><thead><tr>
-      <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th>
+      <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th><th>Actions</th>
     </tr></thead><tbody>${tbody}</tbody></table>`;
+}
+
+// TRUE DELETE (ticket zeus_1790795230078_8124ab73): permanently releases the
+// number from Twilio (irreversible — it returns to Twilio's available pool)
+// and purges its atlas-number-queue record. The button only renders on
+// In Queue / Unassigned rows; the API also refuses assigned numbers (409).
+async function deletePhoneNumber(sid, phoneNumber) {
+  const ok = confirm(
+    `Permanently delete ${phoneNumber}?\n\n` +
+    'This number will be permanently released from Twilio and cannot be recovered. ' +
+    'It returns to Twilio\u2019s available pool and its queue record is purged.'
+  );
+  if (!ok) return;
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/phone-numbers/${encodeURIComponent(sid)}`, {
+      method: 'DELETE',
+      headers: { 'x-api-key': apiKey },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.released) {
+      toast(`Released ${phoneNumber} from Twilio`, 'success');
+      loadPhones();
+    } else {
+      toast(data.error || `Delete failed (${res.status})`, 'error');
+    }
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
 }
 
 // TOAST
