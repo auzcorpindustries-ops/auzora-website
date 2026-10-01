@@ -161,9 +161,9 @@ describe('offeringDescLines', () => {
 describe('requiredEntitlement', () => {
   const LEGACY_GATE = { 3: 'aiFollowUpCalls', 4: 'bulkCallCampaigns' };
 
-  test('call offerings require aiFollowUpCalls (Pro)', () => {
+  test('call offerings require aiFollowUpCalls (plan-neutral gate)', () => {
     expect(WG.requiredEntitlement({ offeringKey: 'post_appointment-call', channel: 'call' }, LEGACY_GATE))
-      .toEqual({ feature: 'aiFollowUpCalls', tier: 'Pro' });
+      .toEqual({ feature: 'aiFollowUpCalls' });
   });
 
   test('sms offerings are included with every plan', () => {
@@ -173,9 +173,9 @@ describe('requiredEntitlement', () => {
 
   test('legacy templates keep their per-template gates', () => {
     expect(WG.requiredEntitlement({ templateId: 3 }, LEGACY_GATE))
-      .toEqual({ feature: 'aiFollowUpCalls', tier: 'Pro' });
+      .toEqual({ feature: 'aiFollowUpCalls' });
     expect(WG.requiredEntitlement({ templateId: 4 }, LEGACY_GATE))
-      .toEqual({ feature: 'bulkCallCampaigns', tier: 'Premium' });
+      .toEqual({ feature: 'bulkCallCampaigns' });
     expect(WG.requiredEntitlement({ templateId: 1 }, LEGACY_GATE)).toBeNull();
   });
 });
