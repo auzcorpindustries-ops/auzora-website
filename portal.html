@@ -354,6 +354,20 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-unlimited-badge { font-size: 11.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #059669; background: rgba(5,150,105,.1); border: 1px solid rgba(5,150,105,.3); border-radius: 99px; padding: 4px 12px; }
 .usage-unlimited-text { font-size: 13.5px; color: var(--muted); }
 .usage-unlimited-stats { font-size: 13px; color: var(--muted); }
+/* ── SMS add-on block (PRICING-6) ── */
+.usage-sms-addon { border-top: 1px dashed var(--border, rgba(16,24,38,.12)); margin-top: 12px; padding-top: 12px; }
+.usage-sms-addon-label { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.usage-sms-addon-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
+.usage-sms-addon-state { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+.usage-sms-addon-state strong { color: var(--text); }
+.usage-sms-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.usage-sms-row label { font-size: 12.5px; color: var(--muted); }
+.usage-sms-row .dash-select { flex: 1 1 170px; min-width: 0; }
+.usage-sms-btn { display: inline-block; background: linear-gradient(135deg,#3B82F6,#7C3AED); color: #fff; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 9px; text-decoration: none; white-space: nowrap; }
+.usage-sms-btn:hover { filter: brightness(1.07); }
+.usage-sms-btn.disabled { cursor: not-allowed; opacity: .6; }
+.usage-sms-coming { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #7C3AED; background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.25); border-radius: 99px; padding: 4px 12px; white-space: nowrap; }
+.usage-sms-err { font-size: 12.5px; color: var(--muted); margin: 4px 0 0; }
 @media (max-width: 640px) { .usage-card { padding: 16px; } }
 
 /* ── Dashboard D3 — KPI deltas + section shells ────────────────────────── */
@@ -1205,6 +1219,10 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
               </div>
             </div>
+            <!-- PRICING-6: SMS add-on state — "not included + options" for
+                 base plans (smsMessages 0), active-add-on line + usage bar when
+                 the ledger has one. Hidden for legacy unlimited plans. -->
+            <div class="usage-sms-addon" id="usage-sms-addon" style="display:none;"></div>
             <!-- D4: 6-month minutes+SMS sparkline from summary usage_trend -->
             <div class="dash-usage-spark" id="dash-usage-spark-slot"></div>
           </div>
@@ -3636,6 +3654,12 @@ async function fetchEntitlements() {
     sessionStorage.setItem('atlas_entitlements', JSON.stringify(portalEntitlements));
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     renderUsageCard(data); // pricing ticket F — usage card lives on the same payload
+    renderUsageSmsAddon(data); // PRICING-6 — SMS add-on state lives on the same payload
+    // PRICING-6: the card's SMS block shows add-on options with per-client
+    // tagged purchase URLs (GET /portal/billing/addons, PRICING-3). Catalog
+    // fetch rides the entitlements refresh; failures are non-fatal (the card
+    // already rendered from the entitlements payload).
+    loadSmsAddons();
     applyTierVisibility();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
     // Check the grid itself, not just currentPortalVoiceId — the grid can be
@@ -3668,6 +3692,10 @@ function showUsageCardUnavailable() {
   if (unlimited) unlimited.style.display = 'none';
   const bars = document.getElementById('usage-bars');
   if (bars) bars.style.display = 'none';
+  // PRICING-6: the add-on block is stateful (says "not included" or shows an
+  // active add-on) — never render it from a stale guess in the degraded state.
+  const smsAddon = document.getElementById('usage-sms-addon');
+  if (smsAddon) { smsAddon.style.display = 'none'; smsAddon.innerHTML = ''; }
   const gauge = document.getElementById('dash-gauge-slot');
   if (gauge) {
     gauge.innerHTML = '<div class="dash-slot-empty"><i data-lucide="gauge"></i>' +
@@ -3759,11 +3787,161 @@ function renderUsageCard(entitlementsPayload) {
     if (Number.isFinite(limit) && limit > 0) {
       const limitLabel = (r.pct > 100) ? 'over cap' : 'cap';
       counts.textContent = `${used} / ${limit.toLocaleString()} (${Math.round(r.pct)}% — ${limitLabel})`;
+    } else if (limit === 0) {
+      // PRICING-2 base tiers include no SMS (cap 0, fail-closed) — the
+      // PRICING-6 add-on block below carries the "not included" story and the
+      // purchase CTA; the bar must not print a broken "cap unavailable".
+      counts.textContent = `${used} used · not included`;
     } else {
       counts.textContent = `${used} used · cap unavailable`;
     }
   });
   if (anyOver) card.classList.add('over');
+}
+
+// ── SMS ADD-ON STATE (PRICING-6) ─────────────────────────────────────────────
+// The Plan & Usage card's SMS block mirrors the Q4 model on the client record:
+//   - legacy unlimited plans (usage.unlimited) → block hidden entirely
+//     (grandfathered "Unlimited voice & SMS" state, PRICING-5 gating).
+//   - active add-on (payload.sms_addon) → "SMS add-on: N messages/mo" plus a
+//     usage bar against the effective cap (usage.limits.smsMessages, which the
+//     webhook raised via usage_limits_override at attach time).
+//   - base plan, no add-on (limits.smsMessages === 0) → "SMS not included —
+//     add SMS" with the 3 add-on options; the purchase CTA carries the
+//     per-client tagged URL from GET /portal/billing/addons (PRICING-3).
+//     A SKU without a provisioned link renders the PRICING-4 "Coming Soon"
+//     disabled pattern — never a dead URL.
+// Options state lives on this module-level cache: loadSmsAddons() fills it and
+// re-renders, so the block can render synchronously from the entitlements
+// payload and upgrade to interactive options when the catalog lands.
+let smsAddonOptions = null;
+
+function renderUsageSmsAddon(entitlementsPayload) {
+  const box = document.getElementById('usage-sms-addon');
+  if (!box) return;
+  const usage = entitlementsPayload && entitlementsPayload.usage;
+  if (!usage) { box.style.display = 'none'; return; }
+
+  // Grandfathered unlimited plans keep the PRICING-5 "Unlimited voice & SMS"
+  // card state exactly as-is — the add-on block adds nothing there.
+  if (usage.unlimited) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const smsCap = Number(usage.limits ? usage.limits.smsMessages : 0);
+  const smsAddOn = entitlementsPayload.sms_addon || null;
+  const used = Number(usage.smsMessages || 0);
+
+  // Active add-on: cap + usage bar (same warn/over thresholds as the bars).
+  if (smsAddOn || smsCap > 0) {
+    const pct = smsCap > 0 ? Math.round((used / smsCap) * 100) : 0;
+    const fillClass = pct > 100 ? 'over' : (pct >= 80 ? 'warn' : '');
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div class="usage-sms-addon-label">SMS <span class="usage-row-counts">' +
+        `${used.toLocaleString()} / ${smsCap.toLocaleString()} messages` +
+      '</span></div>' +
+      '<div class="usage-bar" role="progressbar" aria-valuenow="' + Math.min(100, Math.max(0, pct)) + '" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage">' +
+        `<div class="usage-bar-fill ${fillClass}" style="width:${Math.min(100, Math.max(0, pct))}%"></div>` +
+      '</div>' +
+      `<div class="usage-sms-addon-state">SMS add-on: <strong>${Number(smsCap).toLocaleString()} messages/mo</strong> — included via your add-on.</div>` +
+      '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
+    return;
+  }
+
+  // Base plan, no add-on: "not included" + the options row. Rendered twice —
+  // immediately from the cached catalog (if any) and again when
+  // loadSmsAddons() resolves, so the CTA upgrades from disabled to live
+  // without a full entitlements refresh.
+  box.style.display = 'block';
+  box.innerHTML =
+    '<div class="usage-sms-addon-label">SMS</div>' +
+    '<div class="usage-sms-addon-sub">SMS is not included in your plan — add it as a monthly add-on. It stacks on your plan and renews monthly.</div>' +
+    '<div class="usage-sms-row">' +
+      '<label for="usage-sms-select">Messages per month</label>' +
+      '<select id="usage-sms-select" class="dash-select" aria-label="SMS add-on volume">' +
+        '<option value="">Loading…</option>' +
+      '</select>' +
+      '<a id="usage-sms-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true">Add SMS</a>' +
+      '<span id="usage-sms-coming" class="usage-sms-coming" hidden>Coming Soon</span>' +
+    '</div>' +
+    '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
+  if (smsAddonOptions) renderSmsAddonOptions(smsAddonOptions);
+}
+
+// Populate the options row from GET /portal/billing/addons (PRICING-3): one
+// dash-select option per SKU plus the tagged purchase URL on the CTA. Same
+// disabled-CTA doctrine as the PRICING-4 landing select: no provisioned link
+// → "Coming Soon" + click prevented, never a dead URL.
+async function loadSmsAddons() {
+  const box = document.getElementById('usage-sms-addon');
+  if (!box || box.style.display === 'none') return; // unlimited / degraded state: nothing to fill
+  const errEl = document.getElementById('usage-sms-addon-err');
+  try {
+    const res = await fetch(`${API}/portal/billing/addons`, {
+      headers: { 'X-Portal-Token': portalToken }
+    });
+    if (!res.ok) throw new Error(`addons ${res.status}`);
+    const data = await res.json();
+    smsAddonOptions = data || {};
+    renderSmsAddonOptions(smsAddonOptions);
+  } catch (e) {
+    console.error('[Auzora] SMS add-on catalog error:', e.message);
+    // Keep the block honest: the select keeps its Loading state replaced by
+    // an explicit message — no fake options, no clickable dead CTA.
+    const select = document.getElementById('usage-sms-select');
+    if (select) {
+      select.innerHTML = '<option value="">Unavailable</option>';
+      select.disabled = true;
+    }
+    const btn = document.getElementById('usage-sms-btn');
+    if (btn) {
+      btn.classList.add('disabled');
+      btn.setAttribute('aria-disabled', 'true');
+      btn.removeAttribute('href');
+    }
+    if (errEl) {
+      errEl.textContent = 'Add-on options unavailable right now.';
+      errEl.style.display = 'block';
+    }
+  }
+}
+
+function renderSmsAddonOptions(data) {
+  const select = document.getElementById('usage-sms-select');
+  const btn = document.getElementById('usage-sms-btn');
+  const coming = document.getElementById('usage-sms-coming');
+  if (!select || !btn) return;
+  const addons = Array.isArray(data.addons) ? data.addons : [];
+  if (!addons.length) {
+    select.innerHTML = '<option value="">Unavailable</option>';
+    select.disabled = true;
+    return;
+  }
+  select.innerHTML = addons.map(a =>
+    `<option value="${a.sku}"${a.current ? ' selected' : ''}>` +
+      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
+    '</option>'
+  ).join('');
+  const applySku = () => {
+    const sku = select.value;
+    const addon = addons.find(a => a.sku === sku) || null;
+    if (addon && addon.purchase_url) {
+      btn.href = addon.purchase_url;
+      btn.removeAttribute('aria-disabled');
+      btn.classList.remove('disabled');
+      btn.target = '_blank';
+      btn.rel = 'noopener';
+      if (coming) coming.hidden = true;
+    } else {
+      // No provisioned link for this SKU (prod pre-activation): PRICING-4
+      // "Coming Soon" disabled pattern — never a dead URL.
+      btn.removeAttribute('href');
+      btn.setAttribute('aria-disabled', 'true');
+      btn.classList.add('disabled');
+      if (coming) coming.hidden = false;
+    }
+  };
+  select.addEventListener('change', applySku);
+  applySku();
 }
 
 // Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
