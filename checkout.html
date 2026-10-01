@@ -45,7 +45,7 @@
       var params = new URLSearchParams(window.location.search);
       var plan = (params.get('plan') || '').toLowerCase();
       var target = '/index.html#pricing';
-      if (['starter', 'pro', 'premium'].indexOf(plan) !== -1) {
+      if (['basic', 'standard', 'enterprise'].indexOf(plan) !== -1) {
         target = '/index.html#pricing?plan=' + plan;
       }
       var link = document.getElementById('redirectLink');
