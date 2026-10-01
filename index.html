@@ -621,7 +621,7 @@
           </div>
           <div class="az-pricing-setup">2,500 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
-          <a id="az-plan-cta-basic" class="az-pricing-btn starter" data-plan="basic" href="https://buy.stripe.com/test_8x2eV50JWgD80wE7Gg1ZS0d" target="_blank" rel="noopener">Get started with Basic</a>
+          <a id="az-plan-cta-basic" class="az-pricing-btn starter" data-plan="basic" href="https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c" target="_blank" rel="noopener">Get started with Basic</a>
         </div>
         <div class="az-pricing-card starter">
           <div class="az-pricing-tier">Standard</div>
@@ -630,7 +630,7 @@
           </div>
           <div class="az-pricing-setup">5,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
-          <a id="az-plan-cta-standard" class="az-pricing-btn starter" data-plan="standard" href="https://buy.stripe.com/test_9B66ozakwfz44MU3q01ZS0e" target="_blank" rel="noopener">Get started with Standard</a>
+          <a id="az-plan-cta-standard" class="az-pricing-btn starter" data-plan="standard" href="https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d" target="_blank" rel="noopener">Get started with Standard</a>
         </div>
         <div class="az-pricing-card starter">
           <div class="az-pricing-tier">Enterprise</div>
@@ -639,7 +639,7 @@
           </div>
           <div class="az-pricing-setup">10,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
-          <a id="az-plan-cta-enterprise" class="az-pricing-btn starter" data-plan="enterprise" href="https://buy.stripe.com/test_14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Get started with Enterprise</a>
+          <a id="az-plan-cta-enterprise" class="az-pricing-btn starter" data-plan="enterprise" href="https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e" target="_blank" rel="noopener">Get started with Enterprise</a>
         </div>
       </div>
       <div class="az-sms-addon">
@@ -652,7 +652,7 @@
             <option value="sms_5000">5,000 messages — $50/mo</option>
             <option value="sms_10000">10,000 messages — $100/mo</option>
           </select>
-          <a id="az-sms-btn" class="az-sms-btn" data-sku="sms_2500" href="https://buy.stripe.com/test_aFadR1boA5Yu93a4u41ZS0g" target="_blank" rel="noopener">Add SMS</a>
+          <a id="az-sms-btn" class="az-sms-btn" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
           <span id="az-sms-coming" class="az-sms-coming" hidden>Coming Soon</span>
         </div>
       </div>
@@ -739,7 +739,10 @@
     // 2026-09-30). KEEP IN SYNC with atlas-ai src/config/tiers.js — all plans
     // carry the full feature suite and differ ONLY by included voice minutes;
     // SMS is not part of any plan (it is the add-on below). paymentLinkUrl
-    // values are the Stripe Payment Links from ticket PRICING-1.
+    // values are the PROD Stripe Payment Links provisioned by PRICING-7
+    // (scripts/stripe-links-prod.json, 2026-10-01) — INACTIVE in Stripe
+    // until Auzi's activation flip, and inert here while linksEnabled is
+    // false (the gate below).
     //
     // ── Stripe TEST mode on the develop deploy (BILL-1) ─────────────────────
     // The develop Netlify deploy (develop--auzora.netlify.app, branch deploys)
@@ -768,15 +771,15 @@
       // linksEnabled stays FALSE until Auzi's deliberate activation flip —
       // BILL-1 only swaps which URL each link carries on the develop deploy.
       linksEnabled: false,
-      basic: { name: 'Basic', priceLabel: '$299', minutes: '2,500 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/test_8x2eV50JWgD80wE7Gg1ZS0d' },
-      standard: { name: 'Standard', priceLabel: '$499', minutes: '5,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/test_9B66ozakwfz44MU3q01ZS0e' },
-      enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/test_14A14fdwI86Cenuf8I1ZS0f' },
+      basic: { name: 'Basic', priceLabel: '$299', minutes: '2,500 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c' },
+      standard: { name: 'Standard', priceLabel: '$499', minutes: '5,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d' },
+      enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e' },
     };
     const SMS_ADDONS = {
       linksEnabled: false,
-      sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/test_aFadR1boA5Yu93a4u41ZS0g' },
-      sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/test_bJe8wH8cogD8djq8Kk1ZS0h' },
-      sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/test_28EcMXakwfz45QY8Kk1ZS0i' },
+      sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f' },
+      sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/aFadR1boA5Yu93a4u41ZS0g' },
+      sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/bJe8wH8cogD8djq8Kk1ZS0h' },
     };
     // BILL-1: on the develop deploy, swap every link (plans AND SMS add-ons)
     // for its TEST-mode URL.
