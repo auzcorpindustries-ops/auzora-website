@@ -2254,13 +2254,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <span id="ob-call-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
       </div>
 
-      <!-- Call a Lead — Locked (Premium only) -->
+      <!-- Call a Lead — Locked (clients without the manualOutboundCalls entitlement) -->
       <div class="card" id="quick-call-locked" style="display:none;margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="text-align:center;padding:32px 16px;">
-          <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px;">Manual outbound calls are a Premium feature</div>
-          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Upgrade to Premium to have your AI agent dial leads directly from the portal — including booking appointments during the call.</div>
-          <a href="mailto:ahoward@auzora.io?subject=Upgrade%20to%20Premium" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:14px;font-weight:600;padding:10px 24px;border-radius:10px;text-decoration:none;">Upgrade to Premium</a>
+          <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px;">Manual outbound calls aren't included in your plan</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Upgrade to have your AI agent dial leads directly from the portal — including booking appointments during the call.</div>
+          <a href="mailto:ahoward@auzora.io?subject=Upgrade%20inquiry" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:14px;font-weight:600;padding:10px 24px;border-radius:10px;text-decoration:none;">Ask about upgrading</a>
         </div>
       </div>
     </div>
@@ -3153,7 +3153,7 @@ async function loadVoices() {
   }
 }
 
-// Check if a voice is locked for the current tier (Starter = default only)
+// Check if a voice is locked for the current tier (legacy Starter = default only)
 function isVoiceLocked(voiceId) {
   // DISABLED (ELE-4) — ElevenLabs retired; OpenAI voices are included with every plan.
   const voice = VOICES.find(v => v.id === voiceId);
@@ -3683,7 +3683,7 @@ function showUsageCardUnavailable() {
 // (the canonical usage endpoint). Usage shape comes from usageService.getUsage:
 //   { voiceMinutes, smsMessages, limits: {voiceMinutes, smsMessages},
 //     percentUsed: {voice, sms}, period, unlimited }
-// Starter/legacy plans return unlimited:true → "Unlimited voice & SMS" state.
+// Legacy plans (Starter/Pro/Premium) return unlimited:true → "Unlimited voice & SMS" state.
 // percentUsed > 100 (overage, inbound is never gated) gets the distinct
 // over-cap style; >=80 shows the warn style.
 function renderUsageCard(entitlementsPayload) {
@@ -3695,7 +3695,7 @@ function renderUsageCard(entitlementsPayload) {
 
   // Plan + tier badge: 'Pro Standard' tier under the 'Pro' plan collapses to
   // a single badge; bare plan names render alone.
-  const plan = entitlementsPayload.plan || 'Starter';
+  const plan = entitlementsPayload.plan || 'Basic';
   const tier = entitlementsPayload.tier || '';
   const badgeEl = document.getElementById('usage-plan-badge');
   badgeEl.textContent = (tier && tier !== plan) ? `${plan} · ${tier}` : plan;
@@ -3849,7 +3849,8 @@ function renderUsageGauge(entitlementsPayload) {
 
 // Apply tier-based visibility to sidebar nav items.
 // Campaigns nav is hidden unless the client's plan includes bulk SMS or
-// bulk call campaigns (both are Premium-only features).
+// bulk call campaigns (both gated behind call-campaign entitlements — legacy
+// plans only; every current plan includes them).
 function applyTierVisibility() {
   const navCampaigns = document.getElementById('nav-campaigns');
   if (!navCampaigns) return;
@@ -3890,14 +3891,14 @@ function applyTierVisibility() {
     }
   }
 
-  // Gate lead export buttons by externalCrmIntegration entitlement (Pro+)
+  // Gate lead export buttons by externalCrmIntegration entitlement (legacy plans only; every current plan includes it)
   const canExportCrm = portalEntitlements?.externalCrmIntegration === true;
   const exportCsvBtn = document.getElementById('ob-export-csv-btn');
   const exportJsonBtn = document.getElementById('ob-export-json-btn');
   if (exportCsvBtn) exportCsvBtn.style.display = canExportCrm ? '' : 'none';
   if (exportJsonBtn) exportJsonBtn.style.display = canExportCrm ? '' : 'none';
 
-  // Gate Quick Call section by manualOutboundCalls entitlement (Premium only)
+  // Gate Quick Call section by manualOutboundCalls entitlement (legacy plans only; every current plan includes it)
   const canManualCall = portalEntitlements?.manualOutboundCalls === true;
   const quickCallCard = document.getElementById('quick-call-card');
   const quickCallLocked = document.getElementById('quick-call-locked');
@@ -3941,7 +3942,8 @@ function restoreCollapseStates() {
 }
 
 function showPage(name) {
-  // Tier gate: redirect Campaigns page to Dashboard for non-Premium clients
+  // Entitlement gate: redirect Campaigns page to Dashboard for clients without bulk-campaign entitlements
+  // (legacy plans only — every current plan includes bulk SMS/call campaigns)
   if (name === 'campaigns') {
     if (!portalEntitlements) {
       const saved = sessionStorage.getItem('atlas_entitlements');
@@ -10487,7 +10489,7 @@ function renderObLeads() {
     const callBtn = optedOut
       ? '<span style="font-size:11px;color:var(--muted);">Do not call</span>'
       : (!canManualCall
-          ? '<span style="font-size:11px;color:var(--muted);">Premium</span>'
+          ? '<span style="font-size:11px;color:var(--muted);">Not included</span>'
           : (latest.phone
               ? `<button onclick="callLead('${latest.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Call</button>`
               : '<span style="font-size:11px;color:var(--muted);">No phone</span>'));
@@ -11651,7 +11653,8 @@ function switchCampaignTab(tab) {
 // helpers and the offline fallback registry; WORKFLOW_META (top of script)
 // is now the fallback display meta for legacy cards + the params step parser.
 
-// Templates that require entitlements beyond the base Starter plan.
+// Templates that require entitlements beyond the base plan (legacy plans only —
+// every current plan includes them).
 // Keys not listed here are available to all tiers.
 var WORKFLOW_TEMPLATE_ENTITLEMENTS = {
   3: 'aiFollowUpCalls',     // Unresponsive Leads
@@ -11688,20 +11691,21 @@ function workflowCardHtml(opts) {
 
   // ── Locked rendering (tier-gated, not grandfathered) ──
   if (locked && status !== 'active') {
-    const requiredTier = (gate && gate.tier) || 'Pro';
+    // PRICING-5: the retired plan names (Pro/Premium) no longer appear as
+    // tier labels — the gate object carries only the entitlement feature.
     return `
         <div style="border:1px solid var(--border);border-radius:12px;opacity:0.65;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
             <div style="flex:1;">
               <div style="font-weight:600;font-size:14px;">${escapeHtmlAttr(name)}
-                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">${requiredTier}</span>
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">Upgrade required</span>
               </div>
               ${summary ? `<div style="font-size:13px;color:var(--text);opacity:0.75;line-height:1.5;margin-top:4px;">${escapeHtmlAttr(summary)}</div>` : ''}
               <div style="color:var(--muted);font-size:12px;margin-top:4px;">${descHtml}</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
               <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;">Locked</span>
-              <button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">Upgrade to ${requiredTier}</button>
+              <button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">Upgrade required</button>
             </div>
           </div>
         </div>`;
@@ -12836,7 +12840,7 @@ async function showLeadTimeline(leadId) {
     if (optedOut) {
       actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">Do not call</span>';
     } else if (!canManualCall) {
-      actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">Premium</span>';
+      actionsHtml += '<span style="font-size:12px;color:var(--muted);padding:6px 12px;">Not included</span>';
     } else if (lead.phone) {
       actionsHtml += `<button onclick="callLead('${lead.lead_id}', this)" style="background:#22c55e;border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Call</button>`;
     } else {

@@ -180,14 +180,18 @@
   // aiFollowUpCalls entitlement (matching the backend TRG-3 gate); SMS
   // offerings are included with every plan. Legacy templates keep their
   // WORKFLOW_TEMPLATE_ENTITLEMENTS mapping (passed in as legacyGate).
-  // Returns null when unlocked, else { feature, tier }.
+  // Returns null when unlocked, else { feature }.
+  // PRICING-5: gates are entitlement-based only. The retired plan-name tier
+  // labels ('Pro'/'Premium') are gone from the returned objects — the locked
+  // card renders a neutral "Upgrade required" CTA instead of naming a plan
+  // that no longer exists. Legacy clients keep the same gating behavior.
   function requiredEntitlement(row, legacyGate) {
     if (isOfferingRow(row)) {
-      return row.channel === 'call' ? { feature: 'aiFollowUpCalls', tier: 'Pro' } : null;
+      return row.channel === 'call' ? { feature: 'aiFollowUpCalls' } : null;
     }
     var feature = row && legacyGate ? legacyGate[row.templateId] : null;
     if (!feature) return null;
-    return { feature: feature, tier: feature === 'bulkCallCampaigns' ? 'Premium' : 'Pro' };
+    return { feature: feature };
   }
 
   var api = {
