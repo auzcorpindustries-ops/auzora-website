@@ -115,6 +115,16 @@
   .spam-note a { color: #3b82f6; text-decoration: none; font-weight: 600; }
   .spam-note a:hover { text-decoration: underline; }
 
+  /* SMS add-on activation banner (PRICING-3) — hidden for plan checkouts */
+  .addon-banner {
+    display: none;
+    background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.35);
+    border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 28px;
+  }
+  .addon-banner .addon-title { font-size: 15px; font-weight: 800; color: #15803d; margin-bottom: 4px; }
+  .addon-banner .addon-desc { font-size: 13px; color: #415065; line-height: 1.6; }
+
   /* Footer link */
   .home-link {
     display: block; text-align: center; margin-top: 32px;
@@ -147,7 +157,7 @@
       <p>You're all set — check your inbox</p>
     </div>
     <div class="success-body">
-      <h2>Your setup link is on its way 📧</h2>
+      <h2 id="success-h2">Your setup link is on its way 📧</h2>
       <p>We've sent an email to the address you used at checkout with your unique onboarding link. Click the button in that email to complete your setup — it takes about 3 minutes.</p>
 
       <div class="email-box">
@@ -157,6 +167,11 @@
           <span id="email-label">Look for an email from <strong>Auzora</strong> with the subject "Payment Confirmed — Complete Your Auzora Setup."</span>
           <div id="email-display" class="email-loading">Loading your email address…</div>
         </div>
+      </div>
+
+      <div id="addon-banner" class="addon-banner">
+        <div class="addon-title">SMS add-on activated</div>
+        <div class="addon-desc" id="addon-desc"></div>
       </div>
 
       <div class="next-steps">
@@ -210,6 +225,31 @@
       const _apiBase = location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
       const res = await fetch(`${_apiBase}/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
+
+      // PRICING-3: an SMS add-on checkout shows the activation banner instead
+      // of the generic onboarding CTA (the buyer is an EXISTING subscriber —
+      // no setup email is coming). Plan checkouts keep the original flow.
+      if (data.type === 'addon' && data.addon) {
+        const banner = document.getElementById('addon-banner');
+        const desc = document.getElementById('addon-desc');
+        desc.textContent = 'Up to ' + Number(data.addon.messagesPerMonth).toLocaleString('en-US') +
+          ' messages/mo has been added to your account (' + data.addon.name + ' — $' +
+          data.addon.monthlyUsd + '/mo). Your new SMS allowance is active immediately — no setup needed.';
+        banner.style.display = 'block';
+        // Hide the plan-checkout onboarding surfaces: existing subscribers
+        // do not get a setup email or an onboarding link.
+        document.getElementById('success-h2').textContent = 'Your SMS add-on is live';
+        document.querySelector('.next-steps').style.display = 'none';
+        document.querySelector('.spam-note').style.display = 'none';
+        if (data.email) {
+          emailDisplay.className = 'email-display';
+          emailDisplay.textContent = data.email;
+          emailLabel.innerHTML = 'The add-on was attached to <strong>Auzora</strong> account:';
+        } else {
+          emailDisplay.style.display = 'none';
+        }
+        return;
+      }
 
       if (data.email) {
         emailDisplay.className = 'email-display';

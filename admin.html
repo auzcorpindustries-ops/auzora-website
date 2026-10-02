@@ -498,9 +498,12 @@ tr:hover td { background: var(--tint); }
           <div class="form-group">
             <label>Plan</label>
             <select id="new-plan">
-              <option value="starter">Starter — $89.99/mo</option>
-              <option value="pro">Pro — from $149/mo</option>
-              <option value="premium">Premium — from $249/mo</option>
+              <option value="basic">Basic — $299/mo</option>
+              <option value="standard">Standard — $499/mo</option>
+              <option value="enterprise">Enterprise — $899/mo</option>
+              <option value="starter">Legacy Starter (grandfathered)</option>
+              <option value="pro">Legacy Pro (grandfathered)</option>
+              <option value="premium">Legacy Premium (grandfathered)</option>
             </select>
           </div>
           <div class="form-group">
@@ -1377,19 +1380,54 @@ function renderPhonesTable() {
       ? `<div class="client-name">${n.assignedTo.business_name || n.assignedTo.businessName || '—'}</div>
          <div class="client-email">${n.assignedTo.client_id || ''}</div>`
       : '—';
+    // True delete (ticket zeus_1790795230078_8124ab73): offered ONLY for
+    // In Queue / Unassigned rows — never for an Assigned number.
+    const actions = n.assignedTo
+      ? '—'
+      : `<button class="btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deletePhoneNumber('${n.sid}', '${n.phoneNumber}')">Delete</button>`;
     return `<tr>
       <td style="font-family:monospace;font-size:13px">${n.phoneNumber}</td>
       <td>${status}</td>
       <td>${client}</td>
       <td style="color:var(--muted);font-size:12px">${n.friendlyName || '—'}</td>
       <td style="font-size:11px;color:var(--muted)">${n.sid}</td>
+      <td>${actions}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('phones-table-body').innerHTML = `
     <table><thead><tr>
-      <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th>
+      <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th><th>Actions</th>
     </tr></thead><tbody>${tbody}</tbody></table>`;
+}
+
+// TRUE DELETE (ticket zeus_1790795230078_8124ab73): permanently releases the
+// number from Twilio (irreversible — it returns to Twilio's available pool)
+// and purges its atlas-number-queue record. The button only renders on
+// In Queue / Unassigned rows; the API also refuses assigned numbers (409).
+async function deletePhoneNumber(sid, phoneNumber) {
+  const ok = confirm(
+    `Permanently delete ${phoneNumber}?\n\n` +
+    'This number will be permanently released from Twilio and cannot be recovered. ' +
+    'It returns to Twilio\u2019s available pool and its queue record is purged.'
+  );
+  if (!ok) return;
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/phone-numbers/${encodeURIComponent(sid)}`, {
+      method: 'DELETE',
+      headers: { 'x-api-key': apiKey },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.released) {
+      toast(`Released ${phoneNumber} from Twilio`, 'success');
+      loadPhones();
+    } else {
+      toast(data.error || `Delete failed (${res.status})`, 'error');
+    }
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
 }
 
 // TOAST
@@ -1424,7 +1462,10 @@ function renderStats() {
 
 function planBadge(plan) {
   if (!plan) return '';
-  const cls = plan === 'premium' ? 'badge-full' : plan === 'pro' ? 'badge-growth' : 'badge-starter';
+  // PRICING-5: webhook provisions new plans capitalized ('Basic'), admin
+  // creates use lowercase keys — normalize for both class and display.
+  const p = String(plan).toLowerCase();
+  const cls = (p === 'enterprise' || p === 'premium') ? 'badge-full' : (p === 'standard' || p === 'pro') ? 'badge-growth' : 'badge-starter';
   const label = plan.charAt(0).toUpperCase() + plan.slice(1);
   return `<span class="badge ${cls}">${label}</span>`;
 }
@@ -1542,9 +1583,12 @@ async function openDetail(clientId) {
         <div class="form-group">
           <label>Plan</label>
           <select id="edit-plan" onchange="onEditPlanChange()">
-            <option value="starter" ${c.plan==='starter'?'selected':''}>Starter — $89.99/mo</option>
-            <option value="pro" ${c.plan==='pro'?'selected':''}>Pro — from $149/mo</option>
-            <option value="premium" ${c.plan==='premium'?'selected':''}>Premium — from $249/mo</option>
+            <option value="basic" ${String(c.plan).toLowerCase()==='basic'?'selected':''}>Basic — $299/mo</option>
+            <option value="standard" ${String(c.plan).toLowerCase()==='standard'?'selected':''}>Standard — $499/mo</option>
+            <option value="enterprise" ${String(c.plan).toLowerCase()==='enterprise'?'selected':''}>Enterprise — $899/mo</option>
+            <option value="starter" ${String(c.plan).toLowerCase()==='starter'?'selected':''}>Legacy Starter (grandfathered)</option>
+            <option value="pro" ${String(c.plan).toLowerCase()==='pro'?'selected':''}>Legacy Pro (grandfathered)</option>
+            <option value="premium" ${String(c.plan).toLowerCase()==='premium'?'selected':''}>Legacy Premium (grandfathered)</option>
           </select>
         </div>
         <div class="form-group">
@@ -1625,7 +1669,20 @@ function toggleOverrideControls(checked) {
 // tier/plan mismatches (adminRouter validatePlanTierUpdate), so the cascade
 // keeps the modal honest client-side too.
 const PLAN_TIERS = {
-  starter: [{ value: 'starter', label: 'Starter' }],
+  // PRICING-5: current catalog first — Basic/Standard/Enterprise differ only
+  // by included voice minutes (SMS is a paid add-on, never "included").
+  basic: [
+    { value: 'basic', label: 'Basic — 2,500 voice min' },
+  ],
+  standard: [
+    { value: 'standard', label: 'Standard — 5,000 voice min' },
+  ],
+  enterprise: [
+    { value: 'enterprise', label: 'Enterprise — 10,000 voice min' },
+  ],
+  // Legacy plans: only for grandfathered records (legacy tiers keep their
+  // per-tier voice-minute ladder; SMS remains included on those plans only).
+  starter: [{ value: 'starter', label: 'Starter (legacy — unlimited)' }],
   pro: [
     { value: 'pro_basic', label: 'Pro Basic — 2,500 voice min · SMS' },
     { value: 'pro_standard', label: 'Pro Standard — 5,000 voice min · SMS' },
@@ -1683,9 +1740,11 @@ async function loadClientEntitlements(clientId) {
     if (!res.ok) return;
     const data = await res.json();
 
-    // Set plan dropdown + cascaded tier select (ticket F)
+    // Set plan dropdown + cascaded tier select (ticket F). PRICING-5: new
+    // plans provision capitalized ('Basic') — normalize before matching the
+    // lowercase option keys; legacy records keep their values.
     const planSelect = document.getElementById('edit-plan');
-    if (planSelect) planSelect.value = data.plan || 'starter';
+    if (planSelect) planSelect.value = String(data.plan || 'starter').toLowerCase();
     onEditPlanChange();
     const tierSelect = document.getElementById('edit-tier');
     if (tierSelect && data.tier) tierSelect.value = data.tier;
@@ -2419,7 +2478,7 @@ async function createClient() {
     if (!res.ok) throw new Error();
     toast('Client created!');
     ['new-businessName','new-contactName','new-email','new-phone','new-industry','new-notes'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('new-plan').value = 'starter';
+    document.getElementById('new-plan').value = 'basic';
     loadAll();
     showPage('clients');
   } catch(e) {
