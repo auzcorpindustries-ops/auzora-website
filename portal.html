@@ -10851,6 +10851,35 @@ async function deleteLead(leadId) {
   }
 }
 
+// Bulk delete: removes the whole CONTACT — every sublead (interaction row)
+// sharing this lead's normalized phone. Mirrors deleteLead's confirm-first +
+// error-toast contract; the confirm states the blast radius up front.
+async function deleteContact(leadId) {
+  // Blast radius from the same grouping the table uses (last-10-digit phone).
+  const norm = (p) => ((p || 'no-phone').replace(/\D/g, '').slice(-10) || 'no-phone');
+  const contacts = Array.isArray(obLeadsAll) ? obLeadsAll : [];
+  const anchor = contacts.find(l => l.lead_id === leadId);
+  const key = anchor ? norm(anchor.phone) : null;
+  const count = anchor ? contacts.filter(l => norm(l.phone) === key).length : 1;
+  if (!confirm(`Permanently delete this contact and all ${count} interaction${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${API}/portal/leads/contact/${leadId}`, {
+      method: 'DELETE',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    showToast('Contact deleted permanently', 'success');
+    closeLeadTimeline();
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('deleteContact error:', e.message);
+    showToast('Could not delete contact: ' + e.message, 'error');
+  }
+}
+
 async function callLead(leadId, btn) {
   if (!confirm('Have your AI agent call this lead now?')) return;
   const orig = btn.textContent;
@@ -13038,6 +13067,8 @@ async function showLeadTimeline(leadId) {
     // Delete lead button (permanently remove)
     if (canInternalCrm) {
       actionsHtml += `<button onclick="deleteLead('${lead.lead_id}')" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;margin-left:auto;">Delete Lead</button>`;
+      // Delete Contact — bulk-deletes every sublead sharing this phone.
+      actionsHtml += `<button onclick="deleteContact('${lead.lead_id}')" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;">Delete Contact</button>`;
     }
 
     actionsHtml += '</div>';
