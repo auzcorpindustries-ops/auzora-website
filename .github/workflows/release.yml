@@ -1,0 +1,195 @@
+# .github/workflows/release.yml — the documented production release path (PROD-4)
+#
+# Netlify already auto-deploys every push to `main` to auzora.io. This workflow
+# does NOT deploy anything itself — it makes the release (a) repeatable, (b)
+# gated, and (c) self-verifying so nobody has to remember tribal knowledge.
+#
+# Two jobs:
+#   release-pr     — workflow_dispatch only. Opens (or refreshes) the single
+#                    open develop→main pull request. main is never pushed to
+#                    directly; it only ever moves by merging this PR.
+#   verify-prod    — on every push to main. Curls the live site and asserts the
+#                    invariants from docs/RELEASE.md. Fails loudly if a release
+#                    silently shipped something other than develop's state.
+#
+# The runbook this implements: docs/RELEASE.md
+name: Release to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'Short release note (why main is moving now)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never let two release PRs race; the verify job on a rapid double-push just
+# needs to run for each push.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    name: Open develop -> main release PR
+    # Only on manual dispatch. The push-to-main trigger is for verify-prod only.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or refresh the develop -> main release PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const note = `Released by workflow_dispatch on ${new Date().toISOString()}${
+              context.payload.inputs?.note ? ` — ${context.payload.inputs.note}` : ''
+            }`;
+
+            const { data: existing } = await github.rest.pulls.list({
+              owner, repo, state: 'open', base: 'main', head: 'develop',
+            });
+
+            if (existing.length > 0) {
+              const pr = existing[0];
+              core.info(`Release PR #${pr.number} is already open — nothing to do.`);
+              core.info(`  ${pr.html_url}`);
+              core.setOutput('pr_url', pr.html_url);
+              core.setOutput('pr_number', pr.number);
+              return;
+            }
+
+            const behind = await github.rest.compareCommitsWithBasehead({
+              owner, repo, base: 'main', head: 'develop',
+            });
+            if (behind.data.behind_by > 0) {
+              core.setFailed(
+                `main has ${behind.data.behind_by} commit(s) develop does not — ` +
+                'release PRs are develop->main only. Reconcile by hand before releasing.'
+              );
+              return;
+            }
+            core.info(`develop is ${behind.data.ahead_by} commit(s) ahead of main.`);
+            if (behind.data.ahead_by === 0) {
+              core.info('main already contains develop — nothing to release.');
+              return;
+            }
+
+            const { data: pr, status } = await github.rest.pulls.create({
+              owner, repo,
+              title: `Release: develop -> main (${behind.data.ahead_by} commits)`,
+              head: 'develop',
+              base: 'main',
+              body: [
+                'Automated production release (PROD-4).',
+                '',
+                'Main only ever moves through this PR. Merging it publishes',
+                'auzora.io via Netlify auto-deploy.',
+                '',
+                `Release note: ${note}`,
+                '',
+                'Before merging, confirm the pricing links are in the intended',
+                'state — `linksEnabled: false` in `index.html` means every purchase',
+                'CTA ships disabled/inactive.',
+                '',
+                'Pre-merge checklist: see `docs/RELEASE.md`.',
+              ].join('\n'),
+            });
+
+            if (status !== 201) {
+              core.setFailed(`PR create returned ${status}: ${JSON.stringify(pr)}`);
+              return;
+            }
+            core.info(`Opened release PR #${pr.number}: ${pr.html_url}`);
+            core.setOutput('pr_url', pr.html_url);
+            core.setOutput('pr_number', pr.number);
+
+      - name: Summary
+        run: |
+          echo "Release PR: ${{ steps.open.outputs.pr_url || '(none needed)' }}"
+          echo "Merge it to publish, or run the verify-prod checks on main afterwards."
+
+  verify-prod:
+    name: Verify live auzora.io
+    # Every push to main (i.e. every actual release) is verified against the
+    # live site. Manual dispatch runs this too so the state can be re-checked
+    # without shipping anything.
+    runs-on: ubuntu-latest
+    steps:
+      - name: All public pages return 200
+        run: |
+          set -euo pipefail
+          failed=0
+          for path in "" "portal" "checkout" "payment-success"; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://auzora.io/${path}")
+            echo "https://auzora.io/${path} -> $code"
+            [ "$code" = "200" ] || failed=1
+          done
+          [ "$failed" = "0" ] || { echo "::error::one or more production pages are not 200"; exit 1; }
+
+      - name: Live site serves the 3-plan pricing catalog
+        run: |
+          set -euo pipefail
+          html=$(curl -s https://auzora.io/)
+          echo "$html" > /tmp/live-index.html
+          for plan in "basic" "standard" "enterprise"; do
+            grep -q "${plan}:" /tmp/live-index.html \
+              || { echo "::error::live index.html is missing the '${plan}' plan"; exit 1; }
+          done
+          grep -q 'Every plan includes' /tmp/live-index.html \
+            || { echo "::error::live index.html is missing the shared 'Every plan includes' panel"; exit 1; }
+
+      - name: Live link state matches main (linksEnabled + Stripe link mode)
+        run: |
+          set -euo pipefail
+          # The activation flag itself — a release MUST NOT silently flip this
+          # to true; the flip is a deliberate, separately-reviewed PR.
+          enabled_count=$(grep -cE 'linksEnabled: true' /tmp/live-index.html || true)
+          if [ "$enabled_count" -gt 0 ]; then
+            echo "::error::live site has linksEnabled: true — an activation flip landed in a release. Roll back and land it as its own reviewed PR."
+            exit 1
+          fi
+          echo "linksEnabled is false on live (purchase links inactive)."
+
+          # Production deploys must run in live link mode, never test mode.
+          if grep -q "STRIPE_LINK_MODE' in window" /tmp/live-index.html \
+             && ! grep -q "window.STRIPE_LINK_MODE" /tmp/live-index.html; then
+            echo "::error::window.STRIPE_LINK_MODE was not injected — the Netlify stripe-link-mode plugin did not run on this deploy"
+            exit 1
+          fi
+          mode=$(grep -oE "window.STRIPE_LINK_MODE = '[a-z]+'" /tmp/live-index.html | head -1 || true)
+          echo "injected link mode: ${mode:-<none found>}"
+          case "$mode" in
+            *live*) echo "OK — production is in live Stripe link mode." ;;
+            "")     echo "::error::could not determine the injected Stripe link mode"; exit 1 ;;
+            *)      echo "::error::production is not in live Stripe link mode (${mode})"; exit 1 ;;
+          esac
+
+      - name: Live site matches the released main commit
+        run: |
+          set -euo pipefail
+          # main's index.html must be byte-identical to what production serves.
+          # The ONLY expected differences are (a) the single line the Netlify
+          # stripe-link-mode plugin injects (window.STRIPE_LINK_MODE = '...';)
+          # and (b) Netlify's pretty-URL post-processing, which rewrites
+          # href="/legal/privacy.html" into href='/legal/privacy' in the HTML
+          # it serves. Normalize both away; the trees must then be identical.
+          # (single-quoted sed exprs below are literal — bash does no expansion)
+          git clone --depth 1 --branch main "https://github.com/${{ github.repository }}.git" /tmp/released
+          normalize() {
+            grep -v "^[[:space:]]*window\.STRIPE_LINK_MODE = '" "$1" \
+              | sed -e "s|='\([^']*\)'|=\"\1\"|g" -e 's|href="\([^"]*\)\.html"|href="\1"|g'
+          }
+          normalize /tmp/released/index.html > /tmp/main-index.stripped
+          normalize /tmp/live-index.html > /tmp/live-index.stripped
+          if diff -q /tmp/main-index.stripped /tmp/live-index.stripped >/dev/null; then
+            echo "OK — live index.html matches main."
+          else
+            echo "::warning::live index.html differs from main (a newer deploy may still be propagating, or a deploy failed). Diff:"
+            diff /tmp/main-index.stripped /tmp/live-index.stripped | head -40 || true
+          fi

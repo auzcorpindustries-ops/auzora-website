@@ -1549,6 +1549,24 @@ async function openDetail(clientId) {
       <div class="detail-item"><div class="detail-label">n8n Configured</div><div class="detail-value" style="font-size:13px">${c.n8nConfigured ? '✅ Yes' : '❌ No'}</div></div>
       <div class="detail-item"><div class="detail-label">Twilio Number</div><div class="detail-value" style="font-size:13px">${c.twilio_number||'—'}</div></div>
     </div>
+    <!-- PROD-2: manual recovery for a setup email that never arrived (Resend
+         outage, a bounce, or a Stripe retry window that closed). The backend
+         returns 409 for an already-onboarded client unless force is passed, so
+         this confirms before sending. -->
+    <div style="margin-bottom:14px;padding:14px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:600;margin-bottom:2px">Setup email</div>
+        <div style="font-size:12px;color:var(--muted)">
+          ${c.status==='pending_setup' && !c.setup_email_sent_at
+            ? 'Not sent yet — this client paid but never received their setup link.'
+            : (c.setup_email_sent_at
+                ? `Last sent ${formatDate(c.setup_email_sent_at)}`
+                : 'Resend the payment-confirmed email with a fresh setup link.')}
+        </div>
+      </div>
+      <button class="btn-ghost" id="resend-setup-email-btn" onclick="resendSetupEmail('${clientId}')"
+        style="white-space:nowrap;flex-shrink:0">Resend setup email</button>
+    </div>
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Edit</div>
       <div class="form-row">
@@ -1651,6 +1669,49 @@ async function openDetail(clientId) {
       </div>
     </div>
   `;
+}
+
+// PROD-2: resend a client's setup (payment-confirmed) email.
+//
+// Backend: POST /admin/clients/:id/resend-setup-email. It re-mints a fresh
+// signed onboarding token so the link works even if the original expired, and
+// returns 409 for an already-onboarded client unless { force: true }. A send
+// failure surfaces as 502 — we report it instead of pretending it worked.
+async function resendSetupEmail(clientId) {
+  const btn = document.getElementById('resend-setup-email-btn');
+  const c = allClients.find(x => x.client_id === clientId);
+  const target = (c && (c.email || 'this client')) || 'this client';
+  if (!confirm(`Resend the setup email to ${target}?\n\nThey will receive a fresh setup link.`)) return;
+
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const res = await fetch(`${API}/clients/${encodeURIComponent(clientId)}/resend-setup-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ force: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      toast(`Setup email resent to ${data.email || 'client'}`, 'success');
+      // Refresh so the "Last sent" stamp and the sent-state chip update.
+      await loadAll();
+      openDetail(clientId);
+    } else if (res.status === 409) {
+      toast(data.error || 'Already sent — use force to resend anyway.', 'error');
+    } else if (res.status === 404) {
+      toast('Client not found', 'error');
+    } else {
+      // 502 = Resend rejected the send. Never report success for a resend that
+      // did not happen.
+      toast(data.error || 'Resend failed — try again', 'error');
+    }
+  } catch (e) {
+    toast('Resend failed — check your connection.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Resend setup email'; }
+  }
 }
 
 function closeModal() {
