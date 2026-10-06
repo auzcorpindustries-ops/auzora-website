@@ -33,6 +33,38 @@
     sms: 'Trigger fires → wait 2 days → re-engagement text → wait 2 days → re-engagement text → wait 2 days → final re-engagement text → mark lead cold',
   };
 
+  // One-shot CSV-import follow-up copy (trigger 'csv_import'). These variants
+  // are NOT on the 2-day re-engage cadence — they fire once per imported lead.
+  var CSV_IMPORT_DESC = 'Fires once per imported lead.';
+
+  // Toggle control for a workflow card: maps a status to the button the card
+  // renders. A 'requested' (Pending) card is NOT dead — it exposes an enabled
+  // "Cancel request" action (POST /cancel) so a client can escape a stuck
+  // pending state without waiting on admin approval. 'active' disables through
+  // the same cancel endpoint; every other status re-requests.
+  function workflowToggle(status) {
+    var s = status || 'off';
+    if (s === 'requested') return { label: 'Cancel request', action: 'cancel', disabled: false };
+    if (s === 'active') return { label: 'Disable', action: 'cancel', disabled: false };
+    return { label: 'Request', action: 'request', disabled: false };
+  }
+
+  // Human age of a pending request, e.g. "pending 3 days" — makes a stuck
+  // 'requested' card visible in the UI. Pure/deterministic: `now` is injectable.
+  function pendingAge(requestedAt, now) {
+    if (!requestedAt) return '';
+    var t = new Date(requestedAt).getTime();
+    if (!isFinite(t)) return '';
+    var ms = (now ? now.getTime() : Date.now()) - t;
+    if (!isFinite(ms) || ms < 60000) return 'pending just now';
+    var mins = Math.floor(ms / 60000);
+    if (mins < 60) return 'pending ' + mins + ' minute' + (mins === 1 ? '' : 's');
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return 'pending ' + hrs + ' hour' + (hrs === 1 ? '' : 's');
+    var days = Math.floor(hrs / 24);
+    return 'pending ' + days + ' day' + (days === 1 ? '' : 's');
+  }
+
   // Offline fallback offering meta — mirrors the TRG-3 registry
   // (atlas-ai src/services/n8nService.js OFFERINGS) so the 8-card grid still
   // renders when the API returns no offering rows (pre-TRG-3 backend).
@@ -170,9 +202,13 @@
   }
 
   // Card description lines for an offering card:
-  // [API description, standardized cadence string].
+  // [API description, standardized cadence string]. CSV-import variants are
+  // one-shot, so they carry a dedicated (non-cadence) second line.
   function offeringDescLines(offering) {
     var channel = offering && offering.channel === 'sms' ? 'sms' : 'call';
+    if (offering && offering.trigger === 'csv_import') {
+      return [offering.description || offering.summary || '', CSV_IMPORT_DESC];
+    }
     return [offering.description || offering.summary || '', CADENCE_DESC[channel]];
   }
 
@@ -198,6 +234,7 @@
     TRIGGER_TYPES: TRIGGER_TYPES,
     TRIGGER_LABELS: TRIGGER_LABELS,
     CADENCE_DESC: CADENCE_DESC,
+    CSV_IMPORT_DESC: CSV_IMPORT_DESC,
     FALLBACK_OFFERINGS: FALLBACK_OFFERINGS,
     isOfferingRow: isOfferingRow,
     isLegacyRow: isLegacyRow,
@@ -209,6 +246,8 @@
     legacyForChannel: legacyForChannel,
     offeringDescLines: offeringDescLines,
     requiredEntitlement: requiredEntitlement,
+    workflowToggle: workflowToggle,
+    pendingAge: pendingAge,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

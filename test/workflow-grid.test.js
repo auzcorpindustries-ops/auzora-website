@@ -212,3 +212,75 @@ describe('FALLBACK_OFFERINGS registry', () => {
     ]);
   });
 });
+
+// ── stuck-pending fix: toggle + pending age (zeus_1791325526552_7232e5bf) ────
+describe('workflowToggle', () => {
+  test('requested (Pending) exposes an ENABLED Cancel request action', () => {
+    expect(WG.workflowToggle('requested'))
+      .toEqual({ label: 'Cancel request', action: 'cancel', disabled: false });
+  });
+
+  test('active disables via the cancel endpoint', () => {
+    expect(WG.workflowToggle('active'))
+      .toEqual({ label: 'Disable', action: 'cancel', disabled: false });
+  });
+
+  test.each(['off', 'cancelled', 'rejected', 'failed'])('%s re-requests', (s) => {
+    expect(WG.workflowToggle(s))
+      .toEqual({ label: 'Request', action: 'request', disabled: false });
+  });
+
+  test('unknown/undefined status falls back to Request', () => {
+    expect(WG.workflowToggle(undefined).action).toBe('request');
+  });
+});
+
+describe('pendingAge', () => {
+  const now = new Date('2026-10-06T12:00:00.000Z');
+  const ago = (ms) => new Date(now.getTime() - ms).toISOString();
+
+  test('no timestamp → empty', () => expect(WG.pendingAge(null, now)).toBe(''));
+  test('invalid timestamp → empty', () => expect(WG.pendingAge('not-a-date', now)).toBe(''));
+  test('under a minute → just now', () => expect(WG.pendingAge(ago(30 * 1000), now)).toBe('pending just now'));
+  test('singular minute', () => expect(WG.pendingAge(ago(60000), now)).toBe('pending 1 minute'));
+  test('plural minutes', () => expect(WG.pendingAge(ago(5 * 60000), now)).toBe('pending 5 minutes'));
+  test('plural hours', () => expect(WG.pendingAge(ago(3 * 3600000), now)).toBe('pending 3 hours'));
+  test('singular day', () => expect(WG.pendingAge(ago(86400000), now)).toBe('pending 1 day'));
+  test('plural days (ticket example)', () => expect(WG.pendingAge(ago(3 * 86400000), now)).toBe('pending 3 days'));
+});
+
+// ── CSV-import follow-up variants (API-driven rows) ─────────────────────────
+describe('CSV-import follow-up variants', () => {
+  const voice = {
+    offeringKey: 'imported_leads_voice', trigger: 'csv_import', channel: 'call',
+    provision: 'client_flag', legacy: false, name: 'Voice Services', summary: 's',
+    description: 'd', status: 'off',
+  };
+  const sms = {
+    offeringKey: 'imported_leads_sms', trigger: 'csv_import', channel: 'sms',
+    provision: 'client_flag', legacy: false, name: 'SMS Services', summary: 's',
+    description: 'd', status: 'off',
+  };
+
+  test('render under their channel sections, after the cadence grid', () => {
+    const rows = [...ALL_KEYS.map(k => apiOfferingRow(k)), voice, sms];
+    const { offerings } = WG.normalizeWorkflows(rows);
+    expect(WG.offeringsForChannel(offerings, 'call').map(o => o.offeringKey))
+      .toContain('imported_leads_voice');
+    expect(WG.offeringsForChannel(offerings, 'sms').map(o => o.offeringKey))
+      .toContain('imported_leads_sms');
+    // unknown trigger sorts after the 4 canonical triggers
+    expect(offerings[offerings.length - 1].trigger).toBe('csv_import');
+  });
+
+  test('voice variant is gated by aiFollowUpCalls; sms variant is not', () => {
+    expect(WG.requiredEntitlement(voice, {})).toEqual({ feature: 'aiFollowUpCalls' });
+    expect(WG.requiredEntitlement(sms, {})).toBeNull();
+  });
+
+  test('csv_import variants show the one-shot copy, not the re-engage cadence', () => {
+    const [, line2] = WG.offeringDescLines(voice);
+    expect(line2).toBe(WG.CSV_IMPORT_DESC);
+    expect(line2).not.toContain('wait 2 days');
+  });
+});
