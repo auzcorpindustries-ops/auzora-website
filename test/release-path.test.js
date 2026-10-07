@@ -161,9 +161,11 @@ describe('PROD-4: production deploy config keeps test links scoped to develop', 
     expect(netlifyToml).not.toMatch(/\[context\.production\.environment\][\s\S]*?test/);
   });
 
-  test('index.html still ships with purchase links inactive', () => {
+  test('index.html ships with sandbox-gated purchase links (inactive on prod, live on test-mode deploys)', () => {
     const html = read('index.html');
-    expect(html).toMatch(/const PLANS = \{[\s\S]*?linksEnabled: false/);
-    expect(html).toMatch(/const SMS_ADDONS = \{[\s\S]*?linksEnabled: false/);
+    // 2026-10-06 (Auzi): sandbox activation — linksEnabled is mode-gated.
+    // Prod (STRIPE_LINK_MODE 'live') still evaluates to false → CTAs disabled.
+    expect(html).toMatch(/const PLANS = \{[\s\S]*?linksEnabled: AZ_STRIPE_LINK_MODE === 'test'/);
+    expect(html).toMatch(/const SMS_ADDONS = \{[\s\S]*?linksEnabled: AZ_STRIPE_LINK_MODE === 'test'/);
   });
 });

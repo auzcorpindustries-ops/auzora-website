@@ -2222,6 +2222,15 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
 
+          <!-- SMS consent (compliance-critical, default OFF) -->
+          <div style="margin-bottom:16px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:flex-start;gap:10px;">
+            <input type="checkbox" id="li-sms-consent" style="width:18px;height:18px;margin-top:2px;cursor:pointer;" />
+            <label for="li-sms-consent" style="font-size:12px;color:var(--text);cursor:pointer;line-height:1.5;">
+              <span style="font-weight:600;">These contacts agreed to receive text messages</span><br />
+              <span style="color:var(--muted);">Only tick this if every person on this list gave you explicit permission to be texted. Leave it unticked otherwise — never mark a contact as opted-in without their consent. You can also map a per-row consent column below to override this per contact.</span>
+            </label>
+          </div>
+
           <!-- Import button + status -->
           <div id="li-action-row" style="display:none;align-items:center;gap:12px;">
             <button id="li-import-btn" onclick="executeLeadImport()" style="background:#22c55e;border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Import <span id="li-import-count">0</span> Leads</button>
@@ -10851,6 +10860,35 @@ async function deleteLead(leadId) {
   }
 }
 
+// Bulk delete: removes the whole CONTACT — every sublead (interaction row)
+// sharing this lead's normalized phone. Mirrors deleteLead's confirm-first +
+// error-toast contract; the confirm states the blast radius up front.
+async function deleteContact(leadId) {
+  // Blast radius from the same grouping the table uses (last-10-digit phone).
+  const norm = (p) => ((p || 'no-phone').replace(/\D/g, '').slice(-10) || 'no-phone');
+  const contacts = Array.isArray(obLeadsAll) ? obLeadsAll : [];
+  const anchor = contacts.find(l => l.lead_id === leadId);
+  const key = anchor ? norm(anchor.phone) : null;
+  const count = anchor ? contacts.filter(l => norm(l.phone) === key).length : 1;
+  if (!confirm(`Permanently delete this contact and all ${count} interaction${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${API}/portal/leads/contact/${leadId}`, {
+      method: 'DELETE',
+      headers: { 'X-Portal-Token': portalToken },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    showToast('Contact deleted permanently', 'success');
+    closeLeadTimeline();
+    loadOutbound(); // refresh the table
+  } catch (e) {
+    console.error('deleteContact error:', e.message);
+    showToast('Could not delete contact: ' + e.message, 'error');
+  }
+}
+
 async function callLead(leadId, btn) {
   if (!confirm('Have your AI agent call this lead now?')) return;
   const orig = btn.textContent;
@@ -11024,6 +11062,8 @@ function parseLeadImportPreview() {
       if (!usedFields.has('notes')) { liMapping[i] = 'notes'; usedFields.add('notes'); }
     } else if (hl.includes('email') || hl.includes('e-mail')) {
       if (!usedFields.has('email')) { liMapping[i] = 'email'; usedFields.add('email'); }
+    } else if (hl.includes('consent') || hl.includes('opt')) {
+      if (!usedFields.has('sms_consent')) { liMapping[i] = 'sms_consent'; usedFields.add('sms_consent'); }
     }
   });
 
@@ -11043,14 +11083,15 @@ function renderLeadImportMapping() {
   if (!liHeaders.length) { section.style.display = 'none'; return; }
 
   section.style.display = 'block';
-  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'skip'];
+  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'sms_consent', 'skip'];
+  const fieldLabels = { sms_consent: 'SMS consent (yes/no)' };
   grid.innerHTML = liHeaders.map((h, i) => {
     const current = liMapping[i] || 'skip';
     return `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;">
         <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${h}</div>
         <select onchange="updateLeadImportMapping(${i}, this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;outline:none;">
-          ${fieldOptions.map(f => `<option value="${f}" ${current === f ? 'selected' : ''}>${f === 'skip' ? '— Skip —' : f.charAt(0).toUpperCase() + f.slice(1)}</option>`).join('')}
+          ${fieldOptions.map(f => `<option value="${f}" ${current === f ? 'selected' : ''}>${fieldLabels[f] || (f === 'skip' ? '— Skip —' : f.charAt(0).toUpperCase() + f.slice(1))}</option>`).join('')}
         </select>
       </div>`;
   }).join('');
@@ -11073,12 +11114,28 @@ function updateLeadImportMapping(colIndex, field) {
   renderLeadImportPreview();
 }
 
+// Interpret a mapped consent-cell value. Only explicit yes/true/1 marks
+// consent; explicit no/false/0 clears it; anything else is left undefined, so
+// the import-level checkbox decides. Consent is never inferred.
+function parseConsentValue(v) {
+  if (v === undefined || v === null || v === '') return undefined;
+  const s = String(v).trim().toLowerCase();
+  if (['true', 'yes', 'y', '1', 'opted_in', 'opt-in', 'opt in', 'consented'].includes(s)) return true;
+  if (['false', 'no', 'n', '0', 'opted_out', 'opt-out', 'opt out'].includes(s)) return false;
+  return undefined;
+}
+
 function getImportedLeads() {
   return liParsedRows.map(row => {
     const lead = {};
     for (const [colIdx, field] of Object.entries(liMapping)) {
       if (field !== 'skip') {
-        lead[field] = row[parseInt(colIdx)] || '';
+        if (field === 'sms_consent') {
+          const v = parseConsentValue(row[parseInt(colIdx)]);
+          if (v !== undefined) lead.sms_consent = v;
+        } else {
+          lead[field] = row[parseInt(colIdx)] || '';
+        }
       }
     }
     return lead;
@@ -11162,6 +11219,8 @@ function clearLeadImport() {
   document.getElementById('li-mapping-section').style.display = 'none';
   document.getElementById('li-preview-section').style.display = 'none';
   document.getElementById('li-action-row').style.display = 'none';
+  const consent = document.getElementById('li-sms-consent');
+  if (consent) consent.checked = false;
   liParsedRows = [];
   liHeaders = [];
   liMapping = {};
@@ -11184,10 +11243,14 @@ async function executeLeadImport() {
   status.textContent = 'Importing...';
 
   try {
+    // Per-row consent (mapped column) is carried on each lead; this is the
+    // import-level fallback for rows without one. Defaults to false — the
+    // checkbox is opt-in, never pre-ticked.
+    const smsConsent = document.getElementById('li-sms-consent')?.checked === true;
     const res = await fetch(`${API}/portal/leads/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ leads })
+      body: JSON.stringify({ leads, sms_consent: smsConsent })
     });
     const data = await res.json();
     if (res.ok && data.success) {
@@ -11852,16 +11915,25 @@ function wfRefLiteral(wfRef) {
 // locked=true renders the disabled tier-gate card (unless status==='active',
 // which renders as grandfathered); legacyBadge/gate are optional HTML/object.
 function workflowCardHtml(opts) {
-  const { domId, name, summary, descHtml, status, rejectionReason, locked, gate, legacyBadge, testable } = opts;
+  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable } = opts;
   const ref = wfRefLiteral(domId);
   const badgeColor = {
     off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
     rejected: '#ef4444', cancelled: 'var(--muted)', failed: '#ef4444',
   }[status] || 'var(--muted)';
   const badgeText = { off: 'Off', requested: 'Pending', active: 'Active', rejected: 'Rejected', cancelled: 'Off', failed: 'Failed' }[status] || 'Off';
-  const toggleLabel = status === 'off' || status === 'rejected' || status === 'cancelled' || status === 'failed' ? 'Request' : status === 'requested' ? 'Pending' : 'Disable';
-  const toggleDisabled = status === 'requested';
-  const toggleAction = status === 'active' ? `toggleWorkflow(${ref}, false)` : (status === 'requested' ? '' : `toggleWorkflow(${ref}, true)`);
+  // Toggle control comes from the shared WorkflowGrid helper. A 'requested'
+  // (Pending) card now exposes an ENABLED "Cancel request" action (POST /cancel)
+  // instead of a dead disabled button — the fix for automations stuck on
+  // Pending with no way out. 'active' disables; every other status re-requests.
+  const toggle = WorkflowGrid.workflowToggle(status);
+  const toggleLabel = toggle.label;
+  const toggleDisabled = !!toggle.disabled;
+  const isCancel = toggle.action === 'cancel';
+  const toggleAction = isCancel ? `toggleWorkflow(${ref}, false)` : `toggleWorkflow(${ref}, true)`;
+  // Pending age ("pending 3 days") so a request stuck awaiting admin approval
+  // is visible to the client rather than an indistinct "Pending" badge.
+  const ageText = status === 'requested' ? WorkflowGrid.pendingAge(requestedAt) : '';
 
   const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
     ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${escapeHtmlAttr(rejectionReason)}</div>`
@@ -11905,9 +11977,10 @@ function workflowCardHtml(opts) {
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
               <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:${badgeColor}22;color:${badgeColor};">${badgeText}</span>
+              ${ageText ? `<span style="font-size:11px;color:var(--muted);white-space:nowrap;">${escapeHtmlAttr(ageText)}</span>` : ''}
               ${toggleDisabled
                 ? `<button disabled style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);cursor:not-allowed;">${toggleLabel}</button>`
-                : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${status === 'active' ? 'transparent' : 'var(--accent)'};color:${status === 'active' ? 'var(--text)' : '#fff'};border:${status === 'active' ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
+                : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${isCancel ? 'transparent' : 'var(--accent)'};color:${isCancel ? 'var(--text)' : '#fff'};border:${isCancel ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
               }
               ${testable && status === 'active' ? `<button onclick="openTestModal(${ref}, '${escapeHtmlAttr(name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
               <button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
@@ -11966,7 +12039,9 @@ async function loadWorkflows(page) {
       return workflowCardHtml({
         domId: of.offeringKey, name: of.name || of.offeringKey, summary: of.summary || '',
         descHtml, status: of.status || 'off', rejectionReason: of.rejection_reason,
-        locked: !hasEntitlement, gate, testable: true,
+        requestedAt: of.requested_at,
+        // client_flag offerings have no n8n workflow to test-fire.
+        locked: !hasEntitlement, gate, testable: of.provision !== 'client_flag',
       });
     }).concat(channelLegacy.map(w => {
       const meta = WORKFLOW_META[w.templateId] || {};
@@ -11978,6 +12053,7 @@ async function loadWorkflows(page) {
         domId: w.templateId, name: meta.name || w.name || `Preset ${w.templateId}`,
         summary: meta.summary || '', descHtml,
         status: w.status || 'off', rejectionReason: w.rejection_reason,
+        requestedAt: w.requested_at,
         locked: !hasEntitlement, gate, legacyBadge, testable: true,
       });
     })).join('');
@@ -13038,6 +13114,8 @@ async function showLeadTimeline(leadId) {
     // Delete lead button (permanently remove)
     if (canInternalCrm) {
       actionsHtml += `<button onclick="deleteLead('${lead.lead_id}')" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;margin-left:auto;">Delete Lead</button>`;
+      // Delete Contact — bulk-deletes every sublead sharing this phone.
+      actionsHtml += `<button onclick="deleteContact('${lead.lead_id}')" style="background:none;border:1px solid #ef444440;border-radius:8px;padding:8px 16px;font-size:13px;color:#ef4444;cursor:pointer;">Delete Contact</button>`;
     }
 
     actionsHtml += '</div>';
