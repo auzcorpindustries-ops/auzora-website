@@ -768,15 +768,17 @@
       sms_10000: 'https://buy.stripe.com/test_28EcMXakwfz45QY8Kk1ZS0i',
     };
     const PLANS = {
-      // linksEnabled stays FALSE until Auzi's deliberate activation flip —
-      // BILL-1 only swaps which URL each link carries on the develop deploy.
-      linksEnabled: false,
+      // linksEnabled — ACTIVATED FOR SANDBOX (Auzi, 2026-10-06): CTAs are live
+      // wherever STRIPE_LINK_MODE === 'test' (develop deploy + PR previews).
+      // Prod (mode 'live') keeps CTAs disabled until the real-money flip.
+      linksEnabled: AZ_STRIPE_LINK_MODE === 'test',
       basic: { name: 'Basic', priceLabel: '$299', minutes: '2,500 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c' },
       standard: { name: 'Standard', priceLabel: '$499', minutes: '5,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d' },
       enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e' },
     };
     const SMS_ADDONS = {
-      linksEnabled: false,
+      // ACTIVATED FOR SANDBOX (Auzi, 2026-10-06) — see PLANS note above.
+      linksEnabled: AZ_STRIPE_LINK_MODE === 'test',
       sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f' },
       sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/aFadR1boA5Yu93a4u41ZS0g' },
       sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/bJe8wH8cogD8djq8Kk1ZS0h' },

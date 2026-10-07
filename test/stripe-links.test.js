@@ -119,8 +119,11 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
   });
 
   test('both blocks keep linksEnabled false until the activation flip', () => {
-    expect(plansBlock).toMatch(/linksEnabled:\s*false/);
-    expect(addonsBlock).toMatch(/linksEnabled:\s*false/);
+    // 2026-10-06: sandbox activation flip DONE — Auzi enabled payment CTAs.
+    // linksEnabled is now mode-gated (true when STRIPE_LINK_MODE === 'test',
+    // i.e. staging/develop deploy + PR previews); prod stays disabled.
+    expect(plansBlock).toMatch(/linksEnabled:\s*AZ_STRIPE_LINK_MODE === 'test'/);
+    expect(addonsBlock).toMatch(/linksEnabled:\s*AZ_STRIPE_LINK_MODE === 'test'/);
   });
 
   // Gating mechanics (BILL-1 contract): while linksEnabled is false every
