@@ -206,6 +206,17 @@
     .az-pricing-btn.starter:hover { box-shadow: 0 10px 28px rgba(124,58,237,.45); color: #fff; }
     .az-pricing-btn.starter[aria-expanded="true"] { background: #6D28D9; box-shadow: 0 10px 28px rgba(124,58,237,.45); }
     .az-pricing-btn:focus-visible { outline: 3px solid rgba(124,58,237,.45); outline-offset: 2px; }
+    .az-pricing-btn.disabled { opacity: .5; box-shadow: none; cursor: not-allowed; }
+    /* ── PRICING-7: plan selection + contextual per-card SMS add-on ── */
+    .az-pricing-card[data-plan] { cursor: pointer; transition: box-shadow 180ms ease, transform 180ms ease; }
+    .az-pricing-card.selected { transform: translateY(-2px); box-shadow: 0 20px 52px rgba(124,58,237,.30); }
+    .az-pricing-card.selected .az-pricing-tier { color: #6D28D9; }
+    .az-plan-select { display: block; width: 100%; text-align: center; padding: 10px 14px; margin: 0 0 12px; border-radius: 99px; font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; color: #6D28D9; background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.35); transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
+    .az-plan-select:hover { background: rgba(124,58,237,.16); }
+    .az-plan-select[aria-pressed="true"] { color: #fff; background: var(--accent); border-color: transparent; box-shadow: 0 6px 20px rgba(124,58,237,.3); }
+    .az-plan-select:focus-visible { outline: 3px solid rgba(124,58,237,.45); outline-offset: 2px; }
+    .az-card-sms { margin: 18px 0 0; padding: 18px 0 0; border-top: 1px dashed rgba(124,58,237,.28); }
+    .az-sms-note { font-size: 13.5px; color: #5f687a; margin: 0 0 14px; line-height: 1.55; }
     /* (Pre-PRICING-4 tier-accordion styles removed with their markup.) */
     .az-pricing-note { font-size: 14px; color: #5f687a; margin: 28px 0 0; max-width: 680px; line-height: 1.6; }
     /* ── PRICING: shared "Every plan includes" panel (PRICING-4) ── */
@@ -218,10 +229,7 @@
     @media (max-width: 860px) {
       .az-included-grid { grid-template-columns: 1fr; }
     }
-    /* ── PRICING: SMS add-on selector (PRICING-4) ── */
-    .az-sms-addon { background: #fff; border: 1px solid rgba(124,58,237,.18); border-radius: 20px; box-shadow: 0 12px 36px rgba(124,58,237,.10); padding: 24px 28px; margin: 28px 0 0; max-width: 1100px; }
-    .az-sms-addon-title { font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7C3AED; margin: 0 0 6px; }
-    .az-sms-addon-sub { font-size: 14px; color: #5f687a; margin: 0 0 16px; line-height: 1.6; }
+    /* ── PRICING: SMS add-on selector (per-card as of PRICING-7) ── */
     .az-sms-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .az-sms-row label { font-size: 14px; font-weight: 600; color: #101826; }
     .az-sms-select { font: inherit; font-size: 14.5px; font-weight: 500; color: #101826; padding: 12px 14px; border: 1px solid rgba(16,24,38,0.12); border-radius: 12px; background: #fff; outline: none; transition: border-color 180ms ease; flex: 1 1 260px; max-width: 420px; }
@@ -614,46 +622,74 @@
         </ul>
       </div>
       <div class="az-pricing">
-        <div class="az-pricing-card starter">
+        <div class="az-pricing-card starter" data-plan="basic" aria-selected="false">
           <div class="az-pricing-tier">Basic</div>
           <div class="az-pricing-amount">
             <span class="price">$299</span><span class="period">/ month</span>
           </div>
           <div class="az-pricing-setup">2,500 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
+          <button type="button" class="az-plan-select" data-plan="basic" aria-pressed="false">Select</button>
           <a id="az-plan-cta-basic" class="az-pricing-btn starter" data-plan="basic" href="https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c" target="_blank" rel="noopener">Get started with Basic</a>
+          <div class="az-card-sms" data-sms-row="basic" hidden>
+            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <div class="az-sms-row">
+              <label for="az-sms-select-basic">SMS messages per month</label>
+              <select id="az-sms-select-basic" class="az-sms-select" data-plan="basic">
+                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="sms_5000">5,000 messages — $50/mo</option>
+                <option value="sms_10000">10,000 messages — $100/mo</option>
+              </select>
+              <a id="az-sms-btn-basic" class="az-sms-btn" data-plan="basic" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
+              <span id="az-sms-coming-basic" class="az-sms-coming" hidden>Coming Soon</span>
+            </div>
+          </div>
         </div>
-        <div class="az-pricing-card starter">
+        <div class="az-pricing-card starter" data-plan="standard" aria-selected="false">
           <div class="az-pricing-tier">Standard</div>
           <div class="az-pricing-amount">
             <span class="price">$499</span><span class="period">/ month</span>
           </div>
           <div class="az-pricing-setup">5,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
+          <button type="button" class="az-plan-select" data-plan="standard" aria-pressed="false">Select</button>
           <a id="az-plan-cta-standard" class="az-pricing-btn starter" data-plan="standard" href="https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d" target="_blank" rel="noopener">Get started with Standard</a>
+          <div class="az-card-sms" data-sms-row="standard" hidden>
+            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <div class="az-sms-row">
+              <label for="az-sms-select-standard">SMS messages per month</label>
+              <select id="az-sms-select-standard" class="az-sms-select" data-plan="standard">
+                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="sms_5000">5,000 messages — $50/mo</option>
+                <option value="sms_10000">10,000 messages — $100/mo</option>
+              </select>
+              <a id="az-sms-btn-standard" class="az-sms-btn" data-plan="standard" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
+              <span id="az-sms-coming-standard" class="az-sms-coming" hidden>Coming Soon</span>
+            </div>
+          </div>
         </div>
-        <div class="az-pricing-card starter">
+        <div class="az-pricing-card starter" data-plan="enterprise" aria-selected="false">
           <div class="az-pricing-tier">Enterprise</div>
           <div class="az-pricing-amount">
             <span class="price">$899</span><span class="period">/ month</span>
           </div>
           <div class="az-pricing-setup">10,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
+          <button type="button" class="az-plan-select" data-plan="enterprise" aria-pressed="false">Select</button>
           <a id="az-plan-cta-enterprise" class="az-pricing-btn starter" data-plan="enterprise" href="https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e" target="_blank" rel="noopener">Get started with Enterprise</a>
-        </div>
-      </div>
-      <div class="az-sms-addon">
-        <div class="az-sms-addon-title">SMS Add-On</div>
-        <p class="az-sms-addon-sub">SMS messaging is available as a monthly add-on on any plan. Pick a message volume — it stacks on your plan and renews monthly.</p>
-        <div class="az-sms-row">
-          <label for="az-sms-select">SMS messages per month</label>
-          <select id="az-sms-select" class="az-sms-select">
-            <option value="sms_2500" selected>2,500 messages — $25/mo</option>
-            <option value="sms_5000">5,000 messages — $50/mo</option>
-            <option value="sms_10000">10,000 messages — $100/mo</option>
-          </select>
-          <a id="az-sms-btn" class="az-sms-btn" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
-          <span id="az-sms-coming" class="az-sms-coming" hidden>Coming Soon</span>
+          <div class="az-card-sms" data-sms-row="enterprise" hidden>
+            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <div class="az-sms-row">
+              <label for="az-sms-select-enterprise">SMS messages per month</label>
+              <select id="az-sms-select-enterprise" class="az-sms-select" data-plan="enterprise">
+                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="sms_5000">5,000 messages — $50/mo</option>
+                <option value="sms_10000">10,000 messages — $100/mo</option>
+              </select>
+              <a id="az-sms-btn-enterprise" class="az-sms-btn" data-plan="enterprise" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
+              <span id="az-sms-coming-enterprise" class="az-sms-coming" hidden>Coming Soon</span>
+            </div>
+          </div>
         </div>
       </div>
       <p class="az-pricing-note">All plans include a dedicated AI phone number, the Auzora client portal, and full onboarding support. SMS messaging available as an add-on. Questions? <a href="#contact">Talk to us first.</a></p>
@@ -794,53 +830,129 @@
       }
     }
 
-    // While linksEnabled is false, plan CTAs and the SMS button render in the
-    // "Coming Soon" disabled style (aria-disabled, click prevented), matching
-    // the pre-PRICING-4 tier-row pattern and checkout.html's disabled button.
+    // PRICING-7: append the selected plan's identity to an add-on Payment
+    // Link so the Stripe webhook can attach the add-on to the right plan.
+    // Same query-param mechanism stripeWebhookHandler.js already parses
+    // (client_reference_id=plan-<tier>; portalRouter.js documents the pattern).
+    // NOTE: URL-level params are SOFT enforcement — the bare link still works
+    // if shared. Hard coupling would need composite Checkout Sessions
+    // (multi-line-item), explicitly out of scope for this ticket.
+    function withPlanRef(url, planKey) {
+      if (!url || !planKey) return url;
+      const sep = url.indexOf('?') === -1 ? '?' : '&';
+      return url + sep + 'client_reference_id=' + encodeURIComponent('plan-' + planKey);
+    }
+
+    function linkModeDisabled() {
+      return !(PLANS.linksEnabled && SMS_ADDONS.linksEnabled);
+    }
+
+    // While linksEnabled is false, plan CTAs and the per-card SMS buttons
+    // render in the "Coming Soon" disabled style (aria-disabled, click
+    // prevented), matching the pre-PRICING-4 tier-row pattern and
+    // checkout.html's disabled button.
     function applyLinkMode() {
-      const smsBtn = document.getElementById('az-sms-btn');
-      const smsComing = document.getElementById('az-sms-coming');
-      const disabled = !(PLANS.linksEnabled && SMS_ADDONS.linksEnabled);
+      const disabled = linkModeDisabled();
       document.querySelectorAll('.az-pricing-btn[data-plan]').forEach((btn) => {
         const plan = PLANS[btn.dataset.plan];
         if (!plan) return;
-        if (disabled) {
-          btn.classList.add('disabled');
-          btn.setAttribute('aria-disabled', 'true');
-          btn.addEventListener('click', e => e.preventDefault());
-        }
+        // BILL-1 follow-up: plan CTAs must carry the mode-correct URL too.
+        btn.href = plan.paymentLinkUrl;
+        if (disabled) btn.addEventListener('click', e => e.preventDefault());
       });
-      if (smsBtn) {
-        const addon = SMS_ADDONS[smsBtn.dataset.sku];
-        if (addon) smsBtn.href = addon.paymentLinkUrl;
-        if (disabled) {
-          smsBtn.classList.add('disabled');
-          smsBtn.setAttribute('aria-disabled', 'true');
-          smsBtn.addEventListener('click', e => e.preventDefault());
-        }
-      }
-      if (smsComing) smsComing.hidden = !disabled;
+      document.querySelectorAll('.az-sms-btn[data-plan]').forEach((btn) => {
+        const addon = SMS_ADDONS[btn.dataset.sku];
+        // The add-on link carries the plan it is being purchased with.
+        if (addon) btn.href = withPlanRef(addon.paymentLinkUrl, btn.dataset.plan);
+        if (disabled) btn.addEventListener('click', e => e.preventDefault());
+      });
+      document.querySelectorAll('.az-sms-coming').forEach((el) => { el.hidden = !disabled; });
+      refreshPlanSelection();
     }
+
+    // PRICING-7: radio-style plan selection — exactly one card selected.
+    // Selecting a plan reveals that card's SMS add-on row and re-enables its
+    // checkout CTA; selecting another moves both (never two at once).
+    function selectPlan(planKey) {
+      document.querySelectorAll('.az-pricing-card[data-plan]').forEach((card) => {
+        card.classList.toggle('selected', card.dataset.plan === planKey);
+      });
+      refreshPlanSelection();
+    }
+
+    function refreshPlanSelection() {
+      const selected = document.querySelector('.az-pricing-card[data-plan].selected');
+      const selectedKey = selected ? selected.dataset.plan : null;
+      document.querySelectorAll('.az-pricing-card[data-plan]').forEach((card) => {
+        const on = card.dataset.plan === selectedKey;
+        card.setAttribute('aria-selected', on ? 'true' : 'false');
+        const row = card.querySelector('.az-card-sms');
+        if (row) row.hidden = !on;
+        const selBtn = card.querySelector('.az-plan-select');
+        if (selBtn) {
+          selBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+          selBtn.textContent = on ? 'Selected' : 'Select';
+        }
+        const cta = card.querySelector('.az-pricing-btn[data-plan]');
+        if (cta) setLinkDisabled(cta, !on || linkModeDisabled());
+      });
+      document.querySelectorAll('.az-sms-btn[data-plan]').forEach((btn) => {
+        setLinkDisabled(btn, linkModeDisabled());
+      });
+    }
+
+    // Toggle the disabled affordance + hard click block for a payment link.
+    function setLinkDisabled(link, off) {
+      if (off) {
+        link.classList.add('disabled');
+        link.setAttribute('aria-disabled', 'true');
+      } else {
+        link.classList.remove('disabled');
+        link.removeAttribute('aria-disabled');
+      }
+    }
+
+    // Single delegated guard: any payment link marked aria-disabled="true"
+    // must not navigate (covers the not-yet-selected plan CTAs). Toggling the
+    // attribute is what enables/disables the link.
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('.az-pricing-btn[data-plan], .az-sms-btn[data-plan]');
+      if (link && link.getAttribute('aria-disabled') === 'true') e.preventDefault();
+    });
+
     applyLinkMode();
 
-    // Keep the Add SMS button's SKU + href in sync with the selected add-on.
-    const azSmsSelect = document.getElementById('az-sms-select');
-    const azSmsBtn = document.getElementById('az-sms-btn');
-    if (azSmsSelect && azSmsBtn) {
-      azSmsSelect.addEventListener('change', () => {
-        azSmsBtn.dataset.sku = azSmsSelect.value;
-        const addon = SMS_ADDONS[azSmsSelect.value];
-        if (addon) azSmsBtn.href = addon.paymentLinkUrl;
+    // Wire card selection + per-card add-on SKU/href sync.
+    document.querySelectorAll('.az-pricing-card[data-plan]').forEach((card) => {
+      const planKey = card.dataset.plan;
+      const selBtn = card.querySelector('.az-plan-select');
+      if (selBtn) selBtn.addEventListener('click', (e) => { e.preventDefault(); selectPlan(planKey); });
+      // Clicking anywhere on the card selects it, except interactive children.
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('a, button, select, option, input, label')) return;
+        selectPlan(planKey);
       });
-    }
+    });
+    document.querySelectorAll('.az-sms-select[data-plan]').forEach((select) => {
+      const planKey = select.dataset.plan;
+      const btn = document.getElementById('az-sms-btn-' + planKey);
+      select.addEventListener('change', () => {
+        if (!btn) return;
+        btn.dataset.sku = select.value;
+        const addon = SMS_ADDONS[select.value];
+        if (addon) btn.href = withPlanRef(addon.paymentLinkUrl, planKey);
+      });
+    });
 
     // Deep link: /index.html#pricing?plan=basic (or #pricing&plan=basic)
-    // scrolls to the pricing section — used by the checkout.html bookmark
-    // redirect. Plan cards are direct CTAs, so there is no panel to expand.
+    // scrolls to the pricing section AND pre-selects the named plan — used by
+    // the checkout.html bookmark redirect.
     (function openPricingFromHash() {
       const m = (window.location.hash || '').match(/plan=(basic|standard|enterprise)/i);
       if (m) {
         document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+        const key = m[1].toLowerCase();
+        if (document.querySelector('.az-pricing-card[data-plan="' + key + '"]')) selectPlan(key);
       }
     })();
 

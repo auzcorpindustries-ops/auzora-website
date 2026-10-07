@@ -39,8 +39,7 @@ const ALL_KEYS = [...PLAN_KEYS, ...SMS_KEYS];
 // ── index.html: pricing section structure (PRICING-4 rebuild) ────────────────
 describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
   const includedBlock = extractBlock('<div class="az-included">', '<div class="az-pricing">');
-  const cardsBlock = extractBlock('<div class="az-pricing">', '<div class="az-sms-addon">');
-  const smsBlock = extractBlock('<div class="az-sms-addon">', '<p class="az-pricing-note">');
+  const cardsBlock = extractBlock('<div class="az-pricing">', '<p class="az-pricing-note">');
 
   test('shared "Every plan includes" panel renders ABOVE the plan cards', () => {
     expect(includedBlock).not.toBeNull();
@@ -61,7 +60,7 @@ describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
 
   test('exactly 3 plan cards differing only by price, minutes, and CTA', () => {
     expect(cardsBlock).not.toBeNull();
-    const cards = cardsBlock.match(/<div class="az-pricing-card starter">/g) || [];
+    const cards = cardsBlock.match(/<div class="az-pricing-card starter" data-plan="(?:basic|standard|enterprise)"/g) || [];
     expect(cards.length).toBe(3);
     // No per-plan feature lists — the suite lives in the shared panel.
     expect(cardsBlock).not.toContain('az-pricing-features');
@@ -75,15 +74,22 @@ describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
     expect((cardsBlock.match(/SMS available as add-on\./g) || []).length).toBe(3);
   });
 
-  test('exactly ONE dropdown on the page — the SMS add-on select with 3 options', () => {
-    expect((html.match(/<select\b/g) || []).length).toBe(1);
-    expect(smsBlock).not.toBeNull();
-    const options = [...smsBlock.matchAll(/<option value="(sms_2500|sms_5000|sms_10000)"[^>]*>([^<]+)<\/option>/g)];
-    expect(options.map((m) => m[1])).toEqual(SMS_KEYS);
+  test('PRICING-7: no standalone SMS block — one contextual dropdown per plan card', () => {
+    // The old standalone .az-sms-addon panel below the grid is gone entirely.
+    expect(html).not.toContain('class="az-sms-addon"');
+    expect(html).not.toContain('az-sms-addon-title');
+    expect(html).not.toContain('id="az-sms-select"');
+    expect(html).not.toContain('id="az-sms-btn"');
+    // Exactly one <select> per plan card (3 total).
+    expect((html.match(/<select\b/g) || []).length).toBe(3);
+    const options = [...cardsBlock.matchAll(/<option value="(sms_2500|sms_5000|sms_10000)"[^>]*>([^<]+)<\/option>/g)];
+    expect(options.map((m) => m[1])).toEqual([...SMS_KEYS, ...SMS_KEYS, ...SMS_KEYS]);
     expect(options.map((m) => m[2])).toEqual([
       '2,500 messages — $25/mo', '5,000 messages — $50/mo', '10,000 messages — $100/mo',
+      '2,500 messages — $25/mo', '5,000 messages — $50/mo', '10,000 messages — $100/mo',
+      '2,500 messages — $25/mo', '5,000 messages — $50/mo', '10,000 messages — $100/mo',
     ]);
-    expect(smsBlock).toContain('>Add SMS</a>');
+    expect((cardsBlock.match(/>Add SMS<\/a>/g) || []).length).toBe(3);
   });
 
   test('NO minutes-tier accordion remains', () => {
@@ -136,9 +142,11 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
   });
 
   test('SMS add-on select is wired to the Add SMS button (SKU + href sync)', () => {
-    expect(html).toMatch(/getElementById\('az-sms-select'\)/);
-    expect(html).toMatch(/azSmsSelect\.addEventListener\('change'/);
-    expect(html).toMatch(/azSmsBtn\.dataset\.sku = azSmsSelect\.value/);
+    expect(html).toMatch(/\.az-sms-select\[data-plan\]/);
+    expect(html).toMatch(/select\.addEventListener\('change'/);
+    expect(html).toMatch(/btn\.dataset\.sku = select\.value/);
+    // The Add SMS href carries the selected plan's client_reference_id.
+    expect(html).toMatch(/withPlanRef\(addon\.paymentLinkUrl, planKey\)/);
   });
 });
 
@@ -310,5 +318,72 @@ describe('netlify plugin stripe-link-mode', () => {
   test('falls back to netlifyConfig.build.publish when constants has no PUBLISH_DIR', () => {
     const out = runPluginViaNetlifyConfigOnly('test');
     expect(out).toContain("window.STRIPE_LINK_MODE = 'test';");
+  });
+});
+
+
+// ── PRICING-7: contextual, plan-gated SMS add-on + radio-style selection ─────
+describe('PRICING-7 plan selection and contextual SMS add-on', () => {
+  const cardsBlock = extractBlock('<div class="az-pricing">', '<p class="az-pricing-note">');
+
+  test('AC1: no SMS dropdown is revealed until a plan is selected', () => {
+    // Every per-card add-on row ships hidden; no card starts selected.
+    const rows = cardsBlock.match(/<div class="az-card-sms" data-sms-row="(?:basic|standard|enterprise)" hidden>/g) || [];
+    expect(rows.length).toBe(3);
+    expect((cardsBlock.match(/class="az-pricing-card starter" data-plan="[a-z]+" aria-selected="false"/g) || []).length).toBe(3);
+    // No card is marked selected in the static markup.
+    expect(cardsBlock).not.toMatch(/az-pricing-card[^"]*selected/);
+  });
+
+  test('AC2: each card has its own Select control + hidden add-on row', () => {
+    for (const key of PLAN_KEYS) {
+      expect(cardsBlock).toContain(`<button type="button" class="az-plan-select" data-plan="${key}" aria-pressed="false">Select</button>`);
+      expect(cardsBlock).toContain(`<div class="az-card-sms" data-sms-row="${key}" hidden>`);
+      expect(cardsBlock).toContain(`id="az-sms-btn-${key}"`);
+      expect(cardsBlock).toContain(`id="az-sms-select-${key}"`);
+    }
+  });
+
+  test('AC2: exactly-one-selected radio logic is wired', () => {
+    expect(html).toMatch(/function selectPlan\(planKey\)/);
+    expect(html).toMatch(/function refreshPlanSelection\(\)/);
+    // Selection toggles a single card and reveals only that card's row.
+    expect(html).toMatch(/classList\.toggle\('selected', card\.dataset\.plan === planKey\)/);
+    expect(html).toMatch(/row\.hidden = !on/);
+    // Visibility is derived from the ONE selected card (never two rows open).
+    expect(html).toMatch(/const selected = document\.querySelector\('\.az-pricing-card\[data-plan\]\.selected'\)/);
+  });
+
+  test('AC3: add-on checkout URL carries client_reference_id=plan-<tier>', () => {
+    const src = (html.match(/function withPlanRef\(url, planKey\) \{[\s\S]*?\n    \}/) || [])[0];
+    expect(src).toBeTruthy();
+    // Exercise the real helper extracted from index.html.
+    const withPlanRef = new Function('return (' + src + ');')();
+    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'basic')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-basic');
+    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'standard')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-standard');
+    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'enterprise')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-enterprise');
+    // Appends rather than clobbers an existing query string.
+    expect(withPlanRef('https://buy.stripe.com/test_abc123?foo=1', 'standard')).toBe('https://buy.stripe.com/test_abc123?foo=1&client_reference_id=plan-standard');
+    // The add-on link and the change handler both route through it.
+    expect(html).toMatch(/client_reference_id=plan-/);
+    expect(html).toMatch(/withPlanRef\(addon\.paymentLinkUrl, btn\.dataset\.plan\)/);
+  });
+
+  test('AC4: no analytics/event plumbing introduced', () => {
+    expect(html).not.toContain('gtag(');
+    expect(html).not.toContain('dataLayer');
+    expect(html).not.toContain('trackEvent');
+  });
+
+  test('AC5(e): mode gating still applies to the new per-card add-on rows', () => {
+    expect(html).toMatch(/document\.querySelectorAll\('\.az-sms-coming'\)/);
+    expect(html).toMatch(/document\.querySelectorAll\('\.az-sms-btn\[data-plan\]'\)/);
+    expect(html).toMatch(/el\.hidden = !disabled/);
+    // Plan CTA is de-emphasised until its card is selected.
+    expect(html).toMatch(/setLinkDisabled\(cta, !on \|\| linkModeDisabled\(\)\)/);
+  });
+
+  test('AC: deep link pre-selects the named plan (not just scroll)', () => {
+    expect(html).toMatch(/if \(document\.querySelector\('\.az-pricing-card\[data-plan="' \+ key \+ '"\]'\)\) selectPlan\(key\)/);
   });
 });

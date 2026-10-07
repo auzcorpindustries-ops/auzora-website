@@ -717,6 +717,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .voice-badge-locked {
   color: #f59e0b; background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.30);
 }
+/* PORTAL-VOICE: region flag next to the voice label (full region in tooltip) */
+.voice-region { font-size: 11px; line-height: 1; cursor: help; }
+.voice-badge-configured {
+  color: var(--green); background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.28);
+}
 .voice-locked {
   opacity: 0.55; cursor: not-allowed;
 }
@@ -3039,6 +3044,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 <script src="js/dashboard-conversion.js"></script>
 <script src="js/dashboard-agent.js"></script>
 <script src="js/workflow-grid.js"></script>
+<script src="js/voice-grid.js"></script>
 <script>
 const API = location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz';
 let portalToken = null;
@@ -3171,7 +3177,12 @@ async function loadVoices() {
       gender: v.gender || 'unknown',
       provider: v.provider || 'elevenlabs',
       preview_url: v.preview_url,
-      isDefault: v.is_default === true || v.isDefault === true
+      isDefault: v.is_default === true || v.isDefault === true,
+      // PORTAL-VOICE: region/locale indicator + curated-grid membership.
+      region: v.region || null,
+      regionLabel: v.region_label || v.regionLabel || '',
+      regionFlag: v.region_flag || v.regionFlag || '',
+      portalDisplay: v.portal_display === true || v.portalDisplay === true
     }));
     return VOICES;
   } catch (e) {
@@ -8337,7 +8348,8 @@ function renderPortalVoiceGrid(selected) {
   // DISABLED (ELE-4) — OpenAI voices only; ElevenLabs section removed; removal ELE-6.
   // Legacy clients with ElevenLabs voices render them in the OpenAI grid with
   // the current voice preserved but locked for new selection.
-  const openaiVoices = VOICES.filter(v => v.provider === 'openai');
+  const VG = window.VoiceGrid || { regionBadgeHtml: () => '', configuredVoiceSummary: () => '', escapeHtml: (s) => String(s == null ? '' : s), gridVoices: (v) => v };
+  const openaiAllVoices = VOICES.filter(v => v.provider === 'openai');
   const legacyElevenLabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
 
   // Keep the selected highlight inside the client's saved provider when the
@@ -8360,6 +8372,11 @@ function renderPortalVoiceGrid(selected) {
     if (activeVoice) currentVoiceProvider = 'openai';
   }
 
+  // PORTAL-VOICE: prune the visible grid to the curated set the catalog flags
+  // (portal_display), always keeping the configured voice visible even when it
+  // falls outside the curated 10.
+  const openaiVoices = VG.gridVoices(openaiAllVoices, activeVoiceId);
+
   const sectionHeader = (title, noteHtml) => `
     <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">${title}</div>
@@ -8375,7 +8392,9 @@ function renderPortalVoiceGrid(selected) {
           <div class="voice-card-top">
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
+              ${VG.regionBadgeHtml(v)}
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
+              ${v.id === activeVoiceId ? '<span class="voice-badge voice-badge-configured">Configured</span>' : ''}
               ${locked ? '<span class="voice-badge voice-badge-locked" title="This voice is no longer available">Unavailable</span>' : ''}
             </div>
             <button class="play-btn ${tone}" id="ppb-${v.id}" onclick="event.stopPropagation();playPortalVoice('${v.id}')" title="Preview — free for every voice">▶</button>
@@ -8385,7 +8404,11 @@ function renderPortalVoiceGrid(selected) {
       }).join('')}
     </div>`;
 
-  const openaiNote = '<span style="font-size:11px;color:var(--green);font-weight:600;">Included with every plan</span>';
+  // PORTAL-VOICE: configured-voice identifier — a visible summary of the voice
+  // currently configured for the client so an admin can identify it at a glance.
+  const configuredSummary = VG.configuredVoiceSummary(VOICES, activeVoiceId);
+  const openaiNote = '<span style="font-size:11px;color:var(--green);font-weight:600;">Included with every plan</span>'
+    + (configuredSummary ? ` <span id="voice-configured-summary" style="font-size:11px;color:var(--muted);font-weight:600;">${VG.escapeHtml(configuredSummary)}</span>` : '');
 
   let html = '';
   if (openaiVoices.length > 0) {
@@ -8428,6 +8451,18 @@ function selectPortalVoice(id) {
     const locked = isVoiceLocked(v.id);
     card.className = `voice-card voice-tone-${tone} ${idAttr===id?'selected':''} ${locked?'voice-locked':''}`;
   });
+  // PORTAL-VOICE: keep the configured-voice identifier in sync on select.
+  const VG = window.VoiceGrid;
+  if (VG) {
+    document.querySelectorAll('#portal-voice-grid .voice-badge-configured').forEach(b => b.remove());
+    const selCard = document.getElementById(`pvc-${id}`);
+    if (selCard) {
+      const wrap = selCard.querySelector('.voice-name-wrap');
+      if (wrap) wrap.insertAdjacentHTML('beforeend', '<span class="voice-badge voice-badge-configured">Configured</span>');
+      const summaryEl = document.getElementById('voice-configured-summary');
+      if (summaryEl) summaryEl.textContent = VG.configuredVoiceSummary(VOICES, id);
+    }
+  }
   setDirty();
 }
 
