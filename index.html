@@ -804,6 +804,10 @@
       document.querySelectorAll('.az-pricing-btn[data-plan]').forEach((btn) => {
         const plan = PLANS[btn.dataset.plan];
         if (!plan) return;
+        // BILL-1 follow-up: plan CTAs must carry the mode-correct URL too.
+        // (SMS button already had this; plan buttons kept stale static hrefs,
+        // which on the staging deploy pointed at dead live-mode links.)
+        btn.href = plan.paymentLinkUrl;
         if (disabled) {
           btn.classList.add('disabled');
           btn.setAttribute('aria-disabled', 'true');
