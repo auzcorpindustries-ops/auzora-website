@@ -24,18 +24,14 @@
     campaign_response: 'Campaign Response',
   };
 
-  // Standardized cadence (identical for all 4 trigger types, per channel —
-  // TRG-4 spec): trigger fires -> 2-day waits between re-engages -> mark cold.
-  // Call automations re-engage with AI callback calls; SMS automations with
-  // re-engagement texts.
+  // Every offering (the 4 trigger types x Call/SMS) plus the compiled CSV-import
+  // follow-ups share ONE standardized cadence: a 2-day wait before each of three
+  // re-engagements, then mark cold. Call automations re-engage with AI callback
+  // calls; SMS automations with re-engagement texts.
   var CADENCE_DESC = {
     call: 'Trigger fires → wait 2 days → AI callback call → wait 2 days → AI callback call → wait 2 days → final AI callback call → mark lead cold',
     sms: 'Trigger fires → wait 2 days → re-engagement text → wait 2 days → re-engagement text → wait 2 days → final re-engagement text → mark lead cold',
   };
-
-  // One-shot CSV-import follow-up copy (trigger 'csv_import'). These variants
-  // are NOT on the 2-day re-engage cadence — they fire once per imported lead.
-  var CSV_IMPORT_DESC = 'Fires once per imported lead.';
 
   // Toggle control for a workflow card: maps a status to the button the card
   // renders. A 'requested' (Pending) card is NOT dead — it exposes an enabled
@@ -162,6 +158,21 @@
     return typeof key === 'string' && !/^\d+$/.test(key);
   }
 
+  // Whether a workflow card exposes the inline "Customize" params editor.
+  //
+  // Every card with a backend configurable-parameters catalog gets the editor
+  // (atlas-ai workflowParamCatalog.js):
+  //   - legacy preset rows (numeric templateId 1-6), and
+  //   - ALL offering rows — the 8 trigger x channel cadence offerings (keyed by
+  //     offering key: wait_1/2/3 + call_template/sms_template) AND the 2
+  //     compiled CSV-import follow-ups (wait_1/3/5 + …_2/4/6). GET
+  //     /portal/workflows/<key>/params returns 200 for each, so the control is
+  //     a live editor, never a dead button.
+  function isCustomizable(row) {
+    if (isLegacyRow(row)) return true;
+    return isOfferingRow(row);
+  }
+
   function fallbackOfferings() {
     return FALLBACK_OFFERINGS.map(function (o) {
       return Object.assign({}, o, { status: 'off' });
@@ -202,13 +213,11 @@
   }
 
   // Card description lines for an offering card:
-  // [API description, standardized cadence string]. CSV-import variants are
-  // one-shot, so they carry a dedicated (non-cadence) second line.
+  // [API description, standardized cadence string]. Every offering card —
+  // including the compiled CSV-import follow-ups — now carries the shared
+  // 2-day x3 re-engage cadence on its second line.
   function offeringDescLines(offering) {
     var channel = offering && offering.channel === 'sms' ? 'sms' : 'call';
-    if (offering && offering.trigger === 'csv_import') {
-      return [offering.description || offering.summary || '', CSV_IMPORT_DESC];
-    }
     return [offering.description || offering.summary || '', CADENCE_DESC[channel]];
   }
 
@@ -234,11 +243,11 @@
     TRIGGER_TYPES: TRIGGER_TYPES,
     TRIGGER_LABELS: TRIGGER_LABELS,
     CADENCE_DESC: CADENCE_DESC,
-    CSV_IMPORT_DESC: CSV_IMPORT_DESC,
     FALLBACK_OFFERINGS: FALLBACK_OFFERINGS,
     isOfferingRow: isOfferingRow,
     isLegacyRow: isLegacyRow,
     isOfferingKey: isOfferingKey,
+    isCustomizable: isCustomizable,
     fallbackOfferings: fallbackOfferings,
     sortOfferings: sortOfferings,
     normalizeWorkflows: normalizeWorkflows,

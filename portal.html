@@ -1514,6 +1514,39 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             </div>
           </div>
 
+          <!-- Voicemail Fallback (authored script) -->
+          <div class="card collapsible-section" data-collapse-key="agent-voicemail-fallback">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
+              <div class="card-title" style="margin:0;"><i data-lucide="mic-vocal"></i> Voicemail Fallback
+                <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;" onclick="event.stopPropagation();">
+                <input type="checkbox" id="s-vm-fallback" onchange="togglePortalVmFallback();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                Enable
+              </label>
+            </div>
+            <div class="collapsible-body">
+              <div id="s-vm-fallback-body" style="display:none;">
+                <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+                  When an answering machine picks up on an AI outbound call and the greeting has finished (beep or silence), leave your own recorded message instead of the generic one. Each number receives your message at most once per 30 days.
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label>Your voicemail message <span style="color:var(--muted);font-weight:400;">(spoken by your AI voice — capped at 20 seconds)</span></label>
+                  <textarea id="s-vm-fallback-script" rows="4" maxLength="1200" oninput="updateVmFallbackEstimate();setDirty()"
+                    placeholder="Hi, this is Liz from Sparkle Pools. Sorry we missed you — give us a call back at 555-123-4567 or book online anytime. Thanks!"></textarea>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px;">
+                    <span id="s-vm-fallback-estimate"></span>
+                    <span id="s-vm-fallback-counter"></span>
+                  </div>
+                </div>
+                <div style="font-size:11px;color:var(--muted);">
+                  Anything past 20 seconds of spoken audio is automatically trimmed at a word boundary before the message is recorded.
+                </div>
+              </div>
+              <div id="s-vm-fallback-off" style="font-size:13px;color:var(--muted);">Leave a custom voicemail message when the AI reaches an answering machine. Off by default.</div>
+            </div>
+          </div>
+
           <!-- After Hours -->
           <div class="card collapsible-section" data-collapse-key="agent-after-hours">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;" class="collapsible-header" onclick="toggleCollapseSection(this)">
@@ -8240,6 +8273,19 @@ async function loadSettings() {
     r.checked = r.value === vmMode;
   });
 
+  // Voicemail Fallback (authored script) — default OFF
+  const vmFallbackOn = c.voicemail_fallback_enabled === true;
+  const vmFallbackEl = document.getElementById('s-vm-fallback');
+  if (vmFallbackEl) {
+    vmFallbackEl.checked = vmFallbackOn;
+    togglePortalVmFallback();
+  }
+  const vmFallbackScriptEl = document.getElementById('s-vm-fallback-script');
+  if (vmFallbackScriptEl) {
+    vmFallbackScriptEl.value = c.voicemail_fallback_script || '';
+    updateVmFallbackEstimate();
+  }
+
   // ── Render tag-based fields BEFORE async loadVoices() ──────────────────
   // These must populate synchronously so portalServices / portalSpecialties
   // / getPortalFaqs() return real data if the user clicks Save before
@@ -8308,6 +8354,41 @@ function togglePortalAH() {
   const on = document.getElementById('s-ah').checked;
   document.getElementById('s-ah-body').style.display = on ? 'block' : 'none';
   document.getElementById('s-ah-off').style.display = on ? 'none' : 'block';
+}
+
+function togglePortalVmFallback() {
+  const on = document.getElementById('s-vm-fallback').checked;
+  document.getElementById('s-vm-fallback-body').style.display = on ? 'block' : 'none';
+  document.getElementById('s-vm-fallback-off').style.display = on ? 'none' : 'block';
+  updateVmFallbackEstimate();
+}
+
+// Conservative spoken-duration estimate for the authored voicemail script.
+// Mirrors the backend capScript() estimate (slow rate ~2.6 wps + punctuation
+// pauses + per-digit penalty) so the portal hint never under-reports vs what
+// the backend will actually cut at 20s.
+function updateVmFallbackEstimate() {
+  const ta = document.getElementById('s-vm-fallback-script');
+  const estEl = document.getElementById('s-vm-fallback-estimate');
+  const cntEl = document.getElementById('s-vm-fallback-counter');
+  if (!ta || !estEl || !cntEl) return;
+  const text = ta.value || '';
+  const words = (text.match(/\S+/g) || []).length;
+  const commas = (text.match(/,/g) || []).length;
+  const sentences = (text.match(/[.!?;:]+/g) || []).length;
+  const digits = (text.match(/\d/g) || []).length;
+  const seconds = (words / 2.6) + commas * 0.25 + sentences * 0.4 + digits * 0.35;
+  const rounded = Math.round(seconds * 10) / 10;
+  if (!words) {
+    estEl.textContent = '';
+  } else if (seconds > 20) {
+    estEl.textContent = '~' + rounded + 's spoken — will be trimmed to 20s at a word boundary';
+    estEl.style.color = '#f59e0b';
+  } else {
+    estEl.textContent = '~' + rounded + 's spoken';
+    estEl.style.color = 'var(--muted)';
+  }
+  cntEl.textContent = text.length + '/1200';
 }
 
 function toggleDisclosureBody() {
@@ -8824,6 +8905,8 @@ async function saveSettings() {
       ai_disclosure_text: document.getElementById('s-disclosure-text').value,
       business_overview: document.getElementById('s-business-overview')?.value || '',
       voicemail_mode: document.querySelector('input[name="voicemail-mode"]:checked')?.value || 'message',
+      voicemail_fallback_enabled: document.getElementById('s-vm-fallback')?.checked === true,
+      voicemail_fallback_script: document.getElementById('s-vm-fallback-script')?.value || '',
       warm_transfer_enabled: document.getElementById('s-warm-transfer').checked,
       reminders_enabled: document.getElementById('s-reminders').checked,
       sms_lead_template: document.getElementById('s-lead-template')?.value || undefined,
@@ -11950,7 +12033,7 @@ function wfRefLiteral(wfRef) {
 // locked=true renders the disabled tier-gate card (unless status==='active',
 // which renders as grandfathered); legacyBadge/gate are optional HTML/object.
 function workflowCardHtml(opts) {
-  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable } = opts;
+  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable, customizable } = opts;
   const ref = wfRefLiteral(domId);
   const badgeColor = {
     off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
@@ -11969,6 +12052,12 @@ function workflowCardHtml(opts) {
   // Pending age ("pending 3 days") so a request stuck awaiting admin approval
   // is visible to the client rather than an indistinct "Pending" badge.
   const ageText = status === 'requested' ? WorkflowGrid.pendingAge(requestedAt) : '';
+  // Params editor ("Customize") is rendered ONLY for rows the caller marks
+  // customizable — i.e. rows with a backend params catalog: legacy presets and
+  // the CSV-import offerings (keyed by offering key). The 8 cadence offerings
+  // have no catalog, so the control is hidden rather than left as a dead
+  // button. Default (flag absent) is hidden: opt-in.
+  const showCustomize = customizable === true;
 
   const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
     ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${escapeHtmlAttr(rejectionReason)}</div>`
@@ -12018,10 +12107,10 @@ function workflowCardHtml(opts) {
                 : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${isCancel ? 'transparent' : 'var(--accent)'};color:${isCancel ? 'var(--text)' : '#fff'};border:${isCancel ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
               }
               ${testable && status === 'active' ? `<button onclick="openTestModal(${ref}, '${escapeHtmlAttr(name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
-              <button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
+              ${showCustomize ? `<button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>` : ''}
             </div>
           </div>
-          <div id="wf-params-${domId}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>
+          ${showCustomize ? `<div id="wf-params-${domId}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>` : ''}
         </div>`;
 }
 
@@ -12075,8 +12164,13 @@ async function loadWorkflows(page) {
         domId: of.offeringKey, name: of.name || of.offeringKey, summary: of.summary || '',
         descHtml, status: of.status || 'off', rejectionReason: of.rejection_reason,
         requestedAt: of.requested_at,
-        // client_flag offerings have no n8n workflow to test-fire.
-        locked: !hasEntitlement, gate, testable: of.provision !== 'client_flag',
+        // Only offerings the v2 fire path (EVENT_MAP_V2) can test-fire are
+        // testable. The compiled CSV-import follow-ups are cadence workflows
+        // fired by the import handler, so they are not test-fired from here.
+        locked: !hasEntitlement, gate, testable: (of.provision || 'n8n') === 'n8n',
+        // All offering cards carry a params catalog now (8 cadence + 2
+        // CSV-import), so every card exposes the Customize control.
+        customizable: WorkflowGrid.isCustomizable(of),
       });
     }).concat(channelLegacy.map(w => {
       const meta = WORKFLOW_META[w.templateId] || {};
@@ -12090,6 +12184,8 @@ async function loadWorkflows(page) {
         status: w.status || 'off', rejectionReason: w.rejection_reason,
         requestedAt: w.requested_at,
         locked: !hasEntitlement, gate, legacyBadge, testable: true,
+        // Legacy presets have a params catalog (numeric templates 1-6).
+        customizable: WorkflowGrid.isCustomizable(w),
       });
     })).join('');
   } catch (err) {
@@ -12273,10 +12369,17 @@ function renderWorkflowParams(templateId, data) {
   const units = data.wait_units || ['minutes', 'hours', 'days'];
   const timezones = data.timezones || [];
   const meta = WORKFLOW_META[templateId] || {};
+  // JS-literal form of the workflow reference for inline handlers: numeric
+  // templateIds stay bare, string offering keys are single-quoted. Without
+  // this an offering-key panel emits onclick="toggleWfpStep(imported_leads_voice,
+  // this, 0)" — an unquoted identifier, i.e. a ReferenceError on click — so
+  // every step toggle and every panel button was dead on the offering cards.
+  // DOM ids keep the raw key (a valid id either way).
+  const ref = wfRefLiteral(templateId);
 
   // ── Merge field reference chips ──
   const chips = (data.merge_fields || []).map(f =>
-    `<button type="button" onclick="insertMergeField(${templateId}, '${f.token}')"
+    `<button type="button" onclick="insertMergeField(${ref}, '${f.token}')"
        title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
        style="background:rgba(16,24,38,0.04);border:1px solid rgba(16,24,38,0.08);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:#101826;cursor:pointer;">{{${f.token}}}</button>`
   ).join(' ');
@@ -12348,10 +12451,10 @@ function renderWorkflowParams(templateId, data) {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                    value="${escapeHtmlAttr(w.at || '09:00')}"
-                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   oninput="updateWaitHint(${ref}, '${w.key}')"
                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-tz"
-                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    onchange="updateWaitHint(${ref}, '${w.key}')"
                     style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;max-width:200px;">
               ${tzOpts}
             </select>
@@ -12369,10 +12472,10 @@ function renderWorkflowParams(templateId, data) {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
                    value="${w.value}" min="1" max="${max}" step="1"
-                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   oninput="updateWaitHint(${ref}, '${w.key}')"
                    style="width:88px;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-unit"
-                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    onchange="updateWaitHint(${ref}, '${w.key}')"
                     style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 12px;font-size:13.5px;color:#101826;outline:none;">
               ${opts}
             </select>
@@ -12393,7 +12496,7 @@ function renderWorkflowParams(templateId, data) {
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${chips}</div>
         <textarea id="wfp-${templateId}-tpl-${t.key}" rows="3" maxlength="${t.max_chars}"
                   data-channel="${t.channel}"
-                  oninput="updateTemplateCount(${templateId}, '${t.key}')"
+                  oninput="updateTemplateCount(${ref}, '${t.key}')"
                   onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
                   style="width:100%;box-sizing:border-box;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#101826;outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-top:7px;">
@@ -12413,7 +12516,7 @@ function renderWorkflowParams(templateId, data) {
           <i data-lucide="${n.icon}" style="width:14px;height:14px;${n.iconColor}"></i>
         </div>
         <div style="flex:1;min-width:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;background:#fbfbfc;overflow:hidden;">
-          <div onclick="toggleWfpStep(${templateId}, this, ${i})"
+          <div onclick="toggleWfpStep(${ref}, this, ${i})"
                style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;"
                onmouseover="this.style.background='rgba(16,24,38,0.02)'"
                onmouseout="this.style.background='transparent'">
@@ -12442,7 +12545,7 @@ function renderWorkflowParams(templateId, data) {
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:16px;">
         <span style="font-size:14px;font-weight:700;color:#101826;">Workflow steps</span>
         <span style="font-size:12.5px;color:#5f687a;">Each step runs in order. Expand one to edit its wait or message.</span>
-        <span onclick="collapseAllWfpSteps(${templateId}, this)"
+        <span onclick="collapseAllWfpSteps(${ref}, this)"
               style="margin-left:auto;font-size:12.5px;font-weight:600;color:#5f687a;cursor:pointer;white-space:nowrap;"
               onmouseover="this.style.color='#7C3AED'"
               onmouseout="this.style.color='#5f687a'">Collapse all</span>
@@ -12459,11 +12562,11 @@ function renderWorkflowParams(templateId, data) {
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
       <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap;">
-        <button onclick="saveWorkflowParams(${templateId}, this)"
+        <button onclick="saveWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:#3B82F6;color:#fff;border:none;cursor:pointer;">Save Settings</button>
-        <button onclick="previewWorkflowParams(${templateId}, this)"
+        <button onclick="previewWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid #3B82F6;color:#3B82F6;cursor:pointer;">Preview</button>
-        <button onclick="resetWorkflowParams(${templateId}, this)"
+        <button onclick="resetWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid rgba(16,24,38,0.14);color:#5f687a;cursor:pointer;">Reset to Defaults</button>
       </div>
     </div>`;
@@ -12522,6 +12625,33 @@ function buildWorkflowSteps(templateId, data, meta) {
   const waits = data.waits || [];
   const templates = data.templates || [];
   const steps = [];
+
+  // ── IR-derived order (preferred) ──
+  // The API returns `steps` — the exact ordered sequence the compiled workflow
+  // runs, expressed as catalog keys (workflowStepOrder.js). Render the timeline
+  // straight from it. This is what makes an OFFERING panel show
+  // "wait → call → wait → call → wait → call": WORKFLOW_META has no entry for an
+  // offering key, so the desc-parse below produced nothing and the fallback
+  // reordered the steps into every-wait-then-every-message. The desc-parse stays
+  // as the fallback for a backend that predates `steps`.
+  if (Array.isArray(data.steps) && data.steps.length) {
+    const irSteps = [];
+    for (const s of data.steps) {
+      if (s.kind === 'wait') {
+        const w = waits.find(x => x.key === s.key);
+        if (w) irSteps.push({ kind: 'wait', wait: w, title: w.label || 'Wait' });
+      } else {
+        const t = templates.find(x => x.key === s.key);
+        if (t) irSteps.push({ kind: t.channel === 'voice' ? 'voice' : 'sms', tpl: t, title: t.label });
+      }
+    }
+    if (irSteps.length) {
+      if (meta.summary) {
+        irSteps.unshift({ kind: 'trigger', title: 'Workflow trigger', plain: meta.summary, triggerLabel: 'Trigger' });
+      }
+      return irSteps;
+    }
+  }
 
   // Try to parse the desc string for ordering
   // e.g. "SMS → wait 15m → AI call → wait 2h → SMS → wait 24h → final SMS"
@@ -12584,6 +12714,7 @@ function buildWorkflowSteps(templateId, data, meta) {
 // no timezone at all so the step keeps following client.timezone if the client
 // later changes it on the Scheduling page.
 function renderSpecificTimeRow(templateId, w, timezones, data) {
+  const ref = wfRefLiteral(templateId);
   const clientTz = data.client_timezone || '';
   const tzOpts = [
     `<option value=""${!w.timezone ? ' selected' : ''}>Use my business timezone${clientTz ? ' (' + escapeHtmlAttr(tzLabel(clientTz)) + ')' : ''}</option>`,
@@ -12600,10 +12731,10 @@ function renderSpecificTimeRow(templateId, w, timezones, data) {
         </div>
         <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                value="${escapeHtmlAttr(w.at || '09:00')}"
-               oninput="updateWaitHint(${templateId}, '${w.key}')"
+               oninput="updateWaitHint(${ref}, '${w.key}')"
                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
         <select id="wfp-${templateId}-wait-${w.key}-tz"
-                onchange="updateWaitHint(${templateId}, '${w.key}')"
+                onchange="updateWaitHint(${ref}, '${w.key}')"
                 style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;max-width:200px;">
           ${tzOpts}
         </select>
