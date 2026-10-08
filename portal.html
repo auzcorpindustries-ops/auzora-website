@@ -12369,10 +12369,17 @@ function renderWorkflowParams(templateId, data) {
   const units = data.wait_units || ['minutes', 'hours', 'days'];
   const timezones = data.timezones || [];
   const meta = WORKFLOW_META[templateId] || {};
+  // JS-literal form of the workflow reference for inline handlers: numeric
+  // templateIds stay bare, string offering keys are single-quoted. Without
+  // this an offering-key panel emits onclick="toggleWfpStep(imported_leads_voice,
+  // this, 0)" — an unquoted identifier, i.e. a ReferenceError on click — so
+  // every step toggle and every panel button was dead on the offering cards.
+  // DOM ids keep the raw key (a valid id either way).
+  const ref = wfRefLiteral(templateId);
 
   // ── Merge field reference chips ──
   const chips = (data.merge_fields || []).map(f =>
-    `<button type="button" onclick="insertMergeField(${templateId}, '${f.token}')"
+    `<button type="button" onclick="insertMergeField(${ref}, '${f.token}')"
        title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
        style="background:rgba(16,24,38,0.04);border:1px solid rgba(16,24,38,0.08);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:#101826;cursor:pointer;">{{${f.token}}}</button>`
   ).join(' ');
@@ -12444,10 +12451,10 @@ function renderWorkflowParams(templateId, data) {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                    value="${escapeHtmlAttr(w.at || '09:00')}"
-                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   oninput="updateWaitHint(${ref}, '${w.key}')"
                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-tz"
-                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    onchange="updateWaitHint(${ref}, '${w.key}')"
                     style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;max-width:200px;">
               ${tzOpts}
             </select>
@@ -12465,10 +12472,10 @@ function renderWorkflowParams(templateId, data) {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
                    value="${w.value}" min="1" max="${max}" step="1"
-                   oninput="updateWaitHint(${templateId}, '${w.key}')"
+                   oninput="updateWaitHint(${ref}, '${w.key}')"
                    style="width:88px;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-unit"
-                    onchange="updateWaitHint(${templateId}, '${w.key}')"
+                    onchange="updateWaitHint(${ref}, '${w.key}')"
                     style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 12px;font-size:13.5px;color:#101826;outline:none;">
               ${opts}
             </select>
@@ -12489,7 +12496,7 @@ function renderWorkflowParams(templateId, data) {
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${chips}</div>
         <textarea id="wfp-${templateId}-tpl-${t.key}" rows="3" maxlength="${t.max_chars}"
                   data-channel="${t.channel}"
-                  oninput="updateTemplateCount(${templateId}, '${t.key}')"
+                  oninput="updateTemplateCount(${ref}, '${t.key}')"
                   onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
                   style="width:100%;box-sizing:border-box;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#101826;outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-top:7px;">
@@ -12509,7 +12516,7 @@ function renderWorkflowParams(templateId, data) {
           <i data-lucide="${n.icon}" style="width:14px;height:14px;${n.iconColor}"></i>
         </div>
         <div style="flex:1;min-width:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;background:#fbfbfc;overflow:hidden;">
-          <div onclick="toggleWfpStep(${templateId}, this, ${i})"
+          <div onclick="toggleWfpStep(${ref}, this, ${i})"
                style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;"
                onmouseover="this.style.background='rgba(16,24,38,0.02)'"
                onmouseout="this.style.background='transparent'">
@@ -12538,7 +12545,7 @@ function renderWorkflowParams(templateId, data) {
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:16px;">
         <span style="font-size:14px;font-weight:700;color:#101826;">Workflow steps</span>
         <span style="font-size:12.5px;color:#5f687a;">Each step runs in order. Expand one to edit its wait or message.</span>
-        <span onclick="collapseAllWfpSteps(${templateId}, this)"
+        <span onclick="collapseAllWfpSteps(${ref}, this)"
               style="margin-left:auto;font-size:12.5px;font-weight:600;color:#5f687a;cursor:pointer;white-space:nowrap;"
               onmouseover="this.style.color='#7C3AED'"
               onmouseout="this.style.color='#5f687a'">Collapse all</span>
@@ -12555,11 +12562,11 @@ function renderWorkflowParams(templateId, data) {
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
       <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap;">
-        <button onclick="saveWorkflowParams(${templateId}, this)"
+        <button onclick="saveWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:#3B82F6;color:#fff;border:none;cursor:pointer;">Save Settings</button>
-        <button onclick="previewWorkflowParams(${templateId}, this)"
+        <button onclick="previewWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid #3B82F6;color:#3B82F6;cursor:pointer;">Preview</button>
-        <button onclick="resetWorkflowParams(${templateId}, this)"
+        <button onclick="resetWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid rgba(16,24,38,0.14);color:#5f687a;cursor:pointer;">Reset to Defaults</button>
       </div>
     </div>`;
@@ -12618,6 +12625,33 @@ function buildWorkflowSteps(templateId, data, meta) {
   const waits = data.waits || [];
   const templates = data.templates || [];
   const steps = [];
+
+  // ── IR-derived order (preferred) ──
+  // The API returns `steps` — the exact ordered sequence the compiled workflow
+  // runs, expressed as catalog keys (workflowStepOrder.js). Render the timeline
+  // straight from it. This is what makes an OFFERING panel show
+  // "wait → call → wait → call → wait → call": WORKFLOW_META has no entry for an
+  // offering key, so the desc-parse below produced nothing and the fallback
+  // reordered the steps into every-wait-then-every-message. The desc-parse stays
+  // as the fallback for a backend that predates `steps`.
+  if (Array.isArray(data.steps) && data.steps.length) {
+    const irSteps = [];
+    for (const s of data.steps) {
+      if (s.kind === 'wait') {
+        const w = waits.find(x => x.key === s.key);
+        if (w) irSteps.push({ kind: 'wait', wait: w, title: w.label || 'Wait' });
+      } else {
+        const t = templates.find(x => x.key === s.key);
+        if (t) irSteps.push({ kind: t.channel === 'voice' ? 'voice' : 'sms', tpl: t, title: t.label });
+      }
+    }
+    if (irSteps.length) {
+      if (meta.summary) {
+        irSteps.unshift({ kind: 'trigger', title: 'Workflow trigger', plain: meta.summary, triggerLabel: 'Trigger' });
+      }
+      return irSteps;
+    }
+  }
 
   // Try to parse the desc string for ordering
   // e.g. "SMS → wait 15m → AI call → wait 2h → SMS → wait 24h → final SMS"
@@ -12680,6 +12714,7 @@ function buildWorkflowSteps(templateId, data, meta) {
 // no timezone at all so the step keeps following client.timezone if the client
 // later changes it on the Scheduling page.
 function renderSpecificTimeRow(templateId, w, timezones, data) {
+  const ref = wfRefLiteral(templateId);
   const clientTz = data.client_timezone || '';
   const tzOpts = [
     `<option value=""${!w.timezone ? ' selected' : ''}>Use my business timezone${clientTz ? ' (' + escapeHtmlAttr(tzLabel(clientTz)) + ')' : ''}</option>`,
@@ -12696,10 +12731,10 @@ function renderSpecificTimeRow(templateId, w, timezones, data) {
         </div>
         <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                value="${escapeHtmlAttr(w.at || '09:00')}"
-               oninput="updateWaitHint(${templateId}, '${w.key}')"
+               oninput="updateWaitHint(${ref}, '${w.key}')"
                style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;">
         <select id="wfp-${templateId}-wait-${w.key}-tz"
-                onchange="updateWaitHint(${templateId}, '${w.key}')"
+                onchange="updateWaitHint(${ref}, '${w.key}')"
                 style="background:var(--field);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;max-width:200px;">
           ${tzOpts}
         </select>

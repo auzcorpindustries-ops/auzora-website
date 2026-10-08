@@ -80,4 +80,35 @@ describe('portal.html automations wiring', () => {
     expect(body).toContain('customizable: WorkflowGrid.isCustomizable(of),');
     expect(body).toContain('customizable: WorkflowGrid.isCustomizable(w),');
   });
+
+  // ── CSV-CUSTOMIZE-FIX ──────────────────────────────────────────────────
+  // Offering keys are strings; the params panel was emitting
+  // onclick="toggleWfpStep(imported_leads_voice, …)" (an unquoted identifier →
+  // ReferenceError), so every step toggle + button on an offering panel was
+  // dead. Every inline handler must use the JS-literal form of the ref.
+  test('renderWorkflowParams quotes the workflow ref in every inline handler', () => {
+    const body = fnBody('renderWorkflowParams');
+    expect(body).toContain('const ref = wfRefLiteral(templateId);');
+    for (const call of [
+      'toggleWfpStep', 'updateWaitHint', 'updateTemplateCount', 'insertMergeField',
+      'collapseAllWfpSteps', 'saveWorkflowParams', 'previewWorkflowParams', 'resetWorkflowParams',
+    ]) {
+      expect(body).toContain(`${call}(\${ref}`);
+      // the old, dead unquoted form is gone
+      expect(body).not.toContain(`${call}(\${templateId}`);
+    }
+    // DOM ids stay keyed on the raw reference (valid either way).
+    expect(body).toContain('id="wfp-${templateId}-wait-${w.key}-value"');
+  });
+
+  // The step order must come from the API's IR-derived `steps`, not from
+  // parsing WORKFLOW_META[id].desc (which has no entry for an offering key, so
+  // the old fallback showed every wait before every message).
+  test('buildWorkflowSteps renders the IR-derived order when the API supplies steps', () => {
+    const body = fnBody('buildWorkflowSteps');
+    expect(body).toContain('Array.isArray(data.steps)');
+    expect(body).toContain('for (const s of data.steps)');
+    // still falls back to the desc parse when steps is absent
+    expect(body).toContain("const desc = meta.desc || '';");
+  });
 });
