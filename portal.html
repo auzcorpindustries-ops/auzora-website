@@ -12165,11 +12165,11 @@ async function loadWorkflows(page) {
         descHtml, status: of.status || 'off', rejectionReason: of.rejection_reason,
         requestedAt: of.requested_at,
         // Only offerings the v2 fire path (EVENT_MAP_V2) can test-fire are
-        // testable. The compiled CSV-import variants are one-shot workflows
+        // testable. The compiled CSV-import follow-ups are cadence workflows
         // fired by the import handler, so they are not test-fired from here.
         locked: !hasEntitlement, gate, testable: (of.provision || 'n8n') === 'n8n',
-        // The CSV-import offerings now carry a params catalog (keyed by offering
-        // key); the 8 cadence offerings still have none.
+        // All offering cards carry a params catalog now (8 cadence + 2
+        // CSV-import), so every card exposes the Customize control.
         customizable: WorkflowGrid.isCustomizable(of),
       });
     }).concat(channelLegacy.map(w => {
