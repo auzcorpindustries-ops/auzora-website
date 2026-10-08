@@ -62,4 +62,22 @@ describe('portal.html automations wiring', () => {
   test('clearLeadImport resets the consent checkbox', () => {
     expect(fnBody('clearLeadImport')).toContain("getElementById('li-sms-consent')");
   });
+
+  // ── Customize gating (zeus_1791430190387_7ad7a48a) ──────────────────────
+  test('workflowCardHtml gates the Customize button + params panel on the flag', () => {
+    const body = fnBody('workflowCardHtml');
+    expect(body).toContain('const showCustomize = customizable === true;');
+    // button + panel now render only when showCustomize is true...
+    expect(body).toContain('${showCustomize ? `<button onclick="toggleWorkflowParams(${ref})"');
+    expect(body).toContain('${showCustomize ? `<div id="wf-params-${domId}"');
+    // ...and the old unconditional controls (each starting its own line) are gone.
+    expect(body).not.toMatch(/\n\s*<button onclick="toggleWorkflowParams\(\$\{ref\}\)" id="wf-cfg-btn-/);
+    expect(body).not.toMatch(/\n\s*<div id="wf-params-\$\{domId\}"/);
+  });
+
+  test('loadWorkflows passes customizable for offering and legacy rows', () => {
+    const body = fnBody('loadWorkflows');
+    expect(body).toContain('customizable: WorkflowGrid.isCustomizable(of),');
+    expect(body).toContain('customizable: WorkflowGrid.isCustomizable(w),');
+  });
 });

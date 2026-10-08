@@ -11950,7 +11950,7 @@ function wfRefLiteral(wfRef) {
 // locked=true renders the disabled tier-gate card (unless status==='active',
 // which renders as grandfathered); legacyBadge/gate are optional HTML/object.
 function workflowCardHtml(opts) {
-  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable } = opts;
+  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable, customizable } = opts;
   const ref = wfRefLiteral(domId);
   const badgeColor = {
     off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
@@ -11969,6 +11969,12 @@ function workflowCardHtml(opts) {
   // Pending age ("pending 3 days") so a request stuck awaiting admin approval
   // is visible to the client rather than an indistinct "Pending" badge.
   const ageText = status === 'requested' ? WorkflowGrid.pendingAge(requestedAt) : '';
+  // Params editor ("Customize") is rendered ONLY for rows the caller marks
+  // customizable — i.e. legacy presets, which have a backend params catalog.
+  // Offering cards (cadence + client_flag CSV-import variants) 404 on
+  // GET /portal/workflows/:id/params, so the control is hidden rather than
+  // left as a dead button. Default (flag absent) is hidden: opt-in.
+  const showCustomize = customizable === true;
 
   const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
     ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${escapeHtmlAttr(rejectionReason)}</div>`
@@ -12018,10 +12024,10 @@ function workflowCardHtml(opts) {
                 : `<button onclick="${toggleAction}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${isCancel ? 'transparent' : 'var(--accent)'};color:${isCancel ? 'var(--text)' : '#fff'};border:${isCancel ? '1px solid var(--border)' : 'none'};cursor:pointer;">${toggleLabel}</button>`
               }
               ${testable && status === 'active' ? `<button onclick="openTestModal(${ref}, '${escapeHtmlAttr(name)}')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;">Test</button>` : ''}
-              <button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>
+              ${showCustomize ? `<button onclick="toggleWorkflowParams(${ref})" id="wf-cfg-btn-${domId}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text);cursor:pointer;">Customize</button>` : ''}
             </div>
           </div>
-          <div id="wf-params-${domId}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>
+          ${showCustomize ? `<div id="wf-params-${domId}" style="display:none;border-top:1px solid var(--border);padding:16px;"></div>` : ''}
         </div>`;
 }
 
@@ -12077,6 +12083,9 @@ async function loadWorkflows(page) {
         requestedAt: of.requested_at,
         // client_flag offerings have no n8n workflow to test-fire.
         locked: !hasEntitlement, gate, testable: of.provision !== 'client_flag',
+        // No params catalog for any offering row (cadence or client_flag) —
+        // hide the Customize control instead of letting it 404.
+        customizable: WorkflowGrid.isCustomizable(of),
       });
     }).concat(channelLegacy.map(w => {
       const meta = WORKFLOW_META[w.templateId] || {};
@@ -12090,6 +12099,8 @@ async function loadWorkflows(page) {
         status: w.status || 'off', rejectionReason: w.rejection_reason,
         requestedAt: w.requested_at,
         locked: !hasEntitlement, gate, legacyBadge, testable: true,
+        // Legacy presets are the only rows with a params catalog.
+        customizable: WorkflowGrid.isCustomizable(w),
       });
     })).join('');
   } catch (err) {
