@@ -901,10 +901,12 @@ tr:hover td { background: var(--tint); }
         </div>
         <div id="workflow-pending-list"><div class="loading">Loading...</div></div>
       </div>
-      <!-- CSV-IMPORT AUTOMATIONS: the two flag-provisioned follow-up variants
-           (imported_leads_voice / imported_leads_sms) do not clone an n8n
-           workflow, so they never need the request→approve clone path. This
-           per-client panel is the admin's enable/disable control for them. -->
+      <!-- CSV-IMPORT AUTOMATIONS: the two CSV-import follow-up variants
+           (imported_leads_voice / imported_leads_sms) are compiled onto real
+           n8n workflows at approval (provision: 'compiled'), so they need a
+           per-client enable/disable surface rather than the client request→
+           approve clone list. This panel drives approve (compile) / reject
+           (teardown). -->
       <div class="table-card" style="margin-top:20px;">
         <div class="table-toolbar">
           <h2>CSV Import Automations</h2>
@@ -2675,11 +2677,10 @@ function adminJsLiteral(v) {
 }
 
 // ── CSV IMPORT AUTOMATIONS ────────────────────────────────────────
-// imported_leads_voice / imported_leads_sms are provisioned by a boolean
-// client flag (no n8n clone) rather than the request→approve clone path, so
-// they need their own per-client enable/disable surface. This drives the SAME
-// approve (enable) / reject (disable) routes the request list uses; the
-// backend treats reject-on-flag-offering as "clear flag + cancel".
+// imported_leads_voice / imported_leads_sms are compiled onto real n8n
+// workflows at approval (provision: 'compiled'), so they need their own
+// per-client enable/disable surface (the same approve/reject routes the
+// request list uses; the backend compiles on approve and tears down on reject).
 const CSV_IMPORT_AUTOMATIONS = [
   { key: 'imported_leads_voice', label: 'Voice Services — CSV import follow-up call' },
   { key: 'imported_leads_sms',   label: 'SMS Services — CSV import follow-up text' },
@@ -2750,9 +2751,9 @@ async function loadCsvAutomations() {
   }
 }
 
-// enable=true → PATCH .../approve (provisions the client flag); enable=false →
-// PATCH .../reject (clears the flag + cancels the entry). Both routes already
-// exist; no new backend API.
+// enable=true → PATCH .../approve (compiles + activates a real n8n workflow);
+// enable=false → PATCH .../reject (tears the workflow down + cancels). Both
+// routes already exist; no new backend API.
 async function setCsvAutomation(clientId, offeringKey, enable, btn) {
   const apiKey = localStorage.getItem('atlas_admin_key') || '';
   const action = enable ? 'approve' : 'reject';
