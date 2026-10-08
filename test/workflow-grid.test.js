@@ -285,12 +285,13 @@ describe('CSV-import follow-up variants', () => {
   });
 });
 
-// ── Customize gating (zeus_1791430190387_7ad7a48a) ─────────────────────────
-// GET /portal/workflows/:id/params resolves only legacy template IDs (1-6) in
-// the backend's workflowParamCatalog; every offering row (cadence + client_flag
-// CSV-import variants) returns 404, so the "Customize" control is gated on
-// isCustomizable. Staging probe 2026-10-08: ai_receptionist-call,
-// imported_leads_voice, imported_leads_sms -> 404; legacy 1, 3 -> 200.
+// ── Customize gating (zeus_1791430190387_7ad7a48a; restored for CSV-import by
+// zeus_1791434486949_a3ba29e7) ───────────────────────────────────────────────
+// GET /portal/workflows/:id/params resolves legacy template IDs (1-6) AND the
+// CSV-import offering keys (imported_leads_voice / imported_leads_sms) — the
+// latter gained a backend catalog in CSV-IMPORT-E2E, so their Customize control
+// is restored. The 8 cadence offerings still have no catalog (404), so they
+// stay non-customizable.
 describe('isCustomizable', () => {
   test('legacy preset rows are customizable (params catalog 1-6)', () => {
     expect(WG.isCustomizable({ templateId: 1 })).toBe(true);
@@ -298,18 +299,18 @@ describe('isCustomizable', () => {
     expect(WG.isCustomizable({ templateId: '5' })).toBe(true);
   });
 
-  test('client_flag CSV-import offerings are NOT customizable (params 404)', () => {
+  test('CSV-import offering rows ARE customizable now (params catalog restored)', () => {
     expect(WG.isCustomizable({
       offeringKey: 'imported_leads_voice', trigger: 'csv_import',
-      channel: 'call', provision: 'client_flag',
-    })).toBe(false);
+      channel: 'call', provision: 'compiled',
+    })).toBe(true);
     expect(WG.isCustomizable({
       offeringKey: 'imported_leads_sms', trigger: 'csv_import',
-      channel: 'sms', provision: 'client_flag',
-    })).toBe(false);
+      channel: 'sms', provision: 'compiled',
+    })).toBe(true);
   });
 
-  test('cadence offering rows are NOT customizable either (all 404 today)', () => {
+  test('cadence offering rows are still NOT customizable (no params catalog)', () => {
     for (const k of ALL_KEYS) {
       expect(WG.isCustomizable(apiOfferingRow(k))).toBe(false);
     }

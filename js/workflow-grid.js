@@ -164,18 +164,18 @@
 
   // Whether a workflow card exposes the inline "Customize" params editor.
   //
-  // Only legacy preset rows (numeric templateId 1-6) have a configurable-
-  // parameters catalog on the backend (atlas-ai workflowParamCatalog.js).
-  // Trigger×channel offering rows — the 8 cadence cards AND the client_flag
-  // CSV-import variants (imported_leads_voice / imported_leads_sms) — have no
-  // catalog entry, so GET /portal/workflows/:id/params returns
-  // 404 "No configurable parameters for this workflow" for every one of them
-  // (verified against staging 2026-10-08: offering keys + client_flag keys all
-  // 404, legacy ids 1/3 return 200). Rendering Customize on a card that cannot
-  // load params is a dead control, so the button + panel are gated on this
-  // predicate instead of being rendered unconditionally.
+  // A card is customizable when the backend has a configurable-parameters
+  // catalog entry for it (atlas-ai workflowParamCatalog.js):
+  //   - legacy preset rows (numeric templateId 1-6), and
+  //   - the CSV-import offering rows (vector keyed by offering key —
+  //     imported_leads_voice / imported_leads_sms), which now expose a params
+  //     catalog so GET /portal/workflows/<key>/params returns 200.
+  // The 8 cadence offerings still have NO catalog (their waits/copy come from
+  // the shared cadence template defaults, not per-client params), so their
+  // Customize control stays hidden rather than being a dead button.
   function isCustomizable(row) {
-    return isLegacyRow(row);
+    if (isLegacyRow(row)) return true;
+    return isOfferingRow(row) && row.trigger === 'csv_import';
   }
 
   function fallbackOfferings() {
