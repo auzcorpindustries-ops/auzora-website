@@ -278,20 +278,21 @@ describe('CSV-import follow-up variants', () => {
     expect(WG.requiredEntitlement(sms, {})).toBeNull();
   });
 
-  test('csv_import variants show the one-shot copy, not the re-engage cadence', () => {
+  test('csv_import variants now show the standardized re-engage cadence', () => {
     const [, line2] = WG.offeringDescLines(voice);
-    expect(line2).toBe(WG.CSV_IMPORT_DESC);
-    expect(line2).not.toContain('wait 2 days');
+    expect(line2).toBe(WG.CADENCE_DESC.call);
+    expect(line2).toContain('wait 2 days');
+    expect(line2).toContain('final AI callback call');
   });
 });
 
 // ── Customize gating (zeus_1791430190387_7ad7a48a; restored for CSV-import by
-// zeus_1791434486949_a3ba29e7) ───────────────────────────────────────────────
-// GET /portal/workflows/:id/params resolves legacy template IDs (1-6) AND the
-// CSV-import offering keys (imported_leads_voice / imported_leads_sms) — the
-// latter gained a backend catalog in CSV-IMPORT-E2E, so their Customize control
-// is restored. The 8 cadence offerings still have no catalog (404), so they
-// stay non-customizable.
+// zeus_1791434486949_a3ba29e7; restored for ALL offering cards by
+// zeus_1791467501809_d080bfcb) ─────────────────────────────────────────────
+// GET /portal/workflows/:id/params resolves legacy template IDs (1-6) AND every
+// offering key — the 8 cadence offerings (wait_1/2/3 + call/sms_template) and
+// the 2 compiled CSV-import follow-ups (wait_1/3/5 + …_2/4/6). Every offering
+// card therefore exposes Customize.
 describe('isCustomizable', () => {
   test('legacy preset rows are customizable (params catalog 1-6)', () => {
     expect(WG.isCustomizable({ templateId: 1 })).toBe(true);
@@ -299,7 +300,7 @@ describe('isCustomizable', () => {
     expect(WG.isCustomizable({ templateId: '5' })).toBe(true);
   });
 
-  test('CSV-import offering rows ARE customizable now (params catalog restored)', () => {
+  test('CSV-import offering rows ARE customizable (params catalog)', () => {
     expect(WG.isCustomizable({
       offeringKey: 'imported_leads_voice', trigger: 'csv_import',
       channel: 'call', provision: 'compiled',
@@ -310,9 +311,9 @@ describe('isCustomizable', () => {
     })).toBe(true);
   });
 
-  test('cadence offering rows are still NOT customizable (no params catalog)', () => {
+  test('ALL 8 cadence offering rows are customizable now (params catalog added)', () => {
     for (const k of ALL_KEYS) {
-      expect(WG.isCustomizable(apiOfferingRow(k))).toBe(false);
+      expect(WG.isCustomizable(apiOfferingRow(k))).toBe(true);
     }
   });
 
