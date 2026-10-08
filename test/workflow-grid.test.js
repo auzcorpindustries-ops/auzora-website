@@ -284,3 +284,40 @@ describe('CSV-import follow-up variants', () => {
     expect(line2).not.toContain('wait 2 days');
   });
 });
+
+// ── Customize gating (zeus_1791430190387_7ad7a48a) ─────────────────────────
+// GET /portal/workflows/:id/params resolves only legacy template IDs (1-6) in
+// the backend's workflowParamCatalog; every offering row (cadence + client_flag
+// CSV-import variants) returns 404, so the "Customize" control is gated on
+// isCustomizable. Staging probe 2026-10-08: ai_receptionist-call,
+// imported_leads_voice, imported_leads_sms -> 404; legacy 1, 3 -> 200.
+describe('isCustomizable', () => {
+  test('legacy preset rows are customizable (params catalog 1-6)', () => {
+    expect(WG.isCustomizable({ templateId: 1 })).toBe(true);
+    expect(WG.isCustomizable({ templateId: 3, status: 'active' })).toBe(true);
+    expect(WG.isCustomizable({ templateId: '5' })).toBe(true);
+  });
+
+  test('client_flag CSV-import offerings are NOT customizable (params 404)', () => {
+    expect(WG.isCustomizable({
+      offeringKey: 'imported_leads_voice', trigger: 'csv_import',
+      channel: 'call', provision: 'client_flag',
+    })).toBe(false);
+    expect(WG.isCustomizable({
+      offeringKey: 'imported_leads_sms', trigger: 'csv_import',
+      channel: 'sms', provision: 'client_flag',
+    })).toBe(false);
+  });
+
+  test('cadence offering rows are NOT customizable either (all 404 today)', () => {
+    for (const k of ALL_KEYS) {
+      expect(WG.isCustomizable(apiOfferingRow(k))).toBe(false);
+    }
+  });
+
+  test('missing/null rows are not customizable', () => {
+    expect(WG.isCustomizable(null)).toBe(false);
+    expect(WG.isCustomizable(undefined)).toBe(false);
+    expect(WG.isCustomizable({})).toBe(false);
+  });
+});
