@@ -901,6 +901,23 @@ tr:hover td { background: var(--tint); }
         </div>
         <div id="workflow-pending-list"><div class="loading">Loading...</div></div>
       </div>
+      <!-- CSV-IMPORT AUTOMATIONS: the two flag-provisioned follow-up variants
+           (imported_leads_voice / imported_leads_sms) do not clone an n8n
+           workflow, so they never need the request→approve clone path. This
+           per-client panel is the admin's enable/disable control for them. -->
+      <div class="table-card" style="margin-top:20px;">
+        <div class="table-toolbar">
+          <h2>CSV Import Automations</h2>
+          <button onclick="loadCsvAutomationClients()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">↻ Refresh</button>
+        </div>
+        <div style="padding:14px 16px 0;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Client</label>
+          <select id="csv-automation-client" onchange="loadCsvAutomations()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;margin-bottom:8px;">
+            <option value="">Loading clients...</option>
+          </select>
+        </div>
+        <div id="csv-automation-list"><div style="padding:24px 16px;color:var(--muted);font-size:13px;">Select a client to manage their CSV-import follow-up automations.</div></div>
+      </div>
     </div>
 
     <!-- TEST LEADS PAGE -->
@@ -1117,7 +1134,7 @@ function showPage(name) {
   if (name === 'persona') initPersonaPage();
   if (name === 'phones') loadPhones();
   if (name === 'live-costs') loadLiveCosts();
-  if (name === 'workflows') loadWorkflowRequests();
+  if (name === 'workflows') { loadWorkflowRequests(); loadCsvAutomationClients(); }
   if (name === 'test-leads') loadTestLeadClients();
 }
 
@@ -2571,19 +2588,32 @@ async function loadWorkflowRequests() {
       return;
     }
 
-    container.innerHTML = pending.map(r => `
+    // A pending row identifies its target by EITHER a legacy numeric
+    // template_id OR an Offerings-v2 offering_key (template_id is null for the
+    // latter). Passing template_id blindly made the button URL
+    // /workflows/<clientId>/null/approve → "Workflow request not found", so
+    // every offering request was un-approvable. Resolve the real ref and the
+    // display name (the backend already returns `name`), and quote string refs.
+    container.innerHTML = pending.map(r => {
+      const ref = r.offering_key || r.template_id;
+      const label = r.name || WF_NAMES[r.template_id] || 'Unknown workflow';
+      const kind = r.offering_key ? 'Offering' : 'Preset';
+      const clientLit = adminJsLiteral(r.client_id);
+      const refLit = adminJsLiteral(ref);
+      return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
         <div>
-          <div style="font-weight:600;font-size:14px;">${r.business_name}</div>
+          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}</div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px;">
-            ${WF_NAMES[r.template_id] || 'Unknown'} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
+            ${adminEsc(label)} · ${kind} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="approveWorkflow('${r.client_id}', ${r.template_id})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve</button>
-          <button onclick="rejectWorkflow('${r.client_id}', ${r.template_id})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
+          <button onclick="approveWorkflow(${clientLit}, ${refLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve</button>
+          <button onclick="rejectWorkflow(${clientLit}, ${refLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch (err) {
     container.innerHTML = `<div style="padding:20px;color:var(--red);">Error: ${err.message}</div>`;
   }
@@ -2592,7 +2622,7 @@ async function loadWorkflowRequests() {
 async function approveWorkflow(clientId, templateId) {
   const apiKey = localStorage.getItem('atlas_admin_key') || '';
   try {
-    const res = await fetch(`${API}/workflows/${clientId}/${templateId}/approve`, {
+    const res = await fetch(`${API}/workflows/${encodeURIComponent(clientId)}/${encodeURIComponent(templateId)}/approve`, {
       method: 'PATCH',
       headers: { 'x-api-key': apiKey },
     });
@@ -2612,7 +2642,7 @@ async function rejectWorkflow(clientId, templateId) {
   const apiKey = localStorage.getItem('atlas_admin_key') || '';
   const reason = prompt('Reason for rejection (optional):') || 'Request rejected by admin';
   try {
-    const res = await fetch(`${API}/workflows/${clientId}/${templateId}/reject`, {
+    const res = await fetch(`${API}/workflows/${encodeURIComponent(clientId)}/${encodeURIComponent(templateId)}/reject`, {
       method: 'PATCH',
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
@@ -2626,6 +2656,124 @@ async function rejectWorkflow(clientId, templateId) {
     loadWorkflowRequests();
   } catch (err) {
     alert('Error: ' + err.message);
+  }
+}
+
+// Escape a value for safe interpolation into admin HTML (attribute or text).
+function adminEsc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Render a JS value for an inline onclick handler: numbers stay bare, strings
+// are single-quoted + escaped. Offering keys are strings (`imported_leads_sms`;
+// legacy template ids are numbers), so both must round-trip.
+function adminJsLiteral(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return `'${String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+// ── CSV IMPORT AUTOMATIONS ────────────────────────────────────────
+// imported_leads_voice / imported_leads_sms are provisioned by a boolean
+// client flag (no n8n clone) rather than the request→approve clone path, so
+// they need their own per-client enable/disable surface. This drives the SAME
+// approve (enable) / reject (disable) routes the request list uses; the
+// backend treats reject-on-flag-offering as "clear flag + cancel".
+const CSV_IMPORT_AUTOMATIONS = [
+  { key: 'imported_leads_voice', label: 'Voice Services — CSV import follow-up call' },
+  { key: 'imported_leads_sms',   label: 'SMS Services — CSV import follow-up text' },
+];
+
+async function loadCsvAutomationClients() {
+  const sel = document.getElementById('csv-automation-client');
+  if (!sel) return;
+  const prior = sel.value;
+  sel.innerHTML = '<option value="">Loading clients...</option>';
+  try {
+    const res = await fetch(`${API}/clients`, { headers: adminAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const clients = Array.isArray(data) ? data : (data.clients || []);
+    sel.innerHTML = '<option value="">— Select a client —</option>' +
+      clients.map(c => `<option value="${adminEsc(c.client_id)}">${adminEsc(c.business_name || c.client_id)}</option>`).join('');
+    if (prior && clients.some(c => c.client_id === prior)) { sel.value = prior; loadCsvAutomations(); }
+  } catch (err) {
+    sel.innerHTML = '<option value="">Error loading clients</option>';
+  }
+}
+
+async function loadCsvAutomations() {
+  const sel = document.getElementById('csv-automation-client');
+  const clientId = sel ? sel.value : '';
+  const container = document.getElementById('csv-automation-list');
+  if (!container) return;
+  if (!clientId) {
+    container.innerHTML = '<div style="padding:24px 16px;color:var(--muted);font-size:13px;">Select a client to manage their CSV-import follow-up automations.</div>';
+    return;
+  }
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const res = await fetch(`${API}/workflows/${encodeURIComponent(clientId)}`, { headers: adminAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const workflows = data.workflows || [];
+    const clientLit = adminJsLiteral(clientId);
+
+    container.innerHTML = CSV_IMPORT_AUTOMATIONS.map(a => {
+      const w = workflows.find(x => x.offering_key === a.key);
+      const status = (w && w.status) || 'off';
+      const enabled = status === 'active';
+      const pending = status === 'requested';
+      const statusText = enabled ? 'Enabled'
+        : pending ? 'Pending client request'
+        : status === 'cancelled' ? 'Disabled'
+        : status === 'rejected' ? 'Rejected'
+        : status === 'failed' ? 'Failed' : 'Off';
+      const statusColor = enabled ? 'var(--green)' : pending ? '#f59e0b' : 'var(--muted)';
+      const keyLit = adminJsLiteral(a.key);
+      return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--border);">
+        <div style="min-width:0;">
+          <div style="font-weight:600;font-size:13.5px;">${adminEsc(a.label)}</div>
+          <div style="color:${statusColor};font-size:12px;margin-top:2px;">${statusText}</div>
+        </div>
+        <button onclick="setCsvAutomation(${clientLit}, ${keyLit}, ${enabled ? 'false' : 'true'}, this)"
+          style="white-space:nowrap;flex-shrink:0;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:${enabled ? 'transparent' : 'var(--green)'};color:${enabled ? 'var(--red)' : '#fff'};border:${enabled ? '1px solid var(--red)' : 'none'};cursor:pointer;">
+          ${enabled ? 'Disable' : 'Enable'}
+        </button>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="padding:20px;color:var(--red);">Error: ${adminEsc(err.message)}</div>`;
+  }
+}
+
+// enable=true → PATCH .../approve (provisions the client flag); enable=false →
+// PATCH .../reject (clears the flag + cancels the entry). Both routes already
+// exist; no new backend API.
+async function setCsvAutomation(clientId, offeringKey, enable, btn) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const action = enable ? 'approve' : 'reject';
+  if (btn) { btn.disabled = true; btn.textContent = enable ? 'Enabling…' : 'Disabling…'; }
+  try {
+    const res = await fetch(`${API}/workflows/${encodeURIComponent(clientId)}/${encodeURIComponent(offeringKey)}/${action}`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(action === 'reject' ? { reason: 'Disabled by admin' } : {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || `Failed to ${enable ? 'enable' : 'disable'} automation`);
+      return;
+    }
+    toast(enable ? 'CSV automation enabled' : 'CSV automation disabled', enable ? 'success' : 'info');
+    loadCsvAutomations();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
