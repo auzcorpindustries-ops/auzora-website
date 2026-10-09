@@ -2290,11 +2290,38 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="ob-lead-list"></div>
       </div>
 
+      <!-- Outbound Call Window — the DEDICATED per-day window during which the
+           AI may DIAL leads, decoupled from Office Hours. Single source of
+           truth: saves to client.outbound_window, which the backend outbound
+           guardrail enforces (isWithinCallingHours). -->
+      <div class="card" id="outbound-window-card" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:6px;"><i data-lucide="phone-outgoing"></i> Outbound Call Window</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+          The hours your AI agent is allowed to dial leads. This is separate from your office hours — change it without affecting when you answer calls.
+        </div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 8px;font-size:13px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-office" value="office" onchange="toggleOutboundHoursMode('office');setDirty()" />
+            <span>Same as office hours</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-custom" value="custom" onchange="toggleOutboundHoursMode('custom');setDirty()" checked />
+            <span>Set a dedicated window</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-247" value="247" onchange="toggleOutboundHoursMode('247');setDirty()" />
+            <span>24/7</span>
+          </label>
+        </div>
+        <div class="hours-grid" id="ow-hours-grid" style="margin-top:6px;"></div>
+        <div id="ow-hours-note" style="font-size:12px;color:var(--muted);margin-top:8px;display:none;"></div>
+      </div>
+
       <!-- Call a Lead -->
       <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
+          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed inside your outbound call window (set above), and leads who ask to stop being called are never dialed again.
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
@@ -3327,6 +3354,89 @@ function buildPortalHoursString() {
   }
   return days
     .map(d => `${d} ${document.getElementById('s_from_'+d).value}–${document.getElementById('s_to_'+d).value}`)
+    .join(', ');
+}
+
+// ── OUTBOUND CALL WINDOW (Leads & CRM) ───────────────────────────────────────
+// A DEDICATED per-day window for outbound dialing, decoupled from Office Hours.
+// This grid IS the single source of truth: it renders from and saves to
+// client.outbound_window, the exact field the backend outbound guardrail
+// enforces (outboundService.isWithinCallingHours). Modes:
+//   'office' → clear the field (dialing follows office hours — the default),
+//   'custom' → the per-day grid below, '247' → '24/7'.
+let outboundWindowMode = 'office';
+
+function renderOutboundWindowGrid() {
+  const grid = document.getElementById('ow-hours-grid');
+  if (!grid) return;
+  const c = portalClient || {};
+  const raw = typeof c.outbound_window === 'string' ? c.outbound_window.trim() : '';
+  outboundWindowMode = raw === '24/7' ? '247' : (raw ? 'custom' : 'office');
+  const parsed = parseHoursString(outboundWindowMode === 'custom' ? raw : '');
+  grid.innerHTML = '';
+  DAYS.forEach(day => {
+    const d = parsed[day];
+    const row = document.createElement('div');
+    row.className = 'hours-row';
+    row.innerHTML = `
+      <div class="hours-day">
+        <input type="checkbox" id="ow_day_${day}" ${d.open ? 'checked' : ''} onchange="toggleOutboundDay('${day}');setDirty()">
+        <label for="ow_day_${day}">${day.slice(0,3)}</label>
+      </div>
+      <div class="hours-times" id="ow_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
+        <input type="time" id="ow_from_${day}" value="${d.from}" oninput="setDirty()">
+        <span class="hours-sep">–</span>
+        <input type="time" id="ow_to_${day}" value="${d.to}" oninput="setDirty()">
+      </div>`;
+    grid.appendChild(row);
+  });
+  toggleOutboundHoursMode(outboundWindowMode, true);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleOutboundHoursMode(mode, quiet = false) {
+  outboundWindowMode = mode;
+  const grid = document.getElementById('ow-hours-grid');
+  const note = document.getElementById('ow-hours-note');
+  const office = document.getElementById('ow-mode-office');
+  const custom = document.getElementById('ow-mode-custom');
+  const all247 = document.getElementById('ow-mode-247');
+  if (office) office.checked = mode === 'office';
+  if (custom) custom.checked = mode === 'custom';
+  if (all247) all247.checked = mode === '247';
+  if (grid) {
+    const disabled = mode !== 'custom';
+    grid.style.opacity = disabled ? '0.45' : '1';
+    grid.style.pointerEvents = disabled ? 'none' : '';
+  }
+  if (note) {
+    note.style.display = mode === 'custom' ? 'none' : 'block';
+    note.textContent = mode === '247'
+      ? '24/7 selected — your AI may dial leads at any time.'
+      : 'Same as office hours — outbound dialing follows your business hours.';
+  }
+  if (!quiet) setDirty();
+}
+
+function toggleOutboundDay(day) {
+  const box = document.getElementById('ow_day_' + day);
+  const times = document.getElementById('ow_times_' + day);
+  if (!box || !times) return;
+  times.style.opacity = box.checked ? '1' : '0.3';
+  times.style.pointerEvents = box.checked ? '' : 'none';
+}
+
+// Serialize the outbound window exactly like buildPortalHoursString(). Returns
+// undefined when the grid was never rendered (Leads page not opened this
+// session) so a save from another page can never blank a window untouched.
+function buildOutboundWindowString() {
+  const grid = document.getElementById('ow-hours-grid');
+  if (!grid || !grid.children.length) return undefined;
+  if (outboundWindowMode === '247') return '24/7';
+  if (outboundWindowMode === 'office') return '';
+  const days = DAYS.filter(d => document.getElementById('ow_day_' + d)?.checked);
+  return days
+    .map(d => `${d} ${document.getElementById('ow_from_'+d).value}–${document.getElementById('ow_to_'+d).value}`)
     .join(', ');
 }
 
@@ -8891,6 +9001,7 @@ async function saveSettings() {
       business_name:       bizName || portalClient?.business_name || undefined,
       agent_name:          document.getElementById('s-agent-name').value,
       office_hours:        buildPortalHoursString(),
+      outbound_window:     buildOutboundWindowString(),
       service_areas:       servicesToSave,
       specialties:         specialtiesToSave,
       escalation_phone:    document.getElementById('s-escalation-phone').value,
@@ -10662,6 +10773,9 @@ async function toggleLeadEmailNotify(enabled) {
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
   if (!listEl) return;
+  // Render the dedicated Outbound Call Window grid from client.outbound_window
+  // (single source of truth) before loading the leads table.
+  renderOutboundWindowGrid();
   listEl.innerHTML = '<div class="empty">Loading leads…</div>';
   try {
     const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
