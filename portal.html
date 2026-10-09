@@ -2208,7 +2208,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="card-title" style="margin:0;"><i data-lucide="upload"></i> Import Leads</div>
           <button onclick="toggleLeadImport()" id="li-toggle-btn" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">Expand</button>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Upload a CSV file or paste lead data directly. Phone number is required; name, service, and notes are optional.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Upload a CSV file or paste lead data directly. Phone number is required; name, service, industry, and notes are optional.</div>
 
         <div id="li-content" style="display:none;">
           <!-- Input methods: file upload + paste area -->
@@ -2226,7 +2226,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <!-- Paste area -->
             <div>
               <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Paste CSV Data</label>
-              <textarea id="li-paste-area" rows="5" placeholder="phone,name,service,notes&#10;5551234567,John Smith,Pool Cleaning,Called last week&#10;5559876543,Jane Doe,," style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:100px;" oninput="parseLeadImportPreview()"></textarea>
+              <textarea id="li-paste-area" rows="5" placeholder="phone,name,service,industry,notes&#10;5551234567,John Smith,Pool Cleaning,Home Services,Called last week&#10;5559876543,Jane Doe,,," style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:100px;" oninput="parseLeadImportPreview()"></textarea>
             </div>
           </div>
 
@@ -2251,6 +2251,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Phone</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Name</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Service</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Industry</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Notes</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Status</th>
                   </tr>
@@ -10986,6 +10987,7 @@ function renderObLeads() {
       </td>
       <td>${latest.service ? `<span style="font-size:13px;color:var(--text);">${latest.service}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.company ? `<span style="font-size:13px;color:var(--text);">${latest.company}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${latest.industry ? `<span style="font-size:13px;color:var(--text);">${latest.industry}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${smsConsent
         ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
         : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
@@ -10998,7 +11000,7 @@ function renderObLeads() {
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
     </tr>
-    ${showExpand ? `<tr><td colspan="13" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    ${showExpand ? `<tr><td colspan="14" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
   }).join('');
 
@@ -11008,6 +11010,7 @@ function renderObLeads() {
       <th>Lead</th>
       <th>Service</th>
       <th>Company</th>
+      <th>Industry</th>
       <th>SMS</th>
       <th>Score</th>
       <th>Intent</th>
@@ -11215,7 +11218,7 @@ async function startOutboundCall(isTest) {
 
 let liParsedRows = [];   // parsed CSV rows (array of arrays)
 let liHeaders = [];      // detected column names
-let liMapping = {};      // { csvColumnIndex: 'phone'|'name'|'service'|'notes'|'email'|'skip' }
+let liMapping = {};      // { csvColumnIndex: 'phone'|'name'|'service'|'notes'|'email'|'industry'|'sms_consent'|'skip' }
 const LI_MAX_LEADS = 200;
 const LI_MAX_SIZE = 2 * 1024 * 1024;
 
@@ -11294,6 +11297,8 @@ function parseLeadImportPreview() {
       if (!usedFields.has('notes')) { liMapping[i] = 'notes'; usedFields.add('notes'); }
     } else if (hl.includes('email') || hl.includes('e-mail')) {
       if (!usedFields.has('email')) { liMapping[i] = 'email'; usedFields.add('email'); }
+    } else if (hl.includes('industry') || hl.includes('vertical') || hl.includes('sector')) {
+      if (!usedFields.has('industry')) { liMapping[i] = 'industry'; usedFields.add('industry'); }
     } else if (hl.includes('consent') || hl.includes('opt')) {
       if (!usedFields.has('sms_consent')) { liMapping[i] = 'sms_consent'; usedFields.add('sms_consent'); }
     }
@@ -11315,7 +11320,7 @@ function renderLeadImportMapping() {
   if (!liHeaders.length) { section.style.display = 'none'; return; }
 
   section.style.display = 'block';
-  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'sms_consent', 'skip'];
+  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'industry', 'sms_consent', 'skip'];
   const fieldLabels = { sms_consent: 'SMS consent (yes/no)' };
   grid.innerHTML = liHeaders.map((h, i) => {
     const current = liMapping[i] || 'skip';
@@ -11416,6 +11421,7 @@ function renderLeadImportPreview() {
         <td style="padding:6px 10px;">${item.lead.phone || '<span style="color:#ef4444;">—</span>'}</td>
         <td style="padding:6px 10px;">${item.lead.name || ''}</td>
         <td style="padding:6px 10px;">${item.lead.service || ''}</td>
+        <td style="padding:6px 10px;">${item.lead.industry || ''}</td>
         <td style="padding:6px 10px;color:var(--muted);">${item.lead.notes || ''}</td>
         <td style="padding:6px 10px;">${statusBadge}</td>
       </tr>`;
