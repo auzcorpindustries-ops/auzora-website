@@ -10798,8 +10798,34 @@ async function loadOutbound() {
 // rows. Counting raw interactions instead would make Total Leads disagree with
 // the table, which is what the row grouping exists to prevent.
 //
-// Status is derived with the SAME expression the table badge uses, so a lead
-// counted as "Reached" here is always the lead showing a Reached badge below.
+// Each tile is wired to the lead lifecycle state the BACKEND actually writes:
+//   outboundService.finalizeOutboundCall  → reached / no-answer / voicemail
+//   outboundService.markLeadOptedOut      → opted-out + outbound_opted_out
+//   callAutomationService / campaignService → pending (queued) / deferred (out of window)
+//   postCallAnalysis / smsConversation    → needs_agent_attention
+//
+// "New" = not yet contacted. The backend keeps dialing a lead while its
+// outbound_status is missing / 'new' (never queued), 'pending' (queued for a
+// follow-up call) or 'deferred' (parked outside the calling window). Every
+// other status ('called', 'reached', 'no-answer', 'voicemail', 'max-attempts',
+// 'failed') means the lead HAS been contacted and must not count as New.
+//
+// Opt-out and needs-attention are STICKY per person and are read across the
+// WHOLE group: the backend flags every same-phone row on opt-out, and either
+// flag can sit on an older interaction than the one shown as the table row, so
+// reading only the newest row undercounts. Reached / New stay keyed to the
+// newest row so they keep agreeing with the status badge in the table below.
+const NOT_CONTACTED_OUTBOUND_STATUSES = ['new', 'pending', 'deferred'];
+
+// True when a lead row carries any of the opt-out signals the backend writes.
+function isLeadOptedOut(lead) {
+  return !!lead && (
+    lead.outbound_opted_out === true
+    || lead.opt_out === true
+    || lead.outbound_status === 'opted-out'
+  );
+}
+
 function updateLeadStats(grouped) {
   const set = (id, val) => {
     const el = document.getElementById(id);
@@ -10809,22 +10835,23 @@ function updateLeadStats(grouped) {
   let reached = 0, optedOut = 0, isNew = 0, needsAttention = 0;
 
   for (const group of (grouped || [])) {
-    const latest = Array.isArray(group) ? group[0] : group;
+    const rows = Array.isArray(group) ? group : [group];
+    const latest = rows[0];
     if (!latest) continue;
 
-    // Mirrors renderObLeads(): opt-out wins over any other status.
-    const isOptedOut = latest.outbound_opted_out === true
-      || latest.opt_out === true
-      || latest.outbound_status === 'opted-out';
-    if (isOptedOut) { optedOut++; continue; }
+    // Opt-out is a terminal, person-level state: an opt-out on ANY interaction
+    // stops every future dial, so it wins over Reached / New.
+    if (rows.some(isLeadOptedOut)) {
+      optedOut++;
+    } else {
+      const status = latest.outbound_status || 'new';
+      if (status === 'reached') reached++;
+      else if (NOT_CONTACTED_OUTBOUND_STATUSES.includes(status)) isNew++;
+    }
 
-    if (latest.needs_agent_attention === true) needsAttention++;
-
-    const status = latest.outbound_status || 'new';
-    if (status === 'reached') reached++;
-    else if (status === 'new') isNew++;
-    // Any other status (pending, no-answer, failed…) counts toward the total
-    // but is deliberately not bucketed as New — it HAS been contacted.
+    // Needs Attention is an independent overlay — a lead the AI escalated still
+    // needs a human even if it was later opted out.
+    if (rows.some(r => r && r.needs_agent_attention === true)) needsAttention++;
   }
 
   set('stat-leads-total', (grouped || []).length);
@@ -10887,7 +10914,9 @@ function renderObLeads() {
     const phone = latest.phone || '—';
     const email = latest.email || '';
     const name = latest.name || '';
-    const optedOut = latest.outbound_opted_out === true || latest.opt_out === true || latest.outbound_status === 'opted-out';
+    // Opt-out is sticky per person — aggregate across the whole group so the row
+    // badge agrees with the Opted Out tile (see isLeadOptedOut / updateLeadStats).
+    const optedOut = group.some(isLeadOptedOut);
     const status = optedOut ? 'opted-out' : (latest.outbound_status || 'new');
     const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
     const attempts = latest.outbound_call_count ? ` (${latest.outbound_call_count}×)` : '';
