@@ -11594,6 +11594,9 @@ const CMP_STATUS_COLORS = {
 };
 const CMP_LEAD_STATUS_COLORS = {
   pending: '#94a3b8', called: '#3b82f6', reached: '#22c55e', 'no-answer': '#f59e0b',
+  // 'deferred' = call queued outside the calling window (OUTBOUND-DEFER). A
+  // non-error, waiting state — yellow, same family as 'no-answer'.
+  deferred: '#f59e0b',
   voicemail: '#a855f7', 'opted-out': '#ef4444', 'max-attempts': '#6b7280', failed: '#ef4444'
 };
 
@@ -11656,6 +11659,7 @@ async function viewCampaign(id) {
       { label: 'Total', val: s.total || 0, color: '#94a3b8' },
       { label: 'Reached', val: s.reached || 0, color: '#22c55e' },
       { label: 'No Answer', val: s['no-answer'] || 0, color: '#f59e0b' },
+      { label: 'Deferred', val: s.deferred || 0, color: '#f59e0b' },
       { label: 'Voicemail', val: s.voicemail || 0, color: '#a855f7' },
       { label: 'Pending', val: s.pending || 0, color: '#3b82f6' },
       { label: 'Opted Out', val: s['opted-out'] || 0, color: '#ef4444' },
