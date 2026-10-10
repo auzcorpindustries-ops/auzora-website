@@ -7,7 +7,8 @@
 //     PRICING-5);
 //   - new base plan, no add-on (limits.smsMessages === 0) → "SMS not
 //     included" story + add-on options row fed by GET /portal/billing/addons
-//     (PRICING-3), purchase CTA carrying the per-client tagged URL;
+//     (PRICING-3), purchase CTA minting a server-side Checkout Session
+//     (SMS-CHECKOUT-FIX);
 //   - new plan + active add-on (payload.sms_addon) → "SMS add-on: N messages/
 //     mo" + usage bar against the effective cap.
 // Plus the PRICING-4 disabled-CTA doctrine (no provisioned link → Coming
@@ -113,10 +114,27 @@ describe('portal.html add-on catalog wiring (PRICING-6 consumes PRICING-3)', () 
     expect(script).toMatch(/btn\.removeAttribute\('href'\)/);
   });
 
-  test('CTA applies the per-client tagged purchase_url per SKU', () => {
-    expect(script).toContain('purchase_url');
-    expect(script).toMatch(/btn\.href = addon\.purchase_url/);
+  test('CTA starts a SERVER-CREATED Checkout Session per SKU (SMS-CHECKOUT-FIX)', () => {
+    // The old CTA carried a pre-minted (dead) payment link (addon.purchase_url).
+    // It now POSTs the selected SKU to /portal/billing/addons/checkout, which
+    // mints a recurring, account-tied Stripe Checkout Session server-side.
+    expect(script).toContain('/portal/billing/addons/checkout');
+    expect(script).toMatch(/method: 'POST'/);
+    expect(script).toMatch(/JSON\.stringify\(\{ sku \}\)/);
+    expect(script).toMatch(/window\.location\.href = data\.url/);
+    expect(script).not.toContain('purchase_url');
     expect(script).toMatch(/addons\.find\(a => a\.sku === sku\)/);
+  });
+
+  test('CTA enables only when the SKU is purchasable (no dead CTA)', () => {
+    expect(script).toMatch(/setSmsCtaDisabled\(btn, coming, !\(addon && addon\.purchasable\)\)/);
+  });
+
+  test('returning from checkout toasts success (pending approval) or cancellation', () => {
+    expect(script).toContain('function handleSmsCheckoutReturn()');
+    expect(script).toMatch(/params\.get\('checkout'\)/);
+    expect(script).toContain('pending approval');
+    expect(script).toMatch(/handleSmsCheckoutReturn\(\);/);
   });
 
   test('no provisioned link → PRICING-4 disabled pattern (Coming Soon + aria-disabled)', () => {
