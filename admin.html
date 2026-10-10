@@ -405,6 +405,9 @@ tr:hover td { background: var(--tint); }
     <div class="nav-item" onclick="showPage('workflows')" id="nav-workflows">
       <span class="nav-icon"><i data-lucide="workflow"></i></span> Workflow Requests
     </div>
+    <div class="nav-item" onclick="showPage('sms-approvals')" id="nav-sms-approvals">
+      <span class="nav-icon"><i data-lucide="message-square"></i></span> SMS Approvals
+    </div>
     <div class="nav-group">Testing</div>
     <div class="nav-item" onclick="showPage('test-leads')" id="nav-test-leads">
       <span class="nav-icon"><i data-lucide="flask-conical"></i></span> Test Leads
@@ -922,6 +925,23 @@ tr:hover td { background: var(--tint); }
       </div>
     </div>
 
+    <!-- SMS APPROVALS PAGE (SMS-APPROVAL-WORKFLOW): paid SMS add-on purchases
+         awaiting admin activation. Stripe success records a request; SMS is
+         enabled by clicking Activate here, never automatically. -->
+    <div class="page" id="page-sms-approvals">
+      <div class="page-header">
+        <h1>SMS Approvals</h1>
+        <p>Activate paid SMS add-on purchases — payment success does not enable SMS until you activate it here</p>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Pending SMS Add-On Requests</h2>
+          <button onclick="loadSmsApprovals()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);cursor:pointer;">&#8635; Refresh</button>
+        </div>
+        <div id="sms-approvals-list"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
     <!-- TEST LEADS PAGE -->
     <div class="page" id="page-test-leads">
       <div class="page-header">
@@ -1137,6 +1157,7 @@ function showPage(name) {
   if (name === 'phones') loadPhones();
   if (name === 'live-costs') loadLiveCosts();
   if (name === 'workflows') { loadWorkflowRequests(); loadCsvAutomationClients(); }
+  if (name === 'sms-approvals') loadSmsApprovals();
   if (name === 'test-leads') loadTestLeadClients();
 }
 
@@ -2656,6 +2677,91 @@ async function rejectWorkflow(clientId, templateId) {
     }
     toast('Workflow rejected', 'info');
     loadWorkflowRequests();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// ── SMS add-on approvals (SMS-APPROVAL-WORKFLOW) ─────────────────────────
+// A completed Stripe checkout records a REQUEST (sms_addon.status
+// 'pending_approval'); the SMS cap does NOT move until an admin activates it
+// here. These handlers drive PATCH /admin/sms-approvals/:clientId/{activate,
+// reject} — the ONE place the cap moves.
+async function loadSmsApprovals() {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const container = document.getElementById('sms-approvals-list');
+  if (!container) return;
+  container.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const res = await fetch(`${API}/sms-approvals`, { headers: { 'x-api-key': apiKey } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const pending = data.pending || [];
+    if (pending.length === 0) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">No SMS add-on requests awaiting activation.</div>';
+      return;
+    }
+    container.innerHTML = pending.map(r => {
+      const clientLit = adminJsLiteral(r.client_id);
+      const messages = Number(r.requested_messages || 0).toLocaleString();
+      const price = r.monthly_usd != null ? `$${r.monthly_usd}/mo` : '—';
+      return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px;">
+            ${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px;">${adminEsc(r.email || '')}${r.plan ? ' · ' + adminEsc(r.plan) : ''}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
+          <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="padding:20px;color:var(--red);">Error: ${adminEsc(err.message)}</div>`;
+  }
+}
+
+async function activateSmsApproval(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/activate`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to activate');
+      return;
+    }
+    const data = await res.json();
+    toast(`SMS activated — ${Number(data.sms_allowance || 0).toLocaleString()} messages/mo`, 'success');
+    loadSmsApprovals();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function rejectSmsApproval(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const reason = prompt('Reason for rejection (optional):') || 'Request rejected by admin';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/reject`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to reject');
+      return;
+    }
+    toast('SMS add-on request rejected', 'info');
+    loadSmsApprovals();
   } catch (err) {
     alert('Error: ' + err.message);
   }
