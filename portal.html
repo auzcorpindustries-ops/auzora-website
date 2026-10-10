@@ -3828,10 +3828,11 @@ async function fetchEntitlements() {
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     renderUsageCard(data); // pricing ticket F — usage card lives on the same payload
     renderUsageSmsAddon(data); // PRICING-6 — SMS add-on state lives on the same payload
-    // PRICING-6: the card's SMS block shows add-on options with per-client
-    // tagged purchase URLs (GET /portal/billing/addons, PRICING-3). Catalog
-    // fetch rides the entitlements refresh; failures are non-fatal (the card
-    // already rendered from the entitlements payload).
+    // PRICING-6: the card's SMS block shows add-on options; the CTA starts a
+    // SERVER-CREATED Stripe Checkout Session (GET /portal/billing/addons for
+    // the catalog, POST .../addons/checkout to buy — SMS-CHECKOUT-FIX).
+    // Catalog fetch rides the entitlements refresh; failures are non-fatal
+    // (the card already rendered from the entitlements payload).
     loadSmsAddons();
     applyTierVisibility();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
@@ -4033,17 +4034,130 @@ function renderUsageSmsAddon(entitlementsPayload) {
       '<select id="usage-sms-select" class="dash-select" aria-label="SMS add-on volume">' +
         '<option value="">Loading…</option>' +
       '</select>' +
-      '<a id="usage-sms-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true">Add SMS</a>' +
+      '<a id="usage-sms-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true" role="button" onclick="startSmsCheckout();return false;">Add SMS</a>' +
       '<span id="usage-sms-coming" class="usage-sms-coming" hidden>Coming Soon</span>' +
     '</div>' +
     '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
   if (smsAddonOptions) renderSmsAddonOptions(smsAddonOptions);
 }
 
+// SMS-CHECKOUT-FIX: the purchase CTA is no longer an <a> carrying a
+// pre-minted (and possibly DEAD) payment link — it starts a server-created
+// recurring Stripe Checkout Session for this authenticated client.
 // Populate the options row from GET /portal/billing/addons (PRICING-3): one
-// dash-select option per SKU plus the tagged purchase URL on the CTA. Same
-// disabled-CTA doctrine as the PRICING-4 landing select: no provisioned link
-// → "Coming Soon" + click prevented, never a dead URL.
+// dash-select option per SKU. The catalog carries `purchasable` (the SKU has
+// a Stripe price this runtime can bill) — a SKU without one renders the
+// PRICING-4 "Coming Soon" disabled pattern, never a dead URL.
+function renderSmsAddonOptions(data) {
+  const select = document.getElementById('usage-sms-select');
+  const btn = document.getElementById('usage-sms-btn');
+  const coming = document.getElementById('usage-sms-coming');
+  if (!select || !btn) return;
+  const addons = Array.isArray(data.addons) ? data.addons : [];
+  if (!addons.length) {
+    select.innerHTML = '<option value="">Unavailable</option>';
+    select.disabled = true;
+    setSmsCtaDisabled(btn, coming, true);
+    return;
+  }
+  select.disabled = false;
+  select.innerHTML = addons.map(a =>
+    `<option value="${a.sku}"${a.current ? ' selected' : ''}>` +
+      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
+    '</option>'
+  ).join('');
+  const applySku = () => {
+    const sku = select.value;
+    const addon = addons.find(a => a.sku === sku) || null;
+    setSmsCtaDisabled(btn, coming, !(addon && addon.purchasable));
+  };
+  // The select element persists across renders (only its options are
+  // replaced), so bind the listener once.
+  if (!select.dataset.smsBound) {
+    select.addEventListener('change', applySku);
+    select.dataset.smsBound = '1';
+  }
+  applySku();
+}
+
+// Enable/disable the Add SMS CTA. Disabled = the PRICING-4 doctrine: no href,
+// aria-disabled, Coming Soon label — never a clickable dead CTA.
+function setSmsCtaDisabled(btn, coming, disabled) {
+  if (disabled) {
+    btn.removeAttribute('href');
+    btn.setAttribute('aria-disabled', 'true');
+    btn.classList.add('disabled');
+    if (coming) coming.hidden = false;
+  } else {
+    btn.setAttribute('href', '#');
+    btn.removeAttribute('aria-disabled');
+    btn.classList.remove('disabled');
+    if (coming) coming.hidden = true;
+  }
+}
+
+// SMS-CHECKOUT-FIX: start the purchase. The server mints a RECURRING Stripe
+// Checkout Session tied to THIS client's account and returns its hosted URL;
+// we hand the browser over to Stripe. Payment success is decoupled from SMS
+// activation — the webhook records the purchase as a pending-approval request.
+async function startSmsCheckout() {
+  const btn = document.getElementById('usage-sms-btn');
+  const select = document.getElementById('usage-sms-select');
+  const errEl = document.getElementById('usage-sms-addon-err');
+  if (!btn || !select) return;
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const sku = select.value;
+  if (!sku) return;
+  const original = btn.textContent;
+  btn.classList.add('disabled');
+  btn.setAttribute('aria-disabled', 'true');
+  btn.textContent = 'Starting…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const res = await fetch(`${API}/portal/billing/addons/checkout`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) throw new Error(data.error || `checkout ${res.status}`);
+    window.location.href = data.url;
+    return;
+  } catch (e) {
+    console.error('[Auzora] SMS checkout error:', e.message);
+    if (errEl) {
+      errEl.textContent = e.message || 'Could not start checkout. Please try again.';
+      errEl.style.display = 'block';
+    }
+    btn.textContent = original;
+    btn.classList.remove('disabled');
+    btn.removeAttribute('aria-disabled');
+  }
+}
+
+// SMS-CHECKOUT-FIX: the Checkout Session redirects back here with
+// ?checkout=success|cancelled. Stripe success is NOT SMS activation — the
+// purchase lands in the approval queue (sms_addon 'pending_approval'), and
+// the copy says exactly that.
+function handleSmsCheckoutReturn() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+  const state = params.get('checkout');
+  if (!state) return;
+  if (state === 'success') {
+    showToast('Payment received — your SMS add-on is pending approval.', 'success');
+  } else if (state === 'cancelled') {
+    showToast('SMS add-on checkout cancelled — you were not charged.', 'error');
+  }
+  // Clean the URL so a refresh does not re-toast.
+  try {
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  } catch (e) { /* ignore */ }
+}
+
+// Fetch the add-on catalog + the client's current add-on state
+// (GET /portal/billing/addons). Failures degrade to an honest "unavailable"
+// row — no fake options, no clickable dead CTA.
 async function loadSmsAddons() {
   const box = document.getElementById('usage-sms-addon');
   if (!box || box.style.display === 'none') return; // unlimited / degraded state: nothing to fill
@@ -4076,45 +4190,6 @@ async function loadSmsAddons() {
       errEl.style.display = 'block';
     }
   }
-}
-
-function renderSmsAddonOptions(data) {
-  const select = document.getElementById('usage-sms-select');
-  const btn = document.getElementById('usage-sms-btn');
-  const coming = document.getElementById('usage-sms-coming');
-  if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
-  if (!addons.length) {
-    select.innerHTML = '<option value="">Unavailable</option>';
-    select.disabled = true;
-    return;
-  }
-  select.innerHTML = addons.map(a =>
-    `<option value="${a.sku}"${a.current ? ' selected' : ''}>` +
-      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
-    '</option>'
-  ).join('');
-  const applySku = () => {
-    const sku = select.value;
-    const addon = addons.find(a => a.sku === sku) || null;
-    if (addon && addon.purchase_url) {
-      btn.href = addon.purchase_url;
-      btn.removeAttribute('aria-disabled');
-      btn.classList.remove('disabled');
-      btn.target = '_blank';
-      btn.rel = 'noopener';
-      if (coming) coming.hidden = true;
-    } else {
-      // No provisioned link for this SKU (prod pre-activation): PRICING-4
-      // "Coming Soon" disabled pattern — never a dead URL.
-      btn.removeAttribute('href');
-      btn.setAttribute('aria-disabled', 'true');
-      btn.classList.add('disabled');
-      if (coming) coming.hidden = false;
-    }
-  };
-  select.addEventListener('change', applySku);
-  applySku();
 }
 
 // Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
@@ -10109,6 +10184,11 @@ async function sendOutlookTestEvent() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 // Handle redirect back from Google OAuth first (before session check)
 handleGoogleRedirect();
+
+// SMS-CHECKOUT-FIX: handle the return from a server-created SMS add-on
+// Checkout Session (?checkout=success|cancelled) — success is PAYMENT, not
+// activation (the purchase lands in the approval queue).
+handleSmsCheckoutReturn();
 
 const savedToken  = sessionStorage.getItem('atlas_token');
 const savedClient = sessionStorage.getItem('atlas_client');
