@@ -21,6 +21,13 @@
   --green: #22c55e; --yellow: #b45309; --orange: #F97316; --red: #EF4444;
   --blue: #3B82F6; --purple: #7C3AED; --pink: #EC4899;
   --text: #101826; --muted: #5f687a; --faint: #9aa3b2; --tint: rgba(16,24,38,0.035);
+  /* Form-field tokens for the workflow-parameter (Customize) editor and any
+     panel reading var(--field). Light values keep the exact hexes this UI
+     used to hardcode, so light mode is unchanged; :root.dark flips them and
+     color-scheme makes native <select>/<input> pickers (time, number, date)
+     render dark instead of a white popup on a dark panel. */
+  --field: #f7f8fa; --field-border: rgba(16,24,38,0.14); --border-strong: rgba(16,24,38,0.18);
+  color-scheme: light;
   --dchart-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
   --shadow: 0 24px 60px rgba(24,33,47,0.08);
   --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
@@ -33,6 +40,8 @@
   --green: #22c55e; --yellow: #f59e0b; --orange: #f97316; --red: #ef4444;
   --blue: #38bdf8; --purple: #7c3aed; --pink: #EC4899;
   --text: #e6ebf3; --muted: #8b95a7; --faint: #6b7585; --tint: rgba(255,255,255,0.05);
+  --field: #0d131d; --field-border: rgba(255,255,255,0.16); --border-strong: rgba(255,255,255,0.18);
+  color-scheme: dark;
   --shadow: 0 18px 44px rgba(0,0,0,0.35);
   --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
 }
@@ -12534,7 +12543,7 @@ function renderWorkflowParams(templateId, data) {
   const chips = (data.merge_fields || []).map(f =>
     `<button type="button" onclick="insertMergeField(${ref}, '${f.token}')"
        title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
-       style="background:rgba(16,24,38,0.04);border:1px solid rgba(16,24,38,0.08);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:#101826;cursor:pointer;">{{${f.token}}}</button>`
+       style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:var(--text);cursor:pointer;">{{${f.token}}}</button>`
   ).join(' ');
 
   // ── Build interleaved step list ──
@@ -12549,7 +12558,7 @@ function renderWorkflowParams(templateId, data) {
     trigger: { icon: 'play', ring: 'box-shadow:0 0 0 1px rgba(34,197,94,0.35)', iconColor: 'color:#16a34a' },
     sms:     { icon: 'message-square', ring: 'box-shadow:0 0 0 1px rgba(236,72,153,0.35)', iconColor: 'color:#EC4899' },
     voice:   { icon: 'phone-call', ring: 'box-shadow:0 0 0 1px rgba(59,130,246,0.35)', iconColor: 'color:#3B82F6' },
-    wait:    { icon: 'clock', ring: 'box-shadow:0 0 0 1px rgba(16,24,38,0.14)', iconColor: 'color:#9aa3b2' },
+    wait:    { icon: 'clock', ring: 'box-shadow:0 0 0 1px var(--field-border)', iconColor: 'color:var(--faint)' },
   };
   const chanFor = {
     trigger: { label: 'START', style: 'color:#16a34a;background:rgba(34,197,94,0.12)' },
@@ -12600,20 +12609,20 @@ function renderWorkflowParams(templateId, data) {
           `<option value="${escapeHtmlAttr(tz)}"${tz === w.timezone ? ' selected' : ''}>${escapeHtmlAttr(tzLabel(tz))}</option>`
         )).join('');
         waitBody = `
-          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                    value="${escapeHtmlAttr(w.at || '09:00')}"
                    oninput="updateWaitHint(${ref}, '${w.key}')"
-                   style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+                   style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-tz"
                     onchange="updateWaitHint(${ref}, '${w.key}')"
-                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;max-width:200px;">
+                    style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;max-width:200px;">
               ${tzOpts}
             </select>
             <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(124,58,237,0.12);color:var(--accent2);">TIME OF DAY</span>
           </div>
-          <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;margin-top:7px;"></div>`;
+          <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:var(--muted);margin-top:7px;"></div>`;
       } else {
         // Relative interval wait: number + unit select
         const opts = units.map(u =>
@@ -12621,18 +12630,18 @@ function renderWorkflowParams(templateId, data) {
         ).join('');
         const max = (data.max_wait_by_unit || {})[w.unit] || 9999;
         waitBody = `
-          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
                    value="${w.value}" min="1" max="${max}" step="1"
                    oninput="updateWaitHint(${ref}, '${w.key}')"
-                   style="width:88px;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+                   style="width:88px;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-unit"
                     onchange="updateWaitHint(${ref}, '${w.key}')"
-                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 12px;font-size:13.5px;color:#101826;outline:none;">
+                    style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 12px;font-size:13.5px;color:var(--text);outline:none;">
               ${opts}
             </select>
-            <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;">default ${w.default.value} ${w.default.unit}</span>
+            <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:var(--muted);">default ${w.default.value} ${w.default.unit}</span>
           </div>`;
       }
     }
@@ -12651,39 +12660,39 @@ function renderWorkflowParams(templateId, data) {
                   data-channel="${t.channel}"
                   oninput="updateTemplateCount(${ref}, '${t.key}')"
                   onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
-                  style="width:100%;box-sizing:border-box;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#101826;outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
+                  style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--text);outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-top:7px;">
-          <span style="font-size:11.5px;color:#5f687a;flex:1 1 auto;min-width:0;line-height:1.5;">${msgHint}</span>
-          <span id="wfp-${templateId}-tpl-${t.key}-count" style="font-size:11.5px;color:#5f687a;white-space:nowrap;"></span>
+          <span style="font-size:11.5px;color:var(--muted);flex:1 1 auto;min-width:0;line-height:1.5;">${msgHint}</span>
+          <span id="wfp-${templateId}-tpl-${t.key}-count" style="font-size:11.5px;color:var(--muted);white-space:nowrap;"></span>
         </div>`;
     }
 
     // ── Trigger body ──
     const triggerBody = isTrigger
-      ? `<div style="font-size:13px;color:#5f687a;line-height:1.55;">${escapeHtmlAttr(s.plain || '')}</div>`
+      ? `<div style="font-size:13px;color:var(--muted);line-height:1.55;">${escapeHtmlAttr(s.plain || '')}</div>`
       : '';
 
     return `
       <div style="display:flex;gap:14px;align-items:flex-start;position:relative;">
-        <div style="width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;margin-top:6px;z-index:1;${n.ring}">
+        <div style="width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface);margin-top:6px;z-index:1;${n.ring}">
           <i data-lucide="${n.icon}" style="width:14px;height:14px;${n.iconColor}"></i>
         </div>
-        <div style="flex:1;min-width:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;background:#fbfbfc;overflow:hidden;">
+        <div style="flex:1;min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--panel);overflow:hidden;">
           <div onclick="toggleWfpStep(${ref}, this, ${i})"
                style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;"
-               onmouseover="this.style.background='rgba(16,24,38,0.02)'"
+               onmouseover="this.style.background='var(--tint)'"
                onmouseout="this.style.background='transparent'">
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:14.5px;font-weight:600;color:#101826;">${title}</span>
+                <span style="font-size:14.5px;font-weight:600;color:var(--text);">${title}</span>
                 <span style="font-size:10px;font-weight:700;letter-spacing:0.4px;padding:2px 7px;border-radius:5px;white-space:nowrap;${c.style}">${c.label}</span>
               </div>
             </div>
-            <span style="font-size:12.5px;color:#5f687a;white-space:nowrap;flex-shrink:0;">${escapeHtmlAttr(summary)}</span>
-            <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" style="width:16px;height:16px;color:#9aa3b2;flex-shrink:0;"></i>
+            <span style="font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;">${escapeHtmlAttr(summary)}</span>
+            <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" style="width:16px;height:16px;color:var(--faint);flex-shrink:0;"></i>
           </div>
           <div class="wfp-step-body" data-step="${i}" style="padding:0 16px 16px;${open ? '' : 'display:none;'}">
-            <div style="border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#fff;padding:14px 16px;">
+            <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:14px 16px;">
               ${waitBody}
               ${msgBody}
               ${triggerBody}
@@ -12696,22 +12705,22 @@ function renderWorkflowParams(templateId, data) {
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;">
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:16px;">
-        <span style="font-size:14px;font-weight:700;color:#101826;">Workflow steps</span>
-        <span style="font-size:12.5px;color:#5f687a;">Each step runs in order. Expand one to edit its wait or message.</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text);">Workflow steps</span>
+        <span style="font-size:12.5px;color:var(--muted);">Each step runs in order. Expand one to edit its wait or message.</span>
         <span onclick="collapseAllWfpSteps(${ref}, this)"
-              style="margin-left:auto;font-size:12.5px;font-weight:600;color:#5f687a;cursor:pointer;white-space:nowrap;"
-              onmouseover="this.style.color='#7C3AED'"
-              onmouseout="this.style.color='#5f687a'">Collapse all</span>
+              style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;"
+              onmouseover="this.style.color='var(--accent2)'"
+              onmouseout="this.style.color='var(--muted)'">Collapse all</span>
       </div>
 
       <div style="position:relative;">
-        <div style="position:absolute;left:15px;top:16px;bottom:16px;width:0;border-left:1px dashed rgba(16,24,38,0.18);"></div>
+        <div style="position:absolute;left:15px;top:16px;bottom:16px;width:0;border-left:1px dashed var(--border-strong);"></div>
         <div style="display:flex;flex-direction:column;gap:10px;">
           ${stepHtml}
         </div>
       </div>
 
-      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#f7f8fa;"></div>
+      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--field);"></div>
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
       <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap;">
@@ -12720,7 +12729,7 @@ function renderWorkflowParams(templateId, data) {
         <button onclick="previewWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid #3B82F6;color:#3B82F6;cursor:pointer;">Preview</button>
         <button onclick="resetWorkflowParams(${ref}, this)"
-                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid rgba(16,24,38,0.14);color:#5f687a;cursor:pointer;">Reset to Defaults</button>
+                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid var(--field-border);color:var(--muted);cursor:pointer;">Reset to Defaults</button>
       </div>
     </div>`;
 
