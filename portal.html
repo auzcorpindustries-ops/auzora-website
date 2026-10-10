@@ -2208,7 +2208,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div class="card-title" style="margin:0;"><i data-lucide="upload"></i> Import Leads</div>
           <button onclick="toggleLeadImport()" id="li-toggle-btn" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">Expand</button>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Upload a CSV file or paste lead data directly. Phone number is required; name, service, and notes are optional.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Upload a CSV file or paste lead data directly. Phone number is required; name, service, industry, and notes are optional.</div>
 
         <div id="li-content" style="display:none;">
           <!-- Input methods: file upload + paste area -->
@@ -2226,7 +2226,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
             <!-- Paste area -->
             <div>
               <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Paste CSV Data</label>
-              <textarea id="li-paste-area" rows="5" placeholder="phone,name,service,notes&#10;5551234567,John Smith,Pool Cleaning,Called last week&#10;5559876543,Jane Doe,," style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:100px;" oninput="parseLeadImportPreview()"></textarea>
+              <textarea id="li-paste-area" rows="5" placeholder="phone,name,service,industry,notes&#10;5551234567,John Smith,Pool Cleaning,Home Services,Called last week&#10;5559876543,Jane Doe,,," style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;outline:none;resize:vertical;min-height:100px;" oninput="parseLeadImportPreview()"></textarea>
             </div>
           </div>
 
@@ -2251,6 +2251,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Phone</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Name</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Service</th>
+                    <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Industry</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Notes</th>
                     <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text);">Status</th>
                   </tr>
@@ -2290,11 +2291,38 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="ob-lead-list"></div>
       </div>
 
+      <!-- Outbound Call Window — the DEDICATED per-day window during which the
+           AI may DIAL leads, decoupled from Office Hours. Single source of
+           truth: saves to client.outbound_window, which the backend outbound
+           guardrail enforces (isWithinCallingHours). -->
+      <div class="card" id="outbound-window-card" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:6px;"><i data-lucide="phone-outgoing"></i> Outbound Call Window</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+          The hours your AI agent is allowed to dial leads. This is separate from your office hours — change it without affecting when you answer calls.
+        </div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 8px;font-size:13px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-office" value="office" onchange="toggleOutboundHoursMode('office');setDirty()" />
+            <span>Same as office hours</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-custom" value="custom" onchange="toggleOutboundHoursMode('custom');setDirty()" checked />
+            <span>Set a dedicated window</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="ow-mode" id="ow-mode-247" value="247" onchange="toggleOutboundHoursMode('247');setDirty()" />
+            <span>24/7</span>
+          </label>
+        </div>
+        <div class="hours-grid" id="ow-hours-grid" style="margin-top:6px;"></div>
+        <div id="ow-hours-note" style="font-size:12px;color:var(--muted);margin-top:8px;display:none;"></div>
+      </div>
+
       <!-- Call a Lead -->
       <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed during your business hours, and leads who ask to stop being called are never dialed again.
+          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed inside your outbound call window (set above), and leads who ask to stop being called are never dialed again.
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
@@ -3327,6 +3355,89 @@ function buildPortalHoursString() {
   }
   return days
     .map(d => `${d} ${document.getElementById('s_from_'+d).value}–${document.getElementById('s_to_'+d).value}`)
+    .join(', ');
+}
+
+// ── OUTBOUND CALL WINDOW (Leads & CRM) ───────────────────────────────────────
+// A DEDICATED per-day window for outbound dialing, decoupled from Office Hours.
+// This grid IS the single source of truth: it renders from and saves to
+// client.outbound_window, the exact field the backend outbound guardrail
+// enforces (outboundService.isWithinCallingHours). Modes:
+//   'office' → clear the field (dialing follows office hours — the default),
+//   'custom' → the per-day grid below, '247' → '24/7'.
+let outboundWindowMode = 'office';
+
+function renderOutboundWindowGrid() {
+  const grid = document.getElementById('ow-hours-grid');
+  if (!grid) return;
+  const c = portalClient || {};
+  const raw = typeof c.outbound_window === 'string' ? c.outbound_window.trim() : '';
+  outboundWindowMode = raw === '24/7' ? '247' : (raw ? 'custom' : 'office');
+  const parsed = parseHoursString(outboundWindowMode === 'custom' ? raw : '');
+  grid.innerHTML = '';
+  DAYS.forEach(day => {
+    const d = parsed[day];
+    const row = document.createElement('div');
+    row.className = 'hours-row';
+    row.innerHTML = `
+      <div class="hours-day">
+        <input type="checkbox" id="ow_day_${day}" ${d.open ? 'checked' : ''} onchange="toggleOutboundDay('${day}');setDirty()">
+        <label for="ow_day_${day}">${day.slice(0,3)}</label>
+      </div>
+      <div class="hours-times" id="ow_times_${day}" style="${d.open ? '' : 'opacity:0.3;pointer-events:none'}">
+        <input type="time" id="ow_from_${day}" value="${d.from}" oninput="setDirty()">
+        <span class="hours-sep">–</span>
+        <input type="time" id="ow_to_${day}" value="${d.to}" oninput="setDirty()">
+      </div>`;
+    grid.appendChild(row);
+  });
+  toggleOutboundHoursMode(outboundWindowMode, true);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleOutboundHoursMode(mode, quiet = false) {
+  outboundWindowMode = mode;
+  const grid = document.getElementById('ow-hours-grid');
+  const note = document.getElementById('ow-hours-note');
+  const office = document.getElementById('ow-mode-office');
+  const custom = document.getElementById('ow-mode-custom');
+  const all247 = document.getElementById('ow-mode-247');
+  if (office) office.checked = mode === 'office';
+  if (custom) custom.checked = mode === 'custom';
+  if (all247) all247.checked = mode === '247';
+  if (grid) {
+    const disabled = mode !== 'custom';
+    grid.style.opacity = disabled ? '0.45' : '1';
+    grid.style.pointerEvents = disabled ? 'none' : '';
+  }
+  if (note) {
+    note.style.display = mode === 'custom' ? 'none' : 'block';
+    note.textContent = mode === '247'
+      ? '24/7 selected — your AI may dial leads at any time.'
+      : 'Same as office hours — outbound dialing follows your business hours.';
+  }
+  if (!quiet) setDirty();
+}
+
+function toggleOutboundDay(day) {
+  const box = document.getElementById('ow_day_' + day);
+  const times = document.getElementById('ow_times_' + day);
+  if (!box || !times) return;
+  times.style.opacity = box.checked ? '1' : '0.3';
+  times.style.pointerEvents = box.checked ? '' : 'none';
+}
+
+// Serialize the outbound window exactly like buildPortalHoursString(). Returns
+// undefined when the grid was never rendered (Leads page not opened this
+// session) so a save from another page can never blank a window untouched.
+function buildOutboundWindowString() {
+  const grid = document.getElementById('ow-hours-grid');
+  if (!grid || !grid.children.length) return undefined;
+  if (outboundWindowMode === '247') return '24/7';
+  if (outboundWindowMode === 'office') return '';
+  const days = DAYS.filter(d => document.getElementById('ow_day_' + d)?.checked);
+  return days
+    .map(d => `${d} ${document.getElementById('ow_from_'+d).value}–${document.getElementById('ow_to_'+d).value}`)
     .join(', ');
 }
 
@@ -8891,6 +9002,7 @@ async function saveSettings() {
       business_name:       bizName || portalClient?.business_name || undefined,
       agent_name:          document.getElementById('s-agent-name').value,
       office_hours:        buildPortalHoursString(),
+      outbound_window:     buildOutboundWindowString(),
       service_areas:       servicesToSave,
       specialties:         specialtiesToSave,
       escalation_phone:    document.getElementById('s-escalation-phone').value,
@@ -10662,6 +10774,9 @@ async function toggleLeadEmailNotify(enabled) {
 async function loadOutbound() {
   const listEl = document.getElementById('ob-lead-list');
   if (!listEl) return;
+  // Render the dedicated Outbound Call Window grid from client.outbound_window
+  // (single source of truth) before loading the leads table.
+  renderOutboundWindowGrid();
   listEl.innerHTML = '<div class="empty">Loading leads…</div>';
   try {
     const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
@@ -10683,8 +10798,34 @@ async function loadOutbound() {
 // rows. Counting raw interactions instead would make Total Leads disagree with
 // the table, which is what the row grouping exists to prevent.
 //
-// Status is derived with the SAME expression the table badge uses, so a lead
-// counted as "Reached" here is always the lead showing a Reached badge below.
+// Each tile is wired to the lead lifecycle state the BACKEND actually writes:
+//   outboundService.finalizeOutboundCall  → reached / no-answer / voicemail
+//   outboundService.markLeadOptedOut      → opted-out + outbound_opted_out
+//   callAutomationService / campaignService → pending (queued) / deferred (out of window)
+//   postCallAnalysis / smsConversation    → needs_agent_attention
+//
+// "New" = not yet contacted. The backend keeps dialing a lead while its
+// outbound_status is missing / 'new' (never queued), 'pending' (queued for a
+// follow-up call) or 'deferred' (parked outside the calling window). Every
+// other status ('called', 'reached', 'no-answer', 'voicemail', 'max-attempts',
+// 'failed') means the lead HAS been contacted and must not count as New.
+//
+// Opt-out and needs-attention are STICKY per person and are read across the
+// WHOLE group: the backend flags every same-phone row on opt-out, and either
+// flag can sit on an older interaction than the one shown as the table row, so
+// reading only the newest row undercounts. Reached / New stay keyed to the
+// newest row so they keep agreeing with the status badge in the table below.
+const NOT_CONTACTED_OUTBOUND_STATUSES = ['new', 'pending', 'deferred'];
+
+// True when a lead row carries any of the opt-out signals the backend writes.
+function isLeadOptedOut(lead) {
+  return !!lead && (
+    lead.outbound_opted_out === true
+    || lead.opt_out === true
+    || lead.outbound_status === 'opted-out'
+  );
+}
+
 function updateLeadStats(grouped) {
   const set = (id, val) => {
     const el = document.getElementById(id);
@@ -10694,22 +10835,23 @@ function updateLeadStats(grouped) {
   let reached = 0, optedOut = 0, isNew = 0, needsAttention = 0;
 
   for (const group of (grouped || [])) {
-    const latest = Array.isArray(group) ? group[0] : group;
+    const rows = Array.isArray(group) ? group : [group];
+    const latest = rows[0];
     if (!latest) continue;
 
-    // Mirrors renderObLeads(): opt-out wins over any other status.
-    const isOptedOut = latest.outbound_opted_out === true
-      || latest.opt_out === true
-      || latest.outbound_status === 'opted-out';
-    if (isOptedOut) { optedOut++; continue; }
+    // Opt-out is a terminal, person-level state: an opt-out on ANY interaction
+    // stops every future dial, so it wins over Reached / New.
+    if (rows.some(isLeadOptedOut)) {
+      optedOut++;
+    } else {
+      const status = latest.outbound_status || 'new';
+      if (status === 'reached') reached++;
+      else if (NOT_CONTACTED_OUTBOUND_STATUSES.includes(status)) isNew++;
+    }
 
-    if (latest.needs_agent_attention === true) needsAttention++;
-
-    const status = latest.outbound_status || 'new';
-    if (status === 'reached') reached++;
-    else if (status === 'new') isNew++;
-    // Any other status (pending, no-answer, failed…) counts toward the total
-    // but is deliberately not bucketed as New — it HAS been contacted.
+    // Needs Attention is an independent overlay — a lead the AI escalated still
+    // needs a human even if it was later opted out.
+    if (rows.some(r => r && r.needs_agent_attention === true)) needsAttention++;
   }
 
   set('stat-leads-total', (grouped || []).length);
@@ -10772,7 +10914,9 @@ function renderObLeads() {
     const phone = latest.phone || '—';
     const email = latest.email || '';
     const name = latest.name || '';
-    const optedOut = latest.outbound_opted_out === true || latest.opt_out === true || latest.outbound_status === 'opted-out';
+    // Opt-out is sticky per person — aggregate across the whole group so the row
+    // badge agrees with the Opted Out tile (see isLeadOptedOut / updateLeadStats).
+    const optedOut = group.some(isLeadOptedOut);
     const status = optedOut ? 'opted-out' : (latest.outbound_status || 'new');
     const badgeClass = optedOut ? 'badge-unconfirmed' : (status === 'reached' ? 'badge-confirmed' : 'badge-pending');
     const attempts = latest.outbound_call_count ? ` (${latest.outbound_call_count}×)` : '';
@@ -10872,6 +11016,7 @@ function renderObLeads() {
       </td>
       <td>${latest.service ? `<span style="font-size:13px;color:var(--text);">${latest.service}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.company ? `<span style="font-size:13px;color:var(--text);">${latest.company}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${latest.industry ? `<span style="font-size:13px;color:var(--text);">${latest.industry}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${smsConsent
         ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
         : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
@@ -10884,7 +11029,7 @@ function renderObLeads() {
       <td>${latest.next_action_display ? `<span style="font-size:13px;color:var(--text);">${latest.next_action_display}</span>` : (latest.next_action ? `<span style="font-size:13px;color:var(--text);">${latest.next_action}</span>` : '<span style="color:var(--muted);">—</span>')}</td>
       <td>${aiRecHtml}</td>
     </tr>
-    ${showExpand ? `<tr><td colspan="13" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
+    ${showExpand ? `<tr><td colspan="14" style="padding:4px 12px 12px;border-bottom:1px solid var(--border);">${expandBtn}${historyHtml}</td></tr>` : ''}
     </tbody>`;
   }).join('');
 
@@ -10894,6 +11039,7 @@ function renderObLeads() {
       <th>Lead</th>
       <th>Service</th>
       <th>Company</th>
+      <th>Industry</th>
       <th>SMS</th>
       <th>Score</th>
       <th>Intent</th>
@@ -11101,7 +11247,7 @@ async function startOutboundCall(isTest) {
 
 let liParsedRows = [];   // parsed CSV rows (array of arrays)
 let liHeaders = [];      // detected column names
-let liMapping = {};      // { csvColumnIndex: 'phone'|'name'|'service'|'notes'|'email'|'skip' }
+let liMapping = {};      // { csvColumnIndex: 'phone'|'name'|'service'|'notes'|'email'|'industry'|'sms_consent'|'skip' }
 const LI_MAX_LEADS = 200;
 const LI_MAX_SIZE = 2 * 1024 * 1024;
 
@@ -11180,6 +11326,8 @@ function parseLeadImportPreview() {
       if (!usedFields.has('notes')) { liMapping[i] = 'notes'; usedFields.add('notes'); }
     } else if (hl.includes('email') || hl.includes('e-mail')) {
       if (!usedFields.has('email')) { liMapping[i] = 'email'; usedFields.add('email'); }
+    } else if (hl.includes('industry') || hl.includes('vertical') || hl.includes('sector')) {
+      if (!usedFields.has('industry')) { liMapping[i] = 'industry'; usedFields.add('industry'); }
     } else if (hl.includes('consent') || hl.includes('opt')) {
       if (!usedFields.has('sms_consent')) { liMapping[i] = 'sms_consent'; usedFields.add('sms_consent'); }
     }
@@ -11201,7 +11349,7 @@ function renderLeadImportMapping() {
   if (!liHeaders.length) { section.style.display = 'none'; return; }
 
   section.style.display = 'block';
-  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'sms_consent', 'skip'];
+  const fieldOptions = ['phone', 'name', 'service', 'notes', 'email', 'industry', 'sms_consent', 'skip'];
   const fieldLabels = { sms_consent: 'SMS consent (yes/no)' };
   grid.innerHTML = liHeaders.map((h, i) => {
     const current = liMapping[i] || 'skip';
@@ -11302,6 +11450,7 @@ function renderLeadImportPreview() {
         <td style="padding:6px 10px;">${item.lead.phone || '<span style="color:#ef4444;">—</span>'}</td>
         <td style="padding:6px 10px;">${item.lead.name || ''}</td>
         <td style="padding:6px 10px;">${item.lead.service || ''}</td>
+        <td style="padding:6px 10px;">${item.lead.industry || ''}</td>
         <td style="padding:6px 10px;color:var(--muted);">${item.lead.notes || ''}</td>
         <td style="padding:6px 10px;">${statusBadge}</td>
       </tr>`;
@@ -11594,6 +11743,9 @@ const CMP_STATUS_COLORS = {
 };
 const CMP_LEAD_STATUS_COLORS = {
   pending: '#94a3b8', called: '#3b82f6', reached: '#22c55e', 'no-answer': '#f59e0b',
+  // 'deferred' = call queued outside the calling window (OUTBOUND-DEFER). A
+  // non-error, waiting state — yellow, same family as 'no-answer'.
+  deferred: '#f59e0b',
   voicemail: '#a855f7', 'opted-out': '#ef4444', 'max-attempts': '#6b7280', failed: '#ef4444'
 };
 
@@ -11656,6 +11808,7 @@ async function viewCampaign(id) {
       { label: 'Total', val: s.total || 0, color: '#94a3b8' },
       { label: 'Reached', val: s.reached || 0, color: '#22c55e' },
       { label: 'No Answer', val: s['no-answer'] || 0, color: '#f59e0b' },
+      { label: 'Deferred', val: s.deferred || 0, color: '#f59e0b' },
       { label: 'Voicemail', val: s.voicemail || 0, color: '#a855f7' },
       { label: 'Pending', val: s.pending || 0, color: '#3b82f6' },
       { label: 'Opted Out', val: s['opted-out'] || 0, color: '#ef4444' },
