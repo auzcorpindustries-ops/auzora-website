@@ -21,6 +21,13 @@
   --green: #22c55e; --yellow: #b45309; --orange: #F97316; --red: #EF4444;
   --blue: #3B82F6; --purple: #7C3AED; --pink: #EC4899;
   --text: #101826; --muted: #5f687a; --faint: #9aa3b2; --tint: rgba(16,24,38,0.035);
+  /* Form-field tokens for the workflow-parameter (Customize) editor and any
+     panel reading var(--field). Light values keep the exact hexes this UI
+     used to hardcode, so light mode is unchanged; :root.dark flips them and
+     color-scheme makes native <select>/<input> pickers (time, number, date)
+     render dark instead of a white popup on a dark panel. */
+  --field: #f7f8fa; --field-border: rgba(16,24,38,0.14); --border-strong: rgba(16,24,38,0.18);
+  color-scheme: light;
   --dchart-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
   --shadow: 0 24px 60px rgba(24,33,47,0.08);
   --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
@@ -33,6 +40,8 @@
   --green: #22c55e; --yellow: #f59e0b; --orange: #f97316; --red: #ef4444;
   --blue: #38bdf8; --purple: #7c3aed; --pink: #EC4899;
   --text: #e6ebf3; --muted: #8b95a7; --faint: #6b7585; --tint: rgba(255,255,255,0.05);
+  --field: #0d131d; --field-border: rgba(255,255,255,0.16); --border-strong: rgba(255,255,255,0.18);
+  color-scheme: dark;
   --shadow: 0 18px 44px rgba(0,0,0,0.35);
   --btn-shadow: 0 8px 18px rgba(59,130,246,0.22);
 }
@@ -3819,10 +3828,11 @@ async function fetchEntitlements() {
     sessionStorage.setItem('atlas_tier_voices', JSON.stringify(portalTierVoices));
     renderUsageCard(data); // pricing ticket F — usage card lives on the same payload
     renderUsageSmsAddon(data); // PRICING-6 — SMS add-on state lives on the same payload
-    // PRICING-6: the card's SMS block shows add-on options with per-client
-    // tagged purchase URLs (GET /portal/billing/addons, PRICING-3). Catalog
-    // fetch rides the entitlements refresh; failures are non-fatal (the card
-    // already rendered from the entitlements payload).
+    // PRICING-6: the card's SMS block shows add-on options; the CTA starts a
+    // SERVER-CREATED Stripe Checkout Session (GET /portal/billing/addons for
+    // the catalog, POST .../addons/checkout to buy — SMS-CHECKOUT-FIX).
+    // Catalog fetch rides the entitlements refresh; failures are non-fatal
+    // (the card already rendered from the entitlements payload).
     loadSmsAddons();
     applyTierVisibility();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
@@ -4024,17 +4034,130 @@ function renderUsageSmsAddon(entitlementsPayload) {
       '<select id="usage-sms-select" class="dash-select" aria-label="SMS add-on volume">' +
         '<option value="">Loading…</option>' +
       '</select>' +
-      '<a id="usage-sms-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true">Add SMS</a>' +
+      '<a id="usage-sms-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true" role="button" onclick="startSmsCheckout();return false;">Add SMS</a>' +
       '<span id="usage-sms-coming" class="usage-sms-coming" hidden>Coming Soon</span>' +
     '</div>' +
     '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
   if (smsAddonOptions) renderSmsAddonOptions(smsAddonOptions);
 }
 
+// SMS-CHECKOUT-FIX: the purchase CTA is no longer an <a> carrying a
+// pre-minted (and possibly DEAD) payment link — it starts a server-created
+// recurring Stripe Checkout Session for this authenticated client.
 // Populate the options row from GET /portal/billing/addons (PRICING-3): one
-// dash-select option per SKU plus the tagged purchase URL on the CTA. Same
-// disabled-CTA doctrine as the PRICING-4 landing select: no provisioned link
-// → "Coming Soon" + click prevented, never a dead URL.
+// dash-select option per SKU. The catalog carries `purchasable` (the SKU has
+// a Stripe price this runtime can bill) — a SKU without one renders the
+// PRICING-4 "Coming Soon" disabled pattern, never a dead URL.
+function renderSmsAddonOptions(data) {
+  const select = document.getElementById('usage-sms-select');
+  const btn = document.getElementById('usage-sms-btn');
+  const coming = document.getElementById('usage-sms-coming');
+  if (!select || !btn) return;
+  const addons = Array.isArray(data.addons) ? data.addons : [];
+  if (!addons.length) {
+    select.innerHTML = '<option value="">Unavailable</option>';
+    select.disabled = true;
+    setSmsCtaDisabled(btn, coming, true);
+    return;
+  }
+  select.disabled = false;
+  select.innerHTML = addons.map(a =>
+    `<option value="${a.sku}"${a.current ? ' selected' : ''}>` +
+      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
+    '</option>'
+  ).join('');
+  const applySku = () => {
+    const sku = select.value;
+    const addon = addons.find(a => a.sku === sku) || null;
+    setSmsCtaDisabled(btn, coming, !(addon && addon.purchasable));
+  };
+  // The select element persists across renders (only its options are
+  // replaced), so bind the listener once.
+  if (!select.dataset.smsBound) {
+    select.addEventListener('change', applySku);
+    select.dataset.smsBound = '1';
+  }
+  applySku();
+}
+
+// Enable/disable the Add SMS CTA. Disabled = the PRICING-4 doctrine: no href,
+// aria-disabled, Coming Soon label — never a clickable dead CTA.
+function setSmsCtaDisabled(btn, coming, disabled) {
+  if (disabled) {
+    btn.removeAttribute('href');
+    btn.setAttribute('aria-disabled', 'true');
+    btn.classList.add('disabled');
+    if (coming) coming.hidden = false;
+  } else {
+    btn.setAttribute('href', '#');
+    btn.removeAttribute('aria-disabled');
+    btn.classList.remove('disabled');
+    if (coming) coming.hidden = true;
+  }
+}
+
+// SMS-CHECKOUT-FIX: start the purchase. The server mints a RECURRING Stripe
+// Checkout Session tied to THIS client's account and returns its hosted URL;
+// we hand the browser over to Stripe. Payment success is decoupled from SMS
+// activation — the webhook records the purchase as a pending-approval request.
+async function startSmsCheckout() {
+  const btn = document.getElementById('usage-sms-btn');
+  const select = document.getElementById('usage-sms-select');
+  const errEl = document.getElementById('usage-sms-addon-err');
+  if (!btn || !select) return;
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const sku = select.value;
+  if (!sku) return;
+  const original = btn.textContent;
+  btn.classList.add('disabled');
+  btn.setAttribute('aria-disabled', 'true');
+  btn.textContent = 'Starting…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const res = await fetch(`${API}/portal/billing/addons/checkout`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) throw new Error(data.error || `checkout ${res.status}`);
+    window.location.href = data.url;
+    return;
+  } catch (e) {
+    console.error('[Auzora] SMS checkout error:', e.message);
+    if (errEl) {
+      errEl.textContent = e.message || 'Could not start checkout. Please try again.';
+      errEl.style.display = 'block';
+    }
+    btn.textContent = original;
+    btn.classList.remove('disabled');
+    btn.removeAttribute('aria-disabled');
+  }
+}
+
+// SMS-CHECKOUT-FIX: the Checkout Session redirects back here with
+// ?checkout=success|cancelled. Stripe success is NOT SMS activation — the
+// purchase lands in the approval queue (sms_addon 'pending_approval'), and
+// the copy says exactly that.
+function handleSmsCheckoutReturn() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+  const state = params.get('checkout');
+  if (!state) return;
+  if (state === 'success') {
+    showToast('Payment received — your SMS add-on is pending approval.', 'success');
+  } else if (state === 'cancelled') {
+    showToast('SMS add-on checkout cancelled — you were not charged.', 'error');
+  }
+  // Clean the URL so a refresh does not re-toast.
+  try {
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  } catch (e) { /* ignore */ }
+}
+
+// Fetch the add-on catalog + the client's current add-on state
+// (GET /portal/billing/addons). Failures degrade to an honest "unavailable"
+// row — no fake options, no clickable dead CTA.
 async function loadSmsAddons() {
   const box = document.getElementById('usage-sms-addon');
   if (!box || box.style.display === 'none') return; // unlimited / degraded state: nothing to fill
@@ -4067,45 +4190,6 @@ async function loadSmsAddons() {
       errEl.style.display = 'block';
     }
   }
-}
-
-function renderSmsAddonOptions(data) {
-  const select = document.getElementById('usage-sms-select');
-  const btn = document.getElementById('usage-sms-btn');
-  const coming = document.getElementById('usage-sms-coming');
-  if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
-  if (!addons.length) {
-    select.innerHTML = '<option value="">Unavailable</option>';
-    select.disabled = true;
-    return;
-  }
-  select.innerHTML = addons.map(a =>
-    `<option value="${a.sku}"${a.current ? ' selected' : ''}>` +
-      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
-    '</option>'
-  ).join('');
-  const applySku = () => {
-    const sku = select.value;
-    const addon = addons.find(a => a.sku === sku) || null;
-    if (addon && addon.purchase_url) {
-      btn.href = addon.purchase_url;
-      btn.removeAttribute('aria-disabled');
-      btn.classList.remove('disabled');
-      btn.target = '_blank';
-      btn.rel = 'noopener';
-      if (coming) coming.hidden = true;
-    } else {
-      // No provisioned link for this SKU (prod pre-activation): PRICING-4
-      // "Coming Soon" disabled pattern — never a dead URL.
-      btn.removeAttribute('href');
-      btn.setAttribute('aria-disabled', 'true');
-      btn.classList.add('disabled');
-      if (coming) coming.hidden = false;
-    }
-  };
-  select.addEventListener('change', applySku);
-  applySku();
 }
 
 // Render usage gauge ring (D5) — shows combined plan usage vs tighter cap
@@ -10101,6 +10185,11 @@ async function sendOutlookTestEvent() {
 // Handle redirect back from Google OAuth first (before session check)
 handleGoogleRedirect();
 
+// SMS-CHECKOUT-FIX: handle the return from a server-created SMS add-on
+// Checkout Session (?checkout=success|cancelled) — success is PAYMENT, not
+// activation (the purchase lands in the approval queue).
+handleSmsCheckoutReturn();
+
 const savedToken  = sessionStorage.getItem('atlas_token');
 const savedClient = sessionStorage.getItem('atlas_client');
 if (savedToken && savedClient) {
@@ -12534,7 +12623,7 @@ function renderWorkflowParams(templateId, data) {
   const chips = (data.merge_fields || []).map(f =>
     `<button type="button" onclick="insertMergeField(${ref}, '${f.token}')"
        title="${escapeHtmlAttr(f.label)} — from ${escapeHtmlAttr(f.source)}"
-       style="background:rgba(16,24,38,0.04);border:1px solid rgba(16,24,38,0.08);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:#101826;cursor:pointer;">{{${f.token}}}</button>`
+       style="background:var(--tint);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;color:var(--text);cursor:pointer;">{{${f.token}}}</button>`
   ).join(' ');
 
   // ── Build interleaved step list ──
@@ -12549,7 +12638,7 @@ function renderWorkflowParams(templateId, data) {
     trigger: { icon: 'play', ring: 'box-shadow:0 0 0 1px rgba(34,197,94,0.35)', iconColor: 'color:#16a34a' },
     sms:     { icon: 'message-square', ring: 'box-shadow:0 0 0 1px rgba(236,72,153,0.35)', iconColor: 'color:#EC4899' },
     voice:   { icon: 'phone-call', ring: 'box-shadow:0 0 0 1px rgba(59,130,246,0.35)', iconColor: 'color:#3B82F6' },
-    wait:    { icon: 'clock', ring: 'box-shadow:0 0 0 1px rgba(16,24,38,0.14)', iconColor: 'color:#9aa3b2' },
+    wait:    { icon: 'clock', ring: 'box-shadow:0 0 0 1px var(--field-border)', iconColor: 'color:var(--faint)' },
   };
   const chanFor = {
     trigger: { label: 'START', style: 'color:#16a34a;background:rgba(34,197,94,0.12)' },
@@ -12600,20 +12689,20 @@ function renderWorkflowParams(templateId, data) {
           `<option value="${escapeHtmlAttr(tz)}"${tz === w.timezone ? ' selected' : ''}>${escapeHtmlAttr(tzLabel(tz))}</option>`
         )).join('');
         waitBody = `
-          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="time" id="wfp-${templateId}-wait-${w.key}-at"
                    value="${escapeHtmlAttr(w.at || '09:00')}"
                    oninput="updateWaitHint(${ref}, '${w.key}')"
-                   style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+                   style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-tz"
                     onchange="updateWaitHint(${ref}, '${w.key}')"
-                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;max-width:200px;">
+                    style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;max-width:200px;">
               ${tzOpts}
             </select>
             <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(124,58,237,0.12);color:var(--accent2);">TIME OF DAY</span>
           </div>
-          <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;margin-top:7px;"></div>`;
+          <div id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:var(--muted);margin-top:7px;"></div>`;
       } else {
         // Relative interval wait: number + unit select
         const opts = units.map(u =>
@@ -12621,18 +12710,18 @@ function renderWorkflowParams(templateId, data) {
         ).join('');
         const max = (data.max_wait_by_unit || {})[w.unit] || 9999;
         waitBody = `
-          <div style="font-size:13px;color:#5f687a;line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px;">How long the workflow pauses before the next step.</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <input type="number" id="wfp-${templateId}-wait-${w.key}-value"
                    value="${w.value}" min="1" max="${max}" step="1"
                    oninput="updateWaitHint(${ref}, '${w.key}')"
-                   style="width:88px;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 11px;font-size:13.5px;color:#101826;outline:none;">
+                   style="width:88px;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 11px;font-size:13.5px;color:var(--text);outline:none;">
             <select id="wfp-${templateId}-wait-${w.key}-unit"
                     onchange="updateWaitHint(${ref}, '${w.key}')"
-                    style="background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:9px 12px;font-size:13.5px;color:#101826;outline:none;">
+                    style="background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:9px 12px;font-size:13.5px;color:var(--text);outline:none;">
               ${opts}
             </select>
-            <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:#5f687a;">default ${w.default.value} ${w.default.unit}</span>
+            <span id="wfp-${templateId}-wait-${w.key}-hint" style="font-size:11.5px;color:var(--muted);">default ${w.default.value} ${w.default.unit}</span>
           </div>`;
       }
     }
@@ -12651,39 +12740,39 @@ function renderWorkflowParams(templateId, data) {
                   data-channel="${t.channel}"
                   oninput="updateTemplateCount(${ref}, '${t.key}')"
                   onfocus="wfpActiveField = 'wfp-${templateId}-tpl-${t.key}'"
-                  style="width:100%;box-sizing:border-box;background:#f7f8fa;border:1px solid rgba(16,24,38,0.14);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#101826;outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
+                  style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--text);outline:none;resize:vertical;font-family:inherit;">${escapeHtmlAttr(t.body)}</textarea>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-top:7px;">
-          <span style="font-size:11.5px;color:#5f687a;flex:1 1 auto;min-width:0;line-height:1.5;">${msgHint}</span>
-          <span id="wfp-${templateId}-tpl-${t.key}-count" style="font-size:11.5px;color:#5f687a;white-space:nowrap;"></span>
+          <span style="font-size:11.5px;color:var(--muted);flex:1 1 auto;min-width:0;line-height:1.5;">${msgHint}</span>
+          <span id="wfp-${templateId}-tpl-${t.key}-count" style="font-size:11.5px;color:var(--muted);white-space:nowrap;"></span>
         </div>`;
     }
 
     // ── Trigger body ──
     const triggerBody = isTrigger
-      ? `<div style="font-size:13px;color:#5f687a;line-height:1.55;">${escapeHtmlAttr(s.plain || '')}</div>`
+      ? `<div style="font-size:13px;color:var(--muted);line-height:1.55;">${escapeHtmlAttr(s.plain || '')}</div>`
       : '';
 
     return `
       <div style="display:flex;gap:14px;align-items:flex-start;position:relative;">
-        <div style="width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;margin-top:6px;z-index:1;${n.ring}">
+        <div style="width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface);margin-top:6px;z-index:1;${n.ring}">
           <i data-lucide="${n.icon}" style="width:14px;height:14px;${n.iconColor}"></i>
         </div>
-        <div style="flex:1;min-width:0;border:1px solid rgba(16,24,38,0.08);border-radius:12px;background:#fbfbfc;overflow:hidden;">
+        <div style="flex:1;min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--panel);overflow:hidden;">
           <div onclick="toggleWfpStep(${ref}, this, ${i})"
                style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;"
-               onmouseover="this.style.background='rgba(16,24,38,0.02)'"
+               onmouseover="this.style.background='var(--tint)'"
                onmouseout="this.style.background='transparent'">
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:14.5px;font-weight:600;color:#101826;">${title}</span>
+                <span style="font-size:14.5px;font-weight:600;color:var(--text);">${title}</span>
                 <span style="font-size:10px;font-weight:700;letter-spacing:0.4px;padding:2px 7px;border-radius:5px;white-space:nowrap;${c.style}">${c.label}</span>
               </div>
             </div>
-            <span style="font-size:12.5px;color:#5f687a;white-space:nowrap;flex-shrink:0;">${escapeHtmlAttr(summary)}</span>
-            <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" style="width:16px;height:16px;color:#9aa3b2;flex-shrink:0;"></i>
+            <span style="font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;">${escapeHtmlAttr(summary)}</span>
+            <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" style="width:16px;height:16px;color:var(--faint);flex-shrink:0;"></i>
           </div>
           <div class="wfp-step-body" data-step="${i}" style="padding:0 16px 16px;${open ? '' : 'display:none;'}">
-            <div style="border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#fff;padding:14px 16px;">
+            <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:14px 16px;">
               ${waitBody}
               ${msgBody}
               ${triggerBody}
@@ -12696,22 +12785,22 @@ function renderWorkflowParams(templateId, data) {
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;">
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:16px;">
-        <span style="font-size:14px;font-weight:700;color:#101826;">Workflow steps</span>
-        <span style="font-size:12.5px;color:#5f687a;">Each step runs in order. Expand one to edit its wait or message.</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text);">Workflow steps</span>
+        <span style="font-size:12.5px;color:var(--muted);">Each step runs in order. Expand one to edit its wait or message.</span>
         <span onclick="collapseAllWfpSteps(${ref}, this)"
-              style="margin-left:auto;font-size:12.5px;font-weight:600;color:#5f687a;cursor:pointer;white-space:nowrap;"
-              onmouseover="this.style.color='#7C3AED'"
-              onmouseout="this.style.color='#5f687a'">Collapse all</span>
+              style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;"
+              onmouseover="this.style.color='var(--accent2)'"
+              onmouseout="this.style.color='var(--muted)'">Collapse all</span>
       </div>
 
       <div style="position:relative;">
-        <div style="position:absolute;left:15px;top:16px;bottom:16px;width:0;border-left:1px dashed rgba(16,24,38,0.18);"></div>
+        <div style="position:absolute;left:15px;top:16px;bottom:16px;width:0;border-left:1px dashed var(--border-strong);"></div>
         <div style="display:flex;flex-direction:column;gap:10px;">
           ${stepHtml}
         </div>
       </div>
 
-      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid rgba(16,24,38,0.08);border-radius:10px;background:#f7f8fa;"></div>
+      <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--field);"></div>
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
       <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap;">
@@ -12720,7 +12809,7 @@ function renderWorkflowParams(templateId, data) {
         <button onclick="previewWorkflowParams(${ref}, this)"
                 style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid #3B82F6;color:#3B82F6;cursor:pointer;">Preview</button>
         <button onclick="resetWorkflowParams(${ref}, this)"
-                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid rgba(16,24,38,0.14);color:#5f687a;cursor:pointer;">Reset to Defaults</button>
+                style="padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;background:none;border:1px solid var(--field-border);color:var(--muted);cursor:pointer;">Reset to Defaults</button>
       </div>
     </div>`;
 
