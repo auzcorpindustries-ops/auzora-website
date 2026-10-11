@@ -4109,7 +4109,9 @@ function renderUsageSmsAddon(entitlementsPayload) {
         `<div class="usage-bar-fill ${fillClass}" style="width:${Math.min(100, Math.max(0, pct))}%"></div>` +
       '</div>' +
       `<div class="usage-sms-addon-state">SMS add-on: <strong>${Number(smsCap).toLocaleString()} messages/mo</strong> — included via your add-on.</div>` +
+      renderUsageSmsChangeRow(smsAddOn) +
       '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
+    if (smsAddonOptions) renderSmsChangeOptions(smsAddonOptions, smsAddOn);
     return;
   }
 
@@ -4188,6 +4190,114 @@ function setSmsCtaDisabled(btn, coming, disabled) {
   }
 }
 
+// ── SMS-PLAN-UPDATE: change tier for an EXISTING holder ──────────────────────
+// The base-plan row above SELLS the add-on. This row, rendered for a client
+// who ALREADY has one (the active-add-on branch), lets them pick a different
+// tier. The dropdown is live (previously no control was offered at all);
+// submitting records a REQUEST for admin approval — the subscription is
+// swapped IN PLACE only when an admin approves, so nothing changes now.
+function renderUsageSmsChangeRow(smsAddOn) {
+  const req = smsAddOn && smsAddOn.tier_change_request;
+  const pending = !!(req && req.sku);
+  const pendingNote = pending
+    ? '<div class="usage-sms-addon-state" id="usage-sms-change-pending">Tier change to ' +
+        '<strong>' + Number(req.requested_messages || 0).toLocaleString() + ' messages/mo</strong>' +
+        ' — awaiting approval.</div>'
+    : '';
+  return (
+    '<div class="usage-sms-row" id="usage-sms-change-row">' +
+      '<label for="usage-sms-change-select">Update SMS Plan</label>' +
+      '<select id="usage-sms-change-select" class="dash-select" aria-label="Change SMS add-on tier">' +
+        '<option value="">Loading…</option>' +
+      '</select>' +
+      '<a id="usage-sms-change-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true" role="button" ' +
+        'onclick="startSmsTierChange();return false;"' + (pending ? ' data-pending="1"' : '') + '>Update SMS Plan</a>' +
+      '<span id="usage-sms-change-coming" class="usage-sms-coming" hidden>Coming Soon</span>' +
+    '</div>' +
+    pendingNote
+  );
+}
+
+// Populate the change row from GET /portal/billing/addons (same catalog as the
+// purchase row). The CTA enables only for a purchasable SKU that DIFFERS from
+// the current tier and only when no request is already pending — never a
+// clickable no-op.
+function renderSmsChangeOptions(data, smsAddOn) {
+  const select = document.getElementById('usage-sms-change-select');
+  const btn = document.getElementById('usage-sms-change-btn');
+  const coming = document.getElementById('usage-sms-change-coming');
+  if (!select || !btn) return;
+  const addons = Array.isArray(data.addons) ? data.addons : [];
+  const currentSku = (smsAddOn && smsAddOn.sku) || null;
+  if (!addons.length) {
+    select.innerHTML = '<option value="">Unavailable</option>';
+    select.disabled = true;
+    setSmsCtaDisabled(btn, coming, true);
+    return;
+  }
+  select.disabled = false;
+  select.innerHTML = addons.map(a =>
+    `<option value="${a.sku}"${a.sku === currentSku ? ' selected' : ''}>` +
+      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
+    '</option>'
+  ).join('');
+  const pending = btn.dataset.pending === '1';
+  const applySku = () => {
+    const sku = select.value;
+    const addon = addons.find(a => a.sku === sku) || null;
+    setSmsCtaDisabled(btn, coming, !(addon && addon.purchasable) || sku === currentSku || pending);
+  };
+  if (!select.dataset.smsChangeBound) {
+    select.addEventListener('change', applySku);
+    select.dataset.smsChangeBound = '1';
+  }
+  applySku();
+}
+
+// Submit the tier-change request. NO Stripe redirect: the request lands in the
+// same admin approval queue as a new purchase, and the swap happens on
+// approval. 409 (same tier / not active) and 400 (unknown SKU) surface inline.
+async function startSmsTierChange() {
+  const btn = document.getElementById('usage-sms-change-btn');
+  const select = document.getElementById('usage-sms-change-select');
+  const errEl = document.getElementById('usage-sms-addon-err');
+  if (!btn || !select) return;
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const sku = select.value;
+  if (!sku) return;
+  const original = btn.textContent;
+  btn.classList.add('disabled');
+  btn.setAttribute('aria-disabled', 'true');
+  btn.textContent = 'Submitting…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const res = await fetch(`${API}/portal/billing/addons/change-tier`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `tier change ${res.status}`);
+    showToast('SMS plan change requested — pending approval.', 'success');
+    // Reflect the pending request in place so the row shows "awaiting approval".
+    if (portalEntitlements) {
+      portalEntitlements.sms_addon = Object.assign({}, portalEntitlements.sms_addon || {}, {
+        tier_change_request: data.tier_change_request || null,
+      });
+      renderUsageSmsAddon(portalEntitlements);
+    }
+  } catch (e) {
+    console.error('[Auzora] SMS tier change error:', e.message);
+    if (errEl) {
+      errEl.textContent = e.message || 'Could not submit the change. Please try again.';
+      errEl.style.display = 'block';
+    }
+    btn.textContent = original;
+    btn.classList.remove('disabled');
+    btn.removeAttribute('aria-disabled');
+  }
+}
+
 // SMS-CHECKOUT-FIX: start the purchase. The server mints a RECURRING Stripe
 // Checkout Session tied to THIS client's account and returns its hosted URL;
 // we hand the browser over to Stripe. Payment success is decoupled from SMS
@@ -4262,6 +4372,9 @@ async function loadSmsAddons() {
     const data = await res.json();
     smsAddonOptions = data || {};
     renderSmsAddonOptions(smsAddonOptions);
+    // SMS-PLAN-UPDATE: the active-add-on branch renders the change row; fill
+    // its dropdown from the same catalog (current tier preselected).
+    renderSmsChangeOptions(smsAddonOptions, smsAddonOptions.current || null);
   } catch (e) {
     console.error('[Auzora] SMS add-on catalog error:', e.message);
     // Keep the block honest: the select keeps its Loading state replaced by

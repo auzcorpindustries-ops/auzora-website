@@ -2705,18 +2705,32 @@ async function loadSmsApprovals() {
       const clientLit = adminJsLiteral(r.client_id);
       const messages = Number(r.requested_messages || 0).toLocaleString();
       const price = r.monthly_usd != null ? `$${r.monthly_usd}/mo` : '—';
+      // SMS-PLAN-UPDATE: the queue carries BOTH kinds of request. A tier change
+      // is an IN-PLACE swap of an existing subscription — Approve change /
+      // Reject. A new add-on is the original Activate / Reject.
+      const isChange = r.kind === 'tier_change';
+      const detail = isChange
+        ? `Change to ${messages} messages/mo · ${price} · from ${adminEsc(r.from_sku || r.current_sku || 'current tier')}`
+        : `${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price}`;
+      const actions = isChange
+        ? `<button onclick="approveSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve change</button>
+          <button onclick="rejectSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`
+        : `<button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
+          <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`;
+      const kindBadge = isChange
+        ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">Tier change</span>'
+        : '';
       return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
         <div>
-          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}</div>
+          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}${kindBadge}</div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px;">
-            ${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
+            ${detail} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
           </div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px;">${adminEsc(r.email || '')}${r.plan ? ' · ' + adminEsc(r.plan) : ''}</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
-          <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
+          ${actions}
         </div>
       </div>`;
     }).join('');
@@ -2761,6 +2775,53 @@ async function rejectSmsApproval(clientId) {
       return;
     }
     toast('SMS add-on request rejected', 'info');
+    loadSmsApprovals();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// SMS-PLAN-UPDATE: approve an existing holder's tier change. The backend swaps
+// the SAME Stripe subscription onto the new tier's price IN PLACE (no duplicate
+// subscription, no cancel-and-rebuy, no gap) and moves the SMS cap.
+async function approveSmsTierChange(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/approve-tier-change`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to approve tier change');
+      return;
+    }
+    const data = await res.json();
+    toast(`SMS plan changed — ${Number(data.sms_allowance || 0).toLocaleString()} messages/mo`, 'success');
+    loadSmsApprovals();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// SMS-PLAN-UPDATE: reject a tier-change request. The holder keeps their current
+// tier, price and SMS cap.
+async function rejectSmsTierChange(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const reason = prompt('Reason for rejecting the tier change (optional):') || 'Tier change rejected by admin';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/reject-tier-change`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to reject tier change');
+      return;
+    }
+    toast('SMS tier-change request rejected', 'info');
     loadSmsApprovals();
   } catch (err) {
     alert('Error: ' + err.message);
