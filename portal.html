@@ -2350,6 +2350,23 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="ow-hours-note" style="font-size:12px;color:var(--muted);margin-top:8px;display:none;"></div>
       </div>
 
+      <!-- Closing Tasks — the outcomes that tell the AI an automation has done
+           its job. Saved to client.closing_tasks (PATCH /portal/settings); Jev
+           verifies them from the call transcript and, on a verified task,
+           terminates the automation that placed the call. The option list is
+           rendered from the closing-task catalog (GET /portal/automations). -->
+      <div class="card" id="closing-tasks-card" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:6px;"><i data-lucide="flag"></i> Closing Tasks</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+          Tell your AI when a call has done its job. When Jev verifies one of these from the call transcript, the automation that placed the call stops pursuing that lead. Leave everything unchecked to use the default set — Appointment booked, Lead captured, and Opted out.
+        </div>
+        <div id="closing-tasks-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn-save" id="closing-tasks-save" onclick="saveClosingTasks()" style="margin:0;">Save Closing Tasks</button>
+          <span id="closing-tasks-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+      </div>
+
       <!-- Call a Lead -->
       <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
@@ -4614,7 +4631,7 @@ function showPage(name) {
   if (name === 'settings') { restoreCollapseStates(); loadSettings(); }
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
-  if (name === 'leads')       { loadOutbound(); loadLeadNotifyToggle(); }
+  if (name === 'leads')       { loadOutbound(); loadLeadNotifyToggle(); loadClosingTasks(); }
   if (name === 'conversations') loadConversations();
   if (name === 'campaigns')   {
     // Ensure the correct tab is visible based on entitlements
@@ -11062,6 +11079,96 @@ async function toggleLeadEmailNotify(enabled) {
     status.style.color = '#ef4444';
   }
   input.disabled = false;
+  setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+}
+
+// ── CLOSING TASKS (Leads & CRM) ──────────────────────────────────────────────
+// The outcomes that tell the AI an automation has done its job. Saved to
+// client.closing_tasks via PATCH /portal/settings; Jev verifies them from the
+// call transcript and, on a verified task, terminates the automation that
+// placed the call (CLOSING-TASK-DETECT). The option list comes from the
+// closing-task catalog exposed on the automation catalog endpoint
+// (GET /portal/automations) — never hard-coded. A minimal fallback keeps the
+// section usable if that fetch fails.
+let closingTasksCatalog = null;
+
+const CLOSING_TASKS_FALLBACK = {
+  options: [
+    { id: 'appointment_booked', label: 'Appointment booked' },
+    { id: 'lead_captured', label: 'Lead captured' },
+    { id: 'callback_agreed', label: 'Callback agreed' },
+    { id: 'opt_out', label: 'Opted out' },
+    { id: 'info_provided', label: 'Information provided' },
+  ],
+  defaults: ['appointment_booked', 'lead_captured', 'opt_out'],
+};
+
+// The tasks currently selected for this client. An empty/absent stored list
+// means "use the catalog defaults" — exactly what the backend resolves to.
+function selectedClosingTasks() {
+  const catalog = closingTasksCatalog || CLOSING_TASKS_FALLBACK;
+  const stored = Array.isArray(portalClient?.closing_tasks) ? portalClient.closing_tasks : [];
+  const valid = stored.filter(id => catalog.options.some(o => o.id === id));
+  return valid.length ? valid : (catalog.defaults || []);
+}
+
+async function loadClosingTasks() {
+  const listEl = document.getElementById('closing-tasks-list');
+  if (!listEl) return;
+  if (!closingTasksCatalog) {
+    closingTasksCatalog = CLOSING_TASKS_FALLBACK;
+    try {
+      const res = await fetch(`${API}/portal/automations`, { headers: { 'X-Portal-Token': portalToken } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.closing_tasks && Array.isArray(data.closing_tasks.options) && data.closing_tasks.options.length) {
+          closingTasksCatalog = data.closing_tasks;
+        }
+      }
+    } catch (e) {
+      console.warn('[Auzora] closing-task catalog fetch failed, using fallback:', e.message);
+    }
+  }
+  renderClosingTasks();
+}
+
+function renderClosingTasks() {
+  const listEl = document.getElementById('closing-tasks-list');
+  if (!listEl) return;
+  const catalog = closingTasksCatalog || CLOSING_TASKS_FALLBACK;
+  const selected = selectedClosingTasks();
+  listEl.innerHTML = catalog.options.map(opt => `
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;user-select:none;">
+      <input type="checkbox" class="closing-task-cb" value="${opt.id}" ${selected.includes(opt.id) ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;margin-top:2px;" />
+      <span style="font-size:13px;color:var(--text);">
+        <span style="font-weight:600;">${opt.label || opt.id}</span>
+        ${opt.description ? `<br /><span style="color:var(--muted);font-size:12px;">${opt.description}</span>` : ''}
+      </span>
+    </label>`).join('');
+}
+
+async function saveClosingTasks() {
+  const status = document.getElementById('closing-tasks-status');
+  const btn = document.getElementById('closing-tasks-save');
+  const selected = Array.from(document.querySelectorAll('.closing-task-cb:checked')).map(cb => cb.value);
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ closing_tasks: selected }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    if (data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+    }
+    if (status) { status.textContent = 'Saved'; status.style.color = 'var(--green)'; }
+  } catch (e) {
+    if (status) { status.textContent = e.message; status.style.color = '#ef4444'; }
+  }
+  if (btn) btn.disabled = false;
   setTimeout(() => { if (status) status.textContent = ''; }, 3000);
 }
 
