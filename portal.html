@@ -354,6 +354,12 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-row:last-child { margin-bottom: 0; }
 .usage-row-label { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; }
 .usage-row-counts { font-weight: 500; color: var(--muted); }
+/* OVERAGE-UI (4/5): per-usage-section included-vs-overage tally + the
+   independent "Allow overages" opt-in. Native checkbox (accent-color) so the
+   control matches the existing dashboard form controls — no custom styling. */
+.usage-row-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.usage-overage-tally { font-size: 12px; color: var(--muted); }
+.usage-overage-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .usage-bar { height: 10px; border-radius: 99px; background: rgba(16,24,38,.07); overflow: hidden; }
 .usage-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #3B82F6, #7C3AED); transition: width 500ms ease; min-width: 0; }
 .usage-bar-fill.warn { background: linear-gradient(90deg, #F59E0B, #F97316); }
@@ -1227,10 +1233,27 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <div class="usage-row">
                 <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
                 <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+                <!-- OVERAGE-UI (4/5): this section's included-vs-overage tally
+                     (OVERAGE-TRACK 2/5) and its OWN "Allow overages" opt-in,
+                     persisted per kind via PATCH /portal/usage/overage (1/5). -->
+                <div class="usage-row-meta">
+                  <span class="usage-overage-tally" id="usage-voice-tally" aria-live="polite"></span>
+                  <label class="usage-overage-toggle" for="usage-voice-overage">
+                    <input type="checkbox" id="usage-voice-overage" onchange="toggleAllowOverage('voice', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Allow overages
+                  </label>
+                </div>
               </div>
               <div class="usage-row">
                 <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
                 <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+                <div class="usage-row-meta">
+                  <span class="usage-overage-tally" id="usage-sms-tally" aria-live="polite"></span>
+                  <label class="usage-overage-toggle" for="usage-sms-overage">
+                    <input type="checkbox" id="usage-sms-overage" onchange="toggleAllowOverage('sms', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Allow overages
+                  </label>
+                </div>
               </div>
             </div>
             <!-- PRICING-6: SMS add-on state — "not included + options" for
@@ -3971,6 +3994,75 @@ function renderUsageCard(entitlementsPayload) {
     }
   });
   if (anyOver) card.classList.add('over');
+  // OVERAGE-UI (4/5): per-section included/overage tallies + the independent
+  // per-kind "Allow overages" toggles (drives the 1/5 canUse policy).
+  renderUsageOverageControls(entitlementsPayload);
+}
+
+// ── OVERAGE-UI (4/5): overage tallies + per-kind "Allow overages" ─────────────
+// The dashboard usage card renders ONE section per kind (voice bars, SMS bars).
+// Each section carries its own included-vs-overage tally (OVERAGE-TRACK 2/5,
+// usage.included / usage.overage, invariant included + overage === total) and
+// its own "Allow overages" checkbox — the stored per-kind preference from
+// OVERAGE-ENFORCE 1/5 (allow_overage). The kinds are INDEPENDENT: toggling
+// voice never touches the SMS preference (and vice versa).
+const OVERAGE_KINDS = [
+  { kind: 'voice', tallyId: 'usage-voice-tally', boxId: 'usage-voice-overage' },
+  { kind: 'sms', tallyId: 'usage-sms-tally', boxId: 'usage-sms-overage' },
+];
+
+// PURE. The tally line for one section: the included allowance vs the overage
+// portion of this period's total. Kept independent of the DOM so it is directly
+// testable (test/portal-overage-ui.test.js).
+function overageTallyLabel(included, overage) {
+  const inc = Number(included || 0);
+  const ov = Number(overage || 0);
+  return 'Included ' + inc.toLocaleString() + ' · Overage ' + ov.toLocaleString();
+}
+
+// Renders both sections from the canonical /portal/entitlements payload. Reads
+// allow_overage (top level, fresh record) and falls back to usage.allowOverage
+// so the checkbox reflects exactly what enforcement uses. Only the literal
+// boolean true counts as "allowed" (mirrors usageService.normalizeAllowOverage).
+function renderUsageOverageControls(entitlementsPayload) {
+  const usage = entitlementsPayload && entitlementsPayload.usage;
+  if (!usage) return;
+  const allow = (entitlementsPayload && entitlementsPayload.allow_overage) || usage.allowOverage || {};
+  const included = usage.included || {};
+  const overage = usage.overage || {};
+  OVERAGE_KINDS.forEach(function (k) {
+    const tallyEl = document.getElementById(k.tallyId);
+    if (tallyEl) tallyEl.textContent = overageTallyLabel(included[k.kind], overage[k.kind]);
+    const boxEl = document.getElementById(k.boxId);
+    if (boxEl) boxEl.checked = allow[k.kind] === true;
+  });
+}
+
+// Persists ONE kind's allow-overage preference: PATCH /portal/usage/overage
+// { voice?: boolean, sms?: boolean }. The backend boolean-validates and
+// partial-merges, so this only ever writes the toggled kind. On any failure the
+// checkbox reverts, so the UI never misreports what canUse() is enforcing.
+async function toggleAllowOverage(kind, checked) {
+  if (kind !== 'voice' && kind !== 'sms') return;
+  const entry = OVERAGE_KINDS.filter(function (k) { return k.kind === kind; })[0];
+  const boxEl = entry ? document.getElementById(entry.boxId) : null;
+  const desired = checked === true;
+  try {
+    const res = await fetch(`${API}/portal/usage/overage`, {
+      method: 'PATCH',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [kind]: desired }),
+    });
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json().catch(function () { return {}; });
+    const stored = (data && data.allow_overage) || {};
+    if (boxEl && typeof stored[kind] === 'boolean') boxEl.checked = stored[kind];
+    showToast('Overage preference saved.', 'success');
+  } catch (e) {
+    if (boxEl) boxEl.checked = !desired;
+    console.error('[Auzora] allow-overage update failed:', e.message);
+    showToast('Could not save the overage preference. Please try again.', 'error');
+  }
 }
 
 // ── SMS ADD-ON STATE (PRICING-6) ─────────────────────────────────────────────
