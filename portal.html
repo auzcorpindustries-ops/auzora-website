@@ -654,6 +654,26 @@ tr:hover td { background: rgba(16,24,38,0.02); }
 .badge-confirmed { background: rgba(34,197,94,.12); color: #16a34a; }
 .badge-pending { background: rgba(245,158,11,.13); color: var(--yellow); }
 .badge-unconfirmed { background: rgba(239,68,68,.09); color: var(--red); }
+
+/* ── CLOSING-TASKS-LIFECYCLE: per-target status chips ──────────────────────
+   The lead's POSITIVE closing tasks (the TARGETS an automation works toward)
+   with their per-lead status, shown in the interaction detail next to Jev's
+   evidence in the timeline. Theme variables only — light/dark are automatic.
+   pending = neutral, accepted = green, rejected = red. */
+.ct-targets { margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.ct-targets-head { font-size:12px; color:var(--muted); margin-bottom:8px; }
+.ct-targets-row { display:flex; flex-wrap:wrap; gap:8px; }
+.ct-chip {
+  display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:99px;
+  font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--tint); color:var(--muted);
+}
+.ct-chip-dot { width:7px; height:7px; border-radius:50%; background:var(--faint); display:inline-block; }
+.ct-chip-status { font-weight:700; opacity:.85; }
+.ct-chip-accepted { border-color:var(--green); color:var(--green); }
+.ct-chip-accepted .ct-chip-dot { background:var(--green); }
+.ct-chip-rejected { border-color:var(--red); color:var(--red); }
+.ct-chip-rejected .ct-chip-dot { background:var(--red); }
+.ct-chip-pending { border-color:var(--border); color:var(--muted); }
 tr.row-unconfirmed td { background: rgba(239,68,68,.04); }
 tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
@@ -13931,14 +13951,44 @@ async function showLeadTimeline(leadId) {
 
     actionsHtml += '</div>';
 
+    // ── CLOSING-TASKS-LIFECYCLE: the lead's POSITIVE closing tasks (TARGETS)
+    // with their per-lead status chip — pending (neutral) / accepted (green) /
+    // rejected (red). Statuses are lead-level and persist across calls and
+    // automations; an absent status IS pending (conservative default). Served by
+    // GET /portal/leads/:id/timeline (closing_tasks.tasks) and rendered next to
+    // the evidence Jev recorded in the timeline below. Theme variables only.
+    function ctEscape(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    const ctTasks = (data.closing_tasks && Array.isArray(data.closing_tasks.tasks)) ? data.closing_tasks.tasks : [];
+    const ctStatusLabel = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' };
+    let closingTasksHtml = '';
+    if (ctTasks.length) {
+      closingTasksHtml = `<div class="ct-targets">
+        <div class="ct-targets-head">Closing tasks — the goals this lead's automation is working toward</div>
+        <div class="ct-targets-row">
+          ${ctTasks.map(t => {
+            const status = Object.prototype.hasOwnProperty.call(ctStatusLabel, t.status) ? t.status : 'pending';
+            const label = ctEscape(t.label || t.id || '');
+            return `<span class="ct-chip ct-chip-${status}" title="${label} — ${ctStatusLabel[status]}">
+              <span class="ct-chip-dot"></span>${label}
+              <span class="ct-chip-status">${ctStatusLabel[status]}</span>
+            </span>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
     if (!timeline.length) {
-      content.innerHTML = actionsHtml + '<div class="empty">No activity recorded for this lead yet.</div>';
+      content.innerHTML = actionsHtml + closingTasksHtml + '<div class="empty">No activity recorded for this lead yet.</div>';
       return;
     }
 
     const statusColors = { success: '#22c55e', failed: '#ef4444', pending: '#f59e0b', info: '#3B82F6' };
 
-    content.innerHTML = actionsHtml + `<div style="position:relative;padding-left:20px;">
+    content.innerHTML = actionsHtml + closingTasksHtml + `<div style="position:relative;padding-left:20px;">
       <div style="position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:var(--border);"></div>
       ${timeline.map(log => {
         const time = new Date(log.timestamp).toLocaleString();
