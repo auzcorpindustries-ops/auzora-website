@@ -163,3 +163,126 @@ describe('portal.html inline script integrity (OVERAGE-UI 4/5)', () => {
     expect(() => { new Function(script); }).not.toThrow();
   });
 });
+
+// ── OVERAGE-UI-MICROCOPY ─────────────────────────────────────────────────────
+// The billing-consequence (rate) + firm-cap microcopy added under each
+// "Allow overages" toggle. Rates mirror the CANONICAL atlas-ai
+// src/config/tiers.js OVERAGE_RATES (voicePerMinuteUsd 0.10,
+// smsPerMessageUsd 0.015) and are overridable from the entitlements payload.
+function extractConstObject(src, name) {
+  const marker = 'const ' + name + ' = ';
+  const start = src.indexOf(marker);
+  if (start === -1) return null;
+  const braceStart = src.indexOf('{', start + marker.length);
+  let depth = 0;
+  for (let i = braceStart; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return src.slice(braceStart, i + 1); }
+  }
+  return null;
+}
+
+describe('portal.html overage microcopy markup (OVERAGE-UI-MICROCOPY)', () => {
+  test('each section renders its EXACT rate line (the billing consequence)', () => {
+    expect(html).toContain('id="usage-voice-rate">Extra minutes billed at $0.10/min<');
+    expect(html).toContain('id="usage-sms-rate">Extra messages billed at $0.015/message<');
+    // exactly one rate line per kind — no third, not a shared one
+    expect((html.match(/class="usage-overage-rate"/g) || []).length).toBe(2);
+  });
+
+  test('each section renders its EXACT firm-cap line', () => {
+    expect(html).toContain('id="usage-voice-firmcap">Calls stop at your plan limit<');
+    expect(html).toContain('id="usage-sms-firmcap">Texting stops at your plan limit<');
+    expect((html.match(/class="usage-overage-firmcap"/g) || []).length).toBe(2);
+  });
+
+  test('microcopy lives inside #usage-bars, voice before SMS', () => {
+    const bars = html.indexOf('id="usage-bars"');
+    const voiceRate = html.indexOf('id="usage-voice-rate"');
+    const smsRate = html.indexOf('id="usage-sms-rate"');
+    expect(bars).toBeGreaterThan(-1);
+    expect(voiceRate).toBeGreaterThan(bars);
+    expect(smsRate).toBeGreaterThan(voiceRate);
+    expect(smsRate).toBeLessThan(html.indexOf('id="usage-sms-addon"'));
+  });
+
+  test('microcopy sits in its own block after the toggle (not inside the label)', () => {
+    // the toggle's accessible name stays exactly "Allow overages"
+    expect((html.match(/Allow overages\s*<\/label>/g) || []).length).toBe(2);
+    expect((html.match(/class="usage-overage-microcopy"/g) || []).length).toBe(2);
+  });
+});
+
+describe('portal.html overage microcopy render wiring (OVERAGE-UI-MICROCOPY)', () => {
+  test('renderUsageOverageControls writes the rate line via overageRateLabel', () => {
+    expect(script).toContain('function overageRateLabel(kind, rates)');
+    expect(script).toMatch(/'usage-' \+ k\.kind \+ '-rate'/);
+    expect(script).toMatch(/rateEl\.textContent = rateLine/);
+  });
+
+  test('the firm-cap line is hidden EXACTLY while the kind is checked', () => {
+    expect(script).toMatch(/'usage-' \+ k\.kind \+ '-firmcap'/);
+    expect(script).toMatch(/capEl\.classList\.toggle\('is-hidden', allowed\)/);
+  });
+
+  test('rates come from the payload when present, else the mirror', () => {
+    expect(script).toMatch(/entitlementsPayload\.overage_rates\) \|\| usage\.overageRates/);
+  });
+});
+
+describe('portal.html overage microcopy toggle wiring (OVERAGE-UI-MICROCOPY)', () => {
+  test('toggleAllowOverage flips the firm-cap line with the checkbox', () => {
+    expect(script).toMatch(/setFirmCap\(desired\)/);
+    expect(script).toMatch(/setFirmCap\(boxEl \? boxEl\.checked : desired\)/);
+  });
+
+  test('a failed write re-shows the firm-cap line (no stale hidden cap)', () => {
+    expect(script).toMatch(/catch \(e\) \{\s*if \(boxEl\) boxEl\.checked = !desired;\s*setFirmCap\(!desired\);/);
+  });
+});
+
+describe('portal.html overage microcopy styling (theme variables only)', () => {
+  test('new rules resolve theme vars and introduce no hardcoded hexes', () => {
+    const start = html.indexOf('.usage-overage-microcopy {');
+    const end = html.indexOf('.usage-bar {');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const css = html.slice(start, end);
+    expect(css).toContain('.usage-overage-microcopy {');
+    expect(css).toContain('.usage-overage-rate {');
+    expect(css).toContain('.usage-overage-firmcap {');
+    expect(css).toContain('.usage-overage-firmcap.is-hidden { display: none; }');
+    expect(css).toMatch(/var\(--muted\)/);
+    expect(css).toMatch(/var\(--accent\)/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+  });
+});
+
+describe('overageRateLabel (pure logic)', () => {
+  const mirror = new Function('return (' + extractConstObject(script, 'OVERAGE_RATES') + ')')();
+  const fn = new Function(
+    'OVERAGE_RATES',
+    'return (' + extractFunction(script, 'overageRateLabel') + ')'
+  )(mirror);
+
+  test('renders the EXACT mirrored strings for both kinds', () => {
+    expect(fn('voice')).toBe('Extra minutes billed at $0.10/min');
+    expect(fn('sms')).toBe('Extra messages billed at $0.015/message');
+  });
+
+  test('prefers a numeric rate from the entitlements payload', () => {
+    expect(fn('voice', { voicePerMinuteUsd: 0.12 })).toBe('Extra minutes billed at $0.12/min');
+    expect(fn('sms', { smsPerMessageUsd: 0.02 })).toBe('Extra messages billed at $0.02/message');
+  });
+
+  test('ignores junk / non-positive payload rates (falls back to the mirror)', () => {
+    expect(fn('voice', { voicePerMinuteUsd: 0 })).toBe('Extra minutes billed at $0.10/min');
+    expect(fn('voice', { voicePerMinuteUsd: -1 })).toBe('Extra minutes billed at $0.10/min');
+    expect(fn('sms', { smsPerMessageUsd: 'x' })).toBe('Extra messages billed at $0.015/message');
+  });
+
+  test('is total-safe for an unknown kind', () => {
+    expect(fn('email')).toBe('');
+  });
+});

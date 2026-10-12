@@ -360,6 +360,13 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-row-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .usage-overage-tally { font-size: 12px; color: var(--muted); }
 .usage-overage-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+/* OVERAGE-UI-MICROCOPY: the billing consequence (rate) + firm-cap line under
+   each "Allow overages" toggle. Theme variables ONLY (muted/text/accent) so the
+   copy is clean in light AND dark (AUTOMATIONS-DARKMODE lesson) — no hexes. */
+.usage-overage-microcopy { flex-basis: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.usage-overage-rate { font-size: 11.5px; color: var(--muted); }
+.usage-overage-firmcap { font-size: 11.5px; color: var(--accent); }
+.usage-overage-firmcap.is-hidden { display: none; }
 .usage-bar { height: 10px; border-radius: 99px; background: rgba(16,24,38,.07); overflow: hidden; }
 .usage-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #3B82F6, #7C3AED); transition: width 500ms ease; min-width: 0; }
 .usage-bar-fill.warn { background: linear-gradient(90deg, #F59E0B, #F97316); }
@@ -1242,6 +1249,14 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                     <input type="checkbox" id="usage-voice-overage" onchange="toggleAllowOverage('voice', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
                     Allow overages
                   </label>
+                  <!-- OVERAGE-UI-MICROCOPY: voice billing consequence ($0.10/min,
+                       mirrored from the CANONICAL atlas-ai src/config/tiers.js
+                       OVERAGE_RATES — never a second divergent number) + the
+                       firm-cap line shown while this kind is UNCHECKED. -->
+                  <div class="usage-overage-microcopy">
+                    <span class="usage-overage-rate" id="usage-voice-rate">Extra minutes billed at $0.10/min</span>
+                    <span class="usage-overage-firmcap" id="usage-voice-firmcap">Calls stop at your plan limit</span>
+                  </div>
                 </div>
               </div>
               <div class="usage-row">
@@ -1253,6 +1268,13 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                     <input type="checkbox" id="usage-sms-overage" onchange="toggleAllowOverage('sms', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
                     Allow overages
                   </label>
+                  <!-- OVERAGE-UI-MICROCOPY: SMS billing consequence ($0.015/message,
+                       mirrored from the CANONICAL atlas-ai src/config/tiers.js
+                       OVERAGE_RATES) + the firm-cap line while UNCHECKED. -->
+                  <div class="usage-overage-microcopy">
+                    <span class="usage-overage-rate" id="usage-sms-rate">Extra messages billed at $0.015/message</span>
+                    <span class="usage-overage-firmcap" id="usage-sms-firmcap">Texting stops at your plan limit</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4020,6 +4042,38 @@ function overageTallyLabel(included, overage) {
   return 'Included ' + inc.toLocaleString() + ' · Overage ' + ov.toLocaleString();
 }
 
+// OVERAGE-UI-MICROCOPY: the billing consequence (rate) + firm-cap line under
+// each "Allow overages" toggle. CANONICAL RATES live in atlas-ai
+// src/config/tiers.js OVERAGE_RATES (voicePerMinuteUsd: 0.10,
+// smsPerMessageUsd: 0.015) and are the single source of truth for the monthly
+// overage invoice sweep. This is a MIRROR so the dashboard can label the
+// consequence before any setting changes; keep the two in lockstep. The
+// entitlements payload WINS when it carries overage_rates (see
+// overageRateLabel), so a server-side rate change still reaches the UI.
+const OVERAGE_RATES = {
+  voice: { perUnit: 0.10, line: 'Extra minutes billed at $0.10/min', firmCap: 'Calls stop at your plan limit' },
+  sms: { perUnit: 0.015, line: 'Extra messages billed at $0.015/message', firmCap: 'Texting stops at your plan limit' },
+};
+
+// PURE. The billing-consequence line for one kind. Prefers a numeric rate from
+// the entitlements payload (overage_rates.{voicePerMinuteUsd,smsPerMessageUsd}
+// or usage.overageRates) and otherwise falls back to the mirrored OVERAGE_RATES
+// above — the same number the tally/billing surfaces use. Directly testable
+// (test/portal-overage-ui.test.js).
+function overageRateLabel(kind, rates) {
+  const meta = OVERAGE_RATES[kind];
+  if (!meta) return '';
+  const raw = rates && (kind === 'voice' ? rates.voicePerMinuteUsd : rates.smsPerMessageUsd);
+  const value = (typeof raw === 'number' && raw > 0) ? raw : meta.perUnit;
+  const s = String(value);
+  const dot = s.indexOf('.');
+  const decimals = dot === -1 ? 0 : s.length - dot - 1;
+  const amount = '$' + value.toFixed(Math.max(2, Math.min(3, decimals)));
+  return kind === 'voice'
+    ? 'Extra minutes billed at ' + amount + '/min'
+    : 'Extra messages billed at ' + amount + '/message';
+}
+
 // Renders both sections from the canonical /portal/entitlements payload. Reads
 // allow_overage (top level, fresh record) and falls back to usage.allowOverage
 // so the checkbox reflects exactly what enforcement uses. Only the literal
@@ -4030,11 +4084,26 @@ function renderUsageOverageControls(entitlementsPayload) {
   const allow = (entitlementsPayload && entitlementsPayload.allow_overage) || usage.allowOverage || {};
   const included = usage.included || {};
   const overage = usage.overage || {};
+  // Optional server-provided rates; when absent, overageRateLabel falls back to
+  // the mirrored OVERAGE_RATES (canonical: atlas-ai src/config/tiers.js).
+  const rates = (entitlementsPayload && entitlementsPayload.overage_rates) || usage.overageRates || null;
   OVERAGE_KINDS.forEach(function (k) {
+    const allowed = allow[k.kind] === true;
     const tallyEl = document.getElementById(k.tallyId);
     if (tallyEl) tallyEl.textContent = overageTallyLabel(included[k.kind], overage[k.kind]);
     const boxEl = document.getElementById(k.boxId);
-    if (boxEl) boxEl.checked = allow[k.kind] === true;
+    if (boxEl) boxEl.checked = allowed;
+    // OVERAGE-UI-MICROCOPY: the rate line is always shown; the firm-cap line is
+    // shown ONLY while this kind is UNCHECKED — never stale firm-cap text while
+    // metered continuation is on. Microcopy ids follow the OVERAGE_KINDS
+    // convention (usage-<kind>-rate / usage-<kind>-firmcap).
+    const rateEl = document.getElementById('usage-' + k.kind + '-rate');
+    if (rateEl) {
+      const rateLine = overageRateLabel(k.kind, rates);
+      if (rateLine) rateEl.textContent = rateLine;
+    }
+    const capEl = document.getElementById('usage-' + k.kind + '-firmcap');
+    if (capEl) capEl.classList.toggle('is-hidden', allowed);
   });
 }
 
@@ -4046,7 +4115,12 @@ async function toggleAllowOverage(kind, checked) {
   if (kind !== 'voice' && kind !== 'sms') return;
   const entry = OVERAGE_KINDS.filter(function (k) { return k.kind === kind; })[0];
   const boxEl = entry ? document.getElementById(entry.boxId) : null;
+  const capEl = document.getElementById('usage-' + kind + '-firmcap');
+  const setFirmCap = function (allowed) { if (capEl) capEl.classList.toggle('is-hidden', allowed); };
   const desired = checked === true;
+  // OVERAGE-UI-MICROCOPY: reflect the new state immediately so the firm-cap line
+  // toggles WITH the checkbox; both the success and failure paths re-assert it.
+  setFirmCap(desired);
   try {
     const res = await fetch(`${API}/portal/usage/overage`, {
       method: 'PATCH',
@@ -4057,9 +4131,11 @@ async function toggleAllowOverage(kind, checked) {
     const data = await res.json().catch(function () { return {}; });
     const stored = (data && data.allow_overage) || {};
     if (boxEl && typeof stored[kind] === 'boolean') boxEl.checked = stored[kind];
+    setFirmCap(boxEl ? boxEl.checked : desired);
     showToast('Overage preference saved.', 'success');
   } catch (e) {
     if (boxEl) boxEl.checked = !desired;
+    setFirmCap(!desired);
     console.error('[Auzora] allow-overage update failed:', e.message);
     showToast('Could not save the overage preference. Please try again.', 'error');
   }
