@@ -354,6 +354,19 @@ input[type=range] { width: 100%; accent-color: var(--purple); }
 .usage-row:last-child { margin-bottom: 0; }
 .usage-row-label { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; }
 .usage-row-counts { font-weight: 500; color: var(--muted); }
+/* OVERAGE-UI (4/5): per-usage-section included-vs-overage tally + the
+   independent "Allow overages" opt-in. Native checkbox (accent-color) so the
+   control matches the existing dashboard form controls — no custom styling. */
+.usage-row-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.usage-overage-tally { font-size: 12px; color: var(--muted); }
+.usage-overage-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+/* OVERAGE-UI-MICROCOPY: the billing consequence (rate) + firm-cap line under
+   each "Allow overages" toggle. Theme variables ONLY (muted/text/accent) so the
+   copy is clean in light AND dark (AUTOMATIONS-DARKMODE lesson) — no hexes. */
+.usage-overage-microcopy { flex-basis: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.usage-overage-rate { font-size: 11.5px; color: var(--muted); }
+.usage-overage-firmcap { font-size: 11.5px; color: var(--accent); }
+.usage-overage-firmcap.is-hidden { display: none; }
 .usage-bar { height: 10px; border-radius: 99px; background: rgba(16,24,38,.07); overflow: hidden; }
 .usage-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #3B82F6, #7C3AED); transition: width 500ms ease; min-width: 0; }
 .usage-bar-fill.warn { background: linear-gradient(90deg, #F59E0B, #F97316); }
@@ -1227,10 +1240,42 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <div class="usage-row">
                 <div class="usage-row-label">Voice minutes <span class="usage-row-counts" id="usage-voice-counts" aria-live="polite"></span></div>
                 <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Voice minutes usage"><div class="usage-bar-fill" id="usage-voice-fill" style="width:0%"></div></div>
+                <!-- OVERAGE-UI (4/5): this section's included-vs-overage tally
+                     (OVERAGE-TRACK 2/5) and its OWN "Allow overages" opt-in,
+                     persisted per kind via PATCH /portal/usage/overage (1/5). -->
+                <div class="usage-row-meta">
+                  <span class="usage-overage-tally" id="usage-voice-tally" aria-live="polite"></span>
+                  <label class="usage-overage-toggle" for="usage-voice-overage">
+                    <input type="checkbox" id="usage-voice-overage" onchange="toggleAllowOverage('voice', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Allow overages
+                  </label>
+                  <!-- OVERAGE-UI-MICROCOPY: voice billing consequence ($0.10/min,
+                       mirrored from the CANONICAL atlas-ai src/config/tiers.js
+                       OVERAGE_RATES — never a second divergent number) + the
+                       firm-cap line shown while this kind is UNCHECKED. -->
+                  <div class="usage-overage-microcopy">
+                    <span class="usage-overage-rate" id="usage-voice-rate">Extra minutes billed at $0.10/min</span>
+                    <span class="usage-overage-firmcap" id="usage-voice-firmcap">Calls stop at your plan limit</span>
+                  </div>
+                </div>
               </div>
               <div class="usage-row">
                 <div class="usage-row-label">SMS messages <span class="usage-row-counts" id="usage-sms-counts" aria-live="polite"></span></div>
                 <div class="usage-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="SMS messages usage"><div class="usage-bar-fill" id="usage-sms-fill" style="width:0%"></div></div>
+                <div class="usage-row-meta">
+                  <span class="usage-overage-tally" id="usage-sms-tally" aria-live="polite"></span>
+                  <label class="usage-overage-toggle" for="usage-sms-overage">
+                    <input type="checkbox" id="usage-sms-overage" onchange="toggleAllowOverage('sms', this.checked)" style="accent-color:var(--accent);width:16px;height:16px;" />
+                    Allow overages
+                  </label>
+                  <!-- OVERAGE-UI-MICROCOPY: SMS billing consequence ($0.015/message,
+                       mirrored from the CANONICAL atlas-ai src/config/tiers.js
+                       OVERAGE_RATES) + the firm-cap line while UNCHECKED. -->
+                  <div class="usage-overage-microcopy">
+                    <span class="usage-overage-rate" id="usage-sms-rate">Extra messages billed at $0.015/message</span>
+                    <span class="usage-overage-firmcap" id="usage-sms-firmcap">Texting stops at your plan limit</span>
+                  </div>
+                </div>
               </div>
             </div>
             <!-- PRICING-6: SMS add-on state — "not included + options" for
@@ -3971,6 +4016,129 @@ function renderUsageCard(entitlementsPayload) {
     }
   });
   if (anyOver) card.classList.add('over');
+  // OVERAGE-UI (4/5): per-section included/overage tallies + the independent
+  // per-kind "Allow overages" toggles (drives the 1/5 canUse policy).
+  renderUsageOverageControls(entitlementsPayload);
+}
+
+// ── OVERAGE-UI (4/5): overage tallies + per-kind "Allow overages" ─────────────
+// The dashboard usage card renders ONE section per kind (voice bars, SMS bars).
+// Each section carries its own included-vs-overage tally (OVERAGE-TRACK 2/5,
+// usage.included / usage.overage, invariant included + overage === total) and
+// its own "Allow overages" checkbox — the stored per-kind preference from
+// OVERAGE-ENFORCE 1/5 (allow_overage). The kinds are INDEPENDENT: toggling
+// voice never touches the SMS preference (and vice versa).
+const OVERAGE_KINDS = [
+  { kind: 'voice', tallyId: 'usage-voice-tally', boxId: 'usage-voice-overage' },
+  { kind: 'sms', tallyId: 'usage-sms-tally', boxId: 'usage-sms-overage' },
+];
+
+// PURE. The tally line for one section: the included allowance vs the overage
+// portion of this period's total. Kept independent of the DOM so it is directly
+// testable (test/portal-overage-ui.test.js).
+function overageTallyLabel(included, overage) {
+  const inc = Number(included || 0);
+  const ov = Number(overage || 0);
+  return 'Included ' + inc.toLocaleString() + ' · Overage ' + ov.toLocaleString();
+}
+
+// OVERAGE-UI-MICROCOPY: the billing consequence (rate) + firm-cap line under
+// each "Allow overages" toggle. CANONICAL RATES live in atlas-ai
+// src/config/tiers.js OVERAGE_RATES (voicePerMinuteUsd: 0.10,
+// smsPerMessageUsd: 0.015) and are the single source of truth for the monthly
+// overage invoice sweep. This is a MIRROR so the dashboard can label the
+// consequence before any setting changes; keep the two in lockstep. The
+// entitlements payload WINS when it carries overage_rates (see
+// overageRateLabel), so a server-side rate change still reaches the UI.
+const OVERAGE_RATES = {
+  voice: { perUnit: 0.10, line: 'Extra minutes billed at $0.10/min', firmCap: 'Calls stop at your plan limit' },
+  sms: { perUnit: 0.015, line: 'Extra messages billed at $0.015/message', firmCap: 'Texting stops at your plan limit' },
+};
+
+// PURE. The billing-consequence line for one kind. Prefers a numeric rate from
+// the entitlements payload (overage_rates.{voicePerMinuteUsd,smsPerMessageUsd}
+// or usage.overageRates) and otherwise falls back to the mirrored OVERAGE_RATES
+// above — the same number the tally/billing surfaces use. Directly testable
+// (test/portal-overage-ui.test.js).
+function overageRateLabel(kind, rates) {
+  const meta = OVERAGE_RATES[kind];
+  if (!meta) return '';
+  const raw = rates && (kind === 'voice' ? rates.voicePerMinuteUsd : rates.smsPerMessageUsd);
+  const value = (typeof raw === 'number' && raw > 0) ? raw : meta.perUnit;
+  const s = String(value);
+  const dot = s.indexOf('.');
+  const decimals = dot === -1 ? 0 : s.length - dot - 1;
+  const amount = '$' + value.toFixed(Math.max(2, Math.min(3, decimals)));
+  return kind === 'voice'
+    ? 'Extra minutes billed at ' + amount + '/min'
+    : 'Extra messages billed at ' + amount + '/message';
+}
+
+// Renders both sections from the canonical /portal/entitlements payload. Reads
+// allow_overage (top level, fresh record) and falls back to usage.allowOverage
+// so the checkbox reflects exactly what enforcement uses. Only the literal
+// boolean true counts as "allowed" (mirrors usageService.normalizeAllowOverage).
+function renderUsageOverageControls(entitlementsPayload) {
+  const usage = entitlementsPayload && entitlementsPayload.usage;
+  if (!usage) return;
+  const allow = (entitlementsPayload && entitlementsPayload.allow_overage) || usage.allowOverage || {};
+  const included = usage.included || {};
+  const overage = usage.overage || {};
+  // Optional server-provided rates; when absent, overageRateLabel falls back to
+  // the mirrored OVERAGE_RATES (canonical: atlas-ai src/config/tiers.js).
+  const rates = (entitlementsPayload && entitlementsPayload.overage_rates) || usage.overageRates || null;
+  OVERAGE_KINDS.forEach(function (k) {
+    const allowed = allow[k.kind] === true;
+    const tallyEl = document.getElementById(k.tallyId);
+    if (tallyEl) tallyEl.textContent = overageTallyLabel(included[k.kind], overage[k.kind]);
+    const boxEl = document.getElementById(k.boxId);
+    if (boxEl) boxEl.checked = allowed;
+    // OVERAGE-UI-MICROCOPY: the rate line is always shown; the firm-cap line is
+    // shown ONLY while this kind is UNCHECKED — never stale firm-cap text while
+    // metered continuation is on. Microcopy ids follow the OVERAGE_KINDS
+    // convention (usage-<kind>-rate / usage-<kind>-firmcap).
+    const rateEl = document.getElementById('usage-' + k.kind + '-rate');
+    if (rateEl) {
+      const rateLine = overageRateLabel(k.kind, rates);
+      if (rateLine) rateEl.textContent = rateLine;
+    }
+    const capEl = document.getElementById('usage-' + k.kind + '-firmcap');
+    if (capEl) capEl.classList.toggle('is-hidden', allowed);
+  });
+}
+
+// Persists ONE kind's allow-overage preference: PATCH /portal/usage/overage
+// { voice?: boolean, sms?: boolean }. The backend boolean-validates and
+// partial-merges, so this only ever writes the toggled kind. On any failure the
+// checkbox reverts, so the UI never misreports what canUse() is enforcing.
+async function toggleAllowOverage(kind, checked) {
+  if (kind !== 'voice' && kind !== 'sms') return;
+  const entry = OVERAGE_KINDS.filter(function (k) { return k.kind === kind; })[0];
+  const boxEl = entry ? document.getElementById(entry.boxId) : null;
+  const capEl = document.getElementById('usage-' + kind + '-firmcap');
+  const setFirmCap = function (allowed) { if (capEl) capEl.classList.toggle('is-hidden', allowed); };
+  const desired = checked === true;
+  // OVERAGE-UI-MICROCOPY: reflect the new state immediately so the firm-cap line
+  // toggles WITH the checkbox; both the success and failure paths re-assert it.
+  setFirmCap(desired);
+  try {
+    const res = await fetch(`${API}/portal/usage/overage`, {
+      method: 'PATCH',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [kind]: desired }),
+    });
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json().catch(function () { return {}; });
+    const stored = (data && data.allow_overage) || {};
+    if (boxEl && typeof stored[kind] === 'boolean') boxEl.checked = stored[kind];
+    setFirmCap(boxEl ? boxEl.checked : desired);
+    showToast('Overage preference saved.', 'success');
+  } catch (e) {
+    if (boxEl) boxEl.checked = !desired;
+    setFirmCap(!desired);
+    console.error('[Auzora] allow-overage update failed:', e.message);
+    showToast('Could not save the overage preference. Please try again.', 'error');
+  }
 }
 
 // ── SMS ADD-ON STATE (PRICING-6) ─────────────────────────────────────────────
@@ -4017,7 +4185,9 @@ function renderUsageSmsAddon(entitlementsPayload) {
         `<div class="usage-bar-fill ${fillClass}" style="width:${Math.min(100, Math.max(0, pct))}%"></div>` +
       '</div>' +
       `<div class="usage-sms-addon-state">SMS add-on: <strong>${Number(smsCap).toLocaleString()} messages/mo</strong> — included via your add-on.</div>` +
+      renderUsageSmsChangeRow(smsAddOn) +
       '<div class="usage-sms-err" id="usage-sms-addon-err" style="display:none;"></div>';
+    if (smsAddonOptions) renderSmsChangeOptions(smsAddonOptions, smsAddOn);
     return;
   }
 
@@ -4096,6 +4266,114 @@ function setSmsCtaDisabled(btn, coming, disabled) {
   }
 }
 
+// ── SMS-PLAN-UPDATE: change tier for an EXISTING holder ──────────────────────
+// The base-plan row above SELLS the add-on. This row, rendered for a client
+// who ALREADY has one (the active-add-on branch), lets them pick a different
+// tier. The dropdown is live (previously no control was offered at all);
+// submitting records a REQUEST for admin approval — the subscription is
+// swapped IN PLACE only when an admin approves, so nothing changes now.
+function renderUsageSmsChangeRow(smsAddOn) {
+  const req = smsAddOn && smsAddOn.tier_change_request;
+  const pending = !!(req && req.sku);
+  const pendingNote = pending
+    ? '<div class="usage-sms-addon-state" id="usage-sms-change-pending">Tier change to ' +
+        '<strong>' + Number(req.requested_messages || 0).toLocaleString() + ' messages/mo</strong>' +
+        ' — awaiting approval.</div>'
+    : '';
+  return (
+    '<div class="usage-sms-row" id="usage-sms-change-row">' +
+      '<label for="usage-sms-change-select">Update SMS Plan</label>' +
+      '<select id="usage-sms-change-select" class="dash-select" aria-label="Change SMS add-on tier">' +
+        '<option value="">Loading…</option>' +
+      '</select>' +
+      '<a id="usage-sms-change-btn" class="usage-sms-btn disabled" href="#" aria-disabled="true" role="button" ' +
+        'onclick="startSmsTierChange();return false;"' + (pending ? ' data-pending="1"' : '') + '>Update SMS Plan</a>' +
+      '<span id="usage-sms-change-coming" class="usage-sms-coming" hidden>Coming Soon</span>' +
+    '</div>' +
+    pendingNote
+  );
+}
+
+// Populate the change row from GET /portal/billing/addons (same catalog as the
+// purchase row). The CTA enables only for a purchasable SKU that DIFFERS from
+// the current tier and only when no request is already pending — never a
+// clickable no-op.
+function renderSmsChangeOptions(data, smsAddOn) {
+  const select = document.getElementById('usage-sms-change-select');
+  const btn = document.getElementById('usage-sms-change-btn');
+  const coming = document.getElementById('usage-sms-change-coming');
+  if (!select || !btn) return;
+  const addons = Array.isArray(data.addons) ? data.addons : [];
+  const currentSku = (smsAddOn && smsAddOn.sku) || null;
+  if (!addons.length) {
+    select.innerHTML = '<option value="">Unavailable</option>';
+    select.disabled = true;
+    setSmsCtaDisabled(btn, coming, true);
+    return;
+  }
+  select.disabled = false;
+  select.innerHTML = addons.map(a =>
+    `<option value="${a.sku}"${a.sku === currentSku ? ' selected' : ''}>` +
+      `${Number(a.smsMessages).toLocaleString()} messages — $${a.monthlyUsd}/mo` +
+    '</option>'
+  ).join('');
+  const pending = btn.dataset.pending === '1';
+  const applySku = () => {
+    const sku = select.value;
+    const addon = addons.find(a => a.sku === sku) || null;
+    setSmsCtaDisabled(btn, coming, !(addon && addon.purchasable) || sku === currentSku || pending);
+  };
+  if (!select.dataset.smsChangeBound) {
+    select.addEventListener('change', applySku);
+    select.dataset.smsChangeBound = '1';
+  }
+  applySku();
+}
+
+// Submit the tier-change request. NO Stripe redirect: the request lands in the
+// same admin approval queue as a new purchase, and the swap happens on
+// approval. 409 (same tier / not active) and 400 (unknown SKU) surface inline.
+async function startSmsTierChange() {
+  const btn = document.getElementById('usage-sms-change-btn');
+  const select = document.getElementById('usage-sms-change-select');
+  const errEl = document.getElementById('usage-sms-addon-err');
+  if (!btn || !select) return;
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const sku = select.value;
+  if (!sku) return;
+  const original = btn.textContent;
+  btn.classList.add('disabled');
+  btn.setAttribute('aria-disabled', 'true');
+  btn.textContent = 'Submitting…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const res = await fetch(`${API}/portal/billing/addons/change-tier`, {
+      method: 'POST',
+      headers: { 'X-Portal-Token': portalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `tier change ${res.status}`);
+    showToast('SMS plan change requested — pending approval.', 'success');
+    // Reflect the pending request in place so the row shows "awaiting approval".
+    if (portalEntitlements) {
+      portalEntitlements.sms_addon = Object.assign({}, portalEntitlements.sms_addon || {}, {
+        tier_change_request: data.tier_change_request || null,
+      });
+      renderUsageSmsAddon(portalEntitlements);
+    }
+  } catch (e) {
+    console.error('[Auzora] SMS tier change error:', e.message);
+    if (errEl) {
+      errEl.textContent = e.message || 'Could not submit the change. Please try again.';
+      errEl.style.display = 'block';
+    }
+    btn.textContent = original;
+    btn.classList.remove('disabled');
+    btn.removeAttribute('aria-disabled');
+  }
+}
+
 // SMS-CHECKOUT-FIX: start the purchase. The server mints a RECURRING Stripe
 // Checkout Session tied to THIS client's account and returns its hosted URL;
 // we hand the browser over to Stripe. Payment success is decoupled from SMS
@@ -4170,6 +4448,9 @@ async function loadSmsAddons() {
     const data = await res.json();
     smsAddonOptions = data || {};
     renderSmsAddonOptions(smsAddonOptions);
+    // SMS-PLAN-UPDATE: the active-add-on branch renders the change row; fill
+    // its dropdown from the same catalog (current tier preselected).
+    renderSmsChangeOptions(smsAddonOptions, smsAddonOptions.current || null);
   } catch (e) {
     console.error('[Auzora] SMS add-on catalog error:', e.message);
     // Keep the block honest: the select keeps its Loading state replaced by
@@ -12604,6 +12885,105 @@ async function loadWorkflowParams(templateId) {
   }
 }
 
+// ── Closing tasks (per-automation, positive/negative) ────────────────────────
+// Every automation carries its OWN closing-task checklist (CLOSING-TASKS-
+// PER-AUTO), split into POSITIVE and NEGATIVE outcomes (CLOSING-TASKS-
+// CATEGORIES). Options, categories and the documented defaults all come from
+// the backend catalog on THIS same params response — nothing is hard-coded, so
+// adding/removing a task server-side needs no portal change. An empty/absent
+// saved list means "use the catalog defaults", which is exactly what the
+// backend resolves to at call time.
+const WFP_CLOSING_CATEGORY_TITLES = { positive: 'Positive outcomes', negative: 'Negative outcomes' };
+
+function wfClosingTasksSection(templateId, data) {
+  const cat = data.closing_tasks || {};
+  const options = Array.isArray(cat.options) ? cat.options : [];
+  if (!options.length) return '';
+  const configured = Array.isArray(cat.configured) ? cat.configured : [];
+  const selected = configured.length ? configured : (cat.defaults || []);
+
+  // Group by category, preserving catalog order. An option the backend did not
+  // categorise (older payload) lands in a plain "Closing tasks" group rather
+  // than being mislabelled positive or negative.
+  const order = (Array.isArray(cat.categories) && cat.categories.length)
+    ? cat.categories.slice()
+    : ['positive', 'negative'];
+  if (options.some(o => !o.category)) order.push('');
+  const groups = new Map();
+  order.forEach(c => groups.set(c, []));
+  options.forEach(o => {
+    const key = order.includes(o.category) ? o.category : '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(o);
+  });
+
+  const groupHtml = Array.from(groups.entries())
+    .filter(([, list]) => list.length)
+    .map(([key, list]) => {
+      const color = key === 'negative' ? '#f59e0b' : (key === 'positive' ? '#16a34a' : 'var(--muted)');
+      return `
+      <div style="margin-top:13px;">
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:${color};margin-bottom:7px;">${escapeHtmlAttr(WFP_CLOSING_CATEGORY_TITLES[key] || 'Closing tasks')}</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          ${list.map(opt => `
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;user-select:none;">
+            <input type="checkbox" class="wf-closing-task-cb" value="${escapeHtmlAttr(opt.id)}" ${selected.includes(opt.id) ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;margin-top:2px;" />
+            <span style="font-size:13px;color:var(--text);">
+              <span style="font-weight:600;">${escapeHtmlAttr(opt.label || opt.id)}</span>
+              ${opt.description ? `<br /><span style="color:var(--muted);font-size:12px;">${escapeHtmlAttr(opt.description)}</span>` : ''}
+            </span>
+          </label>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+  return `
+      <div id="wfp-${templateId}-closing" style="margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:14px 16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Closing tasks</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.55;">The outcomes that tell your AI this automation has done its job. When Jev verifies one from the call transcript, only THIS automation stops — except &ldquo;Opted out of all communications&rdquo;, which stops every automation for the contact.</div>
+        ${groupHtml}
+        <div style="font-size:11.5px;color:var(--muted);margin-top:12px;">Leave everything unchecked to use the defaults — ${escapeHtmlAttr((cat.defaults || []).join(', '))}.</div>
+      </div>`;
+}
+
+// ── Objective (per-automation, CLOSING-TASKS-OBJECTIVE) ──────────────────────
+// A short free-text goal that guides the AI during THIS automation only. The
+// label, helper text and 120-char cap all come from the params catalog
+// (`data.objective`) — nothing is hard-coded here. The single-line input's
+// maxlength mirrors the server cap so over-long text is blocked client-side
+// too; the counter mirrors the same ceiling live.
+function wfObjectiveSection(templateId, data) {
+  const obj = data.objective || {};
+  if (!obj.id) return ''; // older backend without the catalog entry
+  const max = Number(obj.maxLength) || 120;
+  const value = obj.value || '';
+  return `
+      <div id="wfp-${templateId}-objective" style="margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:14px 16px;">
+        <label for="wfp-${templateId}-objective-input" style="display:block;font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">${escapeHtmlAttr(obj.label || 'Objective')}</label>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:10px;">${escapeHtmlAttr(obj.help || '')}</div>
+        <input type="text" id="wfp-${templateId}-objective-input" maxlength="${max}"
+               value="${escapeHtmlAttr(value)}"
+               placeholder="e.g. Book the estimate for this week"
+               oninput="updateObjectiveCount(${wfRefLiteral(templateId)})"
+               style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;" />
+        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+          <span id="wfp-${templateId}-objective-count" style="font-size:11.5px;color:var(--muted);white-space:nowrap;"></span>
+        </div>
+      </div>`;
+}
+
+function updateObjectiveCount(templateId) {
+  const input = document.getElementById(`wfp-${templateId}-objective-input`);
+  const out = document.getElementById(`wfp-${templateId}-objective-count`);
+  if (!input || !out) return;
+  const max = Number(input.getAttribute('maxlength')) || 120;
+  const len = (input.value || '').length;
+  out.textContent = `${len}/${max}`;
+  // Turn amber as the ceiling approaches, red at/over it — same tone as the
+  // template-length counters, via theme variables.
+  out.style.color = len >= max ? '#ef4444' : (len >= max - 10 ? '#f59e0b' : 'var(--muted)');
+}
+
 function renderWorkflowParams(templateId, data) {
   const panel = document.getElementById(`wf-params-${templateId}`);
   if (!panel) return;
@@ -12800,6 +13180,10 @@ function renderWorkflowParams(templateId, data) {
         </div>
       </div>
 
+      ${wfObjectiveSection(templateId, data)}
+
+      ${wfClosingTasksSection(templateId, data)}
+
       <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--field);"></div>
       <div id="wfp-${templateId}-msg" style="display:none;margin-top:10px;font-size:12px;padding:8px 10px;border-radius:8px;"></div>
 
@@ -12816,6 +13200,7 @@ function renderWorkflowParams(templateId, data) {
   // Initialize the live hints/counters
   (data.waits || []).forEach(w => updateWaitHint(templateId, w.key));
   (data.templates || []).forEach(t => updateTemplateCount(templateId, t.key));
+  updateObjectiveCount(templateId);
 
   // Re-render lucide icons
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -13148,7 +13533,25 @@ function collectWorkflowParams(templateId) {
     const el = document.getElementById(`wfp-${templateId}-tpl-${t.key}`);
     if (el) templates[t.key] = el.value;
   });
-  return { waits, templates };
+  // CLOSING-TASKS-CATEGORIES: this automation's own checklist lives in its
+  // customize block. Collected ONLY when the panel actually rendered the
+  // section (an older backend that returns no catalog must never have its
+  // stored checklist cleared by an unrelated wait/template save), and scoped to
+  // THIS panel so a second open panel cannot contaminate the save.
+  const body = { waits, templates };
+  const panel = document.getElementById(`wf-params-${templateId}`);
+  if (panel && panel.querySelector(`#wfp-${templateId}-closing`)) {
+    body.closing_tasks = Array.from(panel.querySelectorAll('.wf-closing-task-cb:checked')).map(cb => cb.value);
+  }
+  // CLOSING-TASKS-OBJECTIVE: collect THIS automation's objective ONLY when the
+  // panel rendered the field (an older backend that omits the catalog entry
+  // must never have a stored objective wiped by an unrelated wait/template
+  // save). The input's maxlength already blocks >120 client-side.
+  if (panel && panel.querySelector(`#wfp-${templateId}-objective`)) {
+    const objInput = document.getElementById(`wfp-${templateId}-objective-input`);
+    if (objInput) body.objective = objInput.value;
+  }
+  return body;
 }
 
 function showWfpMessage(templateId, text, kind) {

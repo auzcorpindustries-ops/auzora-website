@@ -288,6 +288,8 @@ tr:hover td { background: var(--tint); }
 .voice-name { font-size: 12px; font-weight: 700; }
 .voice-name.left { color: var(--accent); }
 .voice-name.right { color: var(--purple); }
+/* VOICE-FLAGS: region flag next to the voice label (full region in tooltip) */
+.voice-region { font-size: 11px; line-height: 1; cursor: help; }
 .voice-badge {
   display: inline-flex; align-items: center; white-space: nowrap;
   padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
@@ -1107,6 +1109,9 @@ tr:hover td { background: var(--tint); }
 
 <div id="toast"></div>
 
+<!-- VOICE-FLAGS: shared voice-grid helper (also loaded by the client portal
+     portal.html) — renders the region badge from the /api/voices payload. -->
+<script src="js/voice-grid.js"></script>
 <script>
 const API = (location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/admin';
 let allClients = [];
@@ -2065,7 +2070,13 @@ async function loadVoices() {
       isDefault: !!v.is_default || v.id === data.default_voice_id,
       hasPreview: !!v.preview_url,
       preview_url: v.preview_url,
-      play_url: v.preview_url
+      play_url: v.preview_url,
+      // VOICE-FLAGS: region/locale indicator + curated-grid membership from the
+      // shared /api/voices payload (snake_case on the wire).
+      region: v.region || null,
+      regionLabel: v.region_label || v.regionLabel || '',
+      regionFlag: v.region_flag || v.regionFlag || '',
+      portalDisplay: v.portal_display === true || v.portalDisplay === true
     }));
   return VOICES;
 }
@@ -2168,6 +2179,21 @@ function resolveAdminVoiceId(...candidates) {
   return VOICES[0]?.id || null;
 }
 
+// VOICE-FLAGS: region badge for an admin voice card, driven by the shared
+// /api/voices payload (region/region_label/region_flag). Uses the shared helper
+// (js/voice-grid.js, also loaded by the client portal) so both portal surfaces
+// render the same badge, with a fallback that renders the flag straight from the
+// payload when the helper is unavailable.
+function adminRegionBadge(v) {
+  if (window.VoiceGrid && typeof window.VoiceGrid.regionBadgeHtml === 'function') {
+    return window.VoiceGrid.regionBadgeHtml(v);
+  }
+  const flag = v && (v.regionFlag || v.region_flag);
+  if (!flag) return '';
+  const label = (v && (v.regionLabel || v.region_label || v.region)) || '';
+  return `<span class="voice-region" title="${String(label).replace(/"/g, '&quot;')}">${flag}</span>`;
+}
+
 function renderAdminVoiceGrid(selected) {
   const container = document.getElementById('admin-voice-grid');
   if (!container) return;
@@ -2190,6 +2216,7 @@ function renderAdminVoiceGrid(selected) {
           <div class="voice-card-top">
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
+              ${adminRegionBadge(v)}
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
             </div>
             ${v.hasPreview
@@ -2705,18 +2732,32 @@ async function loadSmsApprovals() {
       const clientLit = adminJsLiteral(r.client_id);
       const messages = Number(r.requested_messages || 0).toLocaleString();
       const price = r.monthly_usd != null ? `$${r.monthly_usd}/mo` : '—';
+      // SMS-PLAN-UPDATE: the queue carries BOTH kinds of request. A tier change
+      // is an IN-PLACE swap of an existing subscription — Approve change /
+      // Reject. A new add-on is the original Activate / Reject.
+      const isChange = r.kind === 'tier_change';
+      const detail = isChange
+        ? `Change to ${messages} messages/mo · ${price} · from ${adminEsc(r.from_sku || r.current_sku || 'current tier')}`
+        : `${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price}`;
+      const actions = isChange
+        ? `<button onclick="approveSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve change</button>
+          <button onclick="rejectSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`
+        : `<button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
+          <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`;
+      const kindBadge = isChange
+        ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">Tier change</span>'
+        : '';
       return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
         <div>
-          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}</div>
+          <div style="font-weight:600;font-size:14px;">${adminEsc(r.business_name)}${kindBadge}</div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px;">
-            ${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
+            ${detail} · Requested ${r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}
           </div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px;">${adminEsc(r.email || '')}${r.plan ? ' · ' + adminEsc(r.plan) : ''}</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
-          <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
+          ${actions}
         </div>
       </div>`;
     }).join('');
@@ -2761,6 +2802,53 @@ async function rejectSmsApproval(clientId) {
       return;
     }
     toast('SMS add-on request rejected', 'info');
+    loadSmsApprovals();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// SMS-PLAN-UPDATE: approve an existing holder's tier change. The backend swaps
+// the SAME Stripe subscription onto the new tier's price IN PLACE (no duplicate
+// subscription, no cancel-and-rebuy, no gap) and moves the SMS cap.
+async function approveSmsTierChange(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/approve-tier-change`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to approve tier change');
+      return;
+    }
+    const data = await res.json();
+    toast(`SMS plan changed — ${Number(data.sms_allowance || 0).toLocaleString()} messages/mo`, 'success');
+    loadSmsApprovals();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// SMS-PLAN-UPDATE: reject a tier-change request. The holder keeps their current
+// tier, price and SMS cap.
+async function rejectSmsTierChange(clientId) {
+  const apiKey = localStorage.getItem('atlas_admin_key') || '';
+  const reason = prompt('Reason for rejecting the tier change (optional):') || 'Tier change rejected by admin';
+  try {
+    const res = await fetch(`${API}/sms-approvals/${encodeURIComponent(clientId)}/reject-tier-change`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to reject tier change');
+      return;
+    }
+    toast('SMS tier-change request rejected', 'info');
     loadSmsApprovals();
   } catch (err) {
     alert('Error: ' + err.message);

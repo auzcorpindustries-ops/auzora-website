@@ -88,3 +88,36 @@ describe('admin.html — syntax', () => {
     }
   });
 });
+
+// SMS-PLAN-UPDATE (zeus_1791676782857_c2af750b): the SAME queue also carries
+// existing holders' tier-change requests, tagged kind 'tier_change'. Those rows
+// must offer Approve change / Reject, wired to the tier-change endpoints — a
+// tier change is an IN-PLACE subscription swap, not an activation.
+
+describe('admin.html — tier-change rows in the SMS queue (SMS-PLAN-UPDATE)', () => {
+  test('loadSmsApprovals branches on kind and renders the tier-change actions', () => {
+    const body = fnBody('loadSmsApprovals');
+    expect(body).toContain("const isChange = r.kind === 'tier_change'");
+    expect(body).toContain('approveSmsTierChange(${clientLit})');
+    expect(body).toContain('rejectSmsTierChange(${clientLit})');
+    // The original activation actions are preserved.
+    expect(body).toContain('activateSmsApproval(${clientLit})');
+    expect(body).toContain('rejectSmsApproval(${clientLit})');
+    // never the raw unquoted interpolation (JS-literal rule)
+    expect(body).not.toContain('approveSmsTierChange(${r.client_id})');
+  });
+
+  test('approveSmsTierChange PATCHes the approve-tier-change endpoint', () => {
+    const body = fnBody('approveSmsTierChange');
+    expect(body).toMatch(/\/sms-approvals\/\$\{encodeURIComponent\(clientId\)\}\/approve-tier-change/);
+    expect(body).toContain("method: 'PATCH'");
+    expect(body).toContain("'x-api-key': apiKey");
+  });
+
+  test('rejectSmsTierChange PATCHes the reject-tier-change endpoint with a reason', () => {
+    const body = fnBody('rejectSmsTierChange');
+    expect(body).toMatch(/\/sms-approvals\/\$\{encodeURIComponent\(clientId\)\}\/reject-tier-change/);
+    expect(body).toContain("method: 'PATCH'");
+    expect(body).toContain('reason');
+  });
+});
