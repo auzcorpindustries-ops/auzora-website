@@ -1,18 +1,21 @@
 // test/portal-closing-tasks-wiring.test.js
-// CLOSING-TASKS-CONFIG (board zeus_1791744768507_f995a09e).
+// CLOSING-TASKS-CATEGORIES (board zeus_1791760575295_ba17804e).
 //
 // portal.html is a single-file app with no module boundary, so this file pins
-// the WIRING of the Leads/CRM "Closing Tasks" section: the card + list + save
-// button ship in the Leads page, the section loads its option list from the
-// closing-task catalog (GET /portal/automations — never hard-coded), the
-// selected set round-trips to the settings API as `closing_tasks`, and an
-// unconfigured client falls back to the catalog defaults. That saved config is
-// what the backend's CLOSING-TASK-DETECT reads to terminate an automation.
+// the WIRING of the per-automation Closing Tasks editor:
+//   * closing-task config lives in EACH automation's Customize panel on the
+//     Automations page — the Leads & CRM page carries no closing-task UI any
+//     more (the pre-split card was removed);
+//   * the checklist renders TWO grouped sections (positive / negative) from the
+//     closing-task catalog the params endpoint returns — categories, labels,
+//     descriptions and the documented defaults are never hard-coded;
+//   * the selected set round-trips to PUT /portal/workflows/:id/params as
+//     `closing_tasks`, i.e. that automation's customize block.
 //
-// The behaviour of the write path + catalog payload (allowlist, normalization,
-// expose, end-to-end drive) lives server-side and is covered by:
-//   atlas-ai: test/unit/closingTaskConfig.test.js
-//   atlas-ai: test/unit/closingTaskDetect.test.js
+// The server-side split, consent semantics and per-automation scoping are
+// pinned in atlas-ai:
+//   test/unit/closingTasksCategories.test.js (catalog + split semantics)
+//   test/unit/closingTasksPerAuto*.test.js    (per-automation write/scope)
 
 const fs = require('fs');
 const path = require('path');
@@ -28,49 +31,74 @@ function fnBody(name) {
   return m === -1 ? rest : rest.slice(0, m);
 }
 
-describe('portal.html Closing Tasks section (Leads & CRM)', () => {
-  test('the section ships inside the Leads page with list + save + status', () => {
-    expect(html).toContain('id="closing-tasks-card"');
-    expect(html).toContain('id="closing-tasks-list"');
-    expect(html).toContain('id="closing-tasks-save"');
-    expect(html).toContain('id="closing-tasks-status"');
-    expect(html).toContain('onclick="saveClosingTasks()"');
-    expect(html).toContain('Closing Tasks');
+describe('Leads & CRM no longer carries closing-task UI', () => {
+  test('the pre-split Closing Tasks card, list and save path are gone', () => {
+    expect(html).not.toContain('id="closing-tasks-card"');
+    expect(html).not.toContain('id="closing-tasks-list"');
+    expect(html).not.toContain('id="closing-tasks-save"');
+    expect(html).not.toContain('saveClosingTasks');
+    expect(html).not.toContain('loadClosingTasks');
+    expect(html).not.toContain('CLOSING_TASKS_FALLBACK');
   });
 
-  test('opening the Leads page loads the section', () => {
-    expect(html).toMatch(/if \(name === 'leads'\)[^\n]*loadClosingTasks\(\)/);
+  test('opening the Leads page no longer loads a closing-task section', () => {
+    expect(html).toMatch(/if \(name === 'leads'\)[^\n]*loadOutbound\(\)/);
+    expect(html).not.toMatch(/if \(name === 'leads'\)[^\n]*Closing/i);
+  });
+});
+
+describe('the Automations Customize panel renders the per-automation checklist', () => {
+  test('renderWorkflowParams mounts the closing-tasks section for this automation', () => {
+    const region = fnBody('renderWorkflowParams');
+    expect(region).toContain('wfClosingTasksSection(templateId, data)');
+    // the section is keyed on the automation's own DOM id, like the rest of the panel
+    const helper = fnBody('wfClosingTasksSection');
+    expect(helper).toContain('id="wfp-${templateId}-closing"');
+    expect(helper).toContain('class="wf-closing-task-cb"');
   });
 
-  test('loadClosingTasks pulls the option list from the automation catalog', () => {
-    const body = fnBody('loadClosingTasks');
-    expect(body).toContain('/portal/automations');
-    expect(body).toContain('data.closing_tasks');
-    expect(body).toContain('options');
-    // a fallback keeps the section usable if the catalog fetch fails
-    expect(body).toContain('CLOSING_TASKS_FALLBACK');
-    expect(body).toContain('renderClosingTasks()');
+  test('the option list + categories come from the params catalog, never hard-coded', () => {
+    const helper = fnBody('wfClosingTasksSection');
+    expect(helper).toContain('data.closing_tasks');
+    expect(helper).toContain('cat.options');
+    expect(helper).toContain('cat.categories');
+    expect(helper).toContain('o.category');
+    expect(helper).toContain('opt.label');
+    expect(helper).toContain('opt.description');
+    // the removed / renamed task ids must not be baked into the portal
+    expect(helper).not.toContain('lead_captured');
+    expect(helper).not.toContain('opt_out_all');
+    expect(helper).not.toContain('sms_opt_in');
   });
 
-  test('renderClosingTasks renders one checkbox per catalog option, checked when selected', () => {
-    const body = fnBody('renderClosingTasks');
-    expect(body).toContain('catalog.options');
-    expect(body).toContain('class="closing-task-cb"');
-    expect(body).toContain('selected.includes(opt.id)');
-    expect(body).toContain('checked');
+  test('the checklist renders the two grouped sections', () => {
+    expect(html).toContain("positive: 'Positive outcomes'");
+    expect(html).toContain("negative: 'Negative outcomes'");
+    const helper = fnBody('wfClosingTasksSection');
+    expect(helper).toContain('WFP_CLOSING_CATEGORY_TITLES');
+    // groups follow the catalog order (positives then negatives)
+    expect(helper).toContain('groupHtml');
   });
 
-  test('selectedClosingTasks falls back to the catalog defaults when unset', () => {
-    const body = fnBody('selectedClosingTasks');
-    expect(body).toContain('portalClient?.closing_tasks');
-    expect(body).toContain('catalog.defaults');
+  test('an unconfigured automation shows the catalog defaults', () => {
+    const helper = fnBody('wfClosingTasksSection');
+    expect(helper).toContain('cat.configured');
+    expect(helper).toContain('cat.defaults');
+    expect(helper).toContain('selected.includes(opt.id)');
   });
 
-  test('saveClosingTasks PATCHes closing_tasks to the settings API', () => {
-    const body = fnBody('saveClosingTasks');
-    expect(body).toContain('/portal/settings');
-    expect(body).toContain("method: 'PATCH'");
-    expect(body).toContain('closing_tasks: selected');
-    expect(body).toContain("querySelectorAll('.closing-task-cb:checked')");
+  test('saving collects this automation\'s closing_tasks into the params body', () => {
+    const body = fnBody('collectWorkflowParams');
+    expect(body).toContain('closing_tasks');
+    expect(body).toContain("panel.querySelectorAll('.wf-closing-task-cb:checked')");
+    expect(body).toContain('`#wfp-${templateId}-closing`');
+    // the existing per-automation PUT path carries the collected body unchanged
+    const save = fnBody('saveWorkflowParams');
+    expect(save).toContain('collectWorkflowParams(templateId)');
+    expect(save).toContain('/portal/workflows/${templateId}/params');
+    expect(save).toContain("method: 'PUT'");
+    // reset still drops the whole override block (defaults then apply)
+    const reset = fnBody('resetWorkflowParams');
+    expect(reset).toContain("body: JSON.stringify({})");
   });
 });
