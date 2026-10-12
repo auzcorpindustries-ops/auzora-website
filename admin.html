@@ -288,6 +288,8 @@ tr:hover td { background: var(--tint); }
 .voice-name { font-size: 12px; font-weight: 700; }
 .voice-name.left { color: var(--accent); }
 .voice-name.right { color: var(--purple); }
+/* VOICE-FLAGS: region flag next to the voice label (full region in tooltip) */
+.voice-region { font-size: 11px; line-height: 1; cursor: help; }
 .voice-badge {
   display: inline-flex; align-items: center; white-space: nowrap;
   padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
@@ -1107,6 +1109,9 @@ tr:hover td { background: var(--tint); }
 
 <div id="toast"></div>
 
+<!-- VOICE-FLAGS: shared voice-grid helper (also loaded by the client portal
+     portal.html) — renders the region badge from the /api/voices payload. -->
+<script src="js/voice-grid.js"></script>
 <script>
 const API = (location.hostname.includes('netlify.app') || location.hostname.includes('develop--') ? 'https://atlas-staging.6845165.xyz' : 'https://atlas.6845165.xyz') + '/admin';
 let allClients = [];
@@ -2065,7 +2070,13 @@ async function loadVoices() {
       isDefault: !!v.is_default || v.id === data.default_voice_id,
       hasPreview: !!v.preview_url,
       preview_url: v.preview_url,
-      play_url: v.preview_url
+      play_url: v.preview_url,
+      // VOICE-FLAGS: region/locale indicator + curated-grid membership from the
+      // shared /api/voices payload (snake_case on the wire).
+      region: v.region || null,
+      regionLabel: v.region_label || v.regionLabel || '',
+      regionFlag: v.region_flag || v.regionFlag || '',
+      portalDisplay: v.portal_display === true || v.portalDisplay === true
     }));
   return VOICES;
 }
@@ -2168,6 +2179,21 @@ function resolveAdminVoiceId(...candidates) {
   return VOICES[0]?.id || null;
 }
 
+// VOICE-FLAGS: region badge for an admin voice card, driven by the shared
+// /api/voices payload (region/region_label/region_flag). Uses the shared helper
+// (js/voice-grid.js, also loaded by the client portal) so both portal surfaces
+// render the same badge, with a fallback that renders the flag straight from the
+// payload when the helper is unavailable.
+function adminRegionBadge(v) {
+  if (window.VoiceGrid && typeof window.VoiceGrid.regionBadgeHtml === 'function') {
+    return window.VoiceGrid.regionBadgeHtml(v);
+  }
+  const flag = v && (v.regionFlag || v.region_flag);
+  if (!flag) return '';
+  const label = (v && (v.regionLabel || v.region_label || v.region)) || '';
+  return `<span class="voice-region" title="${String(label).replace(/"/g, '&quot;')}">${flag}</span>`;
+}
+
 function renderAdminVoiceGrid(selected) {
   const container = document.getElementById('admin-voice-grid');
   if (!container) return;
@@ -2190,6 +2216,7 @@ function renderAdminVoiceGrid(selected) {
           <div class="voice-card-top">
             <div class="voice-name-wrap">
               <div class="voice-name ${tone}">${v.label}</div>
+              ${adminRegionBadge(v)}
               ${v.isDefault ? '<span class="voice-badge">Default voice</span>' : ''}
             </div>
             ${v.hasPreview
