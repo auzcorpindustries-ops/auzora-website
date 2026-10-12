@@ -12946,6 +12946,44 @@ function wfClosingTasksSection(templateId, data) {
       </div>`;
 }
 
+// ── Objective (per-automation, CLOSING-TASKS-OBJECTIVE) ──────────────────────
+// A short free-text goal that guides the AI during THIS automation only. The
+// label, helper text and 120-char cap all come from the params catalog
+// (`data.objective`) — nothing is hard-coded here. The single-line input's
+// maxlength mirrors the server cap so over-long text is blocked client-side
+// too; the counter mirrors the same ceiling live.
+function wfObjectiveSection(templateId, data) {
+  const obj = data.objective || {};
+  if (!obj.id) return ''; // older backend without the catalog entry
+  const max = Number(obj.maxLength) || 120;
+  const value = obj.value || '';
+  return `
+      <div id="wfp-${templateId}-objective" style="margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:14px 16px;">
+        <label for="wfp-${templateId}-objective-input" style="display:block;font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">${escapeHtmlAttr(obj.label || 'Objective')}</label>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:10px;">${escapeHtmlAttr(obj.help || '')}</div>
+        <input type="text" id="wfp-${templateId}-objective-input" maxlength="${max}"
+               value="${escapeHtmlAttr(value)}"
+               placeholder="e.g. Book the estimate for this week"
+               oninput="updateObjectiveCount(${wfRefLiteral(templateId)})"
+               style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;" />
+        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+          <span id="wfp-${templateId}-objective-count" style="font-size:11.5px;color:var(--muted);white-space:nowrap;"></span>
+        </div>
+      </div>`;
+}
+
+function updateObjectiveCount(templateId) {
+  const input = document.getElementById(`wfp-${templateId}-objective-input`);
+  const out = document.getElementById(`wfp-${templateId}-objective-count`);
+  if (!input || !out) return;
+  const max = Number(input.getAttribute('maxlength')) || 120;
+  const len = (input.value || '').length;
+  out.textContent = `${len}/${max}`;
+  // Turn amber as the ceiling approaches, red at/over it — same tone as the
+  // template-length counters, via theme variables.
+  out.style.color = len >= max ? '#ef4444' : (len >= max - 10 ? '#f59e0b' : 'var(--muted)');
+}
+
 function renderWorkflowParams(templateId, data) {
   const panel = document.getElementById(`wf-params-${templateId}`);
   if (!panel) return;
@@ -13142,6 +13180,8 @@ function renderWorkflowParams(templateId, data) {
         </div>
       </div>
 
+      ${wfObjectiveSection(templateId, data)}
+
       ${wfClosingTasksSection(templateId, data)}
 
       <div id="wfp-${templateId}-preview" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--field);"></div>
@@ -13160,6 +13200,7 @@ function renderWorkflowParams(templateId, data) {
   // Initialize the live hints/counters
   (data.waits || []).forEach(w => updateWaitHint(templateId, w.key));
   (data.templates || []).forEach(t => updateTemplateCount(templateId, t.key));
+  updateObjectiveCount(templateId);
 
   // Re-render lucide icons
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -13501,6 +13542,14 @@ function collectWorkflowParams(templateId) {
   const panel = document.getElementById(`wf-params-${templateId}`);
   if (panel && panel.querySelector(`#wfp-${templateId}-closing`)) {
     body.closing_tasks = Array.from(panel.querySelectorAll('.wf-closing-task-cb:checked')).map(cb => cb.value);
+  }
+  // CLOSING-TASKS-OBJECTIVE: collect THIS automation's objective ONLY when the
+  // panel rendered the field (an older backend that omits the catalog entry
+  // must never have a stored objective wiped by an unrelated wait/template
+  // save). The input's maxlength already blocks >120 client-side.
+  if (panel && panel.querySelector(`#wfp-${templateId}-objective`)) {
+    const objInput = document.getElementById(`wfp-${templateId}-objective-input`);
+    if (objInput) body.objective = objInput.value;
   }
   return body;
 }
