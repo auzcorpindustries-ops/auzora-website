@@ -1,6 +1,6 @@
 // test/portal-closing-tasks-browser.test.js — BROWSER-LEVEL smoke for the
-// Leads/CRM "Closing Tasks" section (CLOSING-TASKS-CONFIG,
-// board zeus_1791744768507_f995a09e).
+// per-automation Closing Tasks editor (CLOSING-TASKS-CATEGORIES,
+// board zeus_1791760575295_ba17804e).
 //
 // WHY THIS FILE EXISTS
 // The wiring test (test/portal-closing-tasks-wiring.test.js) string-matches the
@@ -8,13 +8,18 @@
 // or a render path that never runs. This suite drives a REAL Chromium
 // (Playwright) against the real portal.html served off the working tree, with
 // the portal API mocked at the network layer so it runs offline and
-// deterministically. It proves the section actually RENDERS and SAVES:
-//   1. opening Leads renders one checkbox per catalog option, from the API
-//      catalog (a distinct sentinel label proves it is not the baked fallback);
-//   2. a client with a stored closing_tasks list shows exactly that list;
-//   3. a client with no stored list shows the catalog DEFAULTS;
-//   4. "Save Closing Tasks" issues a genuine PATCH /portal/settings carrying the
-//      selected set, and the saved client is written back to the session.
+// deterministically. It proves:
+//   0. Leads & CRM renders NO closing-task UI at all (the pre-split card is
+//      gone) — config now lives on the Automations page;
+//   1. opening an automation's Customize panel renders one checkbox per option
+//      of the CATALOG the params endpoint returns, grouped under
+//      "Positive outcomes" and "Negative outcomes" in catalog order (sentinel
+//      labels prove it is not a baked-in copy);
+//   2. an automation with a saved checklist shows exactly that set; one with an
+//      empty saved list shows the catalog DEFAULTS;
+//   3. "Save Settings" issues a genuine PUT /portal/workflows/<id>/params
+//      carrying `closing_tasks` in that automation's customize block, and the
+//      saved set survives the panel re-render.
 //
 // Playwright is declared in devDependencies; where its Chromium build is absent
 // the suite SKIPS with a loud message rather than failing (this repo has no CI
@@ -69,18 +74,26 @@ const describeBrowser = browserReady ? describe : describe.skip;
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 const ORIGIN_TOKEN = 'browser-smoke-portal-token';
+const AUTOMATION_ID = 3; // legacy preset id — a customizable automation row
 
-// Distinct sentinel labels so a render that ignored the API catalog (and used
-// the baked fallback) would be caught.
+// Distinct sentinel labels so a render that ignored the API catalog (and used a
+// baked-in list) would be caught.
 const CATALOG = {
   options: [
-    { id: 'appointment_booked', label: 'Booked [CATALOG]', description: 'An appointment was booked.' },
-    { id: 'lead_captured', label: 'Captured [CATALOG]', description: 'Contact details were captured.' },
-    { id: 'callback_agreed', label: 'Callback [CATALOG]', description: 'A callback was agreed.' },
-    { id: 'opt_out', label: 'Opted out [CATALOG]', description: 'The caller asked to stop.' },
-    { id: 'info_provided', label: 'Info [CATALOG]', description: 'The caller got what they needed.' },
+    { id: 'appointment_booked', label: 'Booked [CATALOG]', description: 'An appointment was booked.', category: 'positive' },
+    { id: 'callback_agreed', label: 'Callback [CATALOG]', description: 'A callback was agreed.', category: 'positive' },
+    { id: 'info_provided', label: 'Info [CATALOG]', description: 'The caller got what they needed.', category: 'positive' },
+    { id: 'sms_opt_in', label: 'SMS opt-in [CATALOG]', description: 'The caller agreed to texts.', category: 'positive' },
+    { id: 'opt_out_all', label: 'Opted out of all [CATALOG]', description: 'Asked to stop all contact.', category: 'negative' },
+    { id: 'opt_out_sms', label: 'Opted out of SMS [CATALOG]', description: 'Asked to stop texts only.', category: 'negative' },
   ],
-  defaults: ['appointment_booked', 'lead_captured', 'opt_out'],
+  categories: ['positive', 'negative'],
+  groups: {
+    positive: ['appointment_booked', 'callback_agreed', 'info_provided', 'sms_opt_in'],
+    negative: ['opt_out_all', 'opt_out_sms'],
+  },
+  defaults: ['appointment_booked', 'opt_out_all'],
+  threshold: 0.8,
 };
 const CATALOG_IDS = CATALOG.options.map(o => o.id);
 
@@ -89,6 +102,7 @@ const BASE_CLIENT = {
   tutorial_completed: true,
   webhook_url: '',
 };
+const ENTITLEMENTS = { aiFollowUpCalls: true, bulkCallCampaigns: true };
 
 // ── Static file server (serves the working tree) ─────────────────────────────
 function startStaticServer() {
@@ -125,10 +139,21 @@ function createMockApi(opts) {
   return {
     setOrigin(v) { origin = v; },
     liveClosingTasks: Array.isArray(o.storedClosingTasks) ? o.storedClosingTasks.slice() : [],
-    catalogStatus: o.catalogStatus || 200,
     requests: [],
 
     isStatic(url) { return origin && url.origin === origin; },
+
+    paramsPayload() {
+      return {
+        template_id: AUTOMATION_ID,
+        name: 'Preset 3',
+        client_timezone: 'America/Chicago',
+        waits: [], templates: [], steps: [],
+        merge_fields: [], wait_units: [], wait_modes: [], timezones: [], max_wait_by_unit: {},
+        sms_limits: { segment_chars: 160, warn_chars: 480, max_chars: 1600 },
+        closing_tasks: Object.assign({}, CATALOG, { configured: this.liveClosingTasks.slice() }),
+      };
+    },
 
     dispatch(method, pathname, headers, rawBody) {
       let body = null;
@@ -139,29 +164,44 @@ function createMockApi(opts) {
       this.requests.push(record);
 
       if (method === 'GET' && pathname === '/portal/settings') {
-        return { status: 200, body: Object.assign({}, BASE_CLIENT, { closing_tasks: this.liveClosingTasks }) };
+        return { status: 200, body: BASE_CLIENT };
       }
-      if (method === 'PATCH' && pathname === '/portal/settings') {
+      if (method === 'GET' && pathname === '/portal/entitlements') {
+        // The Customize control only renders on an UNLOCKED card, so the
+        // entitlement that gates call automations must be present (otherwise
+        // every call card renders as an "Upgrade required" locked card).
+        return { status: 200, body: { entitlements: ENTITLEMENTS, tier_voices: [] } };
+      }
+      if (method === 'GET' && pathname === '/portal/workflows') {
+        return { status: 200, body: { workflows: [{ templateId: AUTOMATION_ID, status: 'off' }] } };
+      }
+      if (method === 'GET' && pathname === `/portal/workflows/${AUTOMATION_ID}/params`) {
+        return { status: 200, body: this.paramsPayload() };
+      }
+      if (method === 'PUT' && pathname === `/portal/workflows/${AUTOMATION_ID}/params`) {
         const parsed = body && typeof body === 'object' ? body : {};
         if (Array.isArray(parsed.closing_tasks)) this.liveClosingTasks = parsed.closing_tasks.slice();
-        return { status: 200, body: { client: Object.assign({}, BASE_CLIENT, { closing_tasks: this.liveClosingTasks }) } };
-      }
-      if (method === 'GET' && pathname === '/portal/automations') {
-        if (this.catalogStatus >= 400) return { status: this.catalogStatus, body: { error: 'catalog unavailable' } };
         return {
           status: 200,
-          body: { automations: [], triggers: [], types: [], plan_availability: {}, feature_flag_enabled: false, closing_tasks: CATALOG },
+          body: {
+            ok: true,
+            template_id: AUTOMATION_ID,
+            waits: parsed.waits || {},
+            templates: parsed.templates || {},
+            closing_tasks: this.liveClosingTasks.slice(),
+            warnings: [],
+          },
         };
       }
       // Everything else the boot fans out to — empty but valid JSON.
       return { status: 200, body: {} };
     },
 
-    settingsPatches() {
-      return this.requests.filter(r => r.method === 'PATCH' && r.pathname === '/portal/settings');
+    paramsPuts() {
+      return this.requests.filter(r => r.method === 'PUT' && r.pathname === `/portal/workflows/${AUTOMATION_ID}/params`);
     },
-    catalogGets() {
-      return this.requests.filter(r => r.method === 'GET' && r.pathname === '/portal/automations');
+    paramsGets() {
+      return this.requests.filter(r => r.method === 'GET' && r.pathname === `/portal/workflows/${AUTOMATION_ID}/params`);
     },
   };
 }
@@ -192,8 +232,9 @@ async function seedAuth(page, client) {
     try {
       window.sessionStorage.setItem('atlas_token', args.token);
       window.sessionStorage.setItem('atlas_client', JSON.stringify(args.client));
+      window.sessionStorage.setItem('atlas_entitlements', JSON.stringify(args.entitlements));
     } catch (e) { /* about:blank frame */ }
-  }, { token: ORIGIN_TOKEN, client });
+  }, { token: ORIGIN_TOKEN, client, entitlements: ENTITLEMENTS });
 }
 
 async function waitFor(fn, timeoutMs = 15000) {
@@ -205,29 +246,47 @@ async function waitFor(fn, timeoutMs = 15000) {
   }
 }
 
-async function loadLeads(page, baseUrl) {
+async function bootPortal(page, baseUrl) {
   await page.goto(baseUrl + '/portal.html', { waitUntil: 'domcontentloaded' });
   await waitFor(async () => page.evaluate(() => document.getElementById('app').style.display === 'block'));
-  await page.click('#nav-leads');
-  await waitFor(async () => page.evaluate(() => document.querySelectorAll('#closing-tasks-list .closing-task-cb').length > 0));
 }
 
-function readSection(page) {
-  return page.evaluate(() => {
-    const boxes = Array.from(document.querySelectorAll('#closing-tasks-list .closing-task-cb'));
-    const card = document.getElementById('closing-tasks-card');
+// Open the Automations page and expand one automation's Customize panel.
+async function openClosingChecklist(page, baseUrl) {
+  await bootPortal(page, baseUrl);
+  await page.click('#nav-automations');
+  await waitFor(async () => page.evaluate((id) => !!document.getElementById(`wf-cfg-btn-${id}`), AUTOMATION_ID));
+  await page.click(`#wf-cfg-btn-${AUTOMATION_ID}`);
+  await waitFor(async () => page.evaluate((id) => {
+    const panel = document.getElementById(`wf-params-${id}`);
+    return !!panel && panel.querySelectorAll('.wf-closing-task-cb').length > 0;
+  }, AUTOMATION_ID));
+}
+
+function readChecklist(page) {
+  return page.evaluate((id) => {
+    const panel = document.getElementById(`wf-params-${id}`);
+    const boxes = Array.from(panel.querySelectorAll('.wf-closing-task-cb'));
+    const groups = [];
+    Array.from(panel.querySelectorAll(`#wfp-${id}-closing > div`)).forEach(g => {
+      const ids = Array.from(g.querySelectorAll('.wf-closing-task-cb')).map(b => b.value);
+      if (!ids.length) return;
+      const titleEl = g.querySelector('div');
+      groups.push({ title: titleEl ? titleEl.textContent.trim() : '', ids });
+    });
     return {
-      cardVisible: !!card && getComputedStyle(card).display !== 'none',
+      sectionVisible: !!panel.querySelector(`#wfp-${id}-closing`),
       count: boxes.length,
       values: boxes.map(b => b.value),
       checkedValues: boxes.filter(b => b.checked).map(b => b.value),
-      labels: Array.from(document.querySelectorAll('#closing-tasks-list label')).map(l => l.textContent.trim()),
+      labels: boxes.map(b => b.closest('label').textContent.trim()),
+      groups,
     };
-  });
+  }, AUTOMATION_ID);
 }
 
 // ── Suite ────────────────────────────────────────────────────────────────────
-describeBrowser('portal Closing Tasks section — browser-level smoke', () => {
+describeBrowser('portal Closing Tasks editor — browser-level smoke', () => {
   let server;
   let baseUrl;
   let browser;
@@ -255,81 +314,96 @@ describeBrowser('portal Closing Tasks section — browser-level smoke', () => {
     }
   }
 
-  test('1. opening Leads renders one checkbox per CATALOG option (not the baked fallback)', async () => {
+  test('0. Leads & CRM no longer renders any closing-task UI', async () => {
     const api = createMockApi();
-
     await withPage(api, BASE_CLIENT, async (page) => {
-      await loadLeads(page, baseUrl);
-      const s = await readSection(page);
+      await bootPortal(page, baseUrl);
+      await page.click('#nav-leads');
+      await waitFor(async () => page.evaluate(() => !!document.getElementById('page-leads')));
 
-      expect(s.cardVisible).toBe(true);
-      expect(s.values).toEqual(CATALOG_IDS);
-      // The labels come from the API catalog (sentinel), so a hard-coded
-      // fallback render would fail here.
-      expect(s.labels[0]).toContain('Booked [CATALOG]');
-
-      // The catalog was fetched over the network with the portal token.
-      const cat = api.catalogGets();
-      expect(cat.length).toBeGreaterThan(0);
-      expect(cat[0].headers['x-portal-token']).toBe(ORIGIN_TOKEN);
+      const leads = await page.evaluate(() => ({
+        card: !!document.getElementById('closing-tasks-card'),
+        list: !!document.getElementById('closing-tasks-list'),
+        boxes: document.querySelectorAll('.closing-task-cb').length,
+        saveFn: typeof window.saveClosingTasks,
+        loadFn: typeof window.loadClosingTasks,
+      }));
+      expect(leads).toEqual({ card: false, list: false, boxes: 0, saveFn: 'undefined', loadFn: 'undefined' });
     });
   });
 
-  test('2. a stored closing_tasks list renders exactly that set (no client list ⇒ defaults)', async () => {
-    // stored list: only the callback
-    const apiStored = createMockApi({ storedClosingTasks: ['callback_agreed'] });
-    await withPage(apiStored, Object.assign({}, BASE_CLIENT, { closing_tasks: ['callback_agreed'] }), async (page) => {
-      await loadLeads(page, baseUrl);
-      const s = await readSection(page);
-      expect(s.checkedValues).toEqual(['callback_agreed']);
+  test('1. the Customize panel renders one checkbox per CATALOG option, grouped positive/negative', async () => {
+    const api = createMockApi();
+
+    await withPage(api, BASE_CLIENT, async (page) => {
+      await openClosingChecklist(page, baseUrl);
+      const s = await readChecklist(page);
+
+      expect(s.sectionVisible).toBe(true);
+      expect(s.count).toBe(CATALOG_IDS.length);
+      expect(s.values).toEqual(CATALOG_IDS); // catalog order: positives then negatives
+      expect(s.labels[0]).toContain('Booked [CATALOG]'); // from the API, not baked in
+      expect(s.groups).toEqual([
+        { title: 'Positive outcomes', ids: CATALOG.groups.positive },
+        { title: 'Negative outcomes', ids: CATALOG.groups.negative },
+      ]);
+
+      // The catalog was fetched over the network with the portal token.
+      const gets = api.paramsGets();
+      expect(gets.length).toBeGreaterThan(0);
+      expect(gets[0].headers['x-portal-token']).toBe(ORIGIN_TOKEN);
+    });
+  });
+
+  test('2. a saved checklist renders exactly that set (empty ⇒ catalog defaults)', async () => {
+    const apiStored = createMockApi({ storedClosingTasks: ['opt_out_sms'] });
+    await withPage(apiStored, BASE_CLIENT, async (page) => {
+      await openClosingChecklist(page, baseUrl);
+      const s = await readChecklist(page);
+      expect(s.checkedValues).toEqual(['opt_out_sms']);
     });
 
-    // no stored list: the catalog DEFAULTS are checked
     const apiDefault = createMockApi();
     await withPage(apiDefault, BASE_CLIENT, async (page) => {
-      await loadLeads(page, baseUrl);
-      const s = await readSection(page);
+      await openClosingChecklist(page, baseUrl);
+      const s = await readChecklist(page);
       expect(s.checkedValues).toEqual(CATALOG.defaults);
     });
   });
 
-  test('3. Save issues a real PATCH /portal/settings with the selected set', async () => {
+  test('3. Save issues a real PUT /portal/workflows/:id/params with the selected set', async () => {
     const api = createMockApi();
 
     await withPage(api, BASE_CLIENT, async (page) => {
-      await loadLeads(page, baseUrl);
+      await openClosingChecklist(page, baseUrl);
 
-      // Select only "opt_out".
+      // Select only the SMS opt-in positive task.
       await page.evaluate((id) => {
-        document.querySelectorAll('#closing-tasks-list .closing-task-cb').forEach((b) => { b.checked = (b.value === id); });
-      }, 'opt_out');
+        const panel = document.getElementById(`wf-params-${id}`);
+        panel.querySelectorAll('.wf-closing-task-cb').forEach((b) => { b.checked = (b.value === 'sms_opt_in'); });
+      }, AUTOMATION_ID);
 
-      await page.click('#closing-tasks-save');
-      await waitFor(() => api.settingsPatches().length === 1);
+      await page.evaluate((id) => {
+        const panel = document.getElementById(`wf-params-${id}`);
+        Array.from(panel.querySelectorAll('button'))
+          .find(b => b.textContent.trim() === 'Save Settings')
+          .click();
+      }, AUTOMATION_ID);
 
-      const patch = api.settingsPatches()[0];
-      expect(patch.method).toBe('PATCH');
-      expect(patch.pathname).toBe('/portal/settings');
-      expect(patch.headers['x-portal-token']).toBe(ORIGIN_TOKEN);
-      expect(patch.body).toEqual({ closing_tasks: ['opt_out'] });
+      await waitFor(() => api.paramsPuts().length === 1);
+      const put = api.paramsPuts()[0];
+      expect(put.headers['x-portal-token']).toBe(ORIGIN_TOKEN);
+      expect(put.body.closing_tasks).toEqual(['sms_opt_in']);
+      expect(put.body).toHaveProperty('waits');
+      expect(put.body).toHaveProperty('templates');
 
-      // The saved client is written back to the session …
-      await waitFor(async () => (await page.textContent('#closing-tasks-status')).includes('Saved'));
-      const stored = await page.evaluate(() => JSON.parse(sessionStorage.getItem('atlas_client') || '{}'));
-      expect(stored.closing_tasks).toEqual(['opt_out']);
-    });
-  });
-
-  test('4. a failed catalog fetch still renders the fallback options', async () => {
-    const api = createMockApi({ catalogStatus: 500 });
-
-    await withPage(api, BASE_CLIENT, async (page) => {
-      await loadLeads(page, baseUrl);
-      const s = await readSection(page);
-      // Fallback has the same 5 canonical ids with human labels.
-      expect(s.values).toEqual(CATALOG_IDS);
-      expect(s.labels[0]).toContain('Appointment booked');
-      expect(api.catalogGets().length).toBeGreaterThan(0);
+      // The saved set survives the post-save re-render.
+      await waitFor(async () => page.evaluate((id) => {
+        const panel = document.getElementById(`wf-params-${id}`);
+        const boxes = Array.from(panel.querySelectorAll('.wf-closing-task-cb'));
+        const checked = boxes.filter(b => b.checked).map(b => b.value);
+        return checked.length === 1 && checked[0] === 'sms_opt_in';
+      }, AUTOMATION_ID));
     });
   });
 });
