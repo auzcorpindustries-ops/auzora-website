@@ -45,6 +45,22 @@ function extractFunction(src, name) {
   return null;
 }
 
+// Extract the object literal assigned to `const NAME = { … };` (brace-matched),
+// e.g. OVERAGE_RATES, so the render harness can compose it verbatim.
+function extractConstObject(src, name) {
+  const marker = 'const ' + name + ' = ';
+  const start = src.indexOf(marker);
+  if (start === -1) return null;
+  const braceStart = src.indexOf('{', start + marker.length);
+  let depth = 0;
+  for (let i = braceStart; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return src.slice(braceStart, i + 1); }
+  }
+  return null;
+}
+
 const script = mainInlineScript();
 
 // The module-level OVERAGE_KINDS array (kind ⇄ tally/checkbox element ids).
@@ -61,7 +77,9 @@ function buildRenderer(elements) {
     'document',
     'OVERAGE_KINDS',
     'overageTallyLabel',
+    'const OVERAGE_RATES = ' + extractConstObject(script, 'OVERAGE_RATES') + ';\n' +
     extractFunction(script, 'overageTallyLabel') + '\n' +
+    extractFunction(script, 'overageRateLabel') + '\n' +
     extractFunction(script, 'renderUsageOverageControls') + '\n' +
     'return renderUsageOverageControls;'
   );

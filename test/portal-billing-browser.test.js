@@ -425,4 +425,74 @@ describeBrowser('portal billing / entitlement UI — browser-level smoke', () =>
       expect(toast.cls).toContain('error');
     });
   });
+
+  test('5. rate + firm-cap microcopy renders per section and toggles with the checkbox (both themes)', async () => {
+    const api = createMockApi({ usage: BASE_USAGE, overages: { voice: false, sms: true } });
+
+    await withPage(api, async (page) => {
+      await loadPortal(page, baseUrl);
+
+      // The rate line (billing consequence) is EXACT and always present, per kind.
+      const rates = await page.evaluate(() => ({
+        voice: document.getElementById('usage-voice-rate').textContent.trim(),
+        sms: document.getElementById('usage-sms-rate').textContent.trim(),
+      }));
+      expect(rates.voice).toBe('Extra minutes billed at $0.10/min');
+      expect(rates.sms).toBe('Extra messages billed at $0.015/message');
+
+      // Firm-cap line shows ONLY while the kind is UNCHECKED: voice is off (so
+      // the cap line is visible), SMS is on (so it is hidden — no stale cap text).
+      const initial = await page.evaluate(() => ({
+        voiceCapText: document.getElementById('usage-voice-firmcap').textContent.trim(),
+        voiceCapDisplay: getComputedStyle(document.getElementById('usage-voice-firmcap')).display,
+        smsCapDisplay: getComputedStyle(document.getElementById('usage-sms-firmcap')).display,
+      }));
+      expect(initial.voiceCapText).toBe('Calls stop at your plan limit');
+      expect(initial.voiceCapDisplay).not.toBe('none');
+      expect(initial.smsCapDisplay).toBe('none');
+
+      // Toggle voice ON: the firm-cap line must disappear (metered continuation
+      // is now on) while the tally treatment stays.
+      await page.click('#usage-voice-overage');
+      await waitFor(() => api.patchRequests().length === 1);
+      await waitFor(async () => page.evaluate(() =>
+        getComputedStyle(document.getElementById('usage-voice-firmcap')).display === 'none'));
+      const tallyStillThere = await page.evaluate(() =>
+        document.getElementById('usage-voice-tally').textContent.trim().length > 0);
+      expect(tallyStillThere).toBe(true);
+
+      // Toggle SMS OFF: the firm-cap line must come back with its exact copy.
+      await page.click('#usage-sms-overage');
+      await waitFor(() => api.patchRequests().length === 2);
+      await waitFor(async () => page.evaluate(() =>
+        getComputedStyle(document.getElementById('usage-sms-firmcap')).display !== 'none'));
+      const smsCapText = await page.evaluate(() =>
+        document.getElementById('usage-sms-firmcap').textContent.trim());
+      expect(smsCapText).toBe('Texting stops at your plan limit');
+
+      // Light + dark: the copy resolves theme variables in BOTH themes (never a
+      // hardcoded hex that would vanish on one of them).
+      const themed = await page.evaluate(() => {
+        const rate = document.getElementById('usage-voice-rate');
+        const cap = document.getElementById('usage-sms-firmcap');
+        const light = { rate: getComputedStyle(rate).color, cap: getComputedStyle(cap).color };
+        document.documentElement.classList.add('dark');
+        const dark = { rate: getComputedStyle(rate).color, cap: getComputedStyle(cap).color };
+        const tokens = {
+          muted: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(),
+          accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+        };
+        document.documentElement.classList.remove('dark');
+        return { light, dark, tokens };
+      });
+      expect(themed.light.rate).toBeTruthy();
+      expect(themed.dark.rate).toBeTruthy();
+      expect(themed.light.cap).toBeTruthy();
+      expect(themed.dark.cap).toBeTruthy();
+      expect(themed.tokens.muted).toBeTruthy();
+      expect(themed.tokens.accent).toBeTruthy();
+      // the colours actually CHANGE between themes (proves a resolved variable)
+      expect(themed.light.rate).not.toBe(themed.dark.rate);
+    });
+  });
 });
