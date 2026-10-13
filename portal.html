@@ -11216,31 +11216,58 @@ function isLeadOptedOut(lead) {
   );
 }
 
-// SMS-CONSENT-LOOP (board zeus_1791838750519_b0edb6e4) — the portal's SMS
-// consent field must mirror the BACKEND SEND GATE, not just one lead flag.
+// SMS-CONSENT-SOT (board zeus_1791923573031_c22f9baf) — the portal now
+// CONSUMES the backend's consent verdict instead of recomputing it.
 //
-// Audit of the previous binding: it read a SINGLE flag off the newest interaction
-// row and treated a missing consent record as consent (fail-open), so it could
-// disagree with the sender in two real ways —
-//   (a) SUPPRESSION IGNORED. A contact who texts STOP is suppressed by every
-//       send path, but the STOP handler (smsCampaignService.optOutLead) writes
-//       sms_opt_out: true / opt_out: true WITHOUT clearing sms_consent — and
-//       saveLead defaults sms_consent to true (#356) — so the old badge showed
-//       "SMS On" for a lead who can never be texted.
-//   (b) WRONG ROW. Consent/suppression are person-level flags the backend
-//       writes across the phone group; reading only the newest row missed a
-//       flag written on an older interaction (the stats above already
-//       aggregate across the group for exactly this reason).
+// History: SMS-CONSENT-LOOP (#413) fixed the badge by reimplementing the
+// sender's rule here in the browser. That was correct at the time but left
+// TWO implementations of one rule — this one and the sender's — free to
+// drift. The backend now resolves consent per CONTACT and ships the answer
+// on every lead row (GET /portal/leads):
 //
-// The sender's rule (smsAutomationService / postCallActionService /
-// smsOptinAutomationService) is: sms_consent === true AND NOT sms_opt_out AND
-// NOT opt_out. `rows` may be one lead or a phone-group array; ANY granted
-// consent wins across the group, but ANY suppression vetoes it.
-function isSmsEnabled(rows) {
+//   sms_consent_status : 'opted_in' | 'opted_out' | 'unknown'
+//   sms_can_send       : the exact boolean the sender enforces
+//   sms_consent_label  : 'SMS On' | 'SMS Off' | 'SMS Pending'
+//
+// `unknown` is a REAL third state (no consent record either way) and is
+// rendered as "SMS Pending", not silently folded into "Off" — a contact we
+// have never asked is not a contact who said no.
+//
+// The local rule is kept ONLY as a fallback for a backend that predates the
+// projection (during deploy skew), so the page never regresses to the old
+// fail-open single-flag read.
+function smsConsentOf(rows) {
   const list = Array.isArray(rows) ? rows : [rows];
+
+  // Preferred: the backend's own verdict, identical across the phone group.
+  const served = list.find(r => r && typeof r.sms_consent_status === 'string');
+  if (served) {
+    return {
+      status: served.sms_consent_status,
+      canSend: served.sms_can_send === true,
+      label: served.sms_consent_label
+        || (served.sms_can_send === true ? 'SMS On'
+          : served.sms_consent_status === 'opted_out' ? 'SMS Off' : 'SMS Pending'),
+    };
+  }
+
+  // Fallback (older backend): the sender's rule, computed across the group.
   const granted = list.some(r => r && r.sms_consent === true);
-  const suppressed = list.some(r => r && (r.sms_opt_out === true || r.opt_out === true));
-  return granted && !suppressed;
+  const suppressed = list.some(r => r && (
+    r.sms_opt_out === true || r.opt_out === true ||
+    r.outbound_opted_out === true || r.sms_status === 'opted-out'
+  ));
+  const status = suppressed ? 'opted_out' : granted ? 'opted_in' : 'unknown';
+  return {
+    status,
+    canSend: status === 'opted_in',
+    label: status === 'opted_in' ? 'SMS On' : status === 'opted_out' ? 'SMS Off' : 'SMS Pending',
+  };
+}
+
+// Boolean form — "may the sender text this contact right now".
+function isSmsEnabled(rows) {
+  return smsConsentOf(rows).canSend;
 }
 
 function updateLeadStats(grouped) {
@@ -11340,17 +11367,26 @@ function renderObLeads() {
     const lastDate = latest.captured_at ? new Date(latest.captured_at).toLocaleString() : '—';
     const intent = latest.intent || latest.lead_context || '—';
 
-    // SMS consent badge — SMS-CONSENT-LOOP: mirrors the backend send gate
-    // (isSmsEnabled: consent granted AND no sms_opt_out/opt_out suppression)
-    // across the whole phone group, so the field can never claim SMS is
-    // enabled for a lead the sender would skip.
-    const smsConsent = isSmsEnabled(group);
-    const smsBadge = smsConsent
-      ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px;">SMS On</span>'
-      : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px;">SMS Off</span>';
+    // SMS consent badge — SMS-CONSENT-SOT: renders the BACKEND's verdict
+    // (GET /portal/leads sms_consent_status), three-state. "Pending" means we
+    // hold no consent record for this contact — distinct from an explicit
+    // opt-out, and the sender treats it as "do not text" either way.
+    const smsState = smsConsentOf(group);
+    const smsBadgeStyle = {
+      opted_in:  'background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;',
+      opted_out: 'background:#ef444415;color:#ef4444;border:1px solid #ef444430;',
+      unknown:   'background:#f59e0b15;color:#b45309;border:1px solid #f59e0b30;',
+    }[smsState.status] || 'background:#f59e0b15;color:#b45309;border:1px solid #f59e0b30;';
+    const smsBadge = `<span title="${escapeHtmlAttr(
+      smsState.status === 'unknown'
+        ? 'No SMS consent on record for this contact — automated texts are withheld.'
+        : smsState.status === 'opted_out'
+          ? 'This contact opted out. Every SMS path is blocked.'
+          : 'This contact opted in. Automated texts may be sent.'
+    )}" style="display:inline-block;${smsBadgeStyle}border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px;">${escapeHtmlAttr(smsState.label)}</span>`;
 
     // SMS opt-out/opt-in toggle button
-    const smsToggleBtn = smsConsent
+    const smsToggleBtn = smsState.canSend
       ? `<button onclick="toggleSmsConsent('${latest.lead_id}', false, this)" style="background:none;border:1px solid #ef444440;border-radius:6px;padding:3px 10px;font-size:11px;color:#ef4444;cursor:pointer;margin-left:4px;">Opt Out SMS</button>`
       : `<button onclick="toggleSmsConsent('${latest.lead_id}', true, this)" style="background:none;border:1px solid #22c55e40;border-radius:6px;padding:3px 10px;font-size:11px;color:#16a34a;cursor:pointer;margin-left:4px;">Opt In SMS</button>`;
 
@@ -11437,9 +11473,21 @@ function renderObLeads() {
       <td>${latest.service ? `<span style="font-size:13px;color:var(--text);">${latest.service}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.company ? `<span style="font-size:13px;color:var(--text);">${latest.company}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
       <td>${latest.industry ? `<span style="font-size:13px;color:var(--text);">${latest.industry}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
-      <td>${smsConsent
-        ? '<span style="display:inline-block;background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Enabled</span>'
-        : '<span style="display:inline-block;background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">Disabled</span>'}</td>
+      <td>${(() => {
+        // SMS-CONSENT-SOT: the Captured Leads "SMS Consent" column — the
+        // field named in the bug report. It renders the SAME backend verdict
+        // as the row badge (smsState), so the column, the badge, the toggle
+        // button and the sender can never disagree. Three states: a contact
+        // with no consent record reads "Pending", not "Disabled".
+        const cellStyle = {
+          opted_in:  'background:#22c55e15;color:#16a34a;border:1px solid #22c55e30;',
+          opted_out: 'background:#ef444415;color:#ef4444;border:1px solid #ef444430;',
+          unknown:   'background:#f59e0b15;color:#b45309;border:1px solid #f59e0b30;',
+        }[smsState.status] || 'background:#f59e0b15;color:#b45309;border:1px solid #f59e0b30;';
+        const cellText = smsState.status === 'opted_in' ? 'Enabled'
+          : smsState.status === 'opted_out' ? 'Disabled' : 'Pending';
+        return `<span style="display:inline-block;${cellStyle}border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;">${cellText}</span>`;
+      })()}</td>
       <td>${scoreHtml}</td>
       <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:${intentDotColor};display:inline-block;"></span>${intent !== '—' ? intent : '—'}</span></td>
       <td>${latest.notes ? `<span style="font-size:13px;color:var(--text);" title="${latest.notes.replace(/"/g, '&quot;')}">${latest.notes.length > 40 ? latest.notes.slice(0, 40) + '…' : latest.notes}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
@@ -12606,7 +12654,7 @@ function wfRefLiteral(wfRef) {
 // locked=true renders the disabled tier-gate card (unless status==='active',
 // which renders as grandfathered); legacyBadge/gate are optional HTML/object.
 function workflowCardHtml(opts) {
-  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable, customizable } = opts;
+  const { domId, name, summary, descHtml, status, rejectionReason, requestedAt, locked, gate, legacyBadge, testable, customizable, unavailable, unavailableReason } = opts;
   const ref = wfRefLiteral(domId);
   const badgeColor = {
     off: 'var(--muted)', requested: '#f59e0b', active: '#22c55e',
@@ -12635,6 +12683,29 @@ function workflowCardHtml(opts) {
   const reasonBanner = (status === 'rejected' || status === 'failed') && rejectionReason
     ? `<div style="margin-top:6px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;">${escapeHtmlAttr(rejectionReason)}</div>`
     : '';
+
+  // ── Not-yet-available rendering (SMS-CONSENT-SOT scoped catalog) ──
+  // Checked BEFORE the tier gate: an automation type we do not offer is not
+  // an upsell. The card stays visible (so the roadmap is legible) but carries
+  // no actionable control — the backend refuses the request with 409 anyway,
+  // so this is presentation of a real server-side rule, not the rule itself.
+  if (unavailable) {
+    return `
+        <div style="border:1px solid var(--border);border-radius:12px;opacity:0.6;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;">${escapeHtmlAttr(name)}
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(100,116,139,.14);color:#64748b;margin-left:6px;vertical-align:middle;">${escapeHtmlAttr(unavailableReason || 'Not yet available')}</span>
+              </div>
+              ${summary ? `<div style="font-size:13px;color:var(--text);opacity:0.7;line-height:1.5;margin-top:4px;">${escapeHtmlAttr(summary)}</div>` : ''}
+              <div style="color:var(--muted);font-size:12px;margin-top:4px;">${descHtml}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button disabled title="${escapeHtmlAttr(unavailableReason || 'Not yet available')}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--border);color:var(--muted);border:none;cursor:not-allowed;">${escapeHtmlAttr(unavailableReason || 'Not yet available')}</button>
+            </div>
+          </div>
+        </div>`;
+  }
 
   // ── Locked rendering (tier-gated, not grandfathered) ──
   if (locked && status !== 'active') {
@@ -12744,6 +12815,14 @@ async function loadWorkflows(page) {
         // All offering cards carry a params catalog now (8 cadence + 2
         // CSV-import), so every card exposes the Customize control.
         customizable: WorkflowGrid.isCustomizable(of),
+        // SMS-CONSENT-SOT scoped catalog: the backend marks unsupported
+        // automation types `available: false`. The card renders as "Not yet
+        // available" with its Request button disabled. An offering the client
+        // already has live is NOT greyed out — only new requests are closed.
+        // Older backends omit the field entirely; `!== false` keeps every card
+        // available in that case rather than blanking the page.
+        unavailable: of.available === false && of.status !== 'active' && of.status !== 'requested',
+        unavailableReason: of.unavailable_reason || 'Not yet available',
       });
     }).concat(channelLegacy.map(w => {
       const meta = WORKFLOW_META[w.templateId] || {};
@@ -13939,12 +14018,15 @@ async function showLeadTimeline(leadId) {
     const timeline = data.timeline || [];
 
     nameEl.textContent = lead.name || lead.email || lead.phone || 'Unknown Lead';
-    const smsStatus = isSmsEnabled(lead) ? 'SMS On' : 'SMS Off';
+    // SMS-CONSENT-SOT: the interaction-detail status line renders the same
+    // backend verdict as the row badge and the consent column — three-state.
+    const leadSmsState = smsConsentOf(lead);
+    const smsStatus = leadSmsState.label;
     metaEl.textContent = [lead.phone, lead.email, lead.source && lead.source.replace(/_/g, ' '), smsStatus].filter(Boolean).join(' · ');
 
     // ── Action buttons (moved from table into modal) ────────────────────
     const optedOut = lead.outbound_opted_out === true || lead.opt_out === true || lead.outbound_status === 'opted-out';
-    const smsConsent = isSmsEnabled(lead);
+    const smsConsent = leadSmsState.canSend;
     const canManualCall = portalEntitlements?.manualOutboundCalls === true;
     const canInternalCrm = portalEntitlements?.internalCrm === true;
     const needsAttention = lead.needs_agent_attention === true;
