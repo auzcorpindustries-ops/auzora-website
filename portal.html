@@ -2358,6 +2358,11 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <h2>Captured Leads</h2>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:12px;color:var(--muted);" id="ob-lead-count"></span>
+            <!-- Manual refresh — refetches GET /portal/leads and re-renders ONLY
+                 #ob-lead-list, so the client stays on this section with their
+                 pagination, filters and sort untouched and no page reload. -->
+            <button id="ob-leads-refresh-btn" onclick="refreshCapturedLeads()" title="Refetch captured leads without reloading the page" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Refresh</button>
+            <span id="ob-leads-refresh-status" style="font-size:12px;color:var(--muted);"></span>
             <button id="ob-export-csv-btn" onclick="exportLeads('csv')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export CSV</button>
             <button id="ob-export-json-btn" onclick="exportLeads('json')" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Export JSON</button>
           </div>
@@ -11524,6 +11529,58 @@ function renderObLeads() {
 
 function obLeadsPrev() { if (obLeadsPage > 0) { obLeadsPage--; renderObLeads(); } }
 function obLeadsNext() { obLeadsPage++; renderObLeads(); }
+
+// Manual, IN-PLACE refresh of the Captured Leads table (board
+// zeus_1791950322866_c0b6d4a1). Before this, the only way to see a lead that had
+// just come in was to reload the whole portal, which threw the client out of the
+// section they were reading.
+//
+// Deliberately NOT loadOutbound(): that path resets obLeadsPage to 0 and also
+// rebuilds the Outbound Call Window grid, so a mid-table refresh would bounce the
+// client back to page one and touch UI outside this table. Deliberately NOT
+// showPage() and never location.reload(): the section, the scroll position and
+// whatever pagination/filter/sort the table is currently showing must survive the
+// click. The whole update is one renderObLeads() call, which re-reads the new
+// rows — so consent badges (sms_consent_status), status chips and the stat cards
+// all move together and can never disagree with each other.
+async function refreshCapturedLeads() {
+  const listEl = document.getElementById('ob-lead-list');
+  const btn = document.getElementById('ob-leads-refresh-btn');
+  const statusEl = document.getElementById('ob-leads-refresh-status');
+  if (!listEl) return;
+  if (btn && btn.disabled) return; // a refresh is already in flight
+
+  const prevPage = obLeadsPage;       // pagination survives the refresh
+  const prevScrollY = window.scrollY; // and so does the client's place on the page
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Refreshing…'; }
+  if (statusEl) { statusEl.textContent = ''; statusEl.style.color = 'var(--muted)'; }
+
+  try {
+    const res = await fetch(`${API}/portal/leads`, { headers: { 'X-Portal-Token': portalToken } });
+    if (res.status === 401) return; // the global interceptor shows the login screen
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    obLeadsAll = Array.isArray(data) ? data : (data.leads || []);
+    obLeadsPage = prevPage; // same page, filters and sort as before the click
+    renderObLeads();        // re-renders the table (and, via updateLeadStats, the stat cards)
+    if (typeof window.scrollTo === 'function') window.scrollTo(0, prevScrollY);
+    if (statusEl) {
+      statusEl.textContent = 'Updated just now';
+      statusEl.style.color = 'var(--green)';
+      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+    }
+  } catch (e) {
+    console.error('refreshCapturedLeads error:', e.message);
+    // Leave the table the client is currently reading exactly as it is and say so.
+    if (statusEl) {
+      statusEl.innerHTML = 'Could not refresh. <a href="#" onclick="refreshCapturedLeads();return false;" style="color:var(--accent);">Retry</a>';
+      statusEl.style.color = '#ef4444';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Refresh'; }
+  }
+}
 
 async function toggleSmsConsent(leadId, optIn, btn) {
   const endpoint = optIn ? 'opt-in' : 'opt-out';
