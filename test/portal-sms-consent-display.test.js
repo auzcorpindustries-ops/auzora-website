@@ -11,36 +11,63 @@
 // render "SMS On" for a lead every send path suppresses. It also missed a flag
 // written on an older interaction of the same phone group.
 //
-// FIX: one shared predicate, `isSmsEnabled`, mirroring the backend send gate
-// (sms_consent === true AND NOT sms_opt_out AND NOT opt_out) across the whole
-// phone group. It is used by the row badge, the interaction-detail status line
-// and the opt-in/out button state, so the CRM and the sender can never
-// disagree. This is also what makes the SMS-CONSENT-LOOP "flip" visible: a lead
-// with no consent record now reads "SMS Off" until the verified opt-in writes
-// sms_consent=true.
+// FIX (SMS-CONSENT-LOOP): one shared predicate, `isSmsEnabled`, mirroring the
+// backend send gate (sms_consent === true AND NOT sms_opt_out AND NOT opt_out)
+// across the whole phone group. It is used by the row badge, the
+// interaction-detail status line and the opt-in/out button state, so the CRM
+// and the sender can never disagree. This is also what makes the
+// SMS-CONSENT-LOOP "flip" visible: a lead with no consent record now reads
+// "SMS Off" until the verified opt-in writes sms_consent=true.
+//
+// ── SUPERSEDED BY SMS-CONSENT-SOT (zeus_1791923573031_c22f9baf) ────────────
+// That ticket moved the rule to the BACKEND: consent is resolved once per
+// CONTACT server-side and shipped on every lead row (sms_consent_status /
+// sms_can_send / sms_consent_label), because keeping a second implementation
+// in the browser left two copies of one rule free to drift. `isSmsEnabled` is
+// now a thin wrapper over `smsConsentOf`, which prefers the backend verdict
+// and falls back to THIS rule only during deploy skew.
+//
+// Every BEHAVIOURAL expectation below is unchanged and still passing — that is
+// the proof SMS-CONSENT-SOT did not regress the #413 fix. Only the two
+// extraction helpers and the wiring assertions were updated to the new shape.
+// The new architecture's own assertions live in
+// test/portal-sms-consent-sot.test.js.
 
 const fs = require('fs');
 const path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'portal.html'), 'utf8');
 
-function fnBody(name) {
+/** Extract a top-level function source by name, brace-balanced. */
+function fnSource(name) {
   const start = html.indexOf('function ' + name + '(');
   expect(start).toBeGreaterThan(-1);
-  const rest = html.slice(start + 1);
-  const m = rest.search(/\n(async )?function /);
-  return m === -1 ? rest : rest.slice(0, m);
+  let depth = 0;
+  let seen = false;
+  for (let i = start; i < html.length; i++) {
+    const c = html[i];
+    if (c === '{') { depth++; seen = true; }
+    else if (c === '}') {
+      depth--;
+      if (seen && depth === 0) return html.slice(start, i + 1);
+    }
+  }
+  throw new Error(`unbalanced braces extracting ${name}`);
 }
 
-/** Eval the real isSmsEnabled() out of portal.html and return it. */
+function fnBody(name) {
+  return fnSource(name);
+}
+
+/**
+ * Eval the real isSmsEnabled() out of portal.html and return it.
+ * SMS-CONSENT-SOT: isSmsEnabled now delegates to smsConsentOf, so both must
+ * be loaded together for the predicate to be callable.
+ */
 function loadIsSmsEnabled() {
-  const start = html.indexOf('function isSmsEnabled(');
-  expect(start).toBeGreaterThan(-1);
-  const rest = html.slice(start);
-  const end = rest.indexOf('\n}\n');
-  expect(end).toBeGreaterThan(-1);
-  const src = rest.slice(0, end + 2); // include the closing brace
   // eslint-disable-next-line no-new-func
-  return new Function(src + '\nreturn isSmsEnabled;')();
+  return new Function(
+    `${fnSource('smsConsentOf')}\n${fnSource('isSmsEnabled')}\nreturn isSmsEnabled;`
+  )();
 }
 
 describe('isSmsEnabled mirrors the backend SMS send gate', () => {
@@ -70,19 +97,32 @@ describe('isSmsEnabled mirrors the backend SMS send gate', () => {
   });
 });
 
-describe('the Captured Leads SMS field is wired to isSmsEnabled', () => {
-  test('the row badge derives from the whole group via isSmsEnabled', () => {
+describe('the Captured Leads SMS field is wired to one shared verdict', () => {
+  // SMS-CONSENT-SOT: the wiring target moved from `isSmsEnabled(group)` to
+  // `smsConsentOf(group)` (which returns status + canSend + label, so the
+  // badge can render the third "Pending" state). The INVARIANT is unchanged:
+  // every consent surface in the CRM reads ONE value.
+  test('the row badge derives from the whole group via the shared resolver', () => {
     const body = fnBody('renderObLeads');
-    expect(body).toContain('const smsConsent = isSmsEnabled(group);');
+    expect(body).toContain('const smsState = smsConsentOf(group);');
     // the old fail-open single-row read is gone
     expect(body).not.toContain('sms_consent !== false');
   });
 
-  test('the row badge still renders both SMS On / SMS Off states', () => {
+  test('the row badge still renders the consent state and the toggle', () => {
     const body = fnBody('renderObLeads');
-    expect(body).toContain('SMS On');
-    expect(body).toContain('SMS Off');
+    // SMS-CONSENT-SOT: the literal "SMS On"/"SMS Off" strings moved to the
+    // backend label (smsState.label) / the smsConsentOf fallback, so the badge
+    // renders the served text rather than hard-coding a binary pair. Pin what
+    // actually matters: the badge shows the resolved label and the toggle is
+    // still wired.
+    expect(body).toContain('escapeHtmlAttr(smsState.label)');
     expect(body).toContain('toggleSmsConsent');
+    // The three labels are still produced, from the one resolver.
+    const resolver = fnBody('smsConsentOf');
+    expect(resolver).toContain('SMS On');
+    expect(resolver).toContain('SMS Off');
+    expect(resolver).toContain('SMS Pending');
   });
 
   test('no stale fail-open sms_consent read survives anywhere in portal.html', () => {
@@ -90,21 +130,28 @@ describe('the Captured Leads SMS field is wired to isSmsEnabled', () => {
     expect(html).not.toContain("sms_consent === false ? 'SMS Off' : 'SMS On'");
   });
 
-  test('the interaction-detail status line uses isSmsEnabled(lead)', () => {
+  test('the interaction-detail status line uses the shared verdict', () => {
     const body = fnBody('showLeadTimeline');
-    expect(body).toContain("const smsStatus = isSmsEnabled(lead) ? 'SMS On' : 'SMS Off';");
+    expect(body).toContain('const leadSmsState = smsConsentOf(lead);');
+    expect(body).toContain('const smsStatus = leadSmsState.label;');
   });
 
-  test('the interaction-detail opt-in/out button state uses isSmsEnabled(lead)', () => {
+  test('the interaction-detail opt-in/out button state uses the shared verdict', () => {
     const body = fnBody('showLeadTimeline');
-    expect(body).toContain('const smsConsent = isSmsEnabled(lead);');
+    expect(body).toContain('const smsConsent = leadSmsState.canSend;');
   });
 
   test('the definition itself is the documented gate (consent AND NOT suppression)', () => {
-    const body = fnBody('isSmsEnabled');
+    // SMS-CONSENT-SOT: the rule now lives in smsConsentOf's fallback branch —
+    // isSmsEnabled delegates to it. The gate's SHAPE is pinned here exactly as
+    // #413 pinned it, just at its new home.
+    const body = fnBody('smsConsentOf');
     expect(body).toContain('r.sms_consent === true');
     expect(body).toContain('r.sms_opt_out === true');
     expect(body).toContain('r.opt_out === true');
-    expect(body).toContain('granted && !suppressed');
+    expect(body).toContain("status === 'opted_in'");
+    // ...and the backend verdict takes precedence over that fallback.
+    expect(body).toContain('sms_consent_status');
+    expect(fnBody('isSmsEnabled')).toContain('smsConsentOf(rows).canSend');
   });
 });
