@@ -12046,13 +12046,39 @@ async function executeLeadImport() {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      const skippedTxt = data.skipped?.length ? `, ${data.skipped.length} skipped` : '';
-      status.textContent = `✓ ${data.imported} leads imported${skippedTxt}`;
-      status.style.color = 'var(--green)';
-      showToast(`${data.imported} leads imported successfully ✓`, 'success');
-      clearLeadImport();
-      // Reload the leads list
-      if (typeof loadLeads === 'function') loadLeads();
+      // Per-row outcome summary (multi-import fix, 2026-10-14): the API returns
+      // a results[] row for EVERY submitted lead — imported/updated/skipped
+      // WITH the skip reason ("Duplicate phone number", "Invalid phone
+      // number"). The old handler showed only the imported count and wiped the
+      // form, so skipped rows silently vanished ("imported 2, only 1 shows
+      // up"). Now every outcome is surfaced inline + toast, and the form is
+      // only cleared when EVERYTHING landed; on any skip it stays populated so
+      // the user can fix phones or drop duplicates and re-submit.
+      const rows = Array.isArray(data.results) ? data.results : [];
+      const skipRows = rows.filter(r => r.outcome === 'skipped');
+      const importedN = typeof data.imported === 'number' ? data.imported : rows.filter(r => r.outcome === 'imported').length;
+      const updatedN = typeof data.updated === 'number' ? data.updated : rows.filter(r => r.outcome === 'updated').length;
+      if (rows.length && skipRows.length) {
+        const reasonList = skipRows
+          .slice(0, 6)
+          .map(r => `Row ${r.row}${r.phone ? ` (${r.phone})` : ''}: ${r.reason || 'skipped'}`)
+          .join(' · ');
+        const extra = skipRows.length > 6 ? ` · +${skipRows.length - 6} more` : '';
+        status.innerHTML =
+          `✓ ${importedN} imported${updatedN ? `, ${updatedN} updated` : ''}, ${skipRows.length} skipped` +
+          `<br><span style="font-size:11px;color:var(--muted);">${reasonList}${extra}</span>`;
+        status.style.color = 'var(--green)';
+        showToast(`${importedN} imported, ${skipRows.length} skipped — see reasons below the import box`, 'success');
+        // Keep the parsed rows + mapping so the user can correct and re-submit.
+        if (typeof loadLeads === 'function') loadLeads();
+      } else {
+        const skippedTxt = data.skipped?.length ? `, ${data.skipped.length} skipped` : '';
+        status.textContent = `✓ ${data.imported} leads imported${skippedTxt}`;
+        status.style.color = 'var(--green)';
+        showToast(`${data.imported} leads imported successfully ✓`, 'success');
+        clearLeadImport();
+        if (typeof loadLeads === 'function') loadLeads();
+      }
     } else {
       throw new Error(data.error || 'Import failed');
     }
