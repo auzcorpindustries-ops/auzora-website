@@ -43,7 +43,8 @@ that invariant is violated.
 
 3. **Review the diff before merging.** Pay attention to:
    - `index.html` — `PLANS.linksEnabled` and `SMS_ADDONS.linksEnabled` must
-     still be `false` unless this release *is* the deliberate activation flip.
+     still be `true` (2026-10-14 activation); disabled CTAs on prod fail
+     verify-prod.
    - `netlify.toml` / `netlify/plugins/` — `[build.environment] STRIPE_LINK_MODE`
      must stay `"live"` (only the `develop` and `deploy-preview` contexts
      override it to `"test"`). Never remove that scoping; it is what stops a
@@ -57,7 +58,7 @@ that invariant is violated.
    push to `main` and checks, against the live site:
    - `/`, `/portal`, `/checkout`, `/payment-success` all return 200
    - the 3-plan catalog and the shared "Every plan includes" panel are present
-   - no `linksEnabled: true` on production (see activation-flip rule)
+   - purchase links ENABLED on production (`linksEnabled: true`; see activation-flip rule)
    - `window.STRIPE_LINK_MODE` was injected and reads `live` (not `test`)
    - live `index.html` matches `main` (normalized — see below)
 
@@ -68,18 +69,22 @@ that invariant is violated.
 
 `PLANS.linksEnabled` and `SMS_ADDONS.linksEnabled` in `index.html` control
 whether purchase CTAs are clickable or render in the disabled/"Coming Soon"
-state. They ship as `false`.
+state.
 
-- Releasing **code that carries the links but keeps them inactive** is routine
-  and expected. The real Stripe Payment Link URLs (`paymentLinkUrl`) are
-  committed to `index.html`; only the `linksEnabled` flag keeps them inert.
-- Flipping `linksEnabled` to `true` is a **separate, deliberate PR** on
-  `develop`, with its own review and its own release. It must never ride along
-  inside an unrelated release PR.
-- `verify-prod` **fails the build** if production is ever found serving
-  `linksEnabled: true` from a push that was not the activation flip. Treat that
-  as a rollback signal: revert the commit on `main` and re-land the flip
-  properly.
+- **2026-10-14 (Auzi): the activation flip SHIPPED.** All 6 PROD Stripe
+  Payment Links (3 plans + 3 SMS add-ons) were activated in Stripe live mode
+  via `stripeProvision.js --activate`, and both flags ship as `true`.
+  Purchase CTAs are live on production.
+- `verify-prod` now **fails the build** if production is ever found with the
+  links disabled again (`linksEnabled` missing or mode-gated to test) — that
+  is a regression to the pre-launch gate, not a normal release state.
+- Rollback path: set both flags back to `false` (or the mode-gated form) in a
+  dedicated PR, release it, and additionally deactivate the Stripe Payment
+  Links (`stripeProvision.js` without `--activate` re-reconciles links to
+  inactive in live mode). Re-enabling afterwards is this flip again.
+- Test-mode scoping is unchanged: develop/PR-preview deploys still swap every
+  link for its ACTIVE test-mode URL (`buy.stripe.com/test_...`), and
+  production must never serve test links (verify-prod still enforces that).
 
 ## Known normalization: Netlify pretty URLs
 
