@@ -2854,6 +2854,34 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <div id="activity-feed" style="display:flex;flex-direction:column;gap:8px;">
         <div class="empty">Loading activity...</div>
       </div>
+
+      <!-- Activity feed pagination (zeus_1792018691455_30f56a64): the feed
+           shows the 5 most recent items; Next pages OLDER items in place
+           (no page reload), Back returns toward the newest. -->
+      <div id="activity-pager" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+        <button id="activity-prev-btn" onclick="activityPrevPage()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;color:var(--text);cursor:pointer;">&#8592; Back</button>
+        <span id="activity-pager-label" style="font-size:12px;color:var(--muted);"></span>
+        <button id="activity-next-btn" onclick="activityNextPage()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;color:var(--text);cursor:pointer;">Next &#8594;</button>
+      </div>
+
+      <!-- Contacts module (zeus_1792018691455_30f56a64) — a DEDICATED contacts
+           data set (atlas-contacts), separate from leads. Defaults to
+           search-only: nothing is listed until the user searches. "View all"
+           opens the paginated, alphabetized contact book. -->
+      <div class="card" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;">
+          <div class="card-title" style="margin:0;"><i data-lucide="book-user"></i> Contacts</div>
+          <button onclick="toggleContactsBook()" id="contacts-book-toggle" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">View all</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Search your contact book by name, phone, email, or company.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="contacts-search" placeholder="Search contacts..." autocomplete="off" style="flex:1;min-width:200px;background:var(--field);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;" oninput="filterContacts()" onkeydown="if(event.key==='Enter'){event.preventDefault();loadContactsSearch();}">
+          <button onclick="loadContactsSearch()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;">Search</button>
+        </div>
+        <span id="contacts-search-status" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;"></span>
+      </div>
+      <div id="contacts-results" style="display:none;margin-top:12px;"></div>
+      <div id="contacts-book" style="display:none;margin-top:12px;"></div>
     </div>
 
     <!-- ─── ACCOUNT PAGE ─────────────────────────────────────────────────── -->
@@ -4724,7 +4752,7 @@ function showPage(name) {
   }
   if (name === 'automations') { loadWorkflows('ob'); loadWorkflows('sms'); }
   if (name === 'actions') { PCA.load(); }
-  if (name === 'analytics') { loadLeadAnalytics(); loadActivity(); }
+  if (name === 'analytics') { loadLeadAnalytics(); loadActivity(); resetContactsModule(); }
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
   if (name === 'forms') loadForms();
@@ -13914,6 +13942,10 @@ function updateWorkflowStepSummary(templateId) {
 // ─── ACTIVITY FEED (Analytics page) ──────────────────────────────
 
 let activityAll = [];
+// Feed pagination state (zeus_1792018691455_30f56a64) — 5 items per page,
+// Next = older items, Back = newer, all swapped in place (no reload).
+let activityPage = 0;
+const ACTIVITY_PAGE_SIZE = 5;
 
 // ── LEAD ANALYTICS DASHBOARD ───────────────────────────────────────────────
 async function loadLeadAnalytics() {
@@ -14001,7 +14033,10 @@ async function loadActivity() {
     if (wf) params.set('workflow_id', wf);
     if (st) params.set('status', st);
     if (search) params.set('search', search);
-    params.set('limit', '50');
+    // Feed pagination (zeus_1792018691455_30f56a64): pull the full recent
+    // window once and page 5-at-a-time client-side — Next/Back swap the
+    // visible slice in place with no reload and no refetch.
+    params.set('limit', '200');
 
     // `cache: 'no-store'` is deliberate. The endpoint sends an ETag but no
     // Cache-Control, so Chrome revalidates with If-None-Match and can hand this
@@ -14021,6 +14056,7 @@ async function loadActivity() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     activityAll = data.logs || [];
+    activityPage = 0; // new data / new filter → back to the newest slice
     renderActivity();
   } catch (e) {
     console.error('loadActivity error:', e.message);
@@ -14031,6 +14067,8 @@ async function loadActivity() {
       ? 'Your session expired. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);">Sign in again</a>'
       : 'Could not load activity. <a href="#" onclick="loadActivity();return false;" style="color:var(--accent);">Retry</a>';
     feed.innerHTML = `<div class="empty">${msg}</div>`;
+    activityPage = 0;
+    updateActivityPager();
   }
 }
 
@@ -14043,6 +14081,7 @@ function renderActivity() {
   const feed = document.getElementById('activity-feed');
   if (!activityAll.length) {
     feed.innerHTML = '<div class="empty">No activity yet. Lead follow-up events will appear here in real time.</div>';
+    updateActivityPager();
     return;
   }
 
@@ -14053,7 +14092,14 @@ function renderActivity() {
     success: 'rgba(34,197,94,0.10)', failed: 'rgba(239,68,68,0.10)', pending: 'rgba(245,158,11,0.10)', info: 'rgba(59,130,246,0.10)',
   };
 
-  feed.innerHTML = activityAll.map(log => {
+  // Feed pagination (zeus_1792018691455_30f56a64): render only the 5-item
+  // slice for the current page — Next/Back move the window in place.
+  const totalPages = Math.max(1, Math.ceil(activityAll.length / ACTIVITY_PAGE_SIZE));
+  if (activityPage > totalPages - 1) activityPage = totalPages - 1;
+  const start = activityPage * ACTIVITY_PAGE_SIZE;
+  const slice = activityAll.slice(start, start + ACTIVITY_PAGE_SIZE);
+
+  feed.innerHTML = slice.map(log => {
     const time = new Date(log.timestamp).toLocaleString();
     const color = statusColors[log.status] || '#9aa3b2';
     const bg = statusBg[log.status] || 'rgba(154,163,178,0.08)';
@@ -14075,7 +14121,207 @@ function renderActivity() {
       </div>
     </div>`;
   }).join('');
+
+  updateActivityPager();
 }
+
+// ── Activity feed pager (in-place Next/Back — no reload, no refetch) ───────
+function updateActivityPager() {
+  const pager = document.getElementById('activity-pager');
+  const label = document.getElementById('activity-pager-label');
+  const prevBtn = document.getElementById('activity-prev-btn');
+  const nextBtn = document.getElementById('activity-next-btn');
+  if (!pager) return;
+
+  const total = activityAll.length;
+  if (!total) {
+    pager.style.display = 'none';
+    return;
+  }
+  const totalPages = Math.max(1, Math.ceil(total / ACTIVITY_PAGE_SIZE));
+  pager.style.display = 'flex';
+  const start = activityPage * ACTIVITY_PAGE_SIZE + 1;
+  const end = Math.min((activityPage + 1) * ACTIVITY_PAGE_SIZE, total);
+  label.textContent = `${start}\u2013${end} of ${total}`;
+  prevBtn.disabled = activityPage <= 0;
+  prevBtn.style.opacity = prevBtn.disabled ? '0.45' : '1';
+  prevBtn.style.cursor = prevBtn.disabled ? 'default' : 'pointer';
+  nextBtn.disabled = activityPage >= totalPages - 1;
+  nextBtn.style.opacity = nextBtn.disabled ? '0.45' : '1';
+  nextBtn.style.cursor = nextBtn.disabled ? 'default' : 'pointer';
+}
+
+function activityPrevPage() {
+  if (activityPage > 0) { activityPage--; renderActivity(); }
+}
+
+function activityNextPage() {
+  const totalPages = Math.max(1, Math.ceil(activityAll.length / ACTIVITY_PAGE_SIZE));
+  if (activityPage < totalPages - 1) { activityPage++; renderActivity(); }
+}
+
+// ─── CONTACTS MODULE (Analytics page — zeus_1792018691455_30f56a64) ──────────
+// Backed by the DEDICATED contacts data set (GET /portal/contacts), separate
+// from leads. Defaults to search-only: the results area stays hidden until the
+// user actually searches. "View all" toggles the paginated alphabetical book.
+let contactsBookOpen = false;
+let contactsBookPage = 1;
+const CONTACTS_BOOK_PAGE_SIZE = 25;
+
+// As-you-type: debounce the search like filterActivity() does.
+function filterContacts() {
+  clearTimeout(window._contactsDebounce);
+  window._contactsDebounce = setTimeout(loadContactsSearch, 300);
+}
+
+async function loadContactsSearch() {
+  const input = document.getElementById('contacts-search');
+  const box = document.getElementById('contacts-results');
+  const status = document.getElementById('contacts-search-status');
+  if (!input || !box) return;
+  const q = (input.value || '').trim();
+
+  // Empty query → the intentional empty state: nothing listed.
+  if (!q) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    status.style.display = 'none';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = '<div class="empty">Searching contacts…</div>';
+  status.style.display = 'none';
+  try {
+    const params = new URLSearchParams({ search: q });
+    const res = await fetch(`${API}/portal/contacts?${params}`, {
+      headers: { 'X-Portal-Token': portalToken },
+      cache: 'no-store',
+    });
+    if (res.status === 401) throw new Error('SESSION');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const contacts = data.contacts || [];
+
+    if (!contacts.length) {
+      box.innerHTML = `<div class="empty">No contacts match \u201C${escapeHtml(q)}\u201D.</div>`;
+      return;
+    }
+    const total = typeof data.total === 'number' ? data.total : contacts.length;
+    const more = total > contacts.length ? ` <span style="color:var(--muted);">(showing first ${contacts.length} of ${total})</span>` : '';
+    box.innerHTML = renderContactsTable(contacts) +
+      `<div style="font-size:12px;color:var(--muted);margin-top:8px;">${contacts.length} contact${contacts.length === 1 ? '' : 's'}${more}</div>`;
+  } catch (e) {
+    const expired = e.message === 'SESSION';
+    box.innerHTML = expired
+      ? '<div class="empty">Your session expired. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);">Sign in again</a></div>'
+      : '<div class="empty">Could not search contacts. <a href="#" onclick="loadContactsSearch();return false;" style="color:var(--accent);">Retry</a></div>';
+  }
+}
+
+// Shared row renderer — used by both search results and the contact book so
+// the styling is identical. Matches the portal's existing table look.
+function renderContactsTable(contacts) {
+  const rows = contacts.map(c => `
+    <tr>
+      <td style="font-weight:600;font-size:14px;">${escapeHtml(c.name) || '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${escapeHtml(c.phone) || '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${escapeHtml(c.email) || '<span style="color:var(--muted);">—</span>'}</td>
+      <td>${escapeHtml(c.company) || '<span style="color:var(--muted);">—</span>'}</td>
+    </tr>`).join('');
+  return `<div class="table-wrap" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div class="table-scroll"><table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Company</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+// "View all" — open/close the alphabetical contact book.
+async function toggleContactsBook() {
+  const book = document.getElementById('contacts-book');
+  const btn = document.getElementById('contacts-book-toggle');
+  if (!book || !btn) return;
+  if (contactsBookOpen) {
+    contactsBookOpen = false;
+    book.style.display = 'none';
+    book.innerHTML = '';
+    btn.textContent = 'View all';
+    return;
+  }
+  contactsBookOpen = true;
+  btn.textContent = 'Close';
+  contactsBookPage = 1;
+  await loadContactsBook();
+}
+
+async function loadContactsBook() {
+  const book = document.getElementById('contacts-book');
+  if (!book) return;
+  book.style.display = 'block';
+  book.innerHTML = '<div class="empty">Loading contact book…</div>';
+  try {
+    const params = new URLSearchParams({ page: String(contactsBookPage), page_size: String(CONTACTS_BOOK_PAGE_SIZE) });
+    const res = await fetch(`${API}/portal/contacts?${params}`, {
+      headers: { 'X-Portal-Token': portalToken },
+      cache: 'no-store',
+    });
+    if (res.status === 401) throw new Error('SESSION');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const contacts = data.contacts || [];
+    const total = typeof data.total === 'number' ? data.total : contacts.length;
+    const totalPages = typeof data.total_pages === 'number' ? data.total_pages : 1;
+
+    if (!total) {
+      book.innerHTML = '<div class="empty">No contacts yet.</div>';
+      return;
+    }
+
+    const prevDisabled = contactsBookPage <= 1;
+    const nextDisabled = contactsBookPage >= totalPages;
+    const pager = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+        <button onclick="contactsBookPrev()" ${prevDisabled ? 'disabled' : ''} style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;color:var(--text);cursor:${prevDisabled ? 'default' : 'pointer'};opacity:${prevDisabled ? '0.45' : '1'};">&#8592; Back</button>
+        <span style="font-size:12px;color:var(--muted);">Page ${contactsBookPage} of ${totalPages} · ${total} contact${total === 1 ? '' : 's'}</span>
+        <button onclick="contactsBookNext()" ${nextDisabled ? 'disabled' : ''} style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;color:var(--text);cursor:${nextDisabled ? 'default' : 'pointer'};opacity:${nextDisabled ? '0.45' : '1'};">Next &#8594;</button>
+      </div>`;
+
+    book.innerHTML = renderContactsTable(contacts) + pager;
+  } catch (e) {
+    const expired = e.message === 'SESSION';
+    book.innerHTML = expired
+      ? '<div class="empty">Your session expired. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);">Sign in again</a></div>'
+      : '<div class="empty">Could not load the contact book. <a href="#" onclick="loadContactsBook();return false;" style="color:var(--accent);">Retry</a></div>';
+  }
+}
+
+function contactsBookPrev() {
+  if (contactsBookPage > 1) { contactsBookPage--; loadContactsBook(); }
+}
+
+function contactsBookNext() {
+  contactsBookPage++;
+  loadContactsBook();
+}
+
+// Re-entering the Analytics page restores the Contacts module's intentional
+// default state: search-only, nothing listed, book closed.
+function resetContactsModule() {
+  contactsBookOpen = false;
+  contactsBookPage = 1;
+  const input = document.getElementById('contacts-search');
+  const box = document.getElementById('contacts-results');
+  const book = document.getElementById('contacts-book');
+  const btn = document.getElementById('contacts-book-toggle');
+  const status = document.getElementById('contacts-search-status');
+  if (input) input.value = '';
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (book) { book.style.display = 'none'; book.innerHTML = ''; }
+  if (btn) btn.textContent = 'View all';
+  if (status) status.style.display = 'none';
+}
+
 
 // ─── LEAD TIMELINE (Audit Trail Modal) ───────────────────────────
 
