@@ -11,9 +11,9 @@
 //     workflow_dispatch, and never targets anything but `main` as a release base
 //   - the workflow checks every public page the release ticket called out
 //     (portal / checkout / payment-success), not just the landing page
-//   - the workflow FAILS if production ever serves linksEnabled: true
-//     (the activation flip must be its own reviewed release, per PRICING
-//     doctrine and the PRICING-7 gate)
+//   - 2026-10-14 ACTIVATION FLIP SHIPPED: purchase links are LIVE on prod.
+//     The workflow FAILS if production purchase links are ever disabled
+//     again (regression to the pre-launch gate), per docs/RELEASE.md.
 //   - production must be in `live` Stripe link mode, never `test`
 //   - the auto-merge workflow still only targets `develop` (never auto-merges
 //     into production)
@@ -103,20 +103,19 @@ describe('PROD-4: release workflow (.github/workflows/release.yml)', () => {
     expect(yml).toContain('%{http_code}');
   });
 
-  test('FAILS the build if production ever serves linksEnabled: true', () => {
+  test('FAILS the build if production purchase links are ever disabled (post-activation contract, 2026-10-14)', () => {
     const yml = read('.github/workflows/release.yml');
-    const idx = yml.indexOf('linksEnabled: true');
+    // The activation flip SHIPPED 2026-10-14: links must be enabled on prod.
+    // The guard now fails when the flag is missing or mode-gated back to test.
+    const idx = yml.indexOf("linksEnabled: true'");
     expect(idx).toBeGreaterThan(-1);
-    // Scope the assertions to THIS step only. A loose window around the match
-    // passes even after the guard is downgraded to ::warning:: — verified by
-    // mutation test, so match the guarded branch itself.
     const stepStart = yml.lastIndexOf('- name:', idx);
     const stepEnd = yml.indexOf('\n      - name:', idx);
     const step = yml.slice(stepStart, stepEnd === -1 ? undefined : stepEnd);
 
-    expect(step).toContain('linksEnabled: true');
+    expect(step).toContain("linksEnabled: true'");
     // It must be an ERROR that aborts the job, not a warning.
-    expect(step).toMatch(/::error::[^\n]*linksEnabled/);
+    expect(step).toMatch(/::error::[^\n]*disabled/);
     expect(step).toMatch(/exit 1/);
     // And nothing in the step may downgrade it to a non-fatal annotation.
     expect(step).not.toContain('::warning::');
@@ -161,11 +160,11 @@ describe('PROD-4: production deploy config keeps test links scoped to develop', 
     expect(netlifyToml).not.toMatch(/\[context\.production\.environment\][\s\S]*?test/);
   });
 
-  test('index.html ships with sandbox-gated purchase links (inactive on prod, live on test-mode deploys)', () => {
+  test('index.html ships with purchase links enabled in every mode (2026-10-14 activation; test-mode URL swap retained)', () => {
     const html = read('index.html');
-    // 2026-10-06 (Auzi): sandbox activation — linksEnabled is mode-gated.
-    // Prod (STRIPE_LINK_MODE 'live') still evaluates to false → CTAs disabled.
-    expect(html).toMatch(/const PLANS = \{[\s\S]*?linksEnabled: AZ_STRIPE_LINK_MODE === 'test'/);
-    expect(html).toMatch(/const SMS_ADDONS = \{[\s\S]*?linksEnabled: AZ_STRIPE_LINK_MODE === 'test'/);
+    // 2026-10-14 (Auzi): full activation — CTAs live on prod too. The
+    // mode swap below still points test-mode deploys at test links.
+    expect(html).toMatch(/const PLANS = \{[\s\S]*?linksEnabled: true/);
+    expect(html).toMatch(/const SMS_ADDONS = \{[\s\S]*?linksEnabled: true/);
   });
 });
