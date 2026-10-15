@@ -12,8 +12,8 @@
 //   - AZ_STRIPE_TEST_LINKS carries a TEST link for all 6 SKUs (3 plans + 3
 //     SMS add-ons); test links match atlas-ai scripts/stripe-links-test.json
 //     (when the sibling repo is present locally — skipped in website CI)
-//   - linksEnabled stays false until the activation flip: disabled style +
-//     aria-disabled + preventDefault on every payment link
+//   - linksEnabled: true since the 2026-10-14 activation flip (gating
+//     wiring retained as the documented rollback mechanism)
 //   - netlify.toml wires STRIPE_LINK_MODE: live default, test on develop
 //   - the Netlify plugin injects/updates window.STRIPE_LINK_MODE correctly
 
@@ -124,12 +124,13 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
     }
   });
 
-  test('both blocks keep linksEnabled false until the activation flip', () => {
-    // 2026-10-06: sandbox activation flip DONE — Auzi enabled payment CTAs.
-    // linksEnabled is now mode-gated (true when STRIPE_LINK_MODE === 'test',
-    // i.e. staging/develop deploy + PR previews); prod stays disabled.
-    expect(plansBlock).toMatch(/linksEnabled:\s*AZ_STRIPE_LINK_MODE === 'test'/);
-    expect(addonsBlock).toMatch(/linksEnabled:\s*AZ_STRIPE_LINK_MODE === 'test'/);
+  test('both blocks ship linksEnabled: true (2026-10-14 activation flip)', () => {
+    // 2026-10-14: FULL activation — Auzi flipped the real-money switch and
+    // all 6 PROD Payment Links were activated in Stripe live mode. CTAs are
+    // enabled in every mode; the test-link swap below still applies on
+    // test-mode deploys.
+    expect(plansBlock).toMatch(/linksEnabled: true/);
+    expect(addonsBlock).toMatch(/linksEnabled: true/);
   });
 
   // Gating mechanics (BILL-1 contract): while linksEnabled is false every

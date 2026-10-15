@@ -94,8 +94,8 @@ jobs:
                 `Release note: ${note}`,
                 '',
                 'Before merging, confirm the pricing links are in the intended',
-                'state — `linksEnabled: false` in `index.html` means every purchase',
-                'CTA ships disabled/inactive.',
+                'state — purchase links are LIVE (linksEnabled: true, activated',
+                '2026-10-14); CTAs disabled on prod is a release-blocking error.',
                 '',
                 'Pre-merge checklist: see `docs/RELEASE.md`.',
               ].join('\n'),
@@ -147,14 +147,17 @@ jobs:
       - name: Live link state matches main (linksEnabled + Stripe link mode)
         run: |
           set -euo pipefail
-          # The activation flag itself — a release MUST NOT silently flip this
-          # to true; the flip is a deliberate, separately-reviewed PR.
-          enabled_count=$(grep -cE 'linksEnabled: true' /tmp/live-index.html || true)
-          if [ "$enabled_count" -gt 0 ]; then
-            echo "::error::live site has linksEnabled: true — an activation flip landed in a release. Roll back and land it as its own reviewed PR."
+          # 2026-10-14 activation flip (Auzi): purchase links are LIVE on prod.
+          # A release must NOT silently disable them — that would be a regression
+          # to the pre-launch gate (rollback path: docs/RELEASE.md).
+          grep -qE 'linksEnabled: true' /tmp/live-index.html \
+            || { echo "::error::live site no longer has linksEnabled: true — purchase CTAs would render disabled on prod. Restore the 2026-10-14 activation flip or re-land it deliberately."; exit 1; }
+          gated_count=$(grep -cE "linksEnabled: AZ_STRIPE_LINK_MODE === 'test'" /tmp/live-index.html || true)
+          if [ "$gated_count" -gt 0 ]; then
+            echo "::error::live site has linksEnabled mode-gated to test — purchase CTAs are disabled on prod. Restore linksEnabled: true."
             exit 1
           fi
-          echo "linksEnabled is false on live (purchase links inactive)."
+          echo "linksEnabled is true on live (purchase links active)."
 
           # Production deploys must run in live link mode, never test mode.
           if grep -q "STRIPE_LINK_MODE' in window" /tmp/live-index.html \
