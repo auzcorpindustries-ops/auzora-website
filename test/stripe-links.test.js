@@ -64,8 +64,11 @@ describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
     expect(cards.length).toBe(3);
     // No per-plan feature lists — the suite lives in the shared panel.
     expect(cardsBlock).not.toContain('az-pricing-features');
-    const ctas = [...cardsBlock.matchAll(/<a id="az-plan-cta-(basic|standard|enterprise)" class="az-pricing-btn starter" data-plan="\1" href="(https:\/\/buy\.stripe\.com\/[A-Za-z0-9_]+)"/g)];
+    // SIGNUP-BUNDLE: the plan CTA is a button (it mints a composed session
+    // through the API) — the retired Payment-Link hrefs are gone entirely.
+    const ctas = [...cardsBlock.matchAll(/<button type="button" id="az-plan-cta-(basic|standard|enterprise)" class="az-pricing-btn starter" data-plan="\1">/g)];
     expect(ctas.map((m) => m[1])).toEqual(PLAN_KEYS);
+    expect(cardsBlock).not.toMatch(/id="az-plan-cta-[a-z]+"[^>]*href=/);
     const prices = [...cardsBlock.matchAll(/<span class="price">(\$299|\$499|\$899)<\/span><span class="period">\/ month<\/span>/g)].map((m) => m[1]);
     expect(prices).toEqual(['$299', '$499', '$899']);
     const minutes = [...cardsBlock.matchAll(/(2,500|5,000|10,000) voice minutes included · Cancel anytime/g)].map((m) => m[1]);
@@ -89,7 +92,16 @@ describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
       '2,500 messages — $25/mo', '5,000 messages — $50/mo', '10,000 messages — $100/mo',
       '2,500 messages — $25/mo', '5,000 messages — $50/mo', '10,000 messages — $100/mo',
     ]);
-    expect((cardsBlock.match(/>Add SMS<\/a>/g) || []).length).toBe(3);
+    // SIGNUP-BUNDLE: every trace of the standalone SMS PURCHASE is gone — no
+    // "Add SMS" button, no per-row "Coming Soon" badge, and the shared
+    // SMS-only payment link survives only as rollback DATA in SMS_ADDONS,
+    // never as a clickable href. SMS-only signup is impossible from this page.
+    expect(cardsBlock).not.toContain('az-sms-btn');
+    expect(cardsBlock).not.toContain('>Add SMS<');
+    expect(html).not.toContain('az-sms-coming');
+    expect(
+      (html.match(/href="https:\/\/buy\.stripe\.com\/14A14fdwI86Cenuf8I1ZS0f"/g) || []).length
+    ).toBe(0);
   });
 
   test('NO minutes-tier accordion remains', () => {
@@ -104,7 +116,7 @@ describe('index.html pricing section structure (PRICING-4 rebuild)', () => {
 // ── index.html: PLANS + SMS_ADDONS (real payment links, prod default) ────────
 describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () => {
   const plansBlock = extractBlock('const PLANS = {', 'const SMS_ADDONS');
-  const addonsBlock = extractBlock('const SMS_ADDONS = {', '// BILL-1: on the develop deploy');
+  const addonsBlock = extractBlock('const SMS_ADDONS = {', '// BILL-1 rollback machinery');
 
   test('PLANS block exists with the 3 plan SKUs carrying real payment links', () => {
     expect(plansBlock).not.toBeNull();
@@ -135,19 +147,35 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
 
   // Gating mechanics (BILL-1 contract): while linksEnabled is false every
   // payment link renders disabled — same pattern the old tier rows used.
-  test('gating wiring: disabled style + aria-disabled + preventDefault while linksEnabled=false', () => {
+  test('gating wiring: disabled style + aria-disabled + click guard while linksEnabled=false', () => {
     expect(html).toMatch(/function applyLinkMode\(\)/);
     expect(html).toMatch(/classList\.add\('disabled'\)/);
     expect(html).toMatch(/setAttribute\('aria-disabled',\s*'true'\)/);
-    expect(html).toMatch(/addEventListener\('click',\s*e => e\.preventDefault\(\)\)/);
+    // SIGNUP-BUNDLE: the CTA is no longer an anchor, so the guard is the
+    // delegated document-level click check on aria-disabled (the CTA's own
+    // handler also refuses when aria-disabled is set).
+    expect(html).toMatch(/document\.addEventListener\('click',\s*\(e\) => \{/);
+    expect(html).toMatch(/link\.getAttribute\('aria-disabled'\) === 'true'/);
   });
 
-  test('SMS add-on select is wired to the Add SMS button (SKU + href sync)', () => {
+  test('SIGNUP-BUNDLE: the dropdown feeds the plan CTA and the CTA mints the session', () => {
+    // The dropdown is the ONLY add-on control (a bundle option, not a purchase).
     expect(html).toMatch(/\.az-sms-select\[data-plan\]/);
     expect(html).toMatch(/select\.addEventListener\('change'/);
-    expect(html).toMatch(/btn\.dataset\.sku = select\.value/);
-    // The Add SMS href carries the selected plan's client_reference_id.
-    expect(html).toMatch(/withPlanRef\(addon\.paymentLinkUrl, planKey\)/);
+    expect(html).toMatch(/updateSmsTotal\(planKey\)/);
+    // The CTA POSTs { plan, sms_sku } to the signup-checkout endpoint...
+    expect(html).toMatch(/const AZ_SIGNUP_ENDPOINT = AZ_SIGNUP_API_BASE \+ '\/api\/billing\/signup-checkout'/);
+    expect(html).toMatch(/sms_sku: sku/);
+    // ...and hands the browser to the returned session URL.
+    expect(html).toMatch(/window\.location\.assign\(data\.url\)/);
+  });
+
+  test('SIGNUP-BUNDLE: the API base follows the injected Stripe mode', () => {
+    // STRIPE_LINK_MODE=test (develop + deploy previews) ⇒ the staging API,
+    // which holds the sk_test key (test-price sessions). Prod ⇒ prod API.
+    expect(html).toMatch(/const AZ_SIGNUP_API_BASE = AZ_STRIPE_LINK_MODE === 'test'/);
+    expect(html).toMatch(/'https:\/\/atlas-staging\.6845165\.xyz'/);
+    expect(html).toMatch(/'https:\/\/atlas\.6845165\.xyz'/);
   });
 });
 
@@ -340,8 +368,11 @@ describe('PRICING-7 plan selection and contextual SMS add-on', () => {
     for (const key of PLAN_KEYS) {
       expect(cardsBlock).toContain(`<button type="button" class="az-plan-select" data-plan="${key}" aria-pressed="false">Select</button>`);
       expect(cardsBlock).toContain(`<div class="az-card-sms" data-sms-row="${key}" hidden>`);
-      expect(cardsBlock).toContain(`id="az-sms-btn-${key}"`);
+      // SIGNUP-BUNDLE: the add-on row carries a dropdown + the combined total,
+      // NOT a standalone SMS purchase button.
       expect(cardsBlock).toContain(`id="az-sms-select-${key}"`);
+      expect(cardsBlock).toContain(`id="az-sms-total-${key}"`);
+      expect(cardsBlock).not.toContain(`id="az-sms-btn-${key}"`);
     }
   });
 
@@ -355,19 +386,17 @@ describe('PRICING-7 plan selection and contextual SMS add-on', () => {
     expect(html).toMatch(/const selected = document\.querySelector\('\.az-pricing-card\[data-plan\]\.selected'\)/);
   });
 
-  test('AC3: add-on checkout URL carries client_reference_id=plan-<tier>', () => {
-    const src = (html.match(/function withPlanRef\(url, planKey\) \{[\s\S]*?\n    \}/) || [])[0];
-    expect(src).toBeTruthy();
-    // Exercise the real helper extracted from index.html.
-    const withPlanRef = new Function('return (' + src + ');')();
-    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'basic')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-basic');
-    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'standard')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-standard');
-    expect(withPlanRef('https://buy.stripe.com/test_abc123', 'enterprise')).toBe('https://buy.stripe.com/test_abc123?client_reference_id=plan-enterprise');
-    // Appends rather than clobbers an existing query string.
-    expect(withPlanRef('https://buy.stripe.com/test_abc123?foo=1', 'standard')).toBe('https://buy.stripe.com/test_abc123?foo=1&client_reference_id=plan-standard');
-    // The add-on link and the change handler both route through it.
-    expect(html).toMatch(/client_reference_id=plan-/);
-    expect(html).toMatch(/withPlanRef\(addon\.paymentLinkUrl, btn\.dataset\.plan\)/);
+  test('AC3: the plan CTA sends { plan, sms_sku } and redirects to the session url', () => {
+    // Plan-only is the default (the untouched dropdown = "no add-on"), so the
+    // plan-only path stays reachable without touching any control.
+    expect(html).toMatch(/<option value="" selected>No SMS add-on — plan only<\/option>/);
+    expect(html).toMatch(/const sku = select && select\.value \? select\.value : null;/);
+    expect(html).toMatch(/body: JSON\.stringify\(sku \? \{ plan: planKey, sms_sku: sku \} : \{ plan: planKey \}\)/);
+    // The request ALWAYS carries a plan — there is no SMS-only request shape.
+    expect(html).not.toMatch(/client_reference_id/);
+    // The combined monthly total is derived client-side for display; the API
+    // is the source of truth for the actual line items.
+    expect(html).toMatch(/function updateSmsTotal\(planKey\)/);
   });
 
   test('AC4: no analytics/event plumbing introduced', () => {
@@ -376,10 +405,11 @@ describe('PRICING-7 plan selection and contextual SMS add-on', () => {
     expect(html).not.toContain('trackEvent');
   });
 
-  test('AC5(e): mode gating still applies to the new per-card add-on rows', () => {
-    expect(html).toMatch(/document\.querySelectorAll\('\.az-sms-coming'\)/);
-    expect(html).toMatch(/document\.querySelectorAll\('\.az-sms-btn\[data-plan\]'\)/);
-    expect(html).toMatch(/el\.hidden = !disabled/);
+  test('AC5(e): mode gating still applies to the checkout CTAs', () => {
+    // The gate covers the session-mint CTA; the retired SMS button is gone.
+    expect(html).toMatch(/if \(disabled\) setLinkDisabled\(btn, true\)/);
+    expect(html).not.toMatch(/az-sms-btn/);
+    expect(html).not.toMatch(/az-sms-coming/);
     // Plan CTA is de-emphasised until its card is selected.
     expect(html).toMatch(/setLinkDisabled\(cta, !on \|\| linkModeDisabled\(\)\)/);
   });
