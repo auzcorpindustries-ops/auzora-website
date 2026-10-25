@@ -201,7 +201,7 @@
     .az-pricing-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; }
     .az-pricing-features .check { width: 18px; height: 18px; border-radius: 99px; display: grid; place-items: center; font-size: 11px; color: #fff; background: linear-gradient(135deg, #3B82F6, #7C3AED); flex: none; }
     .az-pricing-features.pro-features .check { color: #7C3AED; background: rgba(124,58,237,.12); }
-    .az-pricing-btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 99px; font-weight: 600; font-size: 16px; font-family: Inter, system-ui, sans-serif; cursor: pointer; transition: box-shadow 180ms ease, background 180ms ease; }
+    .az-pricing-btn { display: block; width: 100%; text-align: center; padding: 14px; border: 0; border-radius: 99px; font-weight: 600; font-size: 16px; font-family: Inter, system-ui, sans-serif; cursor: pointer; transition: box-shadow 180ms ease, background 180ms ease; }
     .az-pricing-btn.starter { color: #fff; background: var(--accent); box-shadow: 0 6px 20px rgba(124,58,237,.3); }
     .az-pricing-btn.starter:hover { box-shadow: 0 10px 28px rgba(124,58,237,.45); color: #fff; }
     .az-pricing-btn.starter[aria-expanded="true"] { background: #6D28D9; box-shadow: 0 10px 28px rgba(124,58,237,.45); }
@@ -234,11 +234,12 @@
     .az-sms-row label { font-size: 14px; font-weight: 600; color: #101826; }
     .az-sms-select { font: inherit; font-size: 14.5px; font-weight: 500; color: #101826; padding: 12px 14px; border: 1px solid rgba(16,24,38,0.12); border-radius: 12px; background: #fff; outline: none; transition: border-color 180ms ease; flex: 1 1 260px; max-width: 420px; }
     .az-sms-select:focus { border-color: #7C3AED; }
-    .az-sms-btn { display: inline-block; text-align: center; padding: 12px 28px; border-radius: 99px; font-weight: 600; font-size: 15px; font-family: Inter, system-ui, sans-serif; cursor: pointer; color: #fff; background: var(--accent); box-shadow: 0 6px 20px rgba(124,58,237,.3); transition: box-shadow 180ms ease; text-decoration: none; }
-    .az-sms-btn:hover { box-shadow: 0 10px 28px rgba(124,58,237,.45); color: #fff; }
-    .az-sms-btn:focus-visible { outline: 3px solid rgba(124,58,237,.45); outline-offset: 2px; }
-    .az-sms-btn.disabled { cursor: not-allowed; opacity: .6; }
-    .az-sms-coming { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #7C3AED; background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.25); border-radius: 99px; padding: 4px 12px; white-space: nowrap; }
+    /* ── SIGNUP-BUNDLE: the SMS row is a BUNDLE OPTION only ──
+       The dropdown picks the add-on SKU (or "plan only") and the combined
+       monthly total is shown next to it. There is NO standalone SMS purchase
+       button anywhere in the signup flow — SMS-only signup is impossible. */
+    .az-sms-total { font-size: 14px; font-weight: 600; color: #101826; white-space: nowrap; }
+    .az-sms-error { font-size: 13.5px; font-weight: 600; color: #B42318; margin: 12px 0 0; }
 
     /* ── FAQ ── */
     .az-faq-list { display: flex; flex-direction: column; gap: 12px; }
@@ -630,19 +631,20 @@
           <div class="az-pricing-setup">2,500 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
           <button type="button" class="az-plan-select" data-plan="basic" aria-pressed="false">Select</button>
-          <a id="az-plan-cta-basic" class="az-pricing-btn starter" data-plan="basic" href="https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c" target="_blank" rel="noopener">Get started with Basic</a>
+          <button type="button" id="az-plan-cta-basic" class="az-pricing-btn starter" data-plan="basic">Get started with Basic</button>
           <div class="az-card-sms" data-sms-row="basic" hidden>
-            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <p class="az-sms-note">Add SMS to this plan — it bundles into the SAME checkout and renews monthly with your plan.</p>
             <div class="az-sms-row">
               <label for="az-sms-select-basic">SMS messages per month</label>
               <select id="az-sms-select-basic" class="az-sms-select" data-plan="basic">
-                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="" selected>No SMS add-on — plan only</option>
+                <option value="sms_2500">2,500 messages — $25/mo</option>
                 <option value="sms_5000">5,000 messages — $50/mo</option>
                 <option value="sms_10000">10,000 messages — $100/mo</option>
               </select>
-              <a id="az-sms-btn-basic" class="az-sms-btn" data-plan="basic" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
-              <span id="az-sms-coming-basic" class="az-sms-coming" hidden>Coming Soon</span>
+              <span id="az-sms-total-basic" class="az-sms-total" aria-live="polite">$299/mo — no SMS add-on</span>
             </div>
+            <p class="az-sms-error" id="az-sms-error-basic" role="alert" hidden></p>
           </div>
         </div>
         <div class="az-pricing-card starter" data-plan="standard" aria-selected="false">
@@ -653,19 +655,20 @@
           <div class="az-pricing-setup">5,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
           <button type="button" class="az-plan-select" data-plan="standard" aria-pressed="false">Select</button>
-          <a id="az-plan-cta-standard" class="az-pricing-btn starter" data-plan="standard" href="https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d" target="_blank" rel="noopener">Get started with Standard</a>
+          <button type="button" id="az-plan-cta-standard" class="az-pricing-btn starter" data-plan="standard">Get started with Standard</button>
           <div class="az-card-sms" data-sms-row="standard" hidden>
-            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <p class="az-sms-note">Add SMS to this plan — it bundles into the SAME checkout and renews monthly with your plan.</p>
             <div class="az-sms-row">
               <label for="az-sms-select-standard">SMS messages per month</label>
               <select id="az-sms-select-standard" class="az-sms-select" data-plan="standard">
-                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="" selected>No SMS add-on — plan only</option>
+                <option value="sms_2500">2,500 messages — $25/mo</option>
                 <option value="sms_5000">5,000 messages — $50/mo</option>
                 <option value="sms_10000">10,000 messages — $100/mo</option>
               </select>
-              <a id="az-sms-btn-standard" class="az-sms-btn" data-plan="standard" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
-              <span id="az-sms-coming-standard" class="az-sms-coming" hidden>Coming Soon</span>
+              <span id="az-sms-total-standard" class="az-sms-total" aria-live="polite">$499/mo — no SMS add-on</span>
             </div>
+            <p class="az-sms-error" id="az-sms-error-standard" role="alert" hidden></p>
           </div>
         </div>
         <div class="az-pricing-card starter" data-plan="enterprise" aria-selected="false">
@@ -676,19 +679,20 @@
           <div class="az-pricing-setup">10,000 voice minutes included · Cancel anytime</div>
           <p class="desc">SMS available as add-on.</p>
           <button type="button" class="az-plan-select" data-plan="enterprise" aria-pressed="false">Select</button>
-          <a id="az-plan-cta-enterprise" class="az-pricing-btn starter" data-plan="enterprise" href="https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e" target="_blank" rel="noopener">Get started with Enterprise</a>
+          <button type="button" id="az-plan-cta-enterprise" class="az-pricing-btn starter" data-plan="enterprise">Get started with Enterprise</button>
           <div class="az-card-sms" data-sms-row="enterprise" hidden>
-            <p class="az-sms-note">SMS messaging is available as a monthly add-on — it stacks on your plan and renews monthly.</p>
+            <p class="az-sms-note">Add SMS to this plan — it bundles into the SAME checkout and renews monthly with your plan.</p>
             <div class="az-sms-row">
               <label for="az-sms-select-enterprise">SMS messages per month</label>
               <select id="az-sms-select-enterprise" class="az-sms-select" data-plan="enterprise">
-                <option value="sms_2500" selected>2,500 messages — $25/mo</option>
+                <option value="" selected>No SMS add-on — plan only</option>
+                <option value="sms_2500">2,500 messages — $25/mo</option>
                 <option value="sms_5000">5,000 messages — $50/mo</option>
                 <option value="sms_10000">10,000 messages — $100/mo</option>
               </select>
-              <a id="az-sms-btn-enterprise" class="az-sms-btn" data-plan="enterprise" data-sku="sms_2500" href="https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f" target="_blank" rel="noopener">Add SMS</a>
-              <span id="az-sms-coming-enterprise" class="az-sms-coming" hidden>Coming Soon</span>
+              <span id="az-sms-total-enterprise" class="az-sms-total" aria-live="polite">$899/mo — no SMS add-on</span>
             </div>
+            <p class="az-sms-error" id="az-sms-error-enterprise" role="alert" hidden></p>
           </div>
         </div>
       </div>
@@ -770,28 +774,31 @@
   </footer>
 
   <script>
-    // ── Pricing: 3 plan cards + shared feature list + SMS add-on (PRICING-4) ──
-    // PLANS mirrors atlas-ai src/config/tiers.js (Q4 pricing model,
-    // 2026-09-30). KEEP IN SYNC with atlas-ai src/config/tiers.js — all plans
-    // carry the full feature suite and differ ONLY by included voice minutes;
-    // SMS is not part of any plan (it is the add-on below). paymentLinkUrl
-    // values are the PROD Stripe Payment Links provisioned by PRICING-7
-    // (scripts/stripe-links-prod.json, 2026-10-01) — INACTIVE in Stripe
-    // until Auzi's activation flip, and inert here while linksEnabled is
-    // false (the gate below).
+    // ── Pricing signup wiring (SIGNUP-BUNDLE, zeus_1792284225411_4968a53d) ──
+    // PLANS/SMS_ADDONS mirror atlas-ai src/config/tiers.js (Q4 model,
+    // 2026-09-30) — plans differ ONLY by included voice minutes, and SMS is
+    // NOT part of any plan (it is the bundle option in each card's SMS row).
+    //
+    // RETIRED HERE: the plan CTAs used to be Stripe Payment-Link anchors (one
+    // link per plan) plus a SEPARATE SMS-only link per card. Two anchors meant
+    // "plan + SMS" could never be bought in one checkout, and the standalone
+    // SMS button charged ONLY the add-on (no plan at all). Both are gone:
+    //   - a plan CTA POSTs { plan, sms_sku } to /api/billing/signup-checkout
+    //     and redirects to the returned session URL: ONE subscription, ONE
+    //     customer, plan + optional add-on on one recurring invoice;
+    //   - the SMS row is a BUNDLE OPTION only — the dropdown picks the SKU (or
+    //     "plan only") and there is NO separate purchase button anywhere, so
+    //     SMS-only signup is impossible from this page.
+    // paymentLinkUrl values + AZ_STRIPE_TEST_LINKS are retained ONLY as the
+    // documented rollback target and as the source of the mode gate; nothing
+    // navigates to them anymore.
     //
     // ── Stripe TEST mode on the develop deploy (BILL-1) ─────────────────────
-    // The develop Netlify deploy (develop--auzora.netlify.app, branch deploys)
-    // uses the ACTIVE TEST-mode payment links (buy.stripe.com/test_...) so
-    // billing E2E can purchase without touching live objects; production keeps
-    // live links. Selection is a build-time constant injected via Netlify
-    // env:  netlify.toml [context.develop.environment] sets
-    //   STRIPE_LINK_MODE = "test"
-    // and the site-wide [build.environment] default is "live". No other
-    // context sets it, so production branches keep live links.
-    // Test URLs are the ACTIVE links from atlas-ai scripts/stripe-links-test.json
-    // (generated 2026-10-01) — verified in sync by test/stripe-links.test.js.
-    // The swap applies to BOTH plan links and SMS add-on links.
+    // netlify.toml injects window.STRIPE_LINK_MODE at build time ("test" on
+    // the develop context + deploy previews, "live" everywhere else). The SAME
+    // signal picks the API base below: a test-mode deploy mints its sessions
+    // against the staging API (which holds the sk_test key → test-price
+    // sessions), production against the prod API (sk_live). No new plumbing.
     const AZ_STRIPE_LINK_MODE = 'STRIPE_LINK_MODE' in window
       ? String(window.STRIPE_LINK_MODE)
       : 'live';
@@ -803,26 +810,29 @@
       sms_5000: 'https://buy.stripe.com/test_bJe8wH8cogD8djq8Kk1ZS0h',
       sms_10000: 'https://buy.stripe.com/test_28EcMXakwfz45QY8Kk1ZS0i',
     };
+    const AZ_SIGNUP_API_BASE = AZ_STRIPE_LINK_MODE === 'test'
+      ? 'https://atlas-staging.6845165.xyz'
+      : 'https://atlas.6845165.xyz';
+    const AZ_SIGNUP_ENDPOINT = AZ_SIGNUP_API_BASE + '/api/billing/signup-checkout';
     const PLANS = {
       // linksEnabled — FULLY ACTIVATED (Auzi, 2026-10-14): the real-money flip.
-      // All 6 PROD Payment Links were ACTIVATED in Stripe live mode on
-      // 2026-10-14 (atlas-ai scripts/stripeProvision.js --activate). CTAs are
-      // enabled in EVERY mode; the mode swap below still points test-mode
-      // deploys (develop/PR previews) at their test-mode links.
+      // It is now the CHECKOUT GATE for the session-mint CTAs (and the
+      // rollback lever back to payment links).
       linksEnabled: true,
-      basic: { name: 'Basic', priceLabel: '$299', minutes: '2,500 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c' },
-      standard: { name: 'Standard', priceLabel: '$499', minutes: '5,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d' },
-      enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e' },
+      basic: { name: 'Basic', priceLabel: '$299', minutes: '2,500 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/5kQdR150cev0djq0dO1ZS0c', monthlyUsd: 299 },
+      standard: { name: 'Standard', priceLabel: '$499', minutes: '5,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/8x2eV50JWgD80wE7Gg1ZS0d', monthlyUsd: 499 },
+      enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e', monthlyUsd: 899 },
     };
     const SMS_ADDONS = {
       // FULLY ACTIVATED (Auzi, 2026-10-14) — see PLANS note above.
       linksEnabled: true,
-      sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f' },
-      sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/aFadR1boA5Yu93a4u41ZS0g' },
-      sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/bJe8wH8cogD8djq8Kk1ZS0h' },
+      sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f', monthlyUsd: 25 },
+      sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/aFadR1boA5Yu93a4u41ZS0g', monthlyUsd: 50 },
+      sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/bJe8wH8cogD8djq8Kk1ZS0h', monthlyUsd: 100 },
     };
-    // BILL-1: on the develop deploy, swap every link (plans AND SMS add-ons)
-    // for its TEST-mode URL.
+    // BILL-1 rollback machinery: on the develop deploy swap every link target
+    // for its TEST-mode URL. Nothing renders these hrefs anymore — the map is
+    // kept so a rollback to payment links stays a one-line change.
     if (AZ_STRIPE_LINK_MODE === 'test') {
       for (const key of Object.keys(PLANS).filter(k => k !== 'linksEnabled')) {
         if (AZ_STRIPE_TEST_LINKS[key]) PLANS[key].paymentLinkUrl = AZ_STRIPE_TEST_LINKS[key];
@@ -832,54 +842,102 @@
       }
     }
 
-    // PRICING-7: append the selected plan's identity to an add-on Payment
-    // Link so the Stripe webhook can attach the add-on to the right plan.
-    // Same query-param mechanism stripeWebhookHandler.js already parses
-    // (client_reference_id=plan-<tier>; portalRouter.js documents the pattern).
-    // NOTE: URL-level params are SOFT enforcement — the bare link still works
-    // if shared. Hard coupling would need composite Checkout Sessions
-    // (multi-line-item), explicitly out of scope for this ticket.
-    function withPlanRef(url, planKey) {
-      if (!url || !planKey) return url;
-      const sep = url.indexOf('?') === -1 ? '?' : '&';
-      return url + sep + 'client_reference_id=' + encodeURIComponent('plan-' + planKey);
-    }
-
     function linkModeDisabled() {
       return !(PLANS.linksEnabled && SMS_ADDONS.linksEnabled);
     }
 
-    // While linksEnabled is false, plan CTAs and the per-card SMS buttons
-    // render in the "Coming Soon" disabled style (aria-disabled, click
-    // prevented), matching the pre-PRICING-4 tier-row pattern and
-    // checkout.html's disabled button.
+    // Toggle the disabled affordance + hard click block for a checkout CTA.
+    // Toggling aria-disabled is what enables/disables the control — the
+    // delegated guard below refuses any click on an aria-disabled CTA.
+    function setLinkDisabled(link, off) {
+      if (off) {
+        link.classList.add('disabled');
+        link.setAttribute('aria-disabled', 'true');
+      } else {
+        link.classList.remove('disabled');
+        link.removeAttribute('aria-disabled');
+      }
+    }
+
+    // BILL-1 gating, retained as the rollback lever: while linksEnabled is
+    // false NO checkout can be started. The old payment-link hrefs are gone —
+    // the gate now covers the session-mint CTA.
     function applyLinkMode() {
       const disabled = linkModeDisabled();
       document.querySelectorAll('.az-pricing-btn[data-plan]').forEach((btn) => {
-        const plan = PLANS[btn.dataset.plan];
-        if (!plan) return;
-        // BILL-1 follow-up: plan CTAs must carry the mode-correct URL too.
-        btn.href = plan.paymentLinkUrl;
-        if (disabled) btn.addEventListener('click', e => e.preventDefault());
+        if (disabled) setLinkDisabled(btn, true);
       });
-      document.querySelectorAll('.az-sms-btn[data-plan]').forEach((btn) => {
-        const addon = SMS_ADDONS[btn.dataset.sku];
-        // The add-on link carries the plan it is being purchased with.
-        if (addon) btn.href = withPlanRef(addon.paymentLinkUrl, btn.dataset.plan);
-        if (disabled) btn.addEventListener('click', e => e.preventDefault());
-      });
-      document.querySelectorAll('.az-sms-coming').forEach((el) => { el.hidden = !disabled; });
       refreshPlanSelection();
     }
 
-    // PRICING-7: radio-style plan selection — exactly one card selected.
-    // Selecting a plan reveals that card's SMS add-on row and re-enables its
-    // checkout CTA; selecting another moves both (never two at once).
+    // Combined monthly total for a plan + the card's chosen add-on SKU, shown
+    // next to the dropdown so the bundle price is visible BEFORE checkout
+    // (Stripe renders the same combined recurring total on the session page).
+    function updateSmsTotal(planKey) {
+      const plan = PLANS[planKey];
+      const select = document.getElementById('az-sms-select-' + planKey);
+      const out = document.getElementById('az-sms-total-' + planKey);
+      if (!plan || !out) return;
+      const sku = select ? select.value : '';
+      const addon = sku ? SMS_ADDONS[sku] : null;
+      out.textContent = addon
+        ? '$' + plan.monthlyUsd + ' plan + $' + addon.monthlyUsd + ' SMS = $' + (plan.monthlyUsd + addon.monthlyUsd) + '/mo'
+        : '$' + plan.monthlyUsd + '/mo — no SMS add-on';
+    }
+
+    // Inline failure surface — a checkout that cannot be started must say so
+    // on the page instead of leaving a dead CTA.
+    function signupErrorMessage(planKey, message) {
+      const el = document.getElementById('az-sms-error-' + planKey);
+      if (!el) return;
+      el.textContent = message || '';
+      el.hidden = !message;
+    }
+
+    // SIGNUP-BUNDLE: mint the composed Checkout Session (plan + optional SMS)
+    // and hand the browser to Stripe. The card's dropdown is the ONLY add-on
+    // control, so the request is either plan-only or plan + SMS — never SMS
+    // alone. The API resolves the price IDs for ITS runtime (BILL-1); the page
+    // never picks a price, and a missing price fails closed server-side (5xx).
+    function startSignupCheckout(planKey, cta) {
+      const plan = PLANS[planKey];
+      if (!plan || linkModeDisabled()) return;
+      const select = document.getElementById('az-sms-select-' + planKey);
+      const sku = select && select.value ? select.value : null;
+      signupErrorMessage(planKey, '');
+      const originalLabel = cta.textContent;
+      cta.classList.add('disabled');
+      cta.setAttribute('aria-busy', 'true');
+      cta.textContent = 'Starting checkout…';
+
+      fetch(AZ_SIGNUP_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sku ? { plan: planKey, sms_sku: sku } : { plan: planKey }),
+      })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('signup-checkout ' + res.status))))
+        .then((data) => {
+          if (!data || !data.url) throw new Error('signup-checkout returned no url');
+          window.location.assign(data.url);
+        })
+        .catch(() => {
+          // Restore the CTA and surface the failure — never a dead button.
+          cta.classList.remove('disabled');
+          cta.removeAttribute('aria-busy');
+          cta.textContent = originalLabel;
+          signupErrorMessage(planKey, 'We could not start checkout just now. Please try again.');
+        });
+    }
+
+    // Radio-style plan selection — exactly one card selected. Selecting a plan
+    // reveals that card's SMS BUNDLE row and arms its checkout CTA; selecting
+    // another moves both (never two at once).
     function selectPlan(planKey) {
       document.querySelectorAll('.az-pricing-card[data-plan]').forEach((card) => {
         card.classList.toggle('selected', card.dataset.plan === planKey);
       });
       refreshPlanSelection();
+      updateSmsTotal(planKey);
     }
 
     function refreshPlanSelection() {
@@ -898,33 +956,21 @@
         const cta = card.querySelector('.az-pricing-btn[data-plan]');
         if (cta) setLinkDisabled(cta, !on || linkModeDisabled());
       });
-      document.querySelectorAll('.az-sms-btn[data-plan]').forEach((btn) => {
-        setLinkDisabled(btn, linkModeDisabled());
-      });
     }
 
-    // Toggle the disabled affordance + hard click block for a payment link.
-    function setLinkDisabled(link, off) {
-      if (off) {
-        link.classList.add('disabled');
-        link.setAttribute('aria-disabled', 'true');
-      } else {
-        link.classList.remove('disabled');
-        link.removeAttribute('aria-disabled');
-      }
-    }
-
-    // Single delegated guard: any payment link marked aria-disabled="true"
-    // must not navigate (covers the not-yet-selected plan CTAs). Toggling the
-    // attribute is what enables/disables the link.
+    // Single delegated guard: any checkout CTA marked aria-disabled="true"
+    // must not run (covers the not-yet-selected plan CTAs). Toggling the
+    // attribute is what enables/disables the control.
     document.addEventListener('click', (e) => {
-      const link = e.target.closest('.az-pricing-btn[data-plan], .az-sms-btn[data-plan]');
+      const link = e.target.closest('.az-pricing-btn[data-plan]');
       if (link && link.getAttribute('aria-disabled') === 'true') e.preventDefault();
     });
 
     applyLinkMode();
 
-    // Wire card selection + per-card add-on SKU/href sync.
+    // Wire card selection + the per-card add-on dropdown. The dropdown is a
+    // BUNDLE OPTION only: it picks the SKU the CTA sends along with the plan —
+    // there is no separate SMS purchase control anywhere on the page.
     document.querySelectorAll('.az-pricing-card[data-plan]').forEach((card) => {
       const planKey = card.dataset.plan;
       const selBtn = card.querySelector('.az-plan-select');
@@ -934,16 +980,18 @@
         if (e.target.closest('a, button, select, option, input, label')) return;
         selectPlan(planKey);
       });
-    });
-    document.querySelectorAll('.az-sms-select[data-plan]').forEach((select) => {
-      const planKey = select.dataset.plan;
-      const btn = document.getElementById('az-sms-btn-' + planKey);
-      select.addEventListener('change', () => {
-        if (!btn) return;
-        btn.dataset.sku = select.value;
-        const addon = SMS_ADDONS[select.value];
-        if (addon) btn.href = withPlanRef(addon.paymentLinkUrl, planKey);
-      });
+      const cta = card.querySelector('.az-pricing-btn[data-plan]');
+      if (cta) {
+        cta.addEventListener('click', () => {
+          if (cta.getAttribute('aria-disabled') === 'true') return;
+          startSignupCheckout(planKey, cta);
+        });
+      }
+      const select = card.querySelector('.az-sms-select[data-plan]');
+      if (select) {
+        select.addEventListener('change', () => updateSmsTotal(planKey));
+        updateSmsTotal(planKey);
+      }
     });
 
     // Deep link: /index.html#pricing?plan=basic (or #pricing&plan=basic)
