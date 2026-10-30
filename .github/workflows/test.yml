@@ -1,0 +1,70 @@
+# .github/workflows/test.yml — the repo's CI test gate (audit gap F7,
+# ticket zeus_1793167128427_122c68ce, audit source zeus_1793166491472_e99e6c8e)
+#
+# Runs the jest suite on every PR to develop/main and on every push to develop.
+# A red suite now blocks auto-merge.yml: it waits for all external check runs
+# and skips the merge on any failure/cancellation, so this job is what turns
+# the previously-advisory frontend tests into a real gate.
+#
+# Two hazards this workflow explicitly handles:
+#   1. worktrees/ collection — this repo is developed alongside sibling git
+#      worktrees; a bare `npx jest` would walk them and inflate or break the
+#      run. The explicit `--roots ./test` pins collection to this checkout's
+#      own test/ directory.
+#   2. Browser specs need Chromium — the 4 *-browser.test.js suites drive a
+#      real Chromium (Playwright) against the working tree with mocked APIs.
+#      npm ci runs with PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD because only
+#      Chromium is needed (not the full 3-browser bundle), then exactly
+#      Chromium is installed and cached. If that install fails, the step
+#      fails loudly; if the playwright package itself were missing, the
+#      browser suites skip with a loud console message instead of failing.
+#
+# This workflow only ADDS a check. It does not modify auto-merge.yml or
+# release.yml, and nothing here can weaken the deploy path.
+name: Test Suite
+
+on:
+  pull_request:
+    branches: [develop, main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  jest:
+    name: Jest (node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR head
+        uses: actions/checkout@v4
+
+      - name: Set up node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies (skip Playwright's full 3-browser postinstall)
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Chromium (bundled browser for the 4 browser specs)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the suite (explicit roots so sibling worktrees/ are never collected)
+        run: npx jest --ci --roots ./test
