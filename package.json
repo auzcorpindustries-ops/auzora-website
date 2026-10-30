@@ -5,7 +5,8 @@
   "description": "Auzora marketing site + client portal (static, no build step). Test-only package.json — no runtime dependencies.",
   "scripts": {
     "test": "jest",
-    "test:browser": "jest test/portal-billing-browser.test.js"
+    "test:browser": "jest test/portal-billing-browser.test.js",
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
     "jest": "^29.7.0",
