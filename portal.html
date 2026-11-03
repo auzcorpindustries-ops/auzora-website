@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/logo.png" />
-<title>Client Portal — Auzora</title>
+<title>Client Portal — Sonello</title>
 <style>
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* ─────────────────────────────────────────────────────────────────────────────
-   AUZORA PORTAL — v2 light-first theme
+   SONELLO PORTAL — v2 light-first theme
    Light is default; .dark class adds dark overrides.
    All existing class / id / JS hooks preserved.
    ───────────────────────────────────────────────────────────────────────────── */
@@ -998,8 +998,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   <!-- Left brand panel -->
   <div class="login-left">
     <div class="login-left-brand">
-      <img src="/logo.png" alt="Auzora" />
-      <span>AUZORA</span>
+      <img src="/logo.png" alt="Sonello" />
+      <span>SONELLO</span>
     </div>
     <div class="login-left-hero">
       <div class="login-left-hero-inner">
@@ -1012,7 +1012,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   <div class="login-right">
     <div class="login-right-inner">
       <h1>Sign in to your agent</h1>
-      <p>Manage voice, scheduling and integrations for your Atlas AI phone agent.</p>
+      <p>Manage voice, scheduling and integrations for your Sonello phone agent.</p>
       <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px;">
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label>Business Email</label>
@@ -1030,8 +1030,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.89c2.28-2.1 3.53-5.2 3.53-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.89-3c-1.08.72-2.45 1.16-4.04 1.16-3.11 0-5.74-2.1-6.68-4.92H1.32v3.09C3.29 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.32 14.33c-.24-.72-.38-1.49-.38-2.33s.14-1.61.38-2.33V6.58H1.32C.48 8.24 0 10.06 0 12s.48 3.76 1.32 5.42l4-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.35.6 4.6 1.79l3.45-3.45C17.95 1.19 15.24 0 12 0 7.31 0 3.29 2.7 1.32 6.58l4 3.09c.94-2.82 3.57-4.92 6.68-4.92z"/></svg>
         Sign in with Google
       </a>
-      <a href="#" class="google-signup-link" onclick="googleSignUp(event)">New to Auzora? Sign up with Google →</a>
+      <a href="#" class="google-signup-link" onclick="googleSignUp(event)">New to Sonello? Sign up with Google →</a>
       <div class="login-hint">Need access? Contact <a href="mailto:support@auzora.io">support@auzora.io</a></div>
+<!-- TODO(sonello): repoint after P1-8 mailboxes provisioned -->
     </div>
   </div>
 </div>
@@ -1044,8 +1045,8 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <img src="/logo.png" alt="Auzora" />
-      <b>Auzora</b>
+      <img src="/logo.png" alt="Sonello" />
+      <b>Sonello</b>
     </div>
     <div class="sidebar-search"><i data-lucide="search"></i> Search <kbd>⌘K</kbd></div>
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</div>
@@ -1716,7 +1717,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         </div>
       </div>
 
-      <!-- Native Calendar — Auzora's own calendar, the default for every account -->
+      <!-- Native Calendar — Sonello's own calendar, the default for every account -->
       <div class="card" style="margin-bottom:20px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -1765,7 +1766,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
           <div>
             <div class="card-title" style="margin:0;">📅 Google Calendar <span style="font-size:11px;font-weight:500;color:var(--muted);">(optional overlay)</span></div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Two-way sync. Your Auzora calendar stays the source of truth.</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Two-way sync. Your Sonello calendar stays the source of truth.</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span id="scheduling-cal-status" style="font-size:12px;color:var(--muted);">Not connected</span>
@@ -1775,12 +1776,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
         <div id="scheduling-cal-embed" style="display:none;">
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="google-sync-toggle" onchange="toggleGoogleSync(this.checked)" />
-            <span>Keep Google Calendar in sync with my Auzora calendar</span>
+            <span>Keep Google Calendar in sync with my Sonello calendar</span>
           </label>
           <div id="scheduling-cal-events" style="max-height:400px;overflow-y:auto;"></div>
         </div>
         <div id="scheduling-cal-placeholder" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;">
-          Your Auzora calendar is active and handling bookings. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect Google Calendar →</span>
+          Your Sonello calendar is active and handling bookings. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="showPage('integrations')">Connect Google Calendar →</span>
         </div>
       </div>
 
@@ -1982,6 +1983,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
                   <span id="sa-email-display">ahoward@auzora.io</span>
                   <button onclick="copyText('ahoward@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
+<!-- TODO(sonello): repoint after P1-8 mailboxes provisioned -->
                 </div>
                 <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Make changes to events</strong> (Editor)</div>
               </div>
@@ -2146,6 +2148,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;display:flex;align-items:center;justify-content:space-between;">
                   <span id="ocal-sa-display">automation@auzora.io</span>
                   <button onclick="copyText('automation@auzora.io')" style="background:var(--accent);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Copy</button>
+<!-- TODO(sonello): repoint after P1-8 mailboxes provisioned -->
                 </div>
                 <div style="font-size:11px;color:var(--muted);margin-top:6px;">⚠️ Set permission to <strong>Can edit</strong> so your AI agent can add appointments</div>
               </div>
@@ -2203,7 +2206,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           </div>
         </div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
-          POST form submissions or CRM webhooks directly to Auzora. We'll instantly text and call the lead — no n8n or Zapier required.
+          POST form submissions or CRM webhooks directly to Sonello. We'll instantly text and call the lead — no n8n or Zapier required.
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8;">
           POST /leads/inbound<br>
@@ -2401,7 +2404,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
       <div class="card" id="quick-call-card" style="margin-bottom:20px;">
         <div class="card-title"><i data-lucide="phone-forwarded"></i> Call a Lead</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-          Your AI agent will dial this number from your Auzora line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed inside your outbound call window (set above), and leads who ask to stop being called are never dialed again.
+          Your AI agent will dial this number from your Sonello line, introduce itself, and handle the conversation — including booking an appointment if the lead is interested. Calls are only placed inside your outbound call window (set above), and leads who ask to stop being called are never dialed again.
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
@@ -2433,6 +2436,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
           <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px;">Manual outbound calls aren't included in your plan</div>
           <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Upgrade to have your AI agent dial leads directly from the portal — including booking appointments during the call.</div>
           <a href="mailto:ahoward@auzora.io?subject=Upgrade%20inquiry" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:14px;font-weight:600;padding:10px 24px;border-radius:10px;text-decoration:none;">Ask about upgrading</a>
+<!-- TODO(sonello): repoint after P1-8 mailboxes provisioned -->
         </div>
       </div>
     </div>
@@ -3230,7 +3234,7 @@ window.fetch = function(...args) {
     // Only trigger session-expired logout if we HAD a token (not pre-login calls)
     if (res.status === 401 && portalToken) {
       // Token expired or revoked — force re-login
-      console.warn('[Auzora] Session expired (401), redirecting to login');
+      console.warn('[Sonello] Session expired (401), redirecting to login');
       portalToken = null;
       sessionStorage.removeItem('atlas_token');
       sessionStorage.removeItem('atlas_client');
@@ -3663,7 +3667,7 @@ function handleGoogleRedirect() {
   const error = params.get('google_error');
 
   if (error) {
-    console.error('[Auzora] Google OAuth error:', error);
+    console.error('[Sonello] Google OAuth error:', error);
     // Show error in the login screen if visible, or as a toast if already in-app
     const loginError = document.getElementById('login-error');
     if (loginError && document.getElementById('app').style.display === 'none') {
@@ -3695,11 +3699,11 @@ function handleGoogleRedirect() {
           launchApp();
           showToast('Google Calendar connected successfully ✓', 'success');
         } else {
-          console.error('[Auzora] Google OAuth: client fetch returned no client data', data);
+          console.error('[Sonello] Google OAuth: client fetch returned no client data', data);
         }
       })
       .catch((e) => {
-        console.error('[Auzora] Google OAuth: client fetch failed', e.message);
+        console.error('[Sonello] Google OAuth: client fetch failed', e.message);
         // Token might be valid but client fetch failed — show login
         const loginError = document.getElementById('login-error');
         if (loginError) loginError.textContent = 'Google sign-in incomplete. Please try again.';
@@ -3708,7 +3712,7 @@ function handleGoogleRedirect() {
     window.history.replaceState({}, document.title, window.location.pathname);
   } else if (connected) {
     // Existing client connected calendar via OAuth — refresh portal state
-    console.info('[Auzora] Google Calendar connected via OAuth, refreshing state');
+    console.info('[Sonello] Google Calendar connected via OAuth, refreshing state');
     if (portalToken) {
       // Re-fetch client data to update google_oauth_connected + calendar state
       fetch(`${API}/portal/settings`, { headers: { 'x-portal-token': portalToken } })
@@ -3724,7 +3728,7 @@ function handleGoogleRedirect() {
           }
         })
         .catch((e) => {
-          console.error('[Auzora] Google OAuth: state refresh failed', e.message);
+          console.error('[Sonello] Google OAuth: state refresh failed', e.message);
         });
     }
     // Clean URL
@@ -3864,7 +3868,7 @@ function completeTutorial() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
       body: JSON.stringify({ tutorial_completed: true })
-    }).catch(err => console.error('[Auzora] Failed to save tutorial completion:', err));
+    }).catch(err => console.error('[Sonello] Failed to save tutorial completion:', err));
   }
 
   // Update local state
@@ -3915,7 +3919,7 @@ async function fetchEntitlements() {
       // display:none, so Plan & Usage — gauge, bars and the 6-month trend —
       // silently vanished from the dashboard with nothing in the console to
       // say why. Report it and show a truthful unavailable state instead.
-      console.error('[Auzora] Entitlements: fetch failed', { status: res.status, statusText: res.statusText });
+      console.error('[Sonello] Entitlements: fetch failed', { status: res.status, statusText: res.statusText });
       showUsageCardUnavailable();
       return;
     }
@@ -3944,7 +3948,7 @@ async function fetchEntitlements() {
   } catch(e) {
     // Nav gating stays permissive (all nav visible) — but the usage card must
     // not be left as an invisible hole in the dashboard rail.
-    console.error('[Auzora] Entitlements error:', e.message);
+    console.error('[Sonello] Entitlements error:', e.message);
     showUsageCardUnavailable();
   }
 }
@@ -4189,7 +4193,7 @@ async function toggleAllowOverage(kind, checked) {
   } catch (e) {
     if (boxEl) boxEl.checked = !desired;
     setFirmCap(!desired);
-    console.error('[Auzora] allow-overage update failed:', e.message);
+    console.error('[Sonello] allow-overage update failed:', e.message);
     showToast('Could not save the overage preference. Please try again.', 'error');
   }
 }
@@ -4416,7 +4420,7 @@ async function startSmsTierChange() {
       renderUsageSmsAddon(portalEntitlements);
     }
   } catch (e) {
-    console.error('[Auzora] SMS tier change error:', e.message);
+    console.error('[Sonello] SMS tier change error:', e.message);
     if (errEl) {
       errEl.textContent = e.message || 'Could not submit the change. Please try again.';
       errEl.style.display = 'block';
@@ -4455,7 +4459,7 @@ async function startSmsCheckout() {
     window.location.href = data.url;
     return;
   } catch (e) {
-    console.error('[Auzora] SMS checkout error:', e.message);
+    console.error('[Sonello] SMS checkout error:', e.message);
     if (errEl) {
       errEl.textContent = e.message || 'Could not start checkout. Please try again.';
       errEl.style.display = 'block';
@@ -4505,7 +4509,7 @@ async function loadSmsAddons() {
     // its dropdown from the same catalog (current tier preselected).
     renderSmsChangeOptions(smsAddonOptions, smsAddonOptions.current || null);
   } catch (e) {
-    console.error('[Auzora] SMS add-on catalog error:', e.message);
+    console.error('[Sonello] SMS add-on catalog error:', e.message);
     // Keep the block honest: the select keeps its Loading state replaced by
     // an explicit message — no fake options, no clickable dead CTA.
     const select = document.getElementById('usage-sms-select');
@@ -5007,7 +5011,7 @@ async function openEmbedModal(formId) {
     const formName = escapeHtml(form.name || 'Untitled Form');
     const baseUrl = 'https://atlas.6845165.xyz';
 
-    const jsCode = `<!-- Auzora Form: ${form.name || 'Untitled Form'} -->
+    const jsCode = `<!-- Sonello Form: ${form.name || 'Untitled Form'} -->
 <div id="atlas-form-${formId}"></div>
 <script src="${baseUrl}/js/form-widget.js"
         data-form-id="${formId}"
@@ -5764,9 +5768,9 @@ const FORM_TEMPLATES = {
   },
 
   auzoraSite: {
-    name: 'Auzora Website',
+    name: 'Sonello Website',
     isDefault: true,
-    html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;font-family:'Inter',sans-serif;}</style></head><body style="margin:0;background:radial-gradient(800px 400px at 50% 100%,rgba(124,58,237,.07),transparent 65%);"><section style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;"><div class="form-container" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(10px);border:1px solid rgba(16,24,38,0.08);border-radius:24px;padding:32px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 36px rgba(16,24,38,.06);"><h2 style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.02em;color:#101826;margin:0 0 8px;">Start the conversation.</h2><p style="font-size:15px;color:#5f687a;margin:0 0 20px;line-height:1.6;">Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Name<input type="text" placeholder="Jane Smith" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Business<input type="text" placeholder="Smith Plumbing Co." style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Phone<input type="tel" placeholder="(555) 123-4567" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Email<input type="email" placeholder="jane@business.com" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label></div><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">What do you want Auzora to handle?<textarea placeholder="Tell us about your call volume and what you'd like automated…" rows="3" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;min-height:120px;resize:vertical;"></textarea></label><button style="background:linear-gradient(90deg,#3B82F6,#7C3AED,#EC4899);color:#fff;padding:15px;border:none;border-radius:99px;font-weight:600;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 20px rgba(124,58,237,.3);">Request a demo</button></div></section></body></html>`,
+    html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#eee;font-family:'Inter',sans-serif;}</style></head><body style="margin:0;background:radial-gradient(800px 400px at 50% 100%,rgba(124,58,237,.07),transparent 65%);"><section style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;"><div class="form-container" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(10px);border:1px solid rgba(16,24,38,0.08);border-radius:24px;padding:32px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 36px rgba(16,24,38,.06);"><h2 style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.02em;color:#101826;margin:0 0 8px;">Start the conversation.</h2><p style="font-size:15px;color:#5f687a;margin:0 0 20px;line-height:1.6;">Interested in a demo? Fill out the form and we'll reach out shortly to schedule it with you.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Name<input type="text" placeholder="Jane Smith" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Business<input type="text" placeholder="Smith Plumbing Co." style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Phone<input type="tel" placeholder="(555) 123-4567" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">Email<input type="email" placeholder="jane@business.com" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;"/></label></div><label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#101826;">What do you want Sonello to handle?<textarea placeholder="Tell us about your call volume and what you'd like automated…" rows="3" style="padding:12px 14px;border:1px solid rgba(16,24,38,0.12);border-radius:12px;font-size:15px;font-family:'Inter',sans-serif;background:#fff;color:#101826;outline:none;min-height:120px;resize:vertical;"></textarea></label><button style="background:linear-gradient(90deg,#3B82F6,#7C3AED,#EC4899);color:#fff;padding:15px;border:none;border-radius:99px;font-weight:600;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 20px rgba(124,58,237,.3);">Request a demo</button></div></section></body></html>`,
     accent: '#7C3AED',
     font: "'Inter', sans-serif",
     submitLabel: 'Request a demo',
@@ -5801,7 +5805,7 @@ const FORM_TEMPLATES = {
       },
       {
         "type": "textarea",
-        "label": "What do you want Auzora to handle?",
+        "label": "What do you want Sonello to handle?",
         "placeholder": "Tell us about your call volume and what you'd like automated…",
         "required": false,
         "maps_to": "notes"
@@ -7304,7 +7308,7 @@ function renderDashboardLeads(leads) {
   // Previously a silent early return, which left the "Loading recent leads…"
   // placeholder on screen permanently if the module had not loaded.
   if (!window.DashboardConversion) {
-    console.error('[Auzora] Dashboard leads: js/dashboard-conversion.js did not load');
+    console.error('[Sonello] Dashboard leads: js/dashboard-conversion.js did not load');
     tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
     return;
   }
@@ -7345,11 +7349,11 @@ async function loadDashboardSummary() {
       headers: { 'X-Portal-Token': portalToken },
     });
     if (res.status === 401) {
-      console.warn('[Auzora] Dashboard summary: session expired (401)');
+      console.warn('[Sonello] Dashboard summary: session expired (401)');
       return; // 401 interceptor will handle redirect
     }
     if (!res.ok) {
-      console.error('[Auzora] Dashboard summary: fetch failed', { status: res.status, statusText: res.statusText });
+      console.error('[Sonello] Dashboard summary: fetch failed', { status: res.status, statusText: res.statusText });
       ['kpi-calls', 'kpi-minutes', 'kpi-sms', 'kpi-leads'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '—';
@@ -7390,7 +7394,7 @@ async function loadDashboardSummary() {
     }
     if (window.lucide) lucide.createIcons();
   } catch (e) {
-    console.error('[Auzora] Dashboard summary error:', e.message);
+    console.error('[Sonello] Dashboard summary error:', e.message);
     ['kpi-calls', 'kpi-minutes', 'kpi-sms', 'kpi-leads'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '—';
@@ -7421,7 +7425,7 @@ async function loadDashboardLeads() {
     const leads = await res.json();
     renderDashboardLeads(Array.isArray(leads) ? leads : []);
   } catch (e) {
-    console.error('[Auzora] Dashboard leads error:', e.message);
+    console.error('[Sonello] Dashboard leads error:', e.message);
     if (tableEl) tableEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Recent leads unavailable right now.</div>';
   }
 }
@@ -7454,11 +7458,11 @@ async function loadDashboard() {
   try {
     const res = await fetch(`${API}/portal/appointments`, { headers: { 'X-Portal-Token': portalToken } });
     if (res.status === 401) {
-      console.warn('[Auzora] Dashboard: session expired (401)');
+      console.warn('[Sonello] Dashboard: session expired (401)');
       return; // 401 interceptor will handle redirect
     }
     if (!res.ok) {
-      console.error('[Auzora] Dashboard: fetch failed', { status: res.status, statusText: res.statusText });
+      console.error('[Sonello] Dashboard: fetch failed', { status: res.status, statusText: res.statusText });
       apptUnavailable();
       return;
     }
@@ -7505,7 +7509,7 @@ async function loadDashboard() {
   // Store all appointments for the detail modal
   setApptData(appts);
   } catch (e) {
-    console.error('[Auzora] Dashboard load error:', e.message);
+    console.error('[Sonello] Dashboard load error:', e.message);
     apptUnavailable();
   }
 
@@ -7526,7 +7530,7 @@ let voiceCatalogPromise = null;
 function ensureVoiceCatalog() {
   if (!voiceCatalogPromise) {
     voiceCatalogPromise = loadVoices().catch((e) => {
-      console.error('[Auzora] Agent card: voice catalog unavailable', e && e.message);
+      console.error('[Sonello] Agent card: voice catalog unavailable', e && e.message);
       return [];
     });
   }
@@ -7541,7 +7545,7 @@ async function renderAgentCard() {
   // to load, leaving a permanent "Loading agent status…" and a bare TypeError
   // in the console. Say what is actually true instead.
   if (!window.DashboardAgent || typeof window.DashboardAgent.buildAgentCard !== 'function') {
-    console.error('[Auzora] Agent card: js/dashboard-agent.js did not load');
+    console.error('[Sonello] Agent card: js/dashboard-agent.js did not load');
     cardEl.innerHTML = '<div class="empty" style="padding:24px 16px;">Agent status unavailable right now.</div>';
     return;
   }
@@ -7613,7 +7617,7 @@ async function loadUnconfirmedAppointments() {
 
     listEl.innerHTML = rows;
   } catch (e) {
-    console.error('[Auzora] Unconfirmed load error:', e.message);
+    console.error('[Sonello] Unconfirmed load error:', e.message);
     wrap.style.display = 'none';
   }
 }
@@ -7660,7 +7664,7 @@ async function confirmNativeEvent(eventId) {
     // Reload the dashboard unconfirmed section
     loadUnconfirmedAppointments();
   } catch (e) {
-    console.error('[Auzora] Confirm error:', e.message);
+    console.error('[Sonello] Confirm error:', e.message);
     showToast('Failed to confirm appointment.', 'error');
   }
 }
@@ -7804,7 +7808,7 @@ async function confirmApptFromDetail() {
     // Reload dashboard to reflect the change
     loadDashboard();
   } catch (e) {
-    console.error('[Auzora] Confirm from detail error:', e.message);
+    console.error('[Sonello] Confirm from detail error:', e.message);
     showToast('Failed to confirm appointment.', 'error');
   }
 }
@@ -7994,7 +7998,7 @@ function loadScheduling() {
 /* ─────────────────────────────────────────────────────────────────────────
  * NATIVE CALENDAR
  *
- * Auzora's own calendar — the default backend for every account, backed by
+ * Sonello's own calendar — the default backend for every account, backed by
  * /portal/native-calendar/* on the API. Google Calendar, when connected, is an
  * optional overlay rendered separately below; the native calendar always
  * remains the source of truth.
@@ -8079,7 +8083,7 @@ async function renderNativeCalendar() {
     nativeCalEvents = data.events || [];
     if (data.timezone) nativeCalTimezone = data.timezone;
   } catch (e) {
-    console.error('[Auzora] Native calendar load failed:', e);
+    console.error('[Sonello] Native calendar load failed:', e);
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted);font-size:13px;">Could not load the calendar. Please refresh.</div>';
     return;
   }
@@ -8512,13 +8516,13 @@ async function loadNativeCalendarStatus() {
       if (toggle) toggle.checked = !!data.google.syncEnabled;
     } else {
       if (statusEl) {
-        statusEl.textContent = 'Auzora calendar';
+        statusEl.textContent = 'Sonello calendar';
         statusEl.style.color = 'var(--muted)';
       }
       if (syncBtn) syncBtn.style.display = 'none';
     }
   } catch (e) {
-    console.error('[Auzora] Native calendar status failed:', e);
+    console.error('[Sonello] Native calendar status failed:', e);
   }
 }
 
@@ -8583,7 +8587,7 @@ async function loadCalendarEvents() {
     });
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
-      console.error('[Auzora] Calendar events fetch failed:', res.status, errBody);
+      console.error('[Sonello] Calendar events fetch failed:', res.status, errBody);
       throw new Error(errBody.error || `HTTP ${res.status}`);
     }
     const data = await res.json();
@@ -8611,7 +8615,7 @@ async function loadCalendarEvents() {
       </div>`;
     }).join('');
   } catch (err) {
-    console.error('[Auzora] Calendar events error:', err.message);
+    console.error('[Sonello] Calendar events error:', err.message);
     eventsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Could not load events. <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="loadCalendarEvents()">Retry</span></div>';
   }
 }
@@ -9683,7 +9687,7 @@ const PCA = {
       const nav = document.getElementById('nav-actions');
       if (nav) nav.style.display = '';
       if (!data.entitlement || data.entitlement.available !== true) {
-        this._showConflict('Not available on your plan', 'Post-call actions are not enabled for this account. Contact Auzora support to add them.');
+        this._showConflict('Not available on your plan', 'Post-call actions are not enabled for this account. Contact Sonello support to add them.');
         return;
       }
       const loading = document.getElementById('pca-loading');
@@ -10213,12 +10217,12 @@ async function connectGoogleCalendar() {
       showToast('Google Calendar connected! Appointments will now sync automatically ✓', 'success');
     } else {
       const errMsg = data.error || 'Failed to save';
-      console.error('[Auzora] Google Calendar connect failed:', errMsg, { status: res.status, calendarId });
+      console.error('[Sonello] Google Calendar connect failed:', errMsg, { status: res.status, calendarId });
       status.textContent = '✗ ' + errMsg;
       status.style.color = 'var(--red)';
     }
   } catch(e) {
-    console.error('[Auzora] Google Calendar connect error:', e.message, { calendarId });
+    console.error('[Sonello] Google Calendar connect error:', e.message, { calendarId });
     status.textContent = '✗ ' + e.message;
     status.style.color = 'var(--red)';
   }
@@ -10236,7 +10240,7 @@ async function disconnectGoogleCalendar() {
       });
       if (!oauthRes.ok) {
         const errBody = await oauthRes.json().catch(() => ({}));
-        console.error('[Auzora] Google OAuth disconnect failed:', oauthRes.status, errBody);
+        console.error('[Sonello] Google OAuth disconnect failed:', oauthRes.status, errBody);
         // Continue to also clear google_calendar_id if it was set
       }
     }
@@ -10255,11 +10259,11 @@ async function disconnectGoogleCalendar() {
       showToast('Google Calendar disconnected', 'success');
     } else {
       const errMsg = data.error || 'Failed to disconnect';
-      console.error('[Auzora] Google Calendar disconnect failed:', errMsg, { status: res.status });
+      console.error('[Sonello] Google Calendar disconnect failed:', errMsg, { status: res.status });
       showToast('Failed to disconnect: ' + errMsg, 'error');
     }
   } catch(e) {
-    console.error('[Auzora] Google Calendar disconnect error:', e.message);
+    console.error('[Sonello] Google Calendar disconnect error:', e.message);
     showToast('Network error. Please try again.', 'error');
   }
 }
@@ -10384,7 +10388,7 @@ async function sendCalendarTestEvent() {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast('✓ Test event sent! Check your Google Calendar for "Test Appointment (Auzora)"', 'success');
+      showToast('✓ Test event sent! Check your Google Calendar for "Test Appointment (Sonello)"', 'success');
     } else {
       showToast('✗ ' + (data.error || 'Failed to send test event'), 'error');
     }
@@ -10504,7 +10508,7 @@ async function sendOutlookTestEvent() {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast('✓ Test event sent! Check your Outlook calendar for "Test Appointment (Auzora)"', 'success');
+      showToast('✓ Test event sent! Check your Outlook calendar for "Test Appointment (Sonello)"', 'success');
     } else {
       showToast('✗ ' + (data.error || 'Failed to send test event'), 'error');
     }
@@ -11110,7 +11114,7 @@ async function loadDocs() {
       </ol>
       <h3>B. Missed Call → Auto Callback</h3>
       <ol>
-        <li>A caller dials your Auzora number and the call is missed.</li>
+        <li>A caller dials your Sonello number and the call is missed.</li>
         <li>The AI sends a follow-up SMS to the caller immediately.</li>
         <li>If auto-callback is enabled, the AI calls back within business hours.</li>
       </ol>
@@ -11133,6 +11137,7 @@ async function loadDocs() {
       <hr style="margin:24px 0;border:none;border-top:1px solid var(--border);">
       <h2>Need Help?</h2>
       <p>Contact <a href="mailto:support@auzora.io" style="color:var(--accent);">support@auzora.io</a> for configuration changes or questions.</p>
+<!-- TODO(sonello): repoint after P1-8 mailboxes provisioned -->
     `;
   }
 }
@@ -11744,7 +11749,7 @@ async function exportLeads(format) {
     const a = document.createElement('a');
     a.href = url;
     const ext = format === 'json' ? 'json' : 'csv';
-    a.download = `auzora-leads-${Date.now()}.${ext}`;
+    a.download = `sonello-leads-${Date.now()}.${ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -12880,7 +12885,7 @@ async function loadWorkflows(page) {
   // cleared. Showing "Unable to load workflows" in this state is misleading —
   // the user should see the login screen, not a broken automations page.
   if (!portalToken) {
-    console.warn('[Auzora] loadWorkflows skipped — no portalToken (session expired or not restored)');
+    console.warn('[Sonello] loadWorkflows skipped — no portalToken (session expired or not restored)');
     container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Session expired. Please sign in again.</div>';
     return;
   }
@@ -12896,7 +12901,7 @@ async function loadWorkflows(page) {
     // 401 is handled by the global fetch interceptor (redirects to login).
     // Don't show "Unable to load workflows" — the user is being logged out.
     if (res.status === 401) {
-      console.warn('[Auzora] loadWorkflows received 401 — session expired, interceptor will redirect to login');
+      console.warn('[Sonello] loadWorkflows received 401 — session expired, interceptor will redirect to login');
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText || 'Failed to load workflows'}`);
@@ -12952,7 +12957,7 @@ async function loadWorkflows(page) {
       });
     })).join('');
   } catch (err) {
-    console.error('[Auzora] loadWorkflows failed:', { page, error: err.message, endpoint: `${API}/portal/workflows`, hasToken: !!portalToken });
+    console.error('[Sonello] loadWorkflows failed:', { page, error: err.message, endpoint: `${API}/portal/workflows`, hasToken: !!portalToken });
     container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Unable to load workflows. <a href="#" onclick="loadWorkflows('${page}');return false;" style="color:var(--accent);text-decoration:underline;">Retry</a></div>`;
   }
 }
@@ -12966,7 +12971,7 @@ async function toggleWorkflow(templateId, enable) {
     });
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
-      console.error('[Auzora] toggleWorkflow failed:', { templateId, endpoint, status: res.status, error: errBody.error });
+      console.error('[Sonello] toggleWorkflow failed:', { templateId, endpoint, status: res.status, error: errBody.error });
       alert(errBody.error || 'Failed to update workflow');
       return;
     }
@@ -12974,7 +12979,7 @@ async function toggleWorkflow(templateId, enable) {
     loadWorkflows('sms');
     loadWorkflows('ob');
   } catch (err) {
-    console.error('[Auzora] toggleWorkflow error:', { templateId, enable, error: err.message });
+    console.error('[Sonello] toggleWorkflow error:', { templateId, enable, error: err.message });
     alert('Error updating workflow: ' + err.message);
   }
 }
@@ -13120,7 +13125,7 @@ async function loadWorkflowParams(templateId) {
     wfParamCache[templateId] = data;
     renderWorkflowParams(templateId, data);
   } catch (err) {
-    console.error('[Auzora] loadWorkflowParams failed:', { templateId, error: err.message });
+    console.error('[Sonello] loadWorkflowParams failed:', { templateId, error: err.message });
     panel.innerHTML = `<div style="color:#ef4444;font-size:13px;">Unable to load settings: ${escapeHtmlAttr(err.message)}</div>`;
   }
 }
@@ -13894,7 +13899,7 @@ async function previewWorkflowParams(templateId, btn) {
 }
 
 async function resetWorkflowParams(templateId, btn) {
-  if (!confirm('Reset this workflow\'s wait times and message templates back to the Auzora defaults?')) return;
+  if (!confirm('Reset this workflow\'s wait times and message templates back to the Sonello defaults?')) return;
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = 'Resetting…'; btn.style.opacity = '0.6';
   try {
@@ -13954,7 +13959,7 @@ async function loadLeadAnalytics() {
       headers: { 'X-Portal-Token': portalToken },
     });
     if (res.status === 401) return;
-    if (!res.ok) { console.error('[Auzora] Lead analytics fetch failed', res.status); return; }
+    if (!res.ok) { console.error('[Sonello] Lead analytics fetch failed', res.status); return; }
     const data = await res.json();
 
     // Stat cards
@@ -14017,7 +14022,7 @@ async function loadLeadAnalytics() {
       }).join('');
     }
   } catch (e) {
-    console.error('[Auzora] Lead analytics error:', e.message);
+    console.error('[Sonello] Lead analytics error:', e.message);
   }
 }
 
@@ -14481,7 +14486,7 @@ async function loadConversations() {
     const data = await res.json();
     const convs = data.conversations || [];
     if (!convs.length) {
-      listEl.innerHTML = '<div class="empty">No active SMS conversations. When a lead texts your Auzora number, the conversation will appear here.</div>';
+      listEl.innerHTML = '<div class="empty">No active SMS conversations. When a lead texts your Sonello number, the conversation will appear here.</div>';
       return;
     }
     listEl.innerHTML = convs.map(c => {
