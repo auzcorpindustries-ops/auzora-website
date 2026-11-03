@@ -36,7 +36,7 @@ describe('payment-success.html SMS add-on handoff (PRICING-3)', () => {
   test('plan-checkout onboarding path is preserved', () => {
     expect(html).toContain('Your setup link is on its way');
     expect(html).toContain('What happens next');
-    expect(html).toContain('A setup link has been sent to <strong>Auzora</strong> at:');
+    expect(html).toContain('A setup link has been sent to <strong>Sonello</strong> at:');
   });
 
   test('checkout-session wiring unchanged (session_id param → /api/checkout-session)', () => {

@@ -49,7 +49,7 @@ Configured automatically when you set up Lead Intake on the **Integrations** tab
 
 ### B. Missed call → auto callback
 
-1. A caller dials your Auzora number and the call is missed (no-answer, busy or failed).
+1. A caller dials your Sonello number and the call is missed (no-answer, busy or failed).
 2. The AI sends a follow-up SMS to the caller immediately.
 3. If **auto-callback is enabled**, the AI waits a short delay (default 2 min), then calls back — within business hours only.
 4. Outside business hours the callback is rescheduled for the next hour and retried.

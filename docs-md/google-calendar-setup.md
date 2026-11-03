@@ -1,26 +1,26 @@
-# Google Calendar Setup for Atlas AI
+# Google Calendar Setup for Sonello
 
 Last updated: 2026-07-08
 
 ## TL;DR
 
-1. Share your Google Calendar with the Auzora service account.
-2. Set your working hours so Atlas knows when you are available.
-3. Add your holiday calendar so Atlas respects days off.
+1. Share your Google Calendar with the Sonello service account.
+2. Set your working hours so Sonello knows when you are available.
+3. Add your holiday calendar so Sonello respects days off.
 4. Test by booking a call and confirming the event appears.
 
 ## What you need
 
 - A Google account (personal Gmail or Google Workspace)
 - Your Google Calendar ID (found in calendar settings)
-- Access to the Auzora client portal to paste the Calendar ID
+- Access to the Sonello client portal to paste the Calendar ID
 
-## Step 1 — Share your calendar with Auzora
+## Step 1 — Share your calendar with Sonello
 
-Auzora writes appointments to your calendar using a Google Workspace service account with Domain-Wide Delegation. You must share your calendar with our Workspace user first.
+Sonello writes appointments to your calendar using a Google Workspace service account with Domain-Wide Delegation. You must share your calendar with our Workspace user first.
 
 1. Open [Google Calendar](https://calendar.google.com).
-2. In the left sidebar, find the calendar you want Auzora to use. Hover over it and click the **three-dot menu** → **Settings and sharing**.
+2. In the left sidebar, find the calendar you want Sonello to use. Hover over it and click the **three-dot menu** → **Settings and sharing**.
 3. Scroll to **Share with specific people or groups**.
 4. Click **Add people** and enter:
 
@@ -29,7 +29,7 @@ Auzora writes appointments to your calendar using a Google Workspace service acc
 5. Set the permission to **Make changes to events**.
 6. Click **Send**.
 
-> **IMPORTANT** Anything less than **Make changes to events** means Auzora can read your calendar but not book — appointments will silently fail to appear.
+> **IMPORTANT** Anything less than **Make changes to events** means Sonello can read your calendar but not book — appointments will silently fail to appear.
 
 ## Step 2 — Find your Calendar ID
 
@@ -37,11 +37,11 @@ Auzora writes appointments to your calendar using a Google Workspace service acc
 2. Copy the **Calendar ID**. It looks like one of these:
    - Your primary calendar: `yourname@gmail.com`
    - A secondary calendar: `abc123xyz@group.calendar.google.com`
-3. Paste this ID into the **Google Calendar ID** field in your [Auzora portal](https://auzora.io/portal).
+3. Paste this ID into the **Google Calendar ID** field in your [Sonello portal](https://sonello.ai/portal).
 
 ## Step 3 — Set your working hours
 
-Atlas AI uses your working hours to tell callers when appointments are available. Set these in Google Calendar so they stay in sync.
+Sonello uses your working hours to tell callers when appointments are available. Set these in Google Calendar so they stay in sync.
 
 1. Open [Google Calendar](https://calendar.google.com) → **Settings** (gear icon, top right).
 2. Click **General** → **Working hours & location**.
@@ -57,14 +57,14 @@ Atlas AI uses your working hours to tell callers when appointments are available
 | Saturday | Off or custom |
 | Sunday | Off |
 
-> Atlas AI reads your availability when scheduling. Keeping working hours accurate prevents appointments from being booked outside business hours.
+> Sonello reads your availability when scheduling. Keeping working hours accurate prevents appointments from being booked outside business hours.
 
 ## Step 4 — Set up free/busy status
 
-When Atlas checks if you are available, it reads whether time slots are marked **Free** or **Busy**.
+When Sonello checks if you are available, it reads whether time slots are marked **Free** or **Busy**.
 
-- **Busy** blocks are respected — Atlas will not schedule over them.
-- **Free** blocks are ignored — Atlas treats those slots as open.
+- **Busy** blocks are respected — Sonello will not schedule over them.
+- **Free** blocks are ignored — Sonello treats those slots as open.
 
 To mark an event as Busy:
 1. Open any existing event.
@@ -72,27 +72,27 @@ To mark an event as Busy:
 3. Find the **Status** dropdown (may be labeled **Free / Busy**).
 4. Select **Busy** and save.
 
-For recurring blocks (lunch, team standups, personal time) set them to **Busy** so Atlas never books over them.
+For recurring blocks (lunch, team standups, personal time) set them to **Busy** so Sonello never books over them.
 
 ## Step 5 — Add a holiday calendar
 
-Google provides pre-built holiday calendars for every country. Adding one ensures Atlas does not schedule appointments on public holidays.
+Google provides pre-built holiday calendars for every country. Adding one ensures Sonello does not schedule appointments on public holidays.
 
 1. In Google Calendar, click **Other calendars** (+) in the left sidebar.
 2. Select **Browse calendars of interest**.
 3. Click **Holidays** and choose your country (e.g. **Holidays in United States**).
 4. Click **Subscribe**. The calendar will appear in your sidebar.
 
-Holiday events are automatically marked **Busy** — Atlas will treat those days as unavailable.
+Holiday events are automatically marked **Busy** — Sonello will treat those days as unavailable.
 
 > **Tip:** If you observe holidays that differ from the standard list, block those days manually and mark them **Busy**.
 
 ## Step 6 — Verify the connection
 
-1. Log in to your [Auzora portal](https://auzora.io/portal).
+1. Log in to your [Sonello portal](https://sonello.ai/portal).
 2. Go to **Settings** → **Google Calendar**.
 3. Click **Verify Connection**. You should see a green checkmark.
-4. Make a test booking by calling your Atlas number.
+4. Make a test booking by calling your Sonello number.
 5. Confirm the event appears on your Google Calendar.
 
 ## Troubleshooting
@@ -101,7 +101,7 @@ Holiday events are automatically marked **Busy** — Atlas will treat those days
 |---|---|
 | Event not appearing | Re-check that `ahoward@auzora.io` is shared with **Make changes to events** permission |
 | Wrong calendar | Confirm the Calendar ID in the portal matches the calendar you shared |
-| Atlas booking outside business hours | Set working hours in Google Calendar (Step 3) and save |
+| Sonello booking outside business hours | Set working hours in Google Calendar (Step 3) and save |
 | Holidays not blocked | Subscribe to the holiday calendar (Step 5) and verify events show as Busy |
 | Verify connection fails | Double-check the Calendar ID — it is case-sensitive |
 
@@ -110,4 +110,4 @@ Holiday events are automatically marked **Busy** — Atlas will treat those days
 If you get stuck, reach out:
 
 - Email: [support@auzora.io](mailto:support@auzora.io)
-- Or use the chat on [auzora.io](https://auzora.io)
+- Or use the chat on [sonello.ai](https://sonello.ai)
