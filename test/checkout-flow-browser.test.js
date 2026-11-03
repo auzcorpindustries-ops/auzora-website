@@ -780,7 +780,7 @@ describeBrowser('checkout flow + payment outcome UI — browser-level spec (audi
       expect(state.spamNote).toBe('none');
       expect(state.emailClass).toBe('email-display');
       expect(state.emailText).toBe('owner@acme.test');
-      expect(state.emailLabel).toBe('The add-on was attached to <strong>Auzora</strong> account:');
+      expect(state.emailLabel).toBe('The add-on was attached to <strong>Sonello</strong> account:');
 
       // Exactly one lookup with the session id from the URL.
       expect(api.requestsTo('/api/checkout-session').length).toBe(1);
@@ -810,7 +810,7 @@ describeBrowser('checkout flow + payment outcome UI — browser-level spec (audi
       expect(state.h2).toContain('setup link');
       expect(state.nextSteps).not.toBe('none');
       expect(state.emailText).toBe('owner@acme.test');
-      expect(state.emailLabel).toBe('A setup link has been sent to <strong>Auzora</strong> at:');
+      expect(state.emailLabel).toBe('A setup link has been sent to <strong>Sonello</strong> at:');
     });
   });
 

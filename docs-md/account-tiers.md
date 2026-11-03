@@ -5,7 +5,7 @@ last_updated: 2026-09-01
 
 # Account tiers & plans
 
-Auzora offers three account tiers — **Starter**, **Pro**, and **Premium** — so you can match your AI receptionist's capabilities to your business needs. Every tier includes a dedicated AI phone line, 24/7 call answering, and full client portal access. Higher tiers add lead capture and outbound follow-up capabilities with expanded usage limits.
+Sonello offers three account tiers — **Starter**, **Pro**, and **Premium** — so you can match your AI receptionist's capabilities to your business needs. Every tier includes a dedicated AI phone line, 24/7 call answering, and full client portal access. Higher tiers add lead capture and outbound follow-up capabilities with expanded usage limits.
 
 ## TL;DR
 
@@ -35,7 +35,7 @@ Everything you need to stop missing calls and start booking more appointments au
 ### What's included
 
 - **Default AI voice (Liz)** — a calm, polished receptionist voice that answers every call
-- **One dedicated AI phone line** — your own Auzora number, provisioned automatically
+- **One dedicated AI phone line** — your own Sonello number, provisioned automatically
 - **24/7 call answering** — your AI agent picks up every call, day or night
 - **Calendar appointment booking** — callers can book appointments directly on your Google Calendar
 - **Custom greeting & FAQs** — your agent greets callers by your business name and answers common questions you define
@@ -74,14 +74,14 @@ Choose the Pro tier that fits your volume:
 
 ### How external CRM integration works
 
-1. A caller dials your Auzora number and speaks to your AI agent.
+1. A caller dials your Sonello number and speaks to your AI agent.
 2. During the conversation, the agent captures the caller's information (name, phone number, reason for calling, etc.).
 3. The lead data is sent to your external CRM in real time via a configured webhook endpoint.
 4. Your sales team picks up the lead in their existing workflow — no manual data entry, no switching tools.
 
 ### Supported integrations
 
-Your Auzora portal's **Integrations** tab lets you configure webhook endpoints for lead delivery. Leads are posted as JSON payloads to the URL you specify. Common integrations include HubSpot, Salesforce, Pipedrive, Zoho, and any system that accepts incoming webhooks.
+Your Sonello portal's **Integrations** tab lets you configure webhook endpoints for lead delivery. Leads are posted as JSON payloads to the URL you specify. Common integrations include HubSpot, Salesforce, Pipedrive, Zoho, and any system that accepts incoming webhooks.
 
 ### Who it's for
 
@@ -91,13 +91,13 @@ Growing businesses that already use a CRM and want their AI receptionist to feed
 
 ## Premium Plan
 
-Everything in Pro, plus Auzora's built-in lead capture CRM with bulk outbound campaigns.
+Everything in Pro, plus Sonello's built-in lead capture CRM with bulk outbound campaigns.
 
 ### What's included
 
 **Everything in Pro, plus:**
 
-- **Internal lead capture CRM** — every lead your AI agent captures is stored in your Auzora portal's built-in CRM, with full contact details, call history, and lead status — no external system required
+- **Internal lead capture CRM** — every lead your AI agent captures is stored in your Sonello portal's built-in CRM, with full contact details, call history, and lead status — no external system required
 - **Bulk SMS campaigns** — upload up to 200 leads per campaign with personalization fields
 - **Bulk call campaigns** — AI dials a lead list with custom script context
 - **Manual outbound calls** — Quick Call any number from the Outbound tab
@@ -115,7 +115,7 @@ Choose the Premium tier that fits your volume:
 
 ### How the internal CRM works
 
-1. A caller dials your Auzora number and speaks to your AI agent.
+1. A caller dials your Sonello number and speaks to your AI agent.
 2. The agent captures the caller's information and logs it as a lead in your portal's **Leads** tab.
 3. The lead receives an automatic follow-up SMS instantly — no business-hours check.
 4. Within your calling hours, the AI also places an outbound follow-up call to the lead.
@@ -146,7 +146,7 @@ Businesses that want a complete, hands-off lead management system — a built-in
 |---|---|---|---|
 | Caller info captured in call logs | ✓ | ✓ | ✓ |
 | Leads pushed to external CRM | — | ✓ | ✓ |
-| Leads stored in Auzora CRM | — | — | ✓ |
+| Leads stored in Sonello CRM | — | — | ✓ |
 | Auto follow-up SMS to new leads | — | ✓ | ✓ |
 | Auto follow-up calls to new leads | — | ✓ | ✓ |
 | Bulk SMS campaigns | — | — | ✓ |
@@ -176,7 +176,7 @@ No. The Pro plan works without an external CRM — you simply won't use the webh
 
 **What's the difference between Pro and Premium lead capture?**
 
-Pro pushes leads to an external CRM and includes AI follow-up calls and SMS. Premium adds Auzora's built-in CRM so leads are stored in your portal with full contact details, call history, and lead status — plus bulk SMS and call campaigns for re-engaging cold leads at scale.
+Pro pushes leads to an external CRM and includes AI follow-up calls and SMS. Premium adds Sonello's built-in CRM so leads are stored in your portal with full contact details, call history, and lead status — plus bulk SMS and call campaigns for re-engaging cold leads at scale.
 
 **Can I use both an external CRM and the internal CRM on Premium?**
 
