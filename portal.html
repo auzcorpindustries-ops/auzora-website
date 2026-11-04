@@ -6768,7 +6768,7 @@ function updateFormPreview() {
 // fragile </head> string-patching with stale-override bugs. Deleted.
 let _previewRendererLoading = null;
 function loadPreviewRenderer() {
-  if (window.AuzoraFormRenderer) return Promise.resolve();
+  if (window.SonelloFormRenderer) return Promise.resolve();
   if (_previewRendererLoading) return _previewRendererLoading;
   const s = document.createElement('script');
   s.src = API + '/js/form-renderer.js';
@@ -6787,7 +6787,7 @@ function renderFormPreview() {
   const s = currentForm.styling || {};
 
   loadPreviewRenderer().then(() => {
-    const R = window.AuzoraFormRenderer;
+    const R = window.SonelloFormRenderer;
     if (!R) throw new Error('renderer unavailable');
 
     // Render through the live renderer into a probe div, then inline the
