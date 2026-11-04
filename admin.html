@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/logo.png" />
-<title>Auzora Admin</title>
+<title>Sonello Admin</title>
 <style>
 /* ─────────────────────────────────────────────────────────────────────────────
-   AUZORA ADMIN — redesigned theme
+   SONELLO ADMIN — redesigned theme
    Drop-in replacement for the contents of <style> in admin.html.
    Every existing class / id / JS hook is preserved.
    ───────────────────────────────────────────────────────────────────────────── */
@@ -363,8 +363,8 @@ tr:hover td { background: var(--tint); }
 <!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
-    <img class="brand" src="/logo.png" alt="Auzora" />
-    <div class="auth-logo">Auzora</div>
+    <img class="brand" src="/logo.png" alt="Sonello" />
+    <div class="auth-logo">Sonello</div>
     <div class="auth-sub">Admin Portal</div>
     <input type="password" id="admin-pass" placeholder="Admin password" />
     <button class="btn-primary" onclick="login()">Sign In</button>
@@ -376,8 +376,8 @@ tr:hover td { background: var(--tint); }
 <div id="app">
   <nav class="sidebar">
     <div class="sidebar-logo">
-      <img src="/logo.png" alt="Auzora" />
-      <div>Auzora<span>Admin Portal</span></div>
+      <img src="/logo.png" alt="Sonello" />
+      <div>Sonello<span>Admin Portal</span></div>
     </div>
     <div class="sidebar-search">Search clients <kbd>⌘K</kbd></div>
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
@@ -435,7 +435,7 @@ tr:hover td { background: var(--tint); }
     <div class="page active" id="page-dashboard">
       <div class="page-header">
         <h1>Dashboard</h1>
-        <p>Overview of all Auzora clients</p>
+        <p>Overview of all Sonello clients</p>
       </div>
       <div class="stats-grid" id="stats-grid">
         <div class="stat-card"><div class="stat-label">Total Clients</div><div class="stat-value" id="stat-total">—</div></div>
@@ -530,7 +530,7 @@ tr:hover td { background: var(--tint); }
     <div class="page" id="page-costs">
       <div class="page-header">
         <h1>Cost Estimator</h1>
-        <p>Calculate Atlas AI costs and margins per client</p>
+        <p>Calculate Sonello costs and margins per client</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;">
@@ -657,12 +657,12 @@ tr:hover td { background: var(--tint); }
     <div class="page" id="page-persona">
       <div class="page-header">
         <h1>🎙️ Voice & Persona</h1>
-        <p>Configure your Atlas AI phone agent's voice, personality, and knowledge</p>
+        <p>Configure your Sonello phone agent's voice, personality, and knowledge</p>
       </div>
 
       <!-- Client selector -->
       <div class="table-card" style="padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
-        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">Atlas AI Client:</span>
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">Sonello Client:</span>
         <select id="persona-client-select" class="filter-select" style="min-width:240px;" onchange="loadPersonaClient()">
           <option value="">Loading...</option>
         </select>
