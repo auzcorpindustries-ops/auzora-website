@@ -5009,7 +5009,12 @@ async function openEmbedModal(formId) {
     const isPaused = form.status === 'paused';
     const embedToken = form.embed_token || '';
     const formName = escapeHtml(form.name || 'Untitled Form');
-    const baseUrl = 'https://atlas.6845165.xyz';
+    // Environment-correct embed origin: reuse the same hostname-derived API
+    // selection the portal itself uses (const API). The widget is served from
+    // the backend origin and calls the API same-origin, so a staging /
+    // netlify-preview portal must hand out staging snippets; a custom-domain
+    // portal keeps prod (byte-identical to the previous hardcode).
+    const baseUrl = API;
 
     const jsCode = `<!-- Sonello Form: ${form.name || 'Untitled Form'} -->
 <div id="atlas-form-${formId}"></div>
