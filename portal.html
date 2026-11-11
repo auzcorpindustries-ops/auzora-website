@@ -10639,6 +10639,12 @@ function copyLeadWebhookUrl() {
 let acDirty = false;
 let acAccessCodeVisible = false;
 let acAccessCode = '';
+// SEU-FOLLOWUP-UI: the login/session record strips access_code (server-side
+// sanitizeClient), so pre-regeneration the reveal must fetch the CURRENT code
+// from the owner surface GET /portal/account/access-code. Fetched lazily on
+// first Show, once per page load; the regenerate flow keeps setting
+// acAccessCode directly from its own response.
+let acAccessCodeFetched = false;
 const acNotifPrefs = [
   { key: 'email_new_lead', label: 'Email me when a new lead is captured' },
   { key: 'sms_new_lead', label: 'SMS me when a new lead is captured' },
@@ -10882,10 +10888,32 @@ async function saveProfile() {
   setTimeout(() => { status.textContent = ''; }, 3000);
 }
 
-function toggleAccessCodeVisibility() {
+async function toggleAccessCodeVisibility() {
   acAccessCodeVisible = !acAccessCodeVisible;
-  document.getElementById('ac-access-code').textContent = acAccessCodeVisible ? acAccessCode : '••••••••';
-  document.getElementById('ac-toggle-btn').textContent = acAccessCodeVisible ? 'Hide' : 'Show';
+  const codeEl = document.getElementById('ac-access-code');
+  const btn = document.getElementById('ac-toggle-btn');
+  if (acAccessCodeVisible && !acAccessCode && !acAccessCodeFetched) {
+    codeEl.textContent = 'Loading…';
+    try {
+      const res = await fetch(`${API}/portal/account/access-code`, {
+        headers: { 'X-Portal-Token': portalToken },
+      });
+      const data = await res.json();
+      if (res.ok && data.access_code) {
+        acAccessCode = data.access_code;
+      }
+    } catch (e) {
+      console.warn('[Sonello] access-code reveal fetch failed:', e.message);
+    }
+    acAccessCodeFetched = true;
+  }
+  if (!acAccessCodeVisible) {
+    codeEl.textContent = '••••••••';
+    btn.textContent = 'Show';
+  } else {
+    codeEl.textContent = acAccessCode || 'Unavailable';
+    btn.textContent = 'Hide';
+  }
 }
 
 async function regenerateAccessCode() {
