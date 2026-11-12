@@ -1227,8 +1227,10 @@ async function loadLiveCosts(forceRefresh) {
       cards.push(disabledCard('🤖', 'OpenAI', oa.reason));
     }
 
-    // ElevenLabs — DISABLED (ELE-4) — retired; removal ELE-6
-    /*
+    // ElevenLabs — RE-ENABLED (CV-3, zeus_1794504207719_52a3cee0): the card was
+    // retired under ELE-4; custom voice brings ElevenLabs back as an operator-
+    // managed surface, so the usage card is live again (costDashboard.js still
+    // serves data.elevenlabs, including the ELE-1 disabled+reason state).
     const el = data.elevenlabs;
     if (el.enabled) {
       const usedPct = parseFloat(el.usedPercent) || 0;
@@ -1251,7 +1253,6 @@ async function loadLiveCosts(forceRefresh) {
     } else {
       cards.push(disabledCard('🔊', 'ElevenLabs', el.reason));
     }
-    */
 
     // AWS
     const aws = data.aws;
@@ -1581,6 +1582,8 @@ async function openDetail(clientId) {
   loadClientEntitlements(clientId);
   // Load the ElevenLabs add-on override state for the toggle
   loadVoiceAddonState(clientId);
+  // Load the per-client custom-voice key state (CV-3 — masked status line)
+  loadCustomVoiceKeyState(clientId);
 
   document.getElementById('modal-body').innerHTML = `
     <div class="detail-grid">
@@ -1700,17 +1703,33 @@ async function openDetail(clientId) {
             </label>
           `).join('')}
         </div>
-        <!-- DISABLED (ELE-4) — ElevenLabs add-on control retired; removal ELE-6
-             Backend still accepts the PATCH field via ELE-3 allowlist entry -->
-        <!--
+        <!-- RE-ENABLED (CV-3, zeus_1794504207719_52a3cee0): the add-on toggle
+             was retired under ELE-4; custom voice re-arms it as the entitlement
+             gate for the portal's Custom Voice section. The PATCH allowlist
+             entry (ELE-3) is already live server-side. -->
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
             <input type="checkbox" id="edit-voice-addon-elevenlabs" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
             <span><strong>ElevenLabs voices add-on</strong> — $49/mo</span>
           </label>
-          <span style="font-size:12px;color:var(--muted);">Admin override: unlocks premium ElevenLabs voices for this client, bypassing the paywall.</span>
+          <span style="font-size:12px;color:var(--muted);">Admin override: unlocks the Custom Voice section (and premium ElevenLabs voices) for this client, bypassing the paywall.</span>
         </div>
-        -->
+        <!-- Per-client ElevenLabs API key provisioning (CV-3, OPERATOR-ONLY).
+             Writes to Secrets Manager atlas/<env>/custom_voice/<client_id>/<provider>
+             via PUT /admin/clients/:id/custom-voice-key. Saved independently of
+             "Save Changes". The client portal NEVER sees or enters a key. -->
+        <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">ElevenLabs API key <span style="font-weight:400;color:var(--muted);">(operator provisioning)</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Stored per client in Secrets Manager — never on the client record, never visible in the client portal. Saved independently of "Save Changes".</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="password" id="edit-cv-key" placeholder="sk_..." autocomplete="new-password" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;" />
+            <button type="button" id="edit-cv-key-eye" onclick="toggleCvKeyVisibility()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Show</button>
+            <button type="button" id="edit-cv-key-save" onclick="saveCustomVoiceKey()" style="background:var(--purple);border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;">Save key</button>
+            <button type="button" id="edit-cv-key-reveal" onclick="revealCustomVoiceKey()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Reveal current</button>
+          </div>
+          <div id="edit-cv-key-status" style="font-size:11px;color:var(--muted);margin-top:6px;">Loading key state…</div>
+          <div id="edit-cv-key-revealed" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--text);word-break:break-all;"></div>
+        </div>
       </div>
     </div>
   `;
@@ -1897,6 +1916,112 @@ async function loadVoiceAddonState(clientId) {
   }
 }
 
+// ── Per-client custom-voice key provisioning (CV-3, zeus_1794504207719_52a3cee0) ──
+// OPERATOR-ONLY surface: keys live in Secrets Manager
+// (atlas/<env>/custom_voice/<client_id>/<provider>) and are written/read via
+// PUT|GET /admin/clients/:id/custom-voice-key. The client portal never sees,
+// enters, or holds a key. The entry input is MASKED; the full value is shown
+// only through the explicit "Reveal current" action on this admin-only modal.
+// Key material is NEVER carried in the "Save Changes" PATCH — provisioning is
+// its own endpoint, its own button.
+
+function maskCvKey(key) {
+  if (!key) return '';
+  return key.length <= 10
+    ? key.slice(0, 2) + '••••••'
+    : key.slice(0, 6) + '••••••' + key.slice(-4);
+}
+
+function toggleCvKeyVisibility() {
+  const input = document.getElementById('edit-cv-key');
+  const eye = document.getElementById('edit-cv-key-eye');
+  if (!input || !eye) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  eye.textContent = show ? 'Hide' : 'Show';
+}
+
+async function loadCustomVoiceKeyState(clientId) {
+  const statusEl = document.getElementById('edit-cv-key-status');
+  const revealedEl = document.getElementById('edit-cv-key-revealed');
+  const inputEl = document.getElementById('edit-cv-key');
+  if (!statusEl) return;
+  if (inputEl) inputEl.value = '';
+  if (revealedEl) { revealedEl.style.display = 'none'; revealedEl.textContent = ''; }
+  try {
+    const res = await fetch(`${API}/clients/${encodeURIComponent(clientId)}/custom-voice-key`, {
+      headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
+    });
+    if (!res.ok) {
+      statusEl.textContent = 'Key state unavailable.';
+      return;
+    }
+    const data = await res.json();
+    statusEl.textContent = data.configured
+      ? `Configured — ${maskCvKey(data.key)} (${data.source || 'Secrets Manager'})`
+      : 'Not provisioned — custom voice stays inactive for this client until a key is saved.';
+  } catch (e) {
+    console.error('Failed to load custom-voice key state:', e);
+    statusEl.textContent = 'Key state unavailable.';
+  }
+}
+
+async function saveCustomVoiceKey() {
+  const inputEl = document.getElementById('edit-cv-key');
+  const btn = document.getElementById('edit-cv-key-save');
+  const statusEl = document.getElementById('edit-cv-key-status');
+  if (!inputEl || !editingClientId) return;
+  const apiKey = inputEl.value.trim();
+  if (!apiKey) { toast('Enter an API key first'); return; }
+  if (apiKey.length < 20 || apiKey.length > 200) { toast('API key must be 20-200 characters'); return; }
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const res = await fetch(`${API}/clients/${encodeURIComponent(editingClientId)}/custom-voice-key`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('atlas_admin_key') || '' },
+      body: JSON.stringify({ provider: 'elevenlabs', api_key: apiKey })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Save failed (${res.status})`);
+    if (inputEl) inputEl.value = '';
+    toast('Custom voice key saved');
+    await loadCustomVoiceKeyState(editingClientId);
+  } catch (e) {
+    toast('Key save failed: ' + e.message);
+    if (statusEl) statusEl.textContent = 'Save failed — key unchanged.';
+  }
+  if (btn) { btn.disabled = false; btn.textContent = original; }
+}
+
+async function revealCustomVoiceKey() {
+  const statusEl = document.getElementById('edit-cv-key-status');
+  const revealedEl = document.getElementById('edit-cv-key-revealed');
+  if (!revealedEl || !editingClientId) return;
+  const btn = document.getElementById('edit-cv-key-reveal');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const res = await fetch(`${API}/clients/${encodeURIComponent(editingClientId)}/custom-voice-key`, {
+      headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Fetch failed (${res.status})`);
+    if (data.configured) {
+      // Admin sees the FULL key here — the one operator surface that does.
+      revealedEl.textContent = data.key || '';
+      revealedEl.style.display = 'block';
+      if (statusEl) statusEl.textContent = `Configured — full key shown below (${data.source || 'Secrets Manager'})`;
+    } else {
+      revealedEl.textContent = 'No key provisioned for this client.';
+      revealedEl.style.display = 'block';
+    }
+  } catch (e) {
+    toast('Could not fetch key: ' + e.message);
+  }
+  if (btn) { btn.disabled = false; btn.textContent = original; }
+}
+
 async function saveClientEdit() {
   if (!editingClientId) return;
   const updates = {
@@ -1939,8 +2064,10 @@ async function saveClientEdit() {
     updates.entitlements_override = null;
   }
 
-  // ElevenLabs add-on override — DISABLED (ELE-4) — control retired; removal ELE-6
-  // Backend still accepts the PATCH field via ELE-3 allowlist entry
+  // ElevenLabs add-on override — RE-ENABLED (CV-3, zeus_1794504207719_52a3cee0):
+  // the toggle HTML is live again; this PATCH field (ELE-3 allowlist entry)
+  // gates the portal's Custom Voice section. NOTE: the API key itself is NOT
+  // part of this PATCH — it provisions through its own dedicated endpoint.
   const addonToggle = document.getElementById('edit-voice-addon-elevenlabs');
   if (addonToggle) updates.voice_addon_elevenlabs = addonToggle.checked;
 
