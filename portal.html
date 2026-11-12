@@ -733,6 +733,10 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
 /* Section headers + add-on notice span both columns inside the grid */
 .voice-grid > div[style*="grid-column:1/-1"] { margin-bottom: 2px; }
+/* Custom Voice (CV-3): when a custom voice is active the native grid stays
+   rendered but dimmed/disabled — the config survives, it just is not driving
+   calls until custom voice is switched off. */
+.voice-grid.cv-dim { opacity: .45; pointer-events: none; filter: grayscale(.35); }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
 .voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
 .voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
@@ -1374,6 +1378,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="collapsible-body">
+              <!-- Custom Voice (CV-3, zeus_1794504207719_52a3cee0): note shown
+                   while a custom voice is enabled — the native grid below stays
+                   visible but dimmed/disabled. -->
+              <div id="s-cv-grid-note" style="display:none;margin-bottom:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text);">
+                <strong>Custom voice active</strong> — your calls use your custom ElevenLabs voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.
+              </div>
               <div class="voice-grid" id="portal-voice-grid"></div>
             </div>
           </div>
@@ -1500,6 +1510,53 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <option value="moderate">Moderate — clear but natural</option>
                   <option value="strong">Strong — pronounced, never caricatured</option>
                 </select>
+              </div>
+
+              <!-- ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0) ──────────
+                   Entitlement-gated by voice_addon_elevenlabs ($49/mo):
+                     • entitled   → controls (enable, provider, voice id,
+                       test-voice, save);
+                     • not entitled → locked hint only (Call-a-Lead pattern).
+                   NO API key entry here — keys are OPERATOR-provisioned in the
+                   admin console (Secrets Manager) and are never entered, held,
+                   or echoed by the portal. The native voice grid above stays
+                   untouched while custom voice is off, and dims while it is on. -->
+              <div id="s-cv-block" style="display:none;">
+                <div style="border-top:1px solid var(--border);margin:16px 0 12px;"></div>
+
+                <!-- Entitled: live controls -->
+                <div id="s-cv-controls" style="display:none;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">
+                    <div style="font-size:14px;font-weight:700;">Custom Voice</div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                      <input type="checkbox" id="s-cv-enabled" onchange="onCustomVoiceToggle();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                      Enable
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>Provider</label>
+                    <select id="s-cv-provider" onchange="setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                      <option value="elevenlabs">ElevenLabs</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom:10px;">
+                    <label>Voice ID</label>
+                    <input type="text" id="s-cv-voice-id" placeholder="e.g. uMM5TEnpKKgD758knVJO" oninput="onCustomVoiceIdInput();setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;" />
+                    <div id="s-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">Your voice id from ElevenLabs (10-40 letters/numbers).</div>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button id="s-cv-preview-btn" onclick="playCustomVoicePreview()" disabled style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">&#9654; Test voice</button>
+                    <button id="s-cv-save-btn" onclick="saveCustomVoice()" style="background:linear-gradient(135deg,#3B82F6,#7C3AED);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;">Save custom voice</button>
+                    <span id="s-cv-status" style="font-size:11px;color:var(--muted);"></span>
+                  </div>
+                </div>
+
+                <!-- Not entitled: locked hint (mirrors the Call-a-Lead lock) -->
+                <div id="s-cv-locked" style="display:none;text-align:center;padding:14px 10px;">
+                  <div style="font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:6px;">Custom voices are a $49/mo add-on</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Bring your own ElevenLabs voice and your AI agent will answer every call with it — configured here once an operator provisions your account.</div>
+                  <a href="mailto:ahoward@auzora.io?subject=Custom%20Voice%20add-on%20inquiry" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;text-decoration:none;">Ask about Custom Voice</a>
+                </div>
               </div>
             </div>
           </div>
@@ -3950,6 +4007,10 @@ async function fetchEntitlements() {
     // (the card already rendered from the entitlements payload).
     loadSmsAddons();
     applyTierVisibility();
+    // Custom Voice (CV-3): re-apply the entitlement gate — a late or refreshed
+    // entitlements fetch must flip the section between controls and locked
+    // hint exactly like the nav gating above it.
+    applyCustomVoiceEntitlementGate();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
     // Check the grid itself, not just currentPortalVoiceId — the grid can be
     // rendered with no selection yet (currentPortalVoiceId === null), and a
@@ -8803,6 +8864,9 @@ async function loadSettings() {
   document.getElementById('s-lang').value = c.lang || 'en';
   accentConfig = c.accent || {};
   hydrateAccentControls();
+  // Custom Voice (CV-3): hydrate from the SAVED record (has_api_key projected)
+  // and sync the native-grid dim state to the saved enabled flag.
+  hydrateCustomVoiceControls();
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -9072,6 +9136,10 @@ function renderPortalVoiceGrid(selected) {
 // Selecting a voice also switches the active provider so saves persist the
 // matching provider alongside the voice id.
 function selectPortalVoice(id) {
+  // Custom Voice (CV-3): while a custom voice is active the native grid is
+  // dimmed/disabled — pointer-events are already off, this guards programmatic
+  // and stale-handler paths too. Disable custom voice first to switch back.
+  if (isCustomVoiceActive()) return;
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
   const voice = VOICES.find(v => v.id === id);
@@ -9465,6 +9533,186 @@ function buildAccentPayload() {
   };
 }
 
+// ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0) ─────────────────────────
+// Portal surface of the custom-voice feature: enable/disable + voice id only.
+// THE PORTAL NEVER SEES, ENTERS, OR HOLDS AN API KEY — keys are operator-
+// provisioned in the admin console (Secrets Manager, CV-1 binding decision);
+// server reads carry only has_api_key. Entitlement gate: voice_addon_elevenlabs
+// ($49/mo) — non-entitled clients get the locked hint, never the controls.
+// While custom voice is ENABLED (saved state), the native voice grid dims and
+// its selection path is guarded — the grid markup itself is untouched.
+
+const CV_VOICE_ID_RE = /^[a-zA-Z0-9]{10,40}$/; // mirrors customVoice/config.js
+
+function isCustomVoiceEntitled() {
+  return !!(portalTierVoices && portalTierVoices.elevenlabsAddon === true);
+}
+
+function isCustomVoiceActive() {
+  return !!(portalClient && portalClient.custom_voice
+    && portalClient.custom_voice.enabled === true);
+}
+
+// Called from fetchEntitlements() (and the init cache-restore path) so a late
+// entitlements fetch flips the section between controls and locked hint.
+function applyCustomVoiceEntitlementGate() {
+  const block = document.getElementById('s-cv-block');
+  if (!block) return;
+  const entitled = isCustomVoiceEntitled();
+  const controls = document.getElementById('s-cv-controls');
+  const locked = document.getElementById('s-cv-locked');
+  if (controls) controls.style.display = entitled ? '' : 'none';
+  if (locked) locked.style.display = entitled ? 'none' : '';
+  block.style.display = ''; // shell visible either way (controls or hint)
+}
+
+function onCustomVoiceToggle() {
+  const enabled = document.getElementById('s-cv-enabled').checked;
+  // Disabled toggle → config controls grayed out (save still carries the off).
+  ['s-cv-provider', 's-cv-voice-id'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !enabled;
+  });
+  const previewBtn = document.getElementById('s-cv-preview-btn');
+  if (previewBtn) previewBtn.disabled = !enabled;
+  const provider = document.getElementById('s-cv-provider');
+  if (provider && !provider.options.length) {
+    provider.innerHTML = '<option value="elevenlabs">ElevenLabs</option>';
+  }
+}
+
+function onCustomVoiceIdInput() {
+  const v = document.getElementById('s-cv-voice-id').value.trim();
+  const hint = document.getElementById('s-cv-voice-id-hint');
+  if (!hint) return;
+  if (!v) {
+    hint.textContent = 'Your voice id from ElevenLabs (10-40 letters/numbers).';
+    hint.style.color = 'var(--muted)';
+  } else if (!CV_VOICE_ID_RE.test(v)) {
+    hint.textContent = 'Invalid format — 10-40 letters/numbers, no spaces or dashes.';
+    hint.style.color = 'var(--red)';
+  } else {
+    hint.textContent = 'Valid voice id format.';
+    hint.style.color = 'var(--green)';
+  }
+}
+
+function updateCustomVoiceStatus() {
+  const el = document.getElementById('s-cv-status');
+  if (!el) return;
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  if (!cv) { el.textContent = ''; return; }
+  const keyPart = cv.has_api_key === true
+    ? 'key configured'
+    : (cv.has_api_key === false ? 'awaiting operator key' : '');
+  el.textContent = (cv.enabled === true ? 'Active' : 'Saved (off)') + (keyPart ? ' — ' + keyPart : '');
+}
+
+// Load-path hydration: reads the SAVED record (portalClient.custom_voice with
+// has_api_key) into the controls and syncs the native-grid dim state.
+function hydrateCustomVoiceControls() {
+  const enabledEl = document.getElementById('s-cv-enabled');
+  if (!enabledEl) return;
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  enabledEl.checked = !!(cv && cv.enabled === true);
+  const providerEl = document.getElementById('s-cv-provider');
+  if (providerEl) providerEl.value = (cv && cv.provider) || 'elevenlabs';
+  const voiceIdEl = document.getElementById('s-cv-voice-id');
+  if (voiceIdEl) voiceIdEl.value = (cv && cv.voice_id) || '';
+  onCustomVoiceToggle();
+  onCustomVoiceIdInput();
+  updateCustomVoiceStatus();
+  syncCustomVoiceGridState();
+}
+
+// Payload for BOTH save surfaces (section button + global Save and Apply).
+// Deliberately narrow: enabled + provider + voice_id. NO key field exists.
+function buildCustomVoicePayload() {
+  const voiceId = document.getElementById('s-cv-voice-id').value.trim();
+  const payload = {
+    enabled: document.getElementById('s-cv-enabled').checked,
+    provider: document.getElementById('s-cv-provider').value || 'elevenlabs',
+  };
+  if (voiceId) payload.voice_id = voiceId;
+  return payload;
+}
+
+// Section save: PATCHes ONLY custom_voice so it cannot clobber other settings
+// (the same normalization runs on the global Save and Apply payload).
+async function saveCustomVoice() {
+  if (!isCustomVoiceEntitled()) return;
+  const voiceId = document.getElementById('s-cv-voice-id').value.trim();
+  if (document.getElementById('s-cv-enabled').checked && !CV_VOICE_ID_RE.test(voiceId)) {
+    showToast('Enter a valid custom voice id (10-40 letters/numbers) before saving.', 'error');
+    return;
+  }
+  const btn = document.getElementById('s-cv-save-btn');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({ custom_voice: buildCustomVoicePayload() })
+    });
+    const data = await res.json();
+    if (res.ok && data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+      hydrateCustomVoiceControls();
+      showToast('Custom voice saved — live on next call ✓', 'success');
+    } else {
+      throw new Error(data.error || 'Save failed');
+    }
+  } catch (e) {
+    showToast('Custom voice save failed: ' + e.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = original; }
+}
+
+// Test voice: server-side synthesis of one short phrase with the configured
+// (or currently typed) voice id. Audits nothing, saves nothing, sends NO key.
+async function playCustomVoicePreview() {
+  if (!portalToken) return;
+  if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; activeAudio = null; }
+  const btn = document.getElementById('s-cv-preview-btn');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⋯'; }
+  try {
+    const voiceId = document.getElementById('s-cv-voice-id').value.trim();
+    const body = voiceId ? { voice_id: voiceId } : {};
+    const res = await fetch(`${API}/portal/custom-voice-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      let msg = `Preview failed (${res.status})`;
+      try { const err = await res.json(); if (err && err.error) msg = err.error; } catch (e) {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    activeAudio = audio;
+    if (btn) btn.textContent = '⏸';
+    audio.onended = () => { if (btn) { btn.textContent = original; btn.disabled = false; } activeAudio = null; URL.revokeObjectURL(audio.src); };
+    audio.play();
+  } catch (e) {
+    showToast(e.message, 'error');
+    if (btn) { btn.textContent = original; btn.disabled = !document.getElementById('s-cv-enabled').checked; }
+  }
+}
+
+// Native-grid dimming: visible-but-disabled while custom voice is enabled
+// (saved state — not merely the checkbox), untouched otherwise.
+function syncCustomVoiceGridState() {
+  const active = isCustomVoiceActive();
+  const grid = document.getElementById('portal-voice-grid');
+  if (grid) grid.classList.toggle('cv-dim', active);
+  const note = document.getElementById('s-cv-grid-note');
+  if (note) note.style.display = active ? '' : 'none';
+}
+
 async function saveSettings() {
   const btn = document.getElementById('floating-save-btn');
   if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
@@ -9528,6 +9776,9 @@ async function saveSettings() {
       speaking_pace:       document.getElementById('s-pace').value,
       lang:                document.getElementById('s-lang').value,
       accent:              buildAccentPayload(),
+      // Custom Voice (CV-3): only entitled clients carry the key in the
+      // global save — non-entitled saves never create a config on the record.
+      custom_voice:        isCustomVoiceEntitled() ? buildCustomVoicePayload() : undefined,
     };
 
     const res = await fetch(`${API}/portal/settings`, {
@@ -10616,6 +10867,7 @@ if (savedToken && savedClient) {
   const savedTierVoices = sessionStorage.getItem('atlas_tier_voices');
   if (savedTierVoices) { try { portalTierVoices = JSON.parse(savedTierVoices); } catch(e) {} }
   applyTierVisibility();
+  applyCustomVoiceEntitlementGate();
 }
 
 // ── LEAD WEBHOOK ─────────────────────────────────────────────────────────────
