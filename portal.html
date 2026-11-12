@@ -1472,9 +1472,9 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <option value="fast">Fast — concise &amp; snappy</option>
                 </select>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group">
                 <label>Language</label>
-                <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                <select id="s-lang" onchange="setDirty();updateAccentOptions()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
                   <option value="en">English</option>
                   <option value="es">Spanish</option>
                   <option value="fr">French</option>
@@ -1486,6 +1486,19 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <option value="ko">Korean</option>
                   <option value="ar">Arabic</option>
                   <option value="hi">Hindi</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label id="s-accent-label">Accent (English)</label>
+                <select id="s-accent" onchange="onAccentChange()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Accent Strength</label>
+                <select id="s-accent-strength" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="subtle">Subtle — light influence</option>
+                  <option value="moderate">Moderate — clear but natural</option>
+                  <option value="strong">Strong — pronounced, never caricatured</option>
                 </select>
               </div>
             </div>
@@ -8788,6 +8801,8 @@ async function loadSettings() {
   document.getElementById('s-tone').value = c.tone || 'friendly';
   document.getElementById('s-pace').value = c.speaking_pace || 'normal';
   document.getElementById('s-lang').value = c.lang || 'en';
+  accentConfig = c.accent || {};
+  updateAccentOptions();
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -9395,6 +9410,76 @@ function toggleFederalHoliday(i) {
 }
 
 // Save
+// ── Accent (zeus_1794443548526_a23930fd) ────────────────────────────────────
+// Fourth Tone & Style control. client.accent = { en:{variant,strength},
+// es:{variant,strength} }. The accent + strength selects always edit the
+// entry for the LANGUAGE currently selected in #s-lang; the stored config for
+// every other language rides through untouched on save. Missing accent for a
+// language = no key = the backend injects no accent instructions.
+let accentConfig = {};
+
+const ACCENT_OPTIONS = {
+  en: [
+    ['', 'None'],
+    ['neutral_american', 'Neutral American English'],
+    ['mexican_american', 'Mexican-American English'],
+  ],
+  es: [
+    ['', 'None'],
+    ['mexican_spanish', 'Mexican Spanish'],
+  ],
+};
+
+function updateAccentOptions() {
+  const lang = document.getElementById('s-lang').value;
+  const label = document.getElementById('s-accent-label');
+  const accentSel = document.getElementById('s-accent');
+  const strengthSel = document.getElementById('s-accent-strength');
+  const langName = { en: 'English', es: 'Spanish' }[lang];
+  if (!langName) {
+    // No accent catalog for this language: disable both controls.
+    label.textContent = 'Accent';
+    accentSel.innerHTML = '<option value="">No accent available for this language</option>';
+    accentSel.disabled = true;
+    strengthSel.disabled = true;
+    return;
+  }
+  label.textContent = 'Accent (' + langName + ')';
+  accentSel.disabled = false;
+  accentSel.innerHTML = ACCENT_OPTIONS[lang]
+    .map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('');
+  const cfg = (accentConfig && accentConfig[lang]) || {};
+  accentSel.value = ACCENT_OPTIONS[lang].some(([v]) => v === cfg.variant) ? cfg.variant : '';
+  strengthSel.disabled = !accentSel.value;
+  strengthSel.value = strengthSel.disabled ? 'moderate' : (cfg.strength || 'moderate');
+}
+
+function onAccentChange() {
+  setDirty();
+  document.getElementById('s-accent-strength').disabled =
+    !document.getElementById('s-accent').value;
+}
+
+function buildAccentPayload() {
+  const lang = document.getElementById('s-lang').value;
+  const out = {};
+  // Carry the stored config for every OTHER language through untouched.
+  for (const key of Object.keys(accentConfig || {})) {
+    if (key !== lang && accentConfig[key] && accentConfig[key].variant) {
+      out[key] = { variant: accentConfig[key].variant, strength: accentConfig[key].strength || 'moderate' };
+    }
+  }
+  const accentSel = document.getElementById('s-accent');
+  const variant = accentSel.disabled ? '' : accentSel.value;
+  if (variant) {
+    out[lang] = {
+      variant: variant,
+      strength: document.getElementById('s-accent-strength').value || 'moderate',
+    };
+  }
+  return out;
+}
+
 async function saveSettings() {
   const btn = document.getElementById('floating-save-btn');
   if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
@@ -9457,6 +9542,7 @@ async function saveSettings() {
       tone:                document.getElementById('s-tone').value,
       speaking_pace:       document.getElementById('s-pace').value,
       lang:                document.getElementById('s-lang').value,
+      accent:              buildAccentPayload(),
     };
 
     const res = await fetch(`${API}/portal/settings`, {
