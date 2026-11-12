@@ -1474,7 +1474,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               </div>
               <div class="form-group">
                 <label>Language</label>
-                <select id="s-lang" onchange="setDirty();updateAccentOptions()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
                   <option value="en">English</option>
                   <option value="es">Spanish</option>
                   <option value="fr">French</option>
@@ -1489,7 +1489,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 </select>
               </div>
               <div class="form-group">
-                <label id="s-accent-label">Accent (English)</label>
+                <label id="s-accent-label">Accent</label>
                 <select id="s-accent" onchange="onAccentChange()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
                 </select>
               </div>
@@ -8802,7 +8802,7 @@ async function loadSettings() {
   document.getElementById('s-pace').value = c.speaking_pace || 'normal';
   document.getElementById('s-lang').value = c.lang || 'en';
   accentConfig = c.accent || {};
-  updateAccentOptions();
+  hydrateAccentControls();
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -9410,46 +9410,42 @@ function toggleFederalHoliday(i) {
 }
 
 // Save
-// ── Accent (zeus_1794443548526_a23930fd) ────────────────────────────────────
-// Fourth Tone & Style control. client.accent = { en:{variant,strength},
-// es:{variant,strength} }. The accent + strength selects always edit the
-// entry for the LANGUAGE currently selected in #s-lang; the stored config for
-// every other language rides through untouched on save. Missing accent for a
-// language = no key = the backend injects no accent instructions.
+// ── Accent (zeus_1794454473455_8e725c38 — GLOBAL model) ─────────────────────
+// Fourth Tone & Style control. client.accent = { variant, strength } — a
+// SINGLE GLOBAL accent object. Accent and Language are INDEPENDENT controls:
+// changing #s-lang never resets, filters, or re-labels the accent options,
+// and changing the accent never touches the language. The selected accent
+// applies to whichever language the receptionist speaks — the backend emits
+// one global accent instruction and it is never tied to client.lang.
+// Legacy per-language records ({en:{...},es:{...}} from PR #835) migrate for
+// display with the same deterministic rule as the backend: the Spanish entry
+// wins when valid, else the English entry. Missing/None accent = {} = the
+// backend injects no accent instructions.
 let accentConfig = {};
 
-const ACCENT_OPTIONS = {
-  en: [
-    ['', 'None'],
-    ['neutral_american', 'Neutral American English'],
-    ['mexican_american', 'Mexican-American English'],
-  ],
-  es: [
-    ['', 'None'],
-    ['mexican_spanish', 'Mexican Spanish'],
-  ],
-};
+const ACCENT_OPTIONS = [
+  ['', 'None'],
+  ['neutral_american', 'Neutral American'],
+  ['mexican_american', 'Mexican-American'],
+  ['mexican_spanish', 'Mexican Spanish'],
+];
 
-function updateAccentOptions() {
-  const lang = document.getElementById('s-lang').value;
-  const label = document.getElementById('s-accent-label');
+function hydrateAccentControls() {
   const accentSel = document.getElementById('s-accent');
   const strengthSel = document.getElementById('s-accent-strength');
-  const langName = { en: 'English', es: 'Spanish' }[lang];
-  if (!langName) {
-    // No accent catalog for this language: disable both controls.
-    label.textContent = 'Accent';
-    accentSel.innerHTML = '<option value="">No accent available for this language</option>';
-    accentSel.disabled = true;
-    strengthSel.disabled = true;
-    return;
+  const validVariants = ACCENT_OPTIONS.map(([v]) => v);
+  let cfg = accentConfig && typeof accentConfig === 'object' && !Array.isArray(accentConfig)
+    ? accentConfig : {};
+  if (!validVariants.includes(cfg.variant)) {
+    // Legacy per-language record → closest single global value (es first).
+    const es = cfg.es && validVariants.includes(cfg.es.variant) ? cfg.es : null;
+    const en = cfg.en && validVariants.includes(cfg.en.variant) ? cfg.en : null;
+    cfg = es || en || {};
   }
-  label.textContent = 'Accent (' + langName + ')';
-  accentSel.disabled = false;
-  accentSel.innerHTML = ACCENT_OPTIONS[lang]
+  accentSel.innerHTML = ACCENT_OPTIONS
     .map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('');
-  const cfg = (accentConfig && accentConfig[lang]) || {};
-  accentSel.value = ACCENT_OPTIONS[lang].some(([v]) => v === cfg.variant) ? cfg.variant : '';
+  accentSel.disabled = false;
+  accentSel.value = validVariants.includes(cfg.variant) ? cfg.variant : '';
   strengthSel.disabled = !accentSel.value;
   strengthSel.value = strengthSel.disabled ? 'moderate' : (cfg.strength || 'moderate');
 }
@@ -9461,23 +9457,12 @@ function onAccentChange() {
 }
 
 function buildAccentPayload() {
-  const lang = document.getElementById('s-lang').value;
-  const out = {};
-  // Carry the stored config for every OTHER language through untouched.
-  for (const key of Object.keys(accentConfig || {})) {
-    if (key !== lang && accentConfig[key] && accentConfig[key].variant) {
-      out[key] = { variant: accentConfig[key].variant, strength: accentConfig[key].strength || 'moderate' };
-    }
-  }
-  const accentSel = document.getElementById('s-accent');
-  const variant = accentSel.disabled ? '' : accentSel.value;
-  if (variant) {
-    out[lang] = {
-      variant: variant,
-      strength: document.getElementById('s-accent-strength').value || 'moderate',
-    };
-  }
-  return out;
+  const variant = document.getElementById('s-accent').value;
+  if (!variant) return {};
+  return {
+    variant: variant,
+    strength: document.getElementById('s-accent-strength').value || 'moderate',
+  };
 }
 
 async function saveSettings() {
