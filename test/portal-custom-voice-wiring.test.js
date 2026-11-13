@@ -70,10 +70,15 @@ describe('CV-3: the Custom Voice section exists inside Tone & Style', () => {
     expect(cvIdx).toBeLessThan(callScriptIdx);
   });
 
-  test('provider dropdown offers exactly ElevenLabs for now', () => {
+  test('provider dropdown DISPLAYS the admin assignment (elevenlabs + openai) and stays disabled', () => {
+    // CV-GPTL (zeus_1794586049156_7ae0fd76): openai joins the dropdown as a
+    // display-only value — the provider is ADMIN-ASSIGNED, so the select must
+    // remain disabled on the portal surface.
     const section = cvSectionHtml();
     expect(section).toContain('<option value="elevenlabs">ElevenLabs</option>');
-    expect(section).not.toMatch(/<option value="(?!elevenlabs)/);
+    expect(section).toContain('<option value="openai">OpenAI GPT-Live</option>');
+    const selectTag = section.match(/<select id="s-cv-provider"[^>]*>/)[0];
+    expect(selectTag).toMatch(/\bdisabled\b/);
   });
 });
 
@@ -163,8 +168,10 @@ describe('CV-3: save/load round-trip', () => {
     // conflict-guard envelope key (zeus_1794558702500_c68613eb), not config.
     expect(body).toContain('custom_voice: buildCustomVoicePayload()');
     expect(body).toContain('base_config_rev: portalClient?.config_rev');
-    // shape gate before save: enabling without a valid voice id is blocked
-    expect(body).toContain('CV_VOICE_ID_RE.test(voiceId)');
+    // shape gate before save: enabling without a valid voice id is blocked.
+    // CV-GPTL: the gate is PER PROVIDER (cvVoiceIdValidForProvider resolves
+    // the admin-assigned provider from the disabled dropdown).
+    expect(body).toContain('cvVoiceIdValidForProvider(provider, voiceId)');
   });
 
   test('the global Save and Apply carries custom_voice only for entitled clients', () => {

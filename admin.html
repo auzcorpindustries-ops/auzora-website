@@ -1730,6 +1730,27 @@ async function openDetail(clientId) {
           <div id="edit-cv-key-status" style="font-size:11px;color:var(--muted);margin-top:6px;">Loading key state…</div>
           <div id="edit-cv-key-revealed" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--text);word-break:break-all;"></div>
         </div>
+        <!-- Per-client Custom Voice provider assignment (CV-GPTL, ticket
+             zeus_1794586049156_7ae0fd76). The admin selects the provider and
+             enters the client's custom Voice ID; the client portal can toggle
+             enable + edit the voice id but can NEVER change the provider
+             (admin-only rule). OpenAI GPT-Live needs NO per-client key — the
+             Voice ID is injected directly into the GPT-Live call session.
+             Saved with "Save Changes" via PATCH /admin/clients/:id
+             custom_voice; the server validates provider (allow-list) and the
+             per-provider voice-id shape and 400s on error. -->
+        <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Custom Voice provider <span style="font-weight:400;color:var(--muted);">(per-client assignment)</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Voice the AI answers this client's calls with. ElevenLabs requires the per-client key above; OpenAI GPT-Live uses the custom Voice ID directly in the call session (no key needed). Saved with "Save Changes".</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="edit-cv-provider" onchange="onAdminCvProviderChange()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+              <option value="elevenlabs">ElevenLabs</option>
+              <option value="openai">OpenAI GPT-Live</option>
+            </select>
+            <input type="text" id="edit-cv-voice-id" placeholder="Custom Voice ID" oninput="onAdminCvVoiceIdInput()" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;" />
+          </div>
+          <div id="edit-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        </div>
       </div>
     </div>
   `;
@@ -1898,22 +1919,88 @@ async function loadClientEntitlements(clientId) {
 }
 
 // Load the ElevenLabs add-on override state into the edit modal toggle.
-// DISABLED (ELE-4) — control retired; removal ELE-6
 // Reads the raw client record (snake_case field straight from DynamoDB via
 // GET /admin/clients), not the entitlements payload — the add-on is a
 // separate paid flag, not part of the tier entitlements matrix.
+// CV-GPTL (zeus_1794586049156_7ae0fd76): the SAME record hydrates the
+// Custom Voice provider assignment (provider + voice id) — the admin stores
+// custom_voice { provider, voice_id, enabled, settings? } per client; the
+// provider is ADMIN-ONLY (the portal never sets it).
+let adminCvStored = null; // the client's stored custom_voice object (null = hydration failed / none)
+
 async function loadVoiceAddonState(clientId) {
   try {
     const res = await fetch(`${API}/clients/${clientId}`, {
       headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
     });
-    if (!res.ok) return;
+    if (!res.ok) { adminCvStored = null; return; }
     const client = await res.json();
     const el = document.getElementById('edit-voice-addon-elevenlabs');
     if (el) el.checked = client.voice_addon_elevenlabs === true;
+    // Custom Voice provider assignment hydration (CV-GPTL).
+    adminCvStored = client.custom_voice && typeof client.custom_voice === 'object'
+      ? client.custom_voice
+      : null;
+    const providerEl = document.getElementById('edit-cv-provider');
+    const voiceIdEl = document.getElementById('edit-cv-voice-id');
+    if (providerEl) providerEl.value = (adminCvStored && adminCvStored.provider) || 'elevenlabs';
+    if (voiceIdEl) voiceIdEl.value = (adminCvStored && adminCvStored.voice_id) || '';
+    onAdminCvProviderChange();
+    onAdminCvVoiceIdInput();
   } catch (e) {
     console.error('Failed to load ElevenLabs add-on state:', e);
+    adminCvStored = null;
   }
+}
+
+// ── Custom Voice provider assignment helpers (CV-GPTL, zeus_1794586049156_7ae0fd76)
+// Mirrors the server's per-provider voice-id shapes (customVoice/config.js):
+// elevenlabs keeps its 10-40 alphanumeric gate; openai is permissive
+// printable ASCII (provisional until OpenAI's custom-voice id format is
+// confirmed). The hint is guidance — the server 400s are authoritative.
+const ADMIN_CV_VOICE_ID_RE = {
+  elevenlabs: /^[a-zA-Z0-9]{10,40}$/,
+  openai: /^[!-~]{1,200}$/,
+};
+
+function onAdminCvProviderChange() {
+  const providerEl = document.getElementById('edit-cv-provider');
+  const keyBox = document.getElementById('edit-cv-key');
+  const isEleven = !providerEl || providerEl.value === 'elevenlabs';
+  // The per-client key block is ElevenLabs-only: OpenAI GPT-Live rides the
+  // platform session auth, so there is nothing to provision for it.
+  if (keyBox) keyBox.disabled = !isEleven;
+  const keySaveBtn = document.getElementById('edit-cv-key-save');
+  if (keySaveBtn) keySaveBtn.disabled = !isEleven;
+  const keyRevealBtn = document.getElementById('edit-cv-key-reveal');
+  if (keyRevealBtn) keyRevealBtn.disabled = !isEleven;
+  onAdminCvVoiceIdInput();
+}
+
+function onAdminCvVoiceIdInput() {
+  const providerEl = document.getElementById('edit-cv-provider');
+  const inputEl = document.getElementById('edit-cv-voice-id');
+  const hint = document.getElementById('edit-cv-voice-id-hint');
+  if (!hint || !inputEl) return;
+  const provider = providerEl ? providerEl.value : 'elevenlabs';
+  const v = inputEl.value.trim();
+  if (!v) {
+    hint.textContent = provider === 'openai'
+      ? 'The client\u2019s OpenAI GPT-Live custom Voice ID (from their OpenAI account).'
+      : 'The client\u2019s ElevenLabs voice id (10-40 letters/numbers).';
+    hint.style.color = 'var(--muted)';
+    return;
+  }
+  const re = ADMIN_CV_VOICE_ID_RE[provider] || ADMIN_CV_VOICE_ID_RE.elevenlabs;
+  if (!re.test(v)) {
+    hint.textContent = provider === 'openai'
+      ? 'Invalid \u2014 1-200 printable characters, no spaces.'
+      : 'Invalid format \u2014 10-40 letters/numbers, no spaces or dashes.';
+    hint.style.color = 'var(--red)';
+    return;
+  }
+  hint.textContent = 'Valid voice id format.';
+  hint.style.color = 'var(--green)';
 }
 
 // ── Per-client custom-voice key provisioning (CV-3, zeus_1794504207719_52a3cee0) ──
@@ -2071,18 +2158,36 @@ async function saveClientEdit() {
   const addonToggle = document.getElementById('edit-voice-addon-elevenlabs');
   if (addonToggle) updates.voice_addon_elevenlabs = addonToggle.checked;
 
+  // Custom Voice provider assignment (CV-GPTL, zeus_1794586049156_7ae0fd76).
+  // Sent ONLY when the client record hydrated (adminCvStored !== null) — if
+  // the hydration fetch failed, this save must not clobber the stored
+  // custom_voice with empty defaults. The payload carries provider + voice_id;
+  // the server's admin-scope normalizer merges with the stored record, so
+  // enabled + settings survive untouched (provider is admin-only).
+  if (adminCvStored !== null) {
+    const cvProviderEl = document.getElementById('edit-cv-provider');
+    const cvVoiceIdEl = document.getElementById('edit-cv-voice-id');
+    updates.custom_voice = {
+      provider: cvProviderEl ? cvProviderEl.value : 'elevenlabs',
+      voice_id: cvVoiceIdEl ? cvVoiceIdEl.value.trim() : '',
+    };
+  }
+
   try {
     const res = await fetch(`${API}/clients/${editingClientId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('atlas_admin_key') || '' },
       body: JSON.stringify(updates)
     });
-    if (!res.ok) throw new Error('Update failed');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Update failed');
+    }
     closeModal();
     toast('Client updated');
     loadAll();
   } catch(e) {
-    toast('Failed to update', 'error');
+    toast(e.message === 'Update failed' ? 'Failed to update' : e.message, 'error');
   }
 }
 
