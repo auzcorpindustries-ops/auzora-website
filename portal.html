@@ -1382,7 +1382,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                    while a custom voice is enabled — the native grid below stays
                    visible but dimmed/disabled. -->
               <div id="s-cv-grid-note" style="display:none;margin-bottom:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text);">
-                <strong>Custom voice active</strong> — your calls use your custom ElevenLabs voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.
+                <strong>Custom voice active</strong> — your calls use your custom voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.
               </div>
               <div class="voice-grid" id="portal-voice-grid"></div>
             </div>
@@ -1535,8 +1535,14 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   </div>
                   <div class="form-group">
                     <label>Provider</label>
+                    <!-- Provider is ADMIN-ASSIGNED: the dropdown is disabled and
+                         only DISPLAYS the operator's assignment (CV-GPTL,
+                         zeus_1794586049156_7ae0fd76). A portal save can never
+                         set or change it — the server pins provider to the
+                         stored value on every portal write. -->
                     <select id="s-cv-provider" onchange="setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
                       <option value="elevenlabs">ElevenLabs</option>
+                      <option value="openai">OpenAI GPT-Live</option>
                     </select>
                   </div>
                   <div class="form-group" style="margin-bottom:10px;">
@@ -9571,7 +9577,22 @@ function buildAccentPayload() {
 // While custom voice is ENABLED (saved state), the native voice grid dims and
 // its selection path is guarded — the grid markup itself is untouched.
 
-const CV_VOICE_ID_RE = /^[a-zA-Z0-9]{10,40}$/; // mirrors customVoice/config.js
+const CV_VOICE_ID_RE = /^[a-zA-Z0-9]{10,40}$/; // mirrors customVoice/config.js (elevenlabs)
+// CV-GPTL (zeus_1794586049156_7ae0fd76): per-provider voice-id shapes. openai
+// is permissive printable ASCII — mirrors the server's OPENAI_VOICE_ID_RE
+// (provisional until OpenAI's custom-voice id format is confirmed).
+const CV_OPENAI_VOICE_ID_RE = /^[!-~]{1,200}$/;
+const CV_VOICE_ID_RE_BY_PROVIDER = { elevenlabs: CV_VOICE_ID_RE, openai: CV_OPENAI_VOICE_ID_RE };
+
+function cvProviderForSection() {
+  const el = document.getElementById('s-cv-provider');
+  return (el && el.value) || (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'elevenlabs';
+}
+
+function cvVoiceIdValidForProvider(provider, v) {
+  const re = CV_VOICE_ID_RE_BY_PROVIDER[String(provider || '').toLowerCase()];
+  return re ? re.test(v) : false;
+}
 
 function isCustomVoiceEntitled() {
   return !!(portalTierVoices && portalTierVoices.elevenlabsAddon === true);
@@ -9605,8 +9626,11 @@ function onCustomVoiceToggle() {
   const previewBtn = document.getElementById('s-cv-preview-btn');
   if (previewBtn) previewBtn.disabled = !enabled;
   const provider = document.getElementById('s-cv-provider');
-  if (provider && !provider.options.length) {
-    provider.innerHTML = '<option value="elevenlabs">ElevenLabs</option>';
+  if (provider && provider.options.length < 2) {
+    // Provider list DISPLAYS the admin's assignment only (disabled select —
+    // CV-GPTL: provider is admin-only; a portal save can never set it).
+    provider.innerHTML = '<option value="elevenlabs">ElevenLabs</option><option value="openai">OpenAI GPT-Live</option>';
+    provider.value = (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'elevenlabs';
   }
 }
 
@@ -9614,11 +9638,16 @@ function onCustomVoiceIdInput() {
   const v = document.getElementById('s-cv-voice-id').value.trim();
   const hint = document.getElementById('s-cv-voice-id-hint');
   if (!hint) return;
+  const provider = cvProviderForSection();
   if (!v) {
-    hint.textContent = 'Your voice id from ElevenLabs (10-40 letters/numbers).';
+    hint.textContent = provider === 'openai'
+      ? 'Your custom Voice ID from OpenAI GPT-Live.'
+      : 'Your voice id from ElevenLabs (10-40 letters/numbers).';
     hint.style.color = 'var(--muted)';
-  } else if (!CV_VOICE_ID_RE.test(v)) {
-    hint.textContent = 'Invalid format — 10-40 letters/numbers, no spaces or dashes.';
+  } else if (!cvVoiceIdValidForProvider(provider, v)) {
+    hint.textContent = provider === 'openai'
+      ? 'Invalid — 1-200 printable characters, no spaces.'
+      : 'Invalid format — 10-40 letters/numbers, no spaces or dashes.';
     hint.style.color = 'var(--red)';
   } else {
     hint.textContent = 'Valid voice id format.';
@@ -9671,8 +9700,14 @@ function buildCustomVoicePayload() {
 async function saveCustomVoice() {
   if (!isCustomVoiceEntitled()) return;
   const voiceId = document.getElementById('s-cv-voice-id').value.trim();
-  if (document.getElementById('s-cv-enabled').checked && !CV_VOICE_ID_RE.test(voiceId)) {
-    showToast('Enter a valid custom voice id (10-40 letters/numbers) before saving.', 'error');
+  // Provider-aware shape check (CV-GPTL): the dropdown is admin-assigned and
+  // disabled — this validates the voice id against whatever provider the
+  // operator assigned. The server re-validates both fields on every save.
+  const provider = cvProviderForSection();
+  if (document.getElementById('s-cv-enabled').checked && !cvVoiceIdValidForProvider(provider, voiceId)) {
+    showToast(provider === 'openai'
+      ? 'Enter a valid OpenAI GPT-Live custom Voice ID (1-200 printable characters) before saving.'
+      : 'Enter a valid custom voice id (10-40 letters/numbers) before saving.', 'error');
     return;
   }
   const btn = document.getElementById('s-cv-save-btn');
@@ -9747,12 +9782,19 @@ async function playCustomVoicePreview() {
 
 // Native-grid dimming: visible-but-disabled while custom voice is enabled
 // (saved state — not merely the checkbox), untouched otherwise.
+// CV-GPTL: the note text is provider-aware (labeling only — no new surface).
 function syncCustomVoiceGridState() {
   const active = isCustomVoiceActive();
   const grid = document.getElementById('portal-voice-grid');
   if (grid) grid.classList.toggle('cv-dim', active);
   const note = document.getElementById('s-cv-grid-note');
-  if (note) note.style.display = active ? '' : 'none';
+  if (note) {
+    const provider = portalClient && portalClient.custom_voice && portalClient.custom_voice.provider;
+    note.innerHTML = '<strong>Custom voice active</strong> — your calls use your custom '
+      + (provider === 'openai' ? 'OpenAI GPT-Live' : 'ElevenLabs')
+      + ' voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.';
+    note.style.display = active ? '' : 'none';
+  }
 }
 
 async function saveSettings() {
