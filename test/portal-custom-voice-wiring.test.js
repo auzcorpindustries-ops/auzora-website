@@ -158,7 +158,11 @@ describe('CV-3: save/load round-trip', () => {
     const body = fnBody('saveCustomVoice');
     expect(body).toContain('/portal/settings');
     expect(body).toContain("'PATCH'");
-    expect(body).toContain("JSON.stringify({ custom_voice: buildCustomVoicePayload() })");
+    // custom_voice stays the ONLY config field in the payload (single-field
+    // saves cannot clobber sibling sections). base_config_rev is the
+    // conflict-guard envelope key (zeus_1794558702500_c68613eb), not config.
+    expect(body).toContain('custom_voice: buildCustomVoicePayload()');
+    expect(body).toContain('base_config_rev: portalClient?.config_rev');
     // shape gate before save: enabling without a valid voice id is blocked
     expect(body).toContain('CV_VOICE_ID_RE.test(voiceId)');
   });
