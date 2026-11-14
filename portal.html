@@ -8889,8 +8889,18 @@ async function refreshClientSnapshot() {
     const res = await fetch(`${API}/portal/settings`, { headers: { 'x-portal-token': portalToken } });
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data.client) return null;
-    portalClient = data.client;
+    // GET /portal/settings answers with the FLAT sanitized client view (no
+    // {client: ...} wrapper). CVX-4 (ticket zeus_1794610535637_211b4258):
+    // this reader only accepted the wrapper shape, so the refresh was a
+    // silent no-op — the portal kept hydrating the LOGIN-time snapshot and
+    // never saw another writer's save (admin write, second tab) without a
+    // re-login, exactly the stale-render the persistence fix set out to
+    // kill. Accept both shapes defensively.
+    const fresh = data && data.client && typeof data.client === 'object'
+      ? data.client
+      : (data && !data.error && data.client_id ? data : null);
+    if (!fresh) return null;
+    portalClient = fresh;
     sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
     return portalClient;
   } catch (e) {
