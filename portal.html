@@ -4378,7 +4378,12 @@ function renderSmsAddonOptions(data) {
   const btn = document.getElementById('usage-sms-btn');
   const coming = document.getElementById('usage-sms-coming');
   if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
+  // STRIPE-1: the catalog now lists BOTH add-on families (kind 'sms' | 'voice').
+  // This dropdown sells SMS ONLY — the voice add-on carries smsMessages: null
+  // and must never render as "0 messages". A missing kind (old payload)
+  // defaults to sms for backward compatibility.
+  const addons = (Array.isArray(data.addons) ? data.addons : [])
+    .filter(a => (a.kind || 'sms') === 'sms');
   if (!addons.length) {
     select.innerHTML = '<option value="">Unavailable</option>';
     select.disabled = true;
@@ -4458,7 +4463,10 @@ function renderSmsChangeOptions(data, smsAddOn) {
   const btn = document.getElementById('usage-sms-change-btn');
   const coming = document.getElementById('usage-sms-change-coming');
   if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
+  // STRIPE-1: SMS tier changes move between SMS SKUs only — filter the voice
+  // family out (missing kind = sms on old payloads).
+  const addons = (Array.isArray(data.addons) ? data.addons : [])
+    .filter(a => (a.kind || 'sms') === 'sms');
   const currentSku = (smsAddOn && smsAddOn.sku) || null;
   if (!addons.length) {
     select.innerHTML = '<option value="">Unavailable</option>';

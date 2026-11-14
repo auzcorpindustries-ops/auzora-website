@@ -797,9 +797,16 @@
     //   - the SMS row is a BUNDLE OPTION only — the dropdown picks the SKU (or
     //     "plan only") and there is NO separate purchase button anywhere, so
     //     SMS-only signup is impossible from this page.
-    // paymentLinkUrl values + AZ_STRIPE_TEST_LINKS are retained ONLY as the
-    // documented rollback target and as the source of the mode gate; nothing
-    // navigates to them anymore.
+    // RETIRED HERE (STRIPE-1, zeus_1794689878110_d23f4a39): the SMS ADD-ON
+    // Payment Links are gone — paymentLinkUrl fields and the sms_* test-link
+    // entries are removed from this page entirely. A raw add-on link can
+    // create an add-on-only subscription outside the account-tied flow; every
+    // add-on purchase goes through the authenticated server flow now
+    // (POST /api/billing/signup-checkout bundle for NEW signups,
+    // POST /portal/billing/addons/checkout for existing clients).
+    // The BASE-PLAN links below REMAIN, deliberately: Payment Links stay a
+    // NEW base-plan acquisition channel + rollback target (owner decision,
+    // recorded on the STRIPE-1 PR).
     //
     // ── Stripe TEST mode on the develop deploy (BILL-1) ─────────────────────
     // netlify.toml injects window.STRIPE_LINK_MODE at build time ("test" on
@@ -810,13 +817,11 @@
     const AZ_STRIPE_LINK_MODE = 'STRIPE_LINK_MODE' in window
       ? String(window.STRIPE_LINK_MODE)
       : 'live';
+    // BASE-PLAN links only (NEW acquisitions). No add-on links — STRIPE-1.
     const AZ_STRIPE_TEST_LINKS = {
       basic: 'https://buy.stripe.com/test_8x2eV50JWgD80wE7Gg1ZS0d',
       standard: 'https://buy.stripe.com/test_9B66ozakwfz44MU3q01ZS0e',
       enterprise: 'https://buy.stripe.com/test_14A14fdwI86Cenuf8I1ZS0f',
-      sms_2500: 'https://buy.stripe.com/test_aFadR1boA5Yu93a4u41ZS0g',
-      sms_5000: 'https://buy.stripe.com/test_bJe8wH8cogD8djq8Kk1ZS0h',
-      sms_10000: 'https://buy.stripe.com/test_28EcMXakwfz45QY8Kk1ZS0i',
     };
     const AZ_SIGNUP_API_BASE = AZ_STRIPE_LINK_MODE === 'test'
       ? 'https://atlas-staging.6845165.xyz'
@@ -832,21 +837,21 @@
       enterprise: { name: 'Enterprise', priceLabel: '$899', minutes: '10,000 included voice minutes', paymentLinkUrl: 'https://buy.stripe.com/9B66ozakwfz44MU3q01ZS0e', monthlyUsd: 899 },
     };
     const SMS_ADDONS = {
+      // STRIPE-1: add-on payment links RETIRED — no payment-link field here.
+      // The SMS row is a BUNDLE OPTION of the composed signup checkout only.
       // FULLY ACTIVATED (Auzi, 2026-10-14) — see PLANS note above.
       linksEnabled: true,
-      sms_2500: { label: '2,500 messages — $25/mo', paymentLinkUrl: 'https://buy.stripe.com/14A14fdwI86Cenuf8I1ZS0f', monthlyUsd: 25 },
-      sms_5000: { label: '5,000 messages — $50/mo', paymentLinkUrl: 'https://buy.stripe.com/aFadR1boA5Yu93a4u41ZS0g', monthlyUsd: 50 },
-      sms_10000: { label: '10,000 messages — $100/mo', paymentLinkUrl: 'https://buy.stripe.com/bJe8wH8cogD8djq8Kk1ZS0h', monthlyUsd: 100 },
+      sms_2500: { label: '2,500 messages — $25/mo', monthlyUsd: 25 },
+      sms_5000: { label: '5,000 messages — $50/mo', monthlyUsd: 50 },
+      sms_10000: { label: '10,000 messages — $100/mo', monthlyUsd: 100 },
     };
     // BILL-1 rollback machinery: on the develop deploy swap every link target
     // for its TEST-mode URL. Nothing renders these hrefs anymore — the map is
-    // kept so a rollback to payment links stays a one-line change.
+    // kept so a rollback of the BASE-plan acquisition path stays a one-line
+    // change. Add-ons have no links to roll back to (STRIPE-1 retirement).
     if (AZ_STRIPE_LINK_MODE === 'test') {
       for (const key of Object.keys(PLANS).filter(k => k !== 'linksEnabled')) {
         if (AZ_STRIPE_TEST_LINKS[key]) PLANS[key].paymentLinkUrl = AZ_STRIPE_TEST_LINKS[key];
-      }
-      for (const key of Object.keys(SMS_ADDONS).filter(k => k !== 'linksEnabled')) {
-        if (AZ_STRIPE_TEST_LINKS[key]) SMS_ADDONS[key].paymentLinkUrl = AZ_STRIPE_TEST_LINKS[key];
       }
     }
 
