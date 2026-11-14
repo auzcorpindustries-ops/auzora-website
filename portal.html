@@ -1512,17 +1512,35 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                 </select>
               </div>
 
-              <!-- ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0) ──────────
-                   Entitlement-gated by voice_addon_elevenlabs ($49/mo):
+              <!-- ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0;
+                   de-ElevenLabs CVX-3, zeus_1794610532814_36f2c999) ──────────
+                   Entitlement-gated by the Custom Voice add-on — the stored
+                   field stays voice_addon_elevenlabs ($49/mo, NOT renamed):
+                     • stored legacy-provider record → unsupported banner only
+                       (record shown read-only, never deleted; the server
+                       resolver already treats it inactive and calls use the
+                       native voice);
                      • entitled   → controls (enable, provider, voice id,
-                       test-voice, save);
+                       save);
                      • not entitled → locked hint only (Call-a-Lead pattern).
-                   NO API key entry here — keys are OPERATOR-provisioned in the
-                   admin console (Secrets Manager) and are never entered, held,
-                   or echoed by the portal. The native voice grid above stays
-                   untouched while custom voice is off, and dims while it is on. -->
+                   The provider is ADMIN-ASSIGNED and OpenAI-only — the
+                   dropdown stays disabled and display-only; a portal save can
+                   never set it. NO API key entry here — OpenAI GPT-Live needs
+                   no per-client key. There is no whole-utterance preview for
+                   a session_voice custom voice (the preview route was removed
+                   server-side in the core-removal ticket) — the voice is
+                   heard by placing a call. The native voice grid above stays
+                   untouched while custom voice is off, and dims while it is
+                   on. -->
               <div id="s-cv-block" style="display:none;">
                 <div style="border-top:1px solid var(--border);margin:16px 0 12px;"></div>
+
+                <!-- Stored legacy-provider record: explicit unsupported state
+                     (CVX-3). Banner + read-only stored voice id are filled by
+                     renderCustomVoiceUnsupportedState() via textContent — the
+                     stored record is preserved data this surface NEVER
+                     deletes or overwrites. -->
+                <div id="s-cv-unsupported" style="display:none;"></div>
 
                 <!-- Entitled: live controls -->
                 <div id="s-cv-controls" style="display:none;">
@@ -1536,31 +1554,31 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <div class="form-group">
                     <label>Provider</label>
                     <!-- Provider is ADMIN-ASSIGNED: the dropdown is disabled and
-                         only DISPLAYS the operator's assignment (CV-GPTL,
-                         zeus_1794586049156_7ae0fd76). A portal save can never
-                         set or change it — the server pins provider to the
-                         stored value on every portal write. -->
+                         only DISPLAYS the operator's assignment. OpenAI is the
+                         only assignable provider (CVX-3), so the list is fixed
+                         at one display-only option — a portal save can never
+                         set or change it (the server pins provider to the
+                         stored value on every portal write). -->
                     <select id="s-cv-provider" onchange="setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
-                      <option value="elevenlabs">ElevenLabs</option>
                       <option value="openai">OpenAI GPT-Live</option>
                     </select>
                   </div>
                   <div class="form-group" style="margin-bottom:10px;">
                     <label>Voice ID</label>
-                    <input type="text" id="s-cv-voice-id" placeholder="e.g. uMM5TEnpKKgD758knVJO" oninput="onCustomVoiceIdInput();setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;" />
-                    <div id="s-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">Your voice id from ElevenLabs (10-40 letters/numbers).</div>
+                    <input type="text" id="s-cv-voice-id" placeholder="e.g. my-openai-custom-voice" oninput="onCustomVoiceIdInput();setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;" />
+                    <div id="s-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">Your custom Voice ID from OpenAI GPT-Live (1-200 printable characters).</div>
                   </div>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                    <button id="s-cv-preview-btn" onclick="playCustomVoicePreview()" disabled style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">&#9654; Test voice</button>
                     <button id="s-cv-save-btn" onclick="saveCustomVoice()" style="background:linear-gradient(135deg,#3B82F6,#7C3AED);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;">Save custom voice</button>
                     <span id="s-cv-status" style="font-size:11px;color:var(--muted);"></span>
                   </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:6px;">Your custom voice speaks on live calls — place a test call to hear it.</div>
                 </div>
 
                 <!-- Not entitled: locked hint (mirrors the Call-a-Lead lock) -->
                 <div id="s-cv-locked" style="display:none;text-align:center;padding:14px 10px;">
                   <div style="font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:6px;">Custom voices are a $49/mo add-on</div>
-                  <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Bring your own ElevenLabs voice and your AI agent will answer every call with it — configured here once an operator provisions your account.</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Bring your own custom voice and your AI agent will answer every call with it — configured here once an operator provisions your account.</div>
                   <a href="mailto:ahoward@auzora.io?subject=Custom%20Voice%20add-on%20inquiry" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;text-decoration:none;">Ask about Custom Voice</a>
                 </div>
               </div>
@@ -3423,7 +3441,7 @@ async function loadVoices() {
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      provider: v.provider || 'elevenlabs',
+      provider: v.provider || 'openai',
       preview_url: v.preview_url,
       isDefault: v.is_default === true || v.isDefault === true,
       // PORTAL-VOICE: region/locale indicator + curated-grid membership.
@@ -3441,12 +3459,12 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (legacy Starter = default only)
 function isVoiceLocked(voiceId) {
-  // DISABLED (ELE-4) — ElevenLabs retired; OpenAI voices are included with every plan.
+  // DISABLED (ELE-4) + CVX-3: the catalog is OpenAI-only and OpenAI voices are
+  // included with every plan — nothing is locked anymore. Kept as a guard so
+  // a hypothetical non-OpenAI catalog entry stays unselectable.
   const voice = VOICES.find(v => v.id === voiceId);
   const provider = voice?.provider || 'openai';
-  if (provider === 'openai') return false; // OpenAI always selectable
-  // Legacy ElevenLabs voices: always treat as locked (cannot be selected)
-  return true;
+  return provider !== 'openai';
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -8954,7 +8972,7 @@ async function loadSettings() {
   // Shares ensureVoiceCatalog()'s cached promise with the dashboard agent card
   // so the catalog is fetched once per session, not once per page visit.
   ensureVoiceCatalog().then(() => {
-    // DISABLED (ELE-4) — default to OpenAI for all clients; legacy ElevenLabs voices render as unavailable
+    // ELE-4 + CVX-3: the catalog is OpenAI-only; the grid renders that set.
     currentVoiceProvider = 'openai';
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
@@ -9078,17 +9096,17 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  // DISABLED (ELE-4) — OpenAI voices only; ElevenLabs section removed; removal ELE-6.
-  // Legacy clients with ElevenLabs voices render them in the OpenAI grid with
-  // the current voice preserved but locked for new selection.
+  // CVX-3 (zeus_1794610532814_36f2c999): the catalog is OpenAI-only — the
+  // legacy provider was removed from voice-catalog.json server-side in the
+  // core-removal ticket, so the grid renders the OpenAI set only (the old
+  // unavailable-legacy-voices section is gone; a saved legacy-provider
+  // CUSTOM voice is a different surface — the unsupported state under it).
   const VG = window.VoiceGrid || { regionBadgeHtml: () => '', configuredVoiceSummary: () => '', escapeHtml: (s) => String(s == null ? '' : s), gridVoices: (v) => v };
   const openaiAllVoices = VOICES.filter(v => v.provider === 'openai');
-  const legacyElevenLabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
 
-  // Keep the selected highlight inside the client's saved provider when the
-  // saved voice is still selectable there. A saved-but-locked voice (legacy
-  // ElevenLabs) must NOT stay selected — saving it would 403, so the
-  // default voice becomes the active selection instead.
+  // Keep the selected highlight on the client's saved voice when it is still
+  // selectable. A saved-but-locked voice must NOT stay selected — saving it
+  // would 403, so the default voice becomes the active selection instead.
   let activeVoiceId = selected;
   if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) {
     // GPTL-3: retired OpenAI id (nova/onyx/fable) → its GPT-Live equivalent
@@ -9149,18 +9167,6 @@ function renderPortalVoiceGrid(selected) {
     html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
     html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
   }
-  // DISABLED (ELE-4) — ElevenLabs section hidden; removal ELE-6
-  // Legacy ElevenLabs voices are rendered in the OpenAI grid if they were the
-  // client's saved voice, to avoid breaking existing configurations.
-  if (legacyElevenLabsVoices.length > 0) {
-    // Only show legacy voices if they include the currently selected voice
-    const activeIsLegacy = activeVoiceId && legacyElevenLabsVoices.some(v => v.id === activeVoiceId);
-    if (activeIsLegacy) {
-      html += sectionHeader('Legacy Voices (Unavailable)', '<span style="font-size:11px;color:var(--red);font-weight:600;">No longer available</span>');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'female'), 'left');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'male'), 'right');
-    }
-  }
   if (!html) {
     html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
   }
@@ -9217,7 +9223,7 @@ async function playPortalVoice(id) {
     const res = await fetch(`${API}/portal/voice-preview`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ voice: id, provider: voice.provider || 'elevenlabs' })
+      body: JSON.stringify({ voice: id, provider: voice.provider || 'openai' })
     });
     if (!res.ok) throw new Error(`Preview failed (${res.status})`);
     const blob = await res.blob();
@@ -9568,69 +9574,122 @@ function buildAccentPayload() {
   };
 }
 
-// ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0) ─────────────────────────
+// ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0; de-ElevenLabs CVX-3,
+//    zeus_1794610532814_36f2c999) ─────────────────────────────────────────────
 // Portal surface of the custom-voice feature: enable/disable + voice id only.
-// THE PORTAL NEVER SEES, ENTERS, OR HOLDS AN API KEY — keys are operator-
-// provisioned in the admin console (Secrets Manager, CV-1 binding decision);
-// server reads carry only has_api_key. Entitlement gate: voice_addon_elevenlabs
-// ($49/mo) — non-entitled clients get the locked hint, never the controls.
-// While custom voice is ENABLED (saved state), the native voice grid dims and
-// its selection path is guarded — the grid markup itself is untouched.
+// THE PORTAL NEVER SEES, ENTERS, OR HOLDS AN API KEY — OpenAI GPT-Live (the
+// only supported provider) needs none: the Voice ID rides the platform call
+// session. Entitlement gate: the stored field voice_addon_elevenlabs ($49/mo,
+// NOT renamed) — non-entitled clients get the locked hint, never the controls.
+// CVX-3: a stored provider='elevenlabs' record renders the explicit
+// unsupported state — the server resolver already resolves it inactive
+// (reason 'provider_removed') and calls use the native voice. The stored
+// record is shown read-only and is NEVER deleted or overwritten by this
+// surface: every save path omits custom_voice while unsupported.
+// While a supported custom voice is ENABLED (saved state), the native voice
+// grid dims and its selection path is guarded — the grid markup itself is
+// untouched.
 
-const CV_VOICE_ID_RE = /^[a-zA-Z0-9]{10,40}$/; // mirrors customVoice/config.js (elevenlabs)
-// CV-GPTL (zeus_1794586049156_7ae0fd76): per-provider voice-id shapes. openai
-// is permissive printable ASCII — mirrors the server's OPENAI_VOICE_ID_RE
-// (provisional until OpenAI's custom-voice id format is confirmed).
+// CV-GPTL/CVX-3: openai is permissive printable ASCII — mirrors the server's
+// OPENAI_VOICE_ID_RE (provisional until OpenAI's custom-voice id format is
+// confirmed). It is the ONLY shape: the provider is admin-assigned and the
+// only assignable provider is OpenAI (1-200 printable chars).
 const CV_OPENAI_VOICE_ID_RE = /^[!-~]{1,200}$/;
-const CV_VOICE_ID_RE_BY_PROVIDER = { elevenlabs: CV_VOICE_ID_RE, openai: CV_OPENAI_VOICE_ID_RE };
+
+function cvVoiceIdValidForProvider(provider, v) {
+  // The provider argument survives for call-site clarity (the dropdown is
+  // admin-assigned); the only assignable provider is OpenAI, so there is a
+  // single voice-id shape. Anything else fails closed.
+  return String(provider || '').toLowerCase() === 'openai' && CV_OPENAI_VOICE_ID_RE.test(v);
+}
 
 function cvProviderForSection() {
   const el = document.getElementById('s-cv-provider');
-  return (el && el.value) || (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'elevenlabs';
-}
-
-function cvVoiceIdValidForProvider(provider, v) {
-  const re = CV_VOICE_ID_RE_BY_PROVIDER[String(provider || '').toLowerCase()];
-  return re ? re.test(v) : false;
+  return (el && el.value) || (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'openai';
 }
 
 function isCustomVoiceEntitled() {
   return !!(portalTierVoices && portalTierVoices.elevenlabsAddon === true);
 }
 
-function isCustomVoiceActive() {
-  return !!(portalClient && portalClient.custom_voice
-    && portalClient.custom_voice.enabled === true);
+// CVX-3: the stored record is a legacy-provider configuration the portal can
+// no longer serve. Detection ONLY — this surface never modifies the record.
+function isCustomVoiceUnsupported() {
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  return !!(cv && String(cv.provider || '').toLowerCase() === 'elevenlabs');
 }
 
-// Called from fetchEntitlements() (and the init cache-restore path) so a late
-// entitlements fetch flips the section between controls and locked hint.
+function isCustomVoiceActive() {
+  // Mirrors the server resolver: a custom voice is portal-active only when it
+  // is enabled AND its provider is supported. Stored legacy records resolve
+  // inactive server-side (reason 'provider_removed') — the portal must agree
+  // so the native voice grid stays live for those clients.
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  return !!(cv && cv.enabled === true
+    && String(cv.provider || '').toLowerCase() === 'openai');
+}
+
+// Called from fetchEntitlements() (and the init cache-restore path) and from
+// hydrateCustomVoiceControls() so a late entitlements fetch — or any client
+// snapshot refresh — flips the section between its three states:
+//   stored legacy record → unsupported banner (takes precedence);
+//   entitled             → live controls;
+//   otherwise            → locked hint.
 function applyCustomVoiceEntitlementGate() {
   const block = document.getElementById('s-cv-block');
   if (!block) return;
-  const entitled = isCustomVoiceEntitled();
   const controls = document.getElementById('s-cv-controls');
   const locked = document.getElementById('s-cv-locked');
-  if (controls) controls.style.display = entitled ? '' : 'none';
-  if (locked) locked.style.display = entitled ? 'none' : '';
-  block.style.display = ''; // shell visible either way (controls or hint)
+  const unsupported = document.getElementById('s-cv-unsupported');
+  if (isCustomVoiceUnsupported()) {
+    renderCustomVoiceUnsupportedState();
+    if (controls) controls.style.display = 'none';
+    if (locked) locked.style.display = 'none';
+    if (unsupported) unsupported.style.display = '';
+  } else {
+    if (unsupported) { unsupported.style.display = 'none'; unsupported.textContent = ''; }
+    const entitled = isCustomVoiceEntitled();
+    if (controls) controls.style.display = entitled ? '' : 'none';
+    if (locked) locked.style.display = entitled ? 'none' : '';
+  }
+  block.style.display = ''; // shell visible either way (banner, controls or hint)
+}
+
+// CVX-3: the unsupported banner for stored legacy-provider records. The
+// stored configuration is displayed READ-ONLY via textContent — never
+// interpolated into HTML, never prefilled into the editable input, and never
+// deleted. Same wording contract as the admin surface.
+function renderCustomVoiceUnsupportedState() {
+  const box = document.getElementById('s-cv-unsupported');
+  if (!box) return;
+  box.style.display = 'block';
+  box.textContent = '';
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  const notice = document.createElement('div');
+  notice.style.cssText = 'padding:8px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:6px;font-size:12px;';
+  notice.textContent = 'ElevenLabs is no longer supported \u2014 your calls use the native AI voice. Your saved configuration has not been deleted.';
+  const stored = document.createElement('div');
+  stored.style.cssText = 'font-size:11px;color:var(--muted);margin-top:4px;';
+  stored.textContent = 'Stored voice ID (read-only): ' + ((cv && cv.voice_id) || '(none)');
+  box.appendChild(notice);
+  box.appendChild(stored);
 }
 
 function onCustomVoiceToggle() {
   const enabled = document.getElementById('s-cv-enabled').checked;
   // Disabled toggle → config controls grayed out (save still carries the off).
-  ['s-cv-provider', 's-cv-voice-id'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = !enabled;
-  });
-  const previewBtn = document.getElementById('s-cv-preview-btn');
-  if (previewBtn) previewBtn.disabled = !enabled;
+  // The provider select is NOT in this list: it is admin-assigned and stays
+  // permanently disabled/display-only — a portal save can never set it.
+  const voiceIdEl = document.getElementById('s-cv-voice-id');
+  if (voiceIdEl) voiceIdEl.disabled = !enabled;
   const provider = document.getElementById('s-cv-provider');
-  if (provider && provider.options.length < 2) {
-    // Provider list DISPLAYS the admin's assignment only (disabled select —
-    // CV-GPTL: provider is admin-only; a portal save can never set it).
-    provider.innerHTML = '<option value="elevenlabs">ElevenLabs</option><option value="openai">OpenAI GPT-Live</option>';
-    provider.value = (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'elevenlabs';
+  if (provider) {
+    provider.disabled = true; // display-only, always
+    if (provider.options.length < 1) {
+      // OpenAI is the only assignable provider (CVX-3) — the list is fixed.
+      provider.innerHTML = '<option value="openai">OpenAI GPT-Live</option>';
+    }
+    provider.value = 'openai';
   }
 }
 
@@ -9638,16 +9697,13 @@ function onCustomVoiceIdInput() {
   const v = document.getElementById('s-cv-voice-id').value.trim();
   const hint = document.getElementById('s-cv-voice-id-hint');
   if (!hint) return;
-  const provider = cvProviderForSection();
+  // OpenAI is the only supported provider (CVX-3) — one shape, one set of
+  // hints (1-200 printable characters, mirroring the server rule).
   if (!v) {
-    hint.textContent = provider === 'openai'
-      ? 'Your custom Voice ID from OpenAI GPT-Live.'
-      : 'Your voice id from ElevenLabs (10-40 letters/numbers).';
+    hint.textContent = 'Your custom Voice ID from OpenAI GPT-Live.';
     hint.style.color = 'var(--muted)';
-  } else if (!cvVoiceIdValidForProvider(provider, v)) {
-    hint.textContent = provider === 'openai'
-      ? 'Invalid — 1-200 printable characters, no spaces.'
-      : 'Invalid format — 10-40 letters/numbers, no spaces or dashes.';
+  } else if (!cvVoiceIdValidForProvider('openai', v)) {
+    hint.textContent = 'Invalid \u2014 1-200 printable characters, no spaces.';
     hint.style.color = 'var(--red)';
   } else {
     hint.textContent = 'Valid voice id format.';
@@ -9659,7 +9715,8 @@ function updateCustomVoiceStatus() {
   const el = document.getElementById('s-cv-status');
   if (!el) return;
   const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
-  if (!cv) { el.textContent = ''; return; }
+  // CVX-3: unsupported records render the banner, not a status line.
+  if (!cv || isCustomVoiceUnsupported()) { el.textContent = ''; return; }
   const keyPart = cv.has_api_key === true
     ? 'key configured'
     : (cv.has_api_key === false ? 'awaiting operator key' : '');
@@ -9668,19 +9725,26 @@ function updateCustomVoiceStatus() {
 
 // Load-path hydration: reads the SAVED record (portalClient.custom_voice with
 // has_api_key) into the controls and syncs the native-grid dim state.
+// CVX-3: a stored legacy-provider record never checks the enable box and
+// never prefills the editable input — it renders the unsupported state
+// instead (the stored voice id is shown read-only in the banner).
 function hydrateCustomVoiceControls() {
   const enabledEl = document.getElementById('s-cv-enabled');
   if (!enabledEl) return;
+  const unsupported = isCustomVoiceUnsupported();
   const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
-  enabledEl.checked = !!(cv && cv.enabled === true);
+  enabledEl.checked = !!(cv && cv.enabled === true && !unsupported);
   const providerEl = document.getElementById('s-cv-provider');
-  if (providerEl) providerEl.value = (cv && cv.provider) || 'elevenlabs';
+  if (providerEl) providerEl.value = 'openai'; // display-only; OpenAI is the only provider (CVX-3)
   const voiceIdEl = document.getElementById('s-cv-voice-id');
-  if (voiceIdEl) voiceIdEl.value = (cv && cv.voice_id) || '';
+  if (voiceIdEl) voiceIdEl.value = (!unsupported && cv && cv.voice_id) || '';
   onCustomVoiceToggle();
   onCustomVoiceIdInput();
   updateCustomVoiceStatus();
   syncCustomVoiceGridState();
+  // Covers snapshot refreshes that land between entitlements fetches — keeps
+  // controls / locked hint / unsupported banner in sync with the record.
+  applyCustomVoiceEntitlementGate();
 }
 
 // Payload for BOTH save surfaces (section button + global Save and Apply).
@@ -9689,7 +9753,7 @@ function buildCustomVoicePayload() {
   const voiceId = document.getElementById('s-cv-voice-id').value.trim();
   const payload = {
     enabled: document.getElementById('s-cv-enabled').checked,
-    provider: document.getElementById('s-cv-provider').value || 'elevenlabs',
+    provider: document.getElementById('s-cv-provider').value || 'openai',
   };
   if (voiceId) payload.voice_id = voiceId;
   return payload;
@@ -9699,15 +9763,17 @@ function buildCustomVoicePayload() {
 // (the same normalization runs on the global Save and Apply payload).
 async function saveCustomVoice() {
   if (!isCustomVoiceEntitled()) return;
+  // CVX-3: a stored legacy-provider record is untouchable from the portal —
+  // the section renders the unsupported state (no live controls); this guard
+  // also blocks any stale-handler path from writing over the preserved record.
+  if (isCustomVoiceUnsupported()) return;
   const voiceId = document.getElementById('s-cv-voice-id').value.trim();
-  // Provider-aware shape check (CV-GPTL): the dropdown is admin-assigned and
-  // disabled — this validates the voice id against whatever provider the
-  // operator assigned. The server re-validates both fields on every save.
+  // Shape check before save: the only assignable provider is OpenAI, so the
+  // OpenAI rule (1-200 printable characters) is THE rule. The server
+  // re-validates both fields on every save.
   const provider = cvProviderForSection();
   if (document.getElementById('s-cv-enabled').checked && !cvVoiceIdValidForProvider(provider, voiceId)) {
-    showToast(provider === 'openai'
-      ? 'Enter a valid OpenAI GPT-Live custom Voice ID (1-200 printable characters) before saving.'
-      : 'Enter a valid custom voice id (10-40 letters/numbers) before saving.', 'error');
+    showToast('Enter a valid OpenAI GPT-Live custom Voice ID (1-200 printable characters) before saving.', 'error');
     return;
   }
   const btn = document.getElementById('s-cv-save-btn');
@@ -9747,52 +9813,25 @@ async function saveCustomVoice() {
   if (btn) { btn.disabled = false; btn.textContent = original; }
 }
 
-// Test voice: server-side synthesis of one short phrase with the configured
-// (or currently typed) voice id. Audits nothing, saves nothing, sends NO key.
-async function playCustomVoicePreview() {
-  if (!portalToken) return;
-  if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; activeAudio = null; }
-  const btn = document.getElementById('s-cv-preview-btn');
-  const original = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = '⋯'; }
-  try {
-    const voiceId = document.getElementById('s-cv-voice-id').value.trim();
-    const body = voiceId ? { voice_id: voiceId } : {};
-    const res = await fetch(`${API}/portal/custom-voice-preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      let msg = `Preview failed (${res.status})`;
-      try { const err = await res.json(); if (err && err.error) msg = err.error; } catch (e) {}
-      throw new Error(msg);
-    }
-    const blob = await res.blob();
-    const audio = new Audio(URL.createObjectURL(blob));
-    activeAudio = audio;
-    if (btn) btn.textContent = '⏸';
-    audio.onended = () => { if (btn) { btn.textContent = original; btn.disabled = false; } activeAudio = null; URL.revokeObjectURL(audio.src); };
-    audio.play();
-  } catch (e) {
-    showToast(e.message, 'error');
-    if (btn) { btn.textContent = original; btn.disabled = !document.getElementById('s-cv-enabled').checked; }
-  }
-}
+// CVX-3: the old "Test voice" button is GONE — the custom-voice preview
+// endpoint was removed server-side in the core-removal ticket (an OpenAI
+// session_voice custom voice has no whole-utterance preview surface; the
+// platform session speaks it natively on a live call). The section now says
+// so: "place a test call to hear it". No dead control remains.
 
-// Native-grid dimming: visible-but-disabled while custom voice is enabled
-// (saved state — not merely the checkbox), untouched otherwise.
-// CV-GPTL: the note text is provider-aware (labeling only — no new surface).
+// Native-grid dimming: visible-but-disabled while a supported custom voice is
+// enabled (saved state — not merely the checkbox), untouched otherwise.
+// CVX-3: only an OpenAI custom voice can be active (stored legacy records
+// resolve inactive, mirroring the server resolver), so the note names OpenAI.
 function syncCustomVoiceGridState() {
   const active = isCustomVoiceActive();
   const grid = document.getElementById('portal-voice-grid');
   if (grid) grid.classList.toggle('cv-dim', active);
   const note = document.getElementById('s-cv-grid-note');
   if (note) {
-    const provider = portalClient && portalClient.custom_voice && portalClient.custom_voice.provider;
-    note.innerHTML = '<strong>Custom voice active</strong> — your calls use your custom '
-      + (provider === 'openai' ? 'OpenAI GPT-Live' : 'ElevenLabs')
-      + ' voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.';
+    // OpenAI is the only supported custom-voice provider (CVX-3), so an
+    // active custom voice is always an OpenAI one.
+    note.innerHTML = '<strong>Custom voice active</strong> — your calls use your custom OpenAI GPT-Live voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.';
     note.style.display = active ? '' : 'none';
   }
 }
@@ -9860,9 +9899,11 @@ async function saveSettings() {
       speaking_pace:       document.getElementById('s-pace').value,
       lang:                document.getElementById('s-lang').value,
       accent:              buildAccentPayload(),
-      // Custom Voice (CV-3): only entitled clients carry the key in the
-      // global save — non-entitled saves never create a config on the record.
-      custom_voice:        isCustomVoiceEntitled() ? buildCustomVoicePayload() : undefined,
+      // Custom Voice (CV-3; CVX-3): only entitled clients with a SUPPORTED
+      // record carry the key in the global save — non-entitled saves never
+      // create a config, and a stored legacy-provider record is never
+      // touched (it would overwrite the preserved configuration).
+      custom_voice:        (isCustomVoiceEntitled() && !isCustomVoiceUnsupported()) ? buildCustomVoicePayload() : undefined,
       // Optimistic-concurrency (zeus_1794558702500_c68613eb): the rev this
       // page hydrated from. If another writer saved newer config in between,
       // the API 409s BEFORE writing and this save cannot silently revert it.
