@@ -79,16 +79,17 @@ describe('Sonello RB-4: secondary pages brand sweep', () => {
     expect(html).toContain('automation.6845165.xyz');
   });
 
-  test('legal pages: titles + footers are Sonello; legal-entity body copy untouched pending sign-off', () => {
+  test('legal pages: titles + footers + entity line are Sonello (owner sign-off 2026-11-15: Auzora -> Sonello in all three policy docs)', () => {
     expect(read('legal/privacy.html')).toContain('<title>Privacy Policy — Sonello</title>');
     expect(read('legal/terms.html')).toContain('<title>Terms of Service — Sonello</title>');
     expect(read('legal/ai-policy.html')).toContain('<title>AI & Telephony Policy — Sonello</title>');
     for (const f of ['legal/privacy.html', 'legal/terms.html', 'legal/ai-policy.html']) {
       expect(read(f)).toContain('© 2026 Sonello');
     }
-    // Entity-defining line keeps the legal name (flagged for owner confirmation
-    // in the PR body — do not guess).
-    expect(read('legal/privacy.html')).toContain('Auzora ("we," "us," or "our")');
+    // Owner sign-off received (2026-11-15): entity-defining line is now the
+    // Sonello brand — the RB-4 "do not guess" guard is retired.
+    expect(read('legal/privacy.html')).toContain('Sonello ("we," "us," or "our")');
+    expect(read('legal/privacy.html')).not.toContain('Auzora ("we," "us," or "our")');
   });
 
   const docsPages = [
