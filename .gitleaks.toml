@@ -1,0 +1,39 @@
+# SEC-3 gitleaks config (ticket zeus_1794883482942_887fa845)
+# Extends the default gitleaks ruleset with fleet + repo-specific patterns.
+# Historical findings baseline: docs/security/gitleaks-baseline.md
+[extend]
+useDefault = true
+
+# AWS access key ids (explicit shape beyond the default rule)
+[[rules]]
+id = "aws-access-key-id-custom"
+description = "AWS access key id"
+regex = "AKIA[0-9A-Z]{16}"
+tags = ["aws", "key", "AWS"]
+
+# AWS secret-access-key context: an assignment-looking value next to
+# "secret" + "key" words (catches renamed/env-var secret material)
+[[rules]]
+id = "aws-secret-context"
+description = "AWS secret access key context"
+regex = "(?i)(aws.{0,30}secret.{0,30}.{0,10}key.{0,30}[\\w-]{0,6}\\s*[:=][\\s'\"]{0,3}[A-Za-z0-9/+=]{40})"
+tags = ["aws", "secret", "AWS"]
+
+# zeus board API key — the FILENAME reference only, never its value
+[[rules]]
+id = "zeus-board-key-file"
+description = "zeus board API key file reference"
+path = "(?i)(zeus[_-]?api[_-]?key)"
+tags = ["zeus", "board"]
+
+# ---- historical-finding allowlists (commit+path pinned; values NOT listed) --
+
+[[allowlists]]
+description = "SEC-3 baseline: placeholder API key in portal embed-snippet browser test fixture (e123d865, d8cf1f4b)"
+commits = ["e123d865", "d8cf1f4b"]
+paths = ["(?i)portal-embed-snippet-hostname-browser\\.test\\.js$"]
+
+[[allowlists]]
+description = "SEC-3 baseline: widget config key in historical embeddable-widget index.html; widget since removed from page, key rotated during rebrand (cd5f8675, d21ca0ab)"
+commits = ["cd5f8675", "d21ca0ab"]
+paths = ["(?i)index\\.html$"]
