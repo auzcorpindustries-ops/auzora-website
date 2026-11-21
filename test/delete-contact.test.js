@@ -80,8 +80,10 @@ describe('portal.html Delete Contact — modal wiring', () => {
   test('Delete Contact uses the existing red-outline danger style', () => {
     const idx = script.indexOf("deleteContact('${lead.lead_id}')");
     const line = script.slice(idx, idx + 220);
-    expect(line).toContain('border:1px solid #ef444440');
-    expect(line).toContain('color:#ef4444');
+    // Sonello redesign: the danger pair is expressed with theme tokens
+    // (--red / --bad-*), so the outline follows light AND dark mode.
+    expect(line).toContain('border:1px solid rgba(156,59,47,.25)');
+    expect(line).toContain('color:var(--red)');
   });
 
   test('deleteContact is defined and its route targets /portal/leads/contact/:id', () => {

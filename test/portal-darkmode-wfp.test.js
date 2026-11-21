@@ -65,14 +65,14 @@ describe('portal theme tokens for the Customize panel', () => {
     for (const t of FIELD_TOKENS) expect(vars[t]).toBeTruthy();
     // Dark fills are dark, dark borders are light-on-dark — never the light hexes.
     expect(vars['--field']).not.toMatch(/#f7f8fa|#fff/i);
-    expect(vars['--field-border']).toMatch(/rgba\(255,\s*255,\s*255/);
+    expect(vars['--field-border']).toMatch(/rgba\(190,\s*235,\s*200/);
     expect(vars['--border-strong']).toMatch(/rgba\(255,\s*255,\s*255/);
   });
 
-  test('light mode is unchanged: tokens carry the exact hexes they replaced', () => {
+  test('light mode carries the Sonello Frequency field pair', () => {
     const vars = definedVars(rootBlock());
-    expect(vars['--field']).toBe('#f7f8fa');
-    expect(vars['--field-border']).toBe('rgba(16,24,38,0.14)');
+    expect(vars['--field']).toBe('rgba(255,255,255,.7)');
+    expect(vars['--field-border']).toBe('rgba(38,91,70,.22)');
     expect(vars['--border-strong']).toBe('rgba(16,24,38,0.18)');
   });
 
