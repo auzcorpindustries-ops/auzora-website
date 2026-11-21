@@ -3,252 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#FAFAF6" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <title>Get a Free Automation Audit · Sonello</title>
   <meta name="description" content="Tell us about your business and we'll map out exactly how automation can save you time and money. Free, no pressure." />
-  <link rel="stylesheet" href="styles.css" />
   <style>
-    /* ── Page-specific overrides ── */
-    .contact-hero {
-      min-height: 38vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 120px 24px 48px;
-      position: relative;
-    }
+  /* ============================================================
+     Sonello — Frequency design system (contact / free audit)
+     Self-contained: no external global sheet is loaded here.
+     ============================================================ */
+  :root{
+    --lowend:#0C1D1B; --under:#12332A; --carrier:#265B46; --pulse:#478C67;
+    --tint:#7CBC8B; --ground:#E3EFE6; --paper:#FAFAF6;
+    --card:#FFFFFF; --card2:#F3F7F3;
+    --ink:#0C1D1B; --mu:#4A5E57; --sub:#5B6E67;
+    --line:rgba(38,91,70,.12); --line2:rgba(38,91,70,.22);
+    --onDark:#E3EFE6; --onDarkMu:#A9BDB2;
+    --sweep:linear-gradient(135deg,#0C1D1B 0%,#265B46 60%,#7CBC8B 100%);
+    --font-display:'Outfit',system-ui,sans-serif;
+    --font-ui:'Hanken Grotesk',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+    --shadow:0 1px 2px rgba(12,29,27,.05),0 14px 34px rgba(12,29,27,.07);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:96px}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:var(--font-ui);font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:var(--font-display);font-weight:500;letter-spacing:-.02em;line-height:1.08}
+  a{color:inherit;text-decoration:none}
+  img,svg{max-width:100%}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+  textarea:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--carrier);outline-offset:2px;border-radius:6px;
+  }
 
-    .contact-hero .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(59,130,246,0.08);
-      border: 1px solid rgba(59,130,246,0.18);
-      border-radius: 999px;
-      padding: 6px 16px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #3b82f6;
-      margin-bottom: 24px;
-    }
+  /* ── nav (light) ─────────────────────────────────────────── */
+  .nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(250,250,246,.92);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    transition:box-shadow .2s ease;
+  }
+  .nav.scrolled{box-shadow:0 6px 24px rgba(12,29,27,.07)}
+  .nav-inner{
+    max-width:1200px;margin:0 auto;padding:0 40px;height:80px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+  }
+  .nav-logo{display:inline-flex;align-items:center;gap:10px;color:var(--ink)}
+  .nav-logo .logo-mark{display:block;color:var(--carrier);flex:none}
+  .logo-text{
+    font-family:var(--font-display);font-weight:300;font-size:25px;
+    letter-spacing:.01em;line-height:1;
+  }
+  .nav-links{display:flex;align-items:center;gap:30px;font-size:15px;font-weight:500;color:var(--mu)}
+  .nav-links a{padding:6px 0;transition:color .2s ease}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-cta{
+    display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 22px;
+    border-radius:999px;background:var(--carrier);border:1px solid var(--carrier);
+    color:#EAF3EC;font-size:15px;font-weight:600;transition:background .2s ease,border-color .2s ease;
+  }
+  .nav-cta:hover{background:#2E6B52;border-color:#2E6B52}
 
-    .contact-hero h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 16px;
-    }
+  /* ── two-column layout ───────────────────────────────────── */
+  .az-contact-grid{
+    max-width:1200px;margin:0 auto;padding:72px 40px 96px;
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,500px);
+    gap:72px;align-items:start;
+  }
 
-    .contact-hero p {
-      font-size: 1.1rem;
-      color: var(--text-dim);
-      max-width: 520px;
-    }
+  /* left column */
+  .contact-hero{
+    display:flex;flex-direction:column;align-items:flex-start;
+    text-align:left;padding:8px 0 0;min-height:0;position:static;
+  }
+  .contact-hero .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    background:var(--ground);border:1px solid rgba(38,91,70,.18);
+    border-radius:999px;padding:7px 15px;margin-bottom:26px;
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--carrier);
+  }
+  .contact-hero .badge svg{width:7px;height:7px;flex:none}
+  .contact-hero h1{
+    font-size:clamp(36px,4.4vw,60px);color:var(--ink);
+    margin-bottom:20px;text-wrap:balance;
+  }
+  .gradient-text{color:var(--carrier)}
+  .contact-hero p{font-size:17px;line-height:1.65;color:var(--mu);max-width:460px}
 
-    /* ── Form card ── */
-    .form-section {
-      max-width: 680px;
-      margin: 0 auto 100px;
-      padding: 0 24px;
-    }
+  .trust-strip{display:flex;flex-direction:column;gap:16px;margin-top:36px;align-items:flex-start}
+  .trust-item{
+    display:flex;align-items:center;gap:14px;
+    font-size:15px;font-weight:600;color:var(--ink);
+  }
+  .trust-item svg{
+    width:36px;height:36px;padding:9px;flex:none;
+    border-radius:10px;background:var(--ground);color:var(--carrier);
+    border:1px solid rgba(38,91,70,.14);
+  }
 
-    .form-card {
-      background: rgba(255,255,255,0.90);
-      border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06);
-      border-radius: 24px;
-      padding: 48px;
-      position: relative;
-      overflow: hidden;
-    }
+  /* right column — form card */
+  .form-section{max-width:none;margin:0;padding:0}
+  .form-card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:16px;padding:36px;box-shadow:var(--shadow);
+    position:relative;
+  }
+  .form-card::before{content:none}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .form-group{display:flex;flex-direction:column;gap:7px}
+  .form-group.full{grid-column:1/-1}
+  .form-group label{
+    font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--mu);font-weight:500;
+  }
+  .form-group input,.form-group select,.form-group textarea{
+    width:100%;background:var(--paper);border:1px solid var(--line2);
+    border-radius:10px;color:var(--ink);font-size:15px;
+    font-family:var(--font-ui);padding:12px 14px;min-height:44px;
+    transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+  }
+  .form-group input::placeholder,.form-group textarea::placeholder{color:var(--sub);opacity:1}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+    border-color:var(--carrier);background:#FFFFFF;
+    box-shadow:0 0 0 3px rgba(38,91,70,.12);
+  }
+  .form-group textarea{resize:vertical;min-height:120px}
+  .form-group select{
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%234A5E57' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:38px;
+  }
+  .submit-btn{
+    width:100%;margin-top:20px;height:48px;padding:0 28px;
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    border:none;border-radius:999px;background:var(--carrier);color:#EAF3EC;
+    font-family:var(--font-ui);font-size:16px;font-weight:600;letter-spacing:.01em;
+    cursor:pointer;transition:background .2s ease;
+  }
+  .submit-btn:hover{background:#2E6B52;transform:none}
+  .submit-btn:active{transform:none}
+  .submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
 
-    .form-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 24px;
-      padding: 1px;
-      background: linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899, #f97316, #ef4444);
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: 0.4;
-      pointer-events: none;
-    }
+  /* ── states ──────────────────────────────────────────────── */
+  .form-feedback{display:none;text-align:center;padding:40px 12px}
+  .form-feedback.visible{display:block}
+  .feedback-icon{font-size:2.4rem;margin-bottom:14px;line-height:1}
+  .feedback-title{font-family:var(--font-display);font-size:1.5rem;font-weight:500;margin-bottom:8px;color:var(--ink)}
+  .feedback-subtitle{color:var(--mu);font-size:.95rem}
+  .feedback-subtitle a{color:var(--carrier);text-decoration:underline;text-underline-offset:2px}
+  .form-body{transition:opacity .3s ease}
+  .form-body.hidden{opacity:0;pointer-events:none;display:none}
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
+  .spinner{
+    display:none;width:18px;height:18px;
+    border:2px solid rgba(255,255,255,.35);border-top-color:#FFFFFF;
+    border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;
+  }
+  .submit-btn.loading .btn-text{display:none}
+  .submit-btn.loading .spinner{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .form-group.full {
-      grid-column: 1 / -1;
-    }
-
-    .form-group label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-dim);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      background: rgba(255,255,255,0.94);
-      border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(24,33,47,0.06);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 0.95rem;
-      font-family: inherit;
-      padding: 13px 16px;
-      transition: border-color var(--transition), background var(--transition);
-      outline: none;
-      width: 100%;
-    }
-
-    .form-group input::placeholder,
-    .form-group textarea::placeholder {
-      color: rgba(95,104,122,0.45);
-    }
-
-    .form-group select option {
-      background: #ffffff;
-      color: var(--text);
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: rgba(59,130,246,0.25);
-      background: rgba(59,130,246,0.03);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 120px;
-    }
-
-    .submit-btn {
-      width: 100%;
-      margin-top: 12px;
-      padding: 16px 32px;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899, #f97316, #ef4444);
-      color: #fff;
-      cursor: pointer;
-      letter-spacing: 0.02em;
-      transition: opacity 0.2s, transform 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .submit-btn:hover {
-      opacity: 0.92;
-      transform: translateY(-1px);
-    }
-
-    .submit-btn:active {
-      transform: translateY(0);
-    }
-
-    .submit-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* ── Trust strip ── */
-    .trust-strip {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      margin-top: 28px;
-      flex-wrap: wrap;
-    }
-
-    .trust-item {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      font-weight: 500;
-    }
-
-    .trust-item svg {
-      color: #4ade80;
-      flex-shrink: 0;
-    }
-
-    /* ── Success / Error states ── */
-    .form-feedback {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    .form-feedback.visible {
-      display: block;
-    }
-
-    .feedback-icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
-    }
-
-    .feedback-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .feedback-subtitle {
-      color: var(--text-dim);
-      font-size: 0.95rem;
-    }
-
-    .form-body { transition: opacity 0.3s; }
-    .form-body.hidden { opacity: 0; pointer-events: none; display: none; }
-
-    /* ── Spinner ── */
-    .spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 0 auto;
-    }
-
-    .submit-btn.loading .btn-text { display: none; }
-    .submit-btn.loading .spinner { display: inline-block; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    @media (max-width: 600px) {
-      .form-card { padding: 28px 20px; }
-      .form-grid { grid-template-columns: 1fr; }
-      .form-group.full { grid-column: 1; }
-    }
-  </style>
+  /* ── responsive ──────────────────────────────────────────── */
+  @media (max-width:1024px){
+    .az-contact-grid{grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:44px;padding:56px 32px 80px}
+  }
+  @media (max-width:900px){
+    .az-contact-grid{grid-template-columns:1fr;gap:40px;padding:48px 28px 72px}
+    .contact-hero p{max-width:none}
+    .nav-inner{padding:0 24px}
+  }
+  @media (max-width:600px){
+    .nav-inner{flex-wrap:wrap;height:auto;padding:10px 20px;gap:10px 16px}
+    .nav-links{order:3;width:100%;justify-content:flex-start;gap:20px;font-size:14px}
+    .nav-links a{padding:9px 0}
+    .form-card{padding:26px 20px}
+    .form-grid{grid-template-columns:1fr}
+    .form-group.full{grid-column:1}
+  }
+  @media (max-width:390px){
+    .az-contact-grid{padding:36px 18px 64px}
+    .contact-hero h1{font-size:32px}
+    .nav-inner{padding:10px 18px}
+    .logo-text{font-size:22px}
+    .trust-item{font-size:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
+</style>
 </head>
 <body>
 
@@ -256,6 +207,13 @@
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="index.html" class="nav-logo">
+        <svg class="logo-mark" width="26" height="29" viewBox="0 0 34 38" fill="currentColor" aria-hidden="true" focusable="false">
+          <rect x="1.9" y="15" width="2.2" height="8" rx="1.1"/>
+          <rect x="8.9" y="8" width="2.2" height="22" rx="1.1"/>
+          <rect x="15.9" y="2" width="2.2" height="34" rx="1.1"/>
+          <rect x="22.9" y="6" width="2.2" height="26" rx="1.1"/>
+          <rect x="29.9" y="13" width="2.2" height="12" rx="1.1"/>
+        </svg>
         <span class="logo-text">Sonello</span>
       </a>
       <div class="nav-links">
@@ -267,6 +225,8 @@
     </div>
   </nav>
 
+  <main class="az-contact-grid">
+
   <!-- HERO -->
   <section class="contact-hero">
     <div class="badge">
@@ -275,6 +235,20 @@
     </div>
     <h1>Let's Build Your <br><span class="gradient-text">Automation Stack</span></h1>
     <p>Tell us about your business. We'll respond within a few hours with a custom plan — no sales pressure, just solutions.</p>
+<div class="trust-strip">
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Reply within a few hours
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            No spam, ever
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            100% free audit
+          </div>
+        </div>
   </section>
 
   <!-- FORM -->
@@ -292,7 +266,7 @@
       <div class="form-feedback" id="errorState">
         <div class="feedback-icon">⚠️</div>
         <div class="feedback-title">Something went wrong</div>
-        <div class="feedback-subtitle">Your submission didn't go through. Please email us directly at <a href="mailto:hello@auzora.io" style="color:#93c5fd">hello@auzora.io</a></div>
+        <div class="feedback-subtitle">Your submission didn't go through. Please email us directly at <a href="mailto:hello@auzora.io">hello@auzora.io</a></div>
       </div>
 
       <!-- Form body -->
@@ -347,24 +321,13 @@
           </button>
         </form>
 
-        <div class="trust-strip">
-          <div class="trust-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Reply within a few hours
-          </div>
-          <div class="trust-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            No spam, ever
-          </div>
-          <div class="trust-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            100% free audit
-          </div>
-        </div>
+        
       </div>
 
     </div>
   </section>
+
+  </main>
 
   <script>
     const WEBHOOK_URL = 'https://automation.6845165.xyz/webhook/new-lead';
@@ -382,7 +345,7 @@
       if (!name || !email || !message) {
         // Simple shake on required fields
         [document.getElementById('name'), document.getElementById('email'), document.getElementById('message')]
-          .forEach(el => { if (!el.value.trim()) el.style.borderColor = '#f87171'; });
+          .forEach(el => { if (!el.value.trim()) el.style.borderColor = '#9C3B2F'; });
         return;
       }
 

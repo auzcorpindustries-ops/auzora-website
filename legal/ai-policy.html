@@ -5,36 +5,185 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI & Telephony Policy — Sonello</title>
 <style>
-  :root { --bg:#ffffff;--surface:#ffffff;--border:rgba(16,24,38,0.08);--accent:#3b82f6;--text:#101826;--muted:#5f687a;--yellow:#f59e0b;--red:#ef4444; }
-  * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8; }
-  nav { display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:rgba(255,255,255,0.84);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter: blur(12px); }
-  .nav-logo { font-size:18px;font-weight:800;color:var(--accent);text-decoration:none; }
-  .nav-back { font-size:13px;color:var(--muted);text-decoration:none; }
-  .nav-back:hover { color:var(--text); }
-  .container { max-width:760px;margin:0 auto;padding:60px 24px 80px; }
-  .legal-header { margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--border); }
-  .legal-header h1 { font-size:32px;font-weight:800;margin-bottom:8px; }
-  .legal-header p { color:var(--muted);font-size:14px; }
-  h2 { font-size:18px;font-weight:700;margin:36px 0 12px;color:var(--accent); }
-  p, li { font-size:15px;color:#415065;margin-bottom:10px; }
-  ul { padding-left:24px;margin-bottom:10px; }
-  li { margin-bottom:6px; }
-  strong { color:var(--text); }
-  .highlight { background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.16);border-radius:10px;padding:16px 20px;margin:20px 0; }
-  .warning { background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:16px 20px;margin:20px 0; }
-  .warning strong { color:var(--yellow); }
-  footer { text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted); }
-  footer a { color:var(--accent);text-decoration:none; }
+/* Sonello — Frequency skin for the legal pages (privacy / terms / ai-policy).
+   One template, injected verbatim into each page's <style> block. */
+:root{
+  --lowend:#0C1D1B; --under:#12332A; --carrier:#265B46; --pulse:#478C67;
+  --tint:#7CBC8B; --ground:#E3EFE6; --paper:#FAFAF6;
+  --card:#FFFFFF; --card2:#F3F7F3;
+  --ink:#0C1D1B; --mu:#4A5E57; --sub:#5B6E67;
+  --line:rgba(38,91,70,.12); --line2:rgba(38,91,70,.22);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-ui:'Hanken Grotesk',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  /* kept so the inline style="color:var(--accent)" links stay on-brand */
+  --accent:#265B46; --text:#0C1D1B; --muted:#4A5E57; --border:rgba(38,91,70,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:96px}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--font-ui);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--carrier);outline-offset:2px;border-radius:6px;
+}
+
+/* ── nav + legal tab row ────────────────────────────────────────── */
+nav{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+  padding:14px 40px;position:sticky;top:0;z-index:10;
+  background:rgba(250,250,246,.92);border-bottom:1px solid var(--line);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.nav-logo{
+  display:inline-flex;align-items:center;gap:10px;flex-shrink:0;
+  font-family:var(--font-display);font-size:23px;font-weight:300;
+  letter-spacing:.01em;color:var(--ink);text-decoration:none;
+}
+.nav-logo::before{
+  content:"";width:19px;height:22px;flex:none;background:var(--carrier);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 38'%3E%3Cg fill='%23000'%3E%3Crect x='1.9' y='15' width='2.2' height='8' rx='1.1'/%3E%3Crect x='8.9' y='8' width='2.2' height='22' rx='1.1'/%3E%3Crect x='15.9' y='2' width='2.2' height='34' rx='1.1'/%3E%3Crect x='22.9' y='6' width='2.2' height='26' rx='1.1'/%3E%3Crect x='29.9' y='13' width='2.2' height='12' rx='1.1'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 38'%3E%3Cg fill='%23000'%3E%3Crect x='1.9' y='15' width='2.2' height='8' rx='1.1'/%3E%3Crect x='8.9' y='8' width='2.2' height='22' rx='1.1'/%3E%3Crect x='15.9' y='2' width='2.2' height='34' rx='1.1'/%3E%3Crect x='22.9' y='6' width='2.2' height='26' rx='1.1'/%3E%3Crect x='29.9' y='13' width='2.2' height='12' rx='1.1'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+}
+.legal-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-width:0}
+.legal-tab{
+  font-size:14.5px;font-weight:500;color:var(--mu);
+  border-radius:999px;padding:8px 14px;
+  transition:color .15s ease,background .15s ease;
+}
+.legal-tab:hover{color:var(--ink);background:var(--card2)}
+.legal-tab[aria-current="page"]{font-weight:600;color:var(--carrier);background:var(--ground)}
+.nav-back{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  font-size:13.5px;color:var(--mu);white-space:nowrap;
+  transition:color .15s ease;
+}
+.nav-back:hover{color:var(--ink)}
+
+/* ── reading column + contents rail ─────────────────────────────── */
+.container{
+  max-width:1040px;margin:0 auto;padding:56px 24px 88px;
+  display:grid;grid-template-columns:minmax(0,720px) 216px;
+  gap:0 56px;align-items:start;
+}
+.legal-doc{min-width:0;grid-column:1;grid-row:1}
+.legal-toc{position:sticky;top:88px;align-self:start;grid-column:2;grid-row:1}
+.legal-toc-title{
+  font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--sub);
+  padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);
+}
+.legal-toc nav{display:flex;flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:9px;position:static;padding:0;background:none;border:0;backdrop-filter:none}
+.legal-toc a{font-size:13.5px;line-height:1.45;color:var(--mu);transition:color .12s ease}
+.legal-toc a:hover{color:var(--carrier)}
+
+/* ── header ─────────────────────────────────────────────────────── */
+.legal-header{margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.legal-header h1{
+  font-family:var(--font-display);font-size:clamp(32px,3.6vw,44px);
+  font-weight:500;letter-spacing:-.02em;line-height:1.1;
+  color:var(--ink);margin-bottom:10px;
+}
+.legal-header p{color:var(--sub);font-size:13.5px;font-family:var(--font-mono);letter-spacing:.02em}
+
+/* ── body copy ──────────────────────────────────────────────────── */
+h2{
+  font-family:var(--font-display);font-size:23px;font-weight:500;
+  letter-spacing:-.015em;line-height:1.3;
+  margin:38px 0 12px;color:var(--carrier);scroll-margin-top:92px;
+}
+h3{
+  font-family:var(--font-ui);font-size:16.5px;font-weight:700;
+  color:var(--ink);margin:24px 0 8px;
+}
+p,li{font-size:16px;line-height:1.75;color:var(--mu);margin-bottom:10px;text-wrap:pretty}
+p:last-child{margin-bottom:0}
+ul,ol{padding-left:22px;margin-bottom:12px;display:flex;flex-direction:column;gap:6px}
+li{margin-bottom:0}
+strong{color:var(--ink);font-weight:700}
+a{color:var(--carrier);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--under)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+
+.highlight{
+  background:var(--ground);border:1px solid rgba(38,91,70,.22);
+  border-left:3px solid var(--carrier);
+  border-radius:0 12px 12px 0;padding:18px 22px;margin:22px 0;
+}
+.highlight p,.highlight li{font-size:15.5px;color:var(--mu)}
+.warning{
+  background:#F6DDD8;border:1px solid rgba(156,59,47,.28);
+  border-left:3px solid #9C3B2F;
+  border-radius:0 12px 12px 0;padding:18px 22px;margin:22px 0;
+}
+.warning p,.warning li{color:#6E2A21;font-size:15.5px}
+.warning strong{color:#9C3B2F}
+
+.provider-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  margin:18px 0;border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;font-size:15px;
+}
+.provider-table th{
+  background:var(--card2);text-align:left;
+  font-family:var(--font-mono);font-size:10.5px;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--mu);
+  padding:12px 16px;border-bottom:1px solid var(--line);
+}
+.provider-table td{
+  font-size:14.5px;padding:13px 16px;color:var(--mu);
+  border-bottom:1px solid var(--line);vertical-align:top;
+}
+.provider-table td:first-child{font-weight:600;color:var(--ink)}
+.provider-table tr:last-child td{border-bottom:none}
+
+footer{
+  text-align:center;padding:26px 24px;
+  border-top:1px solid var(--line);
+  font-size:13px;color:var(--sub);
+}
+footer a{color:var(--carrier);text-decoration:underline;text-underline-offset:2px}
+
+/* ── responsive ─────────────────────────────────────────────────── */
+@media (max-width:960px){
+  .container{grid-template-columns:minmax(0,1fr);gap:0;max-width:760px}
+  .legal-toc{display:none}
+}
+@media (max-width:600px){
+  nav{padding:12px 18px;gap:8px 12px}
+  .legal-tab{padding:7px 11px;font-size:13.5px}
+  .nav-back{font-size:13px}
+  .container{padding:36px 18px 64px}
+  .legal-header h1{font-size:30px}
+  h2{font-size:21px;margin-top:30px}
+  p,li{font-size:15.5px}
+  .provider-table{display:block;overflow-x:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
 </style>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
 </head>
 <body>
 <nav>
   <a href="/" class="nav-logo">Sonello</a>
+  <div class="legal-tabs">
+    <a href="/legal/privacy.html" class="legal-tab">Privacy</a>
+    <a href="/legal/terms.html" class="legal-tab">Terms</a>
+    <a href="/legal/ai-policy.html" class="legal-tab" aria-current="page">AI Policy</a>
+  </div>
   <a href="/" class="nav-back">← Back to site</a>
 </nav>
 
 <div class="container">
+<div class="legal-doc">
   <div class="legal-header">
     <h1>AI & Telephony Policy</h1>
     <p>Last updated: April 21, 2026 &nbsp;·&nbsp; Applies to all Atlas AI deployments</p>
@@ -44,7 +193,7 @@
     <strong>What this covers:</strong> How Atlas AI handles calls, what data is processed, what clients must disclose to callers, and how we comply with U.S. telephony laws.
   </div>
 
-  <h2>1. How Atlas AI Works</h2>
+  <h2 id="sec-1">1. How Atlas AI Works</h2>
   <p>Atlas AI is an AI-powered phone agent that answers inbound calls on behalf of businesses. When a caller dials a business's Atlas AI number:</p>
   <ul>
     <li>The call is routed through <strong>Twilio's</strong> telephony infrastructure</li>
@@ -54,7 +203,7 @@
     <li>Audio is <strong>not stored</strong> by Sonello after the call ends</li>
   </ul>
 
-  <h2>2. AI Disclosure Requirements</h2>
+  <h2 id="sec-2">2. AI Disclosure Requirements</h2>
 
   <div class="warning">
     <strong>⚠️ Client Responsibility:</strong> You are legally required to disclose to callers that they are speaking with an AI. Failure to do so may violate state and federal law.
@@ -73,7 +222,7 @@
   </div>
   <p>This is configurable in your client portal under Agent Settings → Custom Greeting.</p>
 
-  <h2>3. TCPA Compliance</h2>
+  <h2 id="sec-3">3. TCPA Compliance</h2>
   <p>The Telephone Consumer Protection Act governs automated calling and messaging. As a Sonello client:</p>
   <ul>
     <li>Atlas AI is configured for <strong>inbound calls only</strong> by default — callers are contacting you, not the reverse</li>
@@ -82,14 +231,14 @@
     <li>You must not use Atlas AI to contact numbers on the National Do Not Call Registry without proper authorization</li>
   </ul>
 
-  <h2>4. Call Recording and Audio Processing</h2>
+  <h2 id="sec-4">4. Call Recording and Audio Processing</h2>
   <ul>
     <li>Atlas AI does <strong>not record or store call audio</strong>. Audio is processed in real time and discarded after each response.</li>
     <li>Partial transcripts may be generated during the call to facilitate appointment booking. These are stored only when they contain booking information.</li>
     <li>If you add call recording features in the future, you must comply with all applicable one-party or two-party consent recording laws for your state and the caller's state.</li>
   </ul>
 
-  <h2>5. Caller Data Handling</h2>
+  <h2 id="sec-5">5. Caller Data Handling</h2>
   <p>Information collected by the AI agent (name, phone, service, appointment time) is:</p>
   <ul>
     <li>Stored securely in AWS DynamoDB (us-east-2)</li>
@@ -99,7 +248,7 @@
     <li>Retained per the data retention terms in our <a href="/legal/privacy.html" style="color:var(--accent);">Privacy Policy</a></li>
   </ul>
 
-  <h2>6. AI Limitations and Accuracy</h2>
+  <h2 id="sec-6">6. AI Limitations and Accuracy</h2>
   <p>Clients should be aware of the following limitations:</p>
   <ul>
     <li>The AI may occasionally misunderstand caller requests, especially with heavy accents, background noise, or unusual phrasing</li>
@@ -108,7 +257,7 @@
     <li>The AI operates only on information you provide in its configuration. It will not access external websites or databases on its own.</li>
   </ul>
 
-  <h2>7. Prohibited Uses</h2>
+  <h2 id="sec-7">7. Prohibited Uses</h2>
   <p>Clients may not use Atlas AI to:</p>
   <ul>
     <li>Conduct outbound robocalls or automated telemarketing without proper consent</li>
@@ -118,7 +267,7 @@
     <li>Violate any applicable consumer protection law</li>
   </ul>
 
-  <h2>8. Recommended Disclosures for Your Business</h2>
+  <h2 id="sec-8">8. Recommended Disclosures for Your Business</h2>
   <p>We recommend the following disclosures on your business website and marketing materials:</p>
   <ul>
     <li>A notice that your phone line is answered by an AI assistant</li>
@@ -126,12 +275,29 @@
     <li>An option for callers to request a human if needed (configurable via escalation rules)</li>
   </ul>
 
-  <h2>9. Updates</h2>
+  <h2 id="sec-9">9. Updates</h2>
   <p>AI and telephony law is evolving rapidly. We monitor regulatory changes and will update this policy and notify clients when significant changes affect how Atlas AI must operate. It is your responsibility to stay informed of laws applicable to your specific business and jurisdiction.</p>
 
-  <h2>10. Questions</h2>
+  <h2 id="sec-10">10. Questions</h2>
   <p>For questions about this policy, contact <a href="mailto:legal@auzora.io" style="color:var(--accent);">legal@auzora.io</a>.</p>
 
+</div>
+
+<aside class="legal-toc">
+  <div class="legal-toc-title">On this page</div>
+  <nav>
+    <a href="#sec-1">1. How Atlas AI Works</a>
+    <a href="#sec-2">2. AI Disclosure Requirements</a>
+    <a href="#sec-3">3. TCPA Compliance</a>
+    <a href="#sec-4">4. Call Recording and Audio Processing</a>
+    <a href="#sec-5">5. Caller Data Handling</a>
+    <a href="#sec-6">6. AI Limitations and Accuracy</a>
+    <a href="#sec-7">7. Prohibited Uses</a>
+    <a href="#sec-8">8. Recommended Disclosures for Your Business</a>
+    <a href="#sec-9">9. Updates</a>
+    <a href="#sec-10">10. Questions</a>
+  </nav>
+</aside>
 </div>
 
 <footer>

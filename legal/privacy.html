@@ -5,38 +5,185 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy — Sonello</title>
 <style>
-  :root { --bg:#ffffff;--surface:#ffffff;--border:rgba(16,24,38,0.08);--accent:#3b82f6;--text:#101826;--muted:#5f687a; }
-  * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.8; }
-  nav { display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:rgba(255,255,255,0.84);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;backdrop-filter: blur(12px); }
-  .nav-logo { font-size:18px;font-weight:800;color:var(--accent);text-decoration:none; }
-  .nav-back { font-size:13px;color:var(--muted);text-decoration:none; }
-  .nav-back:hover { color:var(--text); }
-  .container { max-width:760px;margin:0 auto;padding:60px 24px 80px; }
-  .legal-header { margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--border); }
-  .legal-header h1 { font-size:32px;font-weight:800;margin-bottom:8px; }
-  .legal-header p { color:var(--muted);font-size:14px; }
-  h2 { font-size:18px;font-weight:700;margin:36px 0 12px;color:var(--accent); }
-  p, li { font-size:15px;color:#415065;margin-bottom:10px; }
-  ul { padding-left:24px;margin-bottom:10px; }
-  li { margin-bottom:6px; }
-  strong { color:var(--text); }
-  .highlight { background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.16);border-radius:10px;padding:16px 20px;margin:20px 0; }
-  .provider-table { width:100%;border-collapse:collapse;margin:16px 0; }
-  .provider-table th { font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:10px 16px;text-align:left;border-bottom:1px solid var(--border); }
-  .provider-table td { font-size:13px;padding:12px 16px;border-bottom:1px solid var(--border);color:#cbd5e1; }
-  .provider-table tr:last-child td { border-bottom:none; }
-  footer { text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted); }
-  footer a { color:var(--accent);text-decoration:none; }
+/* Sonello — Frequency skin for the legal pages (privacy / terms / ai-policy).
+   One template, injected verbatim into each page's <style> block. */
+:root{
+  --lowend:#0C1D1B; --under:#12332A; --carrier:#265B46; --pulse:#478C67;
+  --tint:#7CBC8B; --ground:#E3EFE6; --paper:#FAFAF6;
+  --card:#FFFFFF; --card2:#F3F7F3;
+  --ink:#0C1D1B; --mu:#4A5E57; --sub:#5B6E67;
+  --line:rgba(38,91,70,.12); --line2:rgba(38,91,70,.22);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-ui:'Hanken Grotesk',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  /* kept so the inline style="color:var(--accent)" links stay on-brand */
+  --accent:#265B46; --text:#0C1D1B; --muted:#4A5E57; --border:rgba(38,91,70,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:96px}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--font-ui);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--carrier);outline-offset:2px;border-radius:6px;
+}
+
+/* ── nav + legal tab row ────────────────────────────────────────── */
+nav{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+  padding:14px 40px;position:sticky;top:0;z-index:10;
+  background:rgba(250,250,246,.92);border-bottom:1px solid var(--line);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.nav-logo{
+  display:inline-flex;align-items:center;gap:10px;flex-shrink:0;
+  font-family:var(--font-display);font-size:23px;font-weight:300;
+  letter-spacing:.01em;color:var(--ink);text-decoration:none;
+}
+.nav-logo::before{
+  content:"";width:19px;height:22px;flex:none;background:var(--carrier);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 38'%3E%3Cg fill='%23000'%3E%3Crect x='1.9' y='15' width='2.2' height='8' rx='1.1'/%3E%3Crect x='8.9' y='8' width='2.2' height='22' rx='1.1'/%3E%3Crect x='15.9' y='2' width='2.2' height='34' rx='1.1'/%3E%3Crect x='22.9' y='6' width='2.2' height='26' rx='1.1'/%3E%3Crect x='29.9' y='13' width='2.2' height='12' rx='1.1'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 38'%3E%3Cg fill='%23000'%3E%3Crect x='1.9' y='15' width='2.2' height='8' rx='1.1'/%3E%3Crect x='8.9' y='8' width='2.2' height='22' rx='1.1'/%3E%3Crect x='15.9' y='2' width='2.2' height='34' rx='1.1'/%3E%3Crect x='22.9' y='6' width='2.2' height='26' rx='1.1'/%3E%3Crect x='29.9' y='13' width='2.2' height='12' rx='1.1'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+}
+.legal-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-width:0}
+.legal-tab{
+  font-size:14.5px;font-weight:500;color:var(--mu);
+  border-radius:999px;padding:8px 14px;
+  transition:color .15s ease,background .15s ease;
+}
+.legal-tab:hover{color:var(--ink);background:var(--card2)}
+.legal-tab[aria-current="page"]{font-weight:600;color:var(--carrier);background:var(--ground)}
+.nav-back{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  font-size:13.5px;color:var(--mu);white-space:nowrap;
+  transition:color .15s ease;
+}
+.nav-back:hover{color:var(--ink)}
+
+/* ── reading column + contents rail ─────────────────────────────── */
+.container{
+  max-width:1040px;margin:0 auto;padding:56px 24px 88px;
+  display:grid;grid-template-columns:minmax(0,720px) 216px;
+  gap:0 56px;align-items:start;
+}
+.legal-doc{min-width:0;grid-column:1;grid-row:1}
+.legal-toc{position:sticky;top:88px;align-self:start;grid-column:2;grid-row:1}
+.legal-toc-title{
+  font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--sub);
+  padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);
+}
+.legal-toc nav{display:flex;flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:9px;position:static;padding:0;background:none;border:0;backdrop-filter:none}
+.legal-toc a{font-size:13.5px;line-height:1.45;color:var(--mu);transition:color .12s ease}
+.legal-toc a:hover{color:var(--carrier)}
+
+/* ── header ─────────────────────────────────────────────────────── */
+.legal-header{margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.legal-header h1{
+  font-family:var(--font-display);font-size:clamp(32px,3.6vw,44px);
+  font-weight:500;letter-spacing:-.02em;line-height:1.1;
+  color:var(--ink);margin-bottom:10px;
+}
+.legal-header p{color:var(--sub);font-size:13.5px;font-family:var(--font-mono);letter-spacing:.02em}
+
+/* ── body copy ──────────────────────────────────────────────────── */
+h2{
+  font-family:var(--font-display);font-size:23px;font-weight:500;
+  letter-spacing:-.015em;line-height:1.3;
+  margin:38px 0 12px;color:var(--carrier);scroll-margin-top:92px;
+}
+h3{
+  font-family:var(--font-ui);font-size:16.5px;font-weight:700;
+  color:var(--ink);margin:24px 0 8px;
+}
+p,li{font-size:16px;line-height:1.75;color:var(--mu);margin-bottom:10px;text-wrap:pretty}
+p:last-child{margin-bottom:0}
+ul,ol{padding-left:22px;margin-bottom:12px;display:flex;flex-direction:column;gap:6px}
+li{margin-bottom:0}
+strong{color:var(--ink);font-weight:700}
+a{color:var(--carrier);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--under)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+
+.highlight{
+  background:var(--ground);border:1px solid rgba(38,91,70,.22);
+  border-left:3px solid var(--carrier);
+  border-radius:0 12px 12px 0;padding:18px 22px;margin:22px 0;
+}
+.highlight p,.highlight li{font-size:15.5px;color:var(--mu)}
+.warning{
+  background:#F6DDD8;border:1px solid rgba(156,59,47,.28);
+  border-left:3px solid #9C3B2F;
+  border-radius:0 12px 12px 0;padding:18px 22px;margin:22px 0;
+}
+.warning p,.warning li{color:#6E2A21;font-size:15.5px}
+.warning strong{color:#9C3B2F}
+
+.provider-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  margin:18px 0;border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;font-size:15px;
+}
+.provider-table th{
+  background:var(--card2);text-align:left;
+  font-family:var(--font-mono);font-size:10.5px;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--mu);
+  padding:12px 16px;border-bottom:1px solid var(--line);
+}
+.provider-table td{
+  font-size:14.5px;padding:13px 16px;color:var(--mu);
+  border-bottom:1px solid var(--line);vertical-align:top;
+}
+.provider-table td:first-child{font-weight:600;color:var(--ink)}
+.provider-table tr:last-child td{border-bottom:none}
+
+footer{
+  text-align:center;padding:26px 24px;
+  border-top:1px solid var(--line);
+  font-size:13px;color:var(--sub);
+}
+footer a{color:var(--carrier);text-decoration:underline;text-underline-offset:2px}
+
+/* ── responsive ─────────────────────────────────────────────────── */
+@media (max-width:960px){
+  .container{grid-template-columns:minmax(0,1fr);gap:0;max-width:760px}
+  .legal-toc{display:none}
+}
+@media (max-width:600px){
+  nav{padding:12px 18px;gap:8px 12px}
+  .legal-tab{padding:7px 11px;font-size:13.5px}
+  .nav-back{font-size:13px}
+  .container{padding:36px 18px 64px}
+  .legal-header h1{font-size:30px}
+  h2{font-size:21px;margin-top:30px}
+  p,li{font-size:15.5px}
+  .provider-table{display:block;overflow-x:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
 </style>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
 </head>
 <body>
 <nav>
   <a href="/" class="nav-logo">Sonello</a>
+  <div class="legal-tabs">
+    <a href="/legal/privacy.html" class="legal-tab" aria-current="page">Privacy</a>
+    <a href="/legal/terms.html" class="legal-tab">Terms</a>
+    <a href="/legal/ai-policy.html" class="legal-tab">AI Policy</a>
+  </div>
   <a href="/" class="nav-back">← Back to site</a>
 </nav>
 
 <div class="container">
+<div class="legal-doc">
   <div class="legal-header">
     <h1>Privacy Policy</h1>
     <p>Last updated: July 26, 2026 &nbsp;·&nbsp; Applies to auzora.io and all Sonello services</p>
@@ -46,11 +193,11 @@
     <strong>Short version:</strong> We collect only what's needed to run our services. We don't sell your data. Call data from Atlas AI belongs to you. We use trusted third parties (OpenAI, Twilio, AWS) to deliver our services.
   </div>
 
-  <h2>1. Who We Are</h2>
+  <h2 id="sec-1">1. Who We Are</h2>
   <p>Sonello ("we," "us," or "our") provides AI-powered business automation services, including the Atlas AI phone agent platform. This Privacy Policy explains how we collect, use, and protect information when you use our website at auzora.io and our services.</p>
   <p>For privacy questions, contact us at <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a>.</p>
 
-  <h2>2. Information We Collect</h2>
+  <h2 id="sec-2">2. Information We Collect</h2>
 
   <p><strong>From website visitors:</strong></p>
   <ul>
@@ -74,7 +221,7 @@
     <li>SMS message content (booking links, follow-up information, appointment reminders) sent to the caller's phone number after verbal consent during the call</li>
   </ul>
 
-  <h2>3. How We Use Information</h2>
+  <h2 id="sec-3">3. How We Use Information</h2>
   <ul>
     <li>To deliver and operate our services</li>
     <li>To process appointment bookings made through Atlas AI</li>
@@ -86,7 +233,7 @@
   </ul>
   <p>We do <strong>not</strong> use your data or your callers' data for advertising or sell it to third parties.</p>
 
-  <h2>4. Third-Party Service Providers</h2>
+  <h2 id="sec-4">4. Third-Party Service Providers</h2>
   <p>We use the following trusted providers to deliver our services. Each has their own privacy practices:</p>
   <table class="provider-table">
     <thead><tr><th>Provider</th><th>Purpose</th><th>Data Shared</th></tr></thead>
@@ -100,7 +247,7 @@
     </tbody>
   </table>
 
-  <h2>5. Data Retention</h2>
+  <h2 id="sec-5">5. Data Retention</h2>
   <ul>
     <li><strong>Appointment records:</strong> Retained for the duration of your subscription + 12 months</li>
     <li><strong>Call audio:</strong> Processed in real-time by OpenAI; not stored by Sonello</li>
@@ -108,7 +255,7 @@
     <li><strong>Billing records:</strong> Retained for 7 years as required by law</li>
   </ul>
 
-  <h2>6. Data Security</h2>
+  <h2 id="sec-6">6. Data Security</h2>
   <p>We implement industry-standard security measures including:</p>
   <ul>
     <li>TLS encryption for all data in transit</li>
@@ -118,7 +265,7 @@
   </ul>
   <p>No method of electronic transmission is 100% secure. We cannot guarantee absolute security but take reasonable precautions.</p>
 
-  <h2>7. Your Rights</h2>
+  <h2 id="sec-7">7. Your Rights</h2>
   <p>Depending on your location, you may have the right to:</p>
   <ul>
     <li><strong>Access</strong> the personal data we hold about you</li>
@@ -129,7 +276,7 @@
   </ul>
   <p>To exercise these rights, contact <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a>. We will respond within 30 days.</p>
 
-  <h2>8. Caller Data (For Sonello Clients)</h2>
+  <h2 id="sec-8">8. Caller Data (For Sonello Clients)</h2>
   <p>If you are a Sonello client deploying Atlas AI, you are the data controller for your callers' information. You are responsible for:</p>
   <ul>
     <li>Disclosing to callers that they may be speaking with an AI</li>
@@ -138,7 +285,7 @@
   </ul>
   <p>Sonello processes caller data on your behalf as a data processor under your instruction.</p>
 
-  <h2>9. SMS Messaging</h2>
+  <h2 id="sec-9">9. SMS Messaging</h2>
   <p>Sonello's Atlas AI platform may send SMS text messages to callers who have initiated contact with a client's business. SMS messages are used for:</p>
   <ul>
     <li>Booking links and appointment scheduling</li>
@@ -159,16 +306,35 @@
   <p><strong>Carrier fees:</strong> Standard message and data rates may apply to recipients based on their mobile carrier plan.</p>
   <p><strong>Compliance:</strong> SMS messaging is delivered via Twilio under A2P 10DLC registration. Clients are responsible for ensuring their use of SMS complies with the TCPA, CTIA guidelines, and all applicable state and federal regulations.</p>
 
-  <h2>10. Children's Privacy</h2>
+  <h2 id="sec-10">10. Children's Privacy</h2>
   <p>Our services are not directed to individuals under the age of 18. We do not knowingly collect personal information from children.</p>
 
-  <h2>11. Changes to This Policy</h2>
+  <h2 id="sec-11">11. Changes to This Policy</h2>
   <p>We may update this policy periodically. Material changes will be announced via email or portal notification. Continued use of our services after changes constitutes acceptance.</p>
 
-  <h2>12. Contact Us</h2>
+  <h2 id="sec-12">12. Contact Us</h2>
   <p>Email: <a href="mailto:privacy@auzora.io" style="color:var(--accent);">privacy@auzora.io</a><br>
   Website: <a href="https://auzora.io" style="color:var(--accent);">auzora.io</a></p>
 
+</div>
+
+<aside class="legal-toc">
+  <div class="legal-toc-title">On this page</div>
+  <nav>
+    <a href="#sec-1">1. Who We Are</a>
+    <a href="#sec-2">2. Information We Collect</a>
+    <a href="#sec-3">3. How We Use Information</a>
+    <a href="#sec-4">4. Third-Party Service Providers</a>
+    <a href="#sec-5">5. Data Retention</a>
+    <a href="#sec-6">6. Data Security</a>
+    <a href="#sec-7">7. Your Rights</a>
+    <a href="#sec-8">8. Caller Data (For Sonello Clients)</a>
+    <a href="#sec-9">9. SMS Messaging</a>
+    <a href="#sec-10">10. Children's Privacy</a>
+    <a href="#sec-11">11. Changes to This Policy</a>
+    <a href="#sec-12">12. Contact Us</a>
+  </nav>
+</aside>
 </div>
 
 <footer>
