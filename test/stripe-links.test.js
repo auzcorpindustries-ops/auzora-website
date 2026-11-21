@@ -6,12 +6,16 @@
 //   - 3 plan cards (Basic/Standard/Enterprise), differing only by price +
 //     included minutes, each with a single real <a> CTA carrying a payment link
 //   - exactly ONE <select> on the page: the SMS add-on dropdown (3 options),
-//     with an "Add SMS" button carrying the selected SKU's payment link
+//     a BUNDLE option of the composed signup checkout (no separate purchase)
 //   - PLANS + SMS_ADDONS replace the old PRICING_TIERS 7-SKU block (no tier
 //     accordions, no per-plan feature lists)
-//   - AZ_STRIPE_TEST_LINKS carries a TEST link for all 6 SKUs (3 plans + 3
-//     SMS add-ons); test links match atlas-ai scripts/stripe-links-test.json
-//     (when the sibling repo is present locally — skipped in website CI)
+//   - STRIPE-1 (zeus_1794689878110_d23f4a39): ADD-ON payment links are
+//     RETIRED — SMS_ADDONS entries carry NO paymentLinkUrl and
+//     AZ_STRIPE_TEST_LINKS carries TEST links for the 3 BASE plans ONLY.
+//     A raw add-on link can create an add-on-only subscription outside the
+//     account-tied flow; the absence IS the guarantee. Base-plan links
+//     remain deliberately: Payment Links stay a NEW base-plan acquisition
+//     channel + rollback target (owner decision recorded on the STRIPE-1 PR).
 //   - linksEnabled: true since the 2026-10-14 activation flip (gating
 //     wiring retained as the documented rollback mechanism)
 //   - netlify.toml wires STRIPE_LINK_MODE: live default, test on develop
@@ -127,13 +131,16 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
     }
   });
 
-  test('SMS_ADDONS block exists with the 3 add-on SKUs carrying real payment links', () => {
+  test('STRIPE-1: SMS_ADDONS block exists with the 3 add-on SKUs and ZERO payment links', () => {
     expect(addonsBlock).not.toBeNull();
-    const pairs = [...addonsBlock.matchAll(/(sms_2500|sms_5000|sms_10000): \{ label: '[^']+', paymentLinkUrl: '(https:\/\/buy\.stripe\.com\/[A-Za-z0-9_]+)'/g)];
+    // Entries carry label + monthlyUsd only — paymentLinkUrl is gone.
+    const pairs = [...addonsBlock.matchAll(/(sms_2500|sms_5000|sms_10000): \{ label: '[^']+', monthlyUsd: [0-9]+ \}/g)];
     expect(pairs.map((m) => m[1])).toEqual(SMS_KEYS);
-    for (const [, , url] of pairs) {
-      expect(url).toMatch(/^https:\/\/buy\.stripe\.com\/[A-Za-z0-9_]+$/);
-    }
+    // THE STRIPE-1 GUARANTEE: zero raw add-on links. A raw link can create an
+    // add-on-only subscription OUTSIDE the account-tied flow — its absence
+    // from the block is the contract, not just the absence of a clickable href.
+    expect(addonsBlock).not.toMatch(/paymentLinkUrl/);
+    expect(addonsBlock).not.toMatch(/buy\.stripe\.com/);
   });
 
   test('both blocks ship linksEnabled: true (2026-10-14 activation flip)', () => {
@@ -183,13 +190,16 @@ describe('index.html PLANS / SMS_ADDONS (Q4 catalog, real payment links)', () =>
 describe('index.html AZ_STRIPE_TEST_LINKS (develop deploy)', () => {
   const block = extractBlock('const AZ_STRIPE_TEST_LINKS = {', 'const PLANS');
 
-  test('test-links map exists with exactly the 6 Q4 SKUs', () => {
+  test('STRIPE-1: test-links map exists with exactly the 3 BASE plans (add-on links retired)', () => {
     expect(block).not.toBeNull();
     const entries = [...block.matchAll(/([a-z_0-9]+):\s*'(https:\/\/buy\.stripe\.com\/test_[^']+)'/g)];
-    expect(entries.map((m) => m[1])).toEqual([...PLAN_KEYS, ...SMS_KEYS]);
+    // BASE plans only — the owner decision keeps Payment Links for NEW base
+    // acquisition; add-on entries are retired and their absence is the AC.
+    expect(entries.map((m) => m[1])).toEqual(PLAN_KEYS);
     for (const [, , url] of entries) {
       expect(url).toMatch(/^https:\/\/buy\.stripe\.com\/test_[A-Za-z0-9]+$/);
     }
+    expect(block).not.toMatch(/sms_2500|sms_5000|sms_10000/);
   });
 
   test('mode gate reads window.STRIPE_LINK_MODE and defaults to live', () => {
@@ -198,7 +208,7 @@ describe('index.html AZ_STRIPE_TEST_LINKS (develop deploy)', () => {
     expect(html).toMatch(/AZ_STRIPE_LINK_MODE === 'test'/);
   });
 
-  test('test links match atlas-ai scripts/stripe-links-test.json (when present)', () => {
+  test('test links match atlas-ai scripts/stripe-links-test.json — BASE plans only (when present)', () => {
     const linksPath = path.join(repoRoot, '..', 'atlas-ai', 'scripts', 'stripe-links-test.json');
     if (!fs.existsSync(linksPath)) {
       // Website CI has no atlas-ai sibling — sync is guarded on the atlas-ai
@@ -207,13 +217,18 @@ describe('index.html AZ_STRIPE_TEST_LINKS (develop deploy)', () => {
       return;
     }
     const catalog = JSON.parse(fs.readFileSync(linksPath, 'utf8'));
-    const skus = { ...catalog.tiers, ...catalog.sms_addons };
     const entries = [...block.matchAll(/([a-z_0-9]+):\s*'(https:\/\/buy\.stripe\.com\/test_[^']+)'/g)];
     const testLinks = Object.fromEntries(entries.map((m) => [m[1], m[2]]));
-    // Key parity: the 6 map keys are exactly the 3 plans + 3 SMS add-ons.
-    expect(Object.keys(testLinks).sort()).toEqual([...ALL_KEYS].sort());
-    for (const [sku, info] of Object.entries(skus)) {
+    // Key parity: the map keys are exactly the 3 BASE plans — STRIPE-1
+    // retired the add-on entries.
+    expect(Object.keys(testLinks).sort()).toEqual([...PLAN_KEYS].sort());
+    for (const [sku, info] of Object.entries(catalog.tiers || {})) {
       expect(testLinks[sku]).toBe(info.payment_link_url);
+    }
+    // STRIPE-1: NO add-on link from the catalog survives anywhere on the page
+    // — the test-mode SMS payment_link_urls must not appear in index.html.
+    for (const [, info] of Object.entries(catalog.sms_addons || {})) {
+      if (info.payment_link_url) expect(html).not.toContain(info.payment_link_url);
     }
   });
 });

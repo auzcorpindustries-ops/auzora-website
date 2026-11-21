@@ -733,6 +733,10 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
 /* Section headers + add-on notice span both columns inside the grid */
 .voice-grid > div[style*="grid-column:1/-1"] { margin-bottom: 2px; }
+/* Custom Voice (CV-3): when a custom voice is active the native grid stays
+   rendered but dimmed/disabled — the config survives, it just is not driving
+   calls until custom voice is switched off. */
+.voice-grid.cv-dim { opacity: .45; pointer-events: none; filter: grayscale(.35); }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
 .voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
 .voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
@@ -1374,6 +1378,12 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
               <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="collapsible-body">
+              <!-- Custom Voice (CV-3, zeus_1794504207719_52a3cee0): note shown
+                   while a custom voice is enabled — the native grid below stays
+                   visible but dimmed/disabled. -->
+              <div id="s-cv-grid-note" style="display:none;margin-bottom:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text);">
+                <strong>Custom voice active</strong> — your calls use your custom voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.
+              </div>
               <div class="voice-grid" id="portal-voice-grid"></div>
             </div>
           </div>
@@ -1472,7 +1482,7 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <option value="fast">Fast — concise &amp; snappy</option>
                 </select>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group">
                 <label>Language</label>
                 <select id="s-lang" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
                   <option value="en">English</option>
@@ -1487,6 +1497,90 @@ tr.row-unconfirmed:hover td { background: rgba(239,68,68,.07); }
                   <option value="ar">Arabic</option>
                   <option value="hi">Hindi</option>
                 </select>
+              </div>
+              <div class="form-group">
+                <label id="s-accent-label">Accent</label>
+                <select id="s-accent" onchange="onAccentChange()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Accent Strength</label>
+                <select id="s-accent-strength" onchange="setDirty()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                  <option value="subtle">Subtle — light influence</option>
+                  <option value="moderate">Moderate — clear but natural</option>
+                  <option value="strong">Strong — pronounced, never caricatured</option>
+                </select>
+              </div>
+
+              <!-- ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0;
+                   de-ElevenLabs CVX-3, zeus_1794610532814_36f2c999) ──────────
+                   Entitlement-gated by the Custom Voice add-on — the stored
+                   field stays voice_addon_elevenlabs ($49/mo, NOT renamed):
+                     • stored legacy-provider record → unsupported banner only
+                       (record shown read-only, never deleted; the server
+                       resolver already treats it inactive and calls use the
+                       native voice);
+                     • entitled   → controls (enable, provider, voice id,
+                       save);
+                     • not entitled → locked hint only (Call-a-Lead pattern).
+                   The provider is ADMIN-ASSIGNED and OpenAI-only — the
+                   dropdown stays disabled and display-only; a portal save can
+                   never set it. NO API key entry here — OpenAI GPT-Live needs
+                   no per-client key. There is no whole-utterance preview for
+                   a session_voice custom voice (the preview route was removed
+                   server-side in the core-removal ticket) — the voice is
+                   heard by placing a call. The native voice grid above stays
+                   untouched while custom voice is off, and dims while it is
+                   on. -->
+              <div id="s-cv-block" style="display:none;">
+                <div style="border-top:1px solid var(--border);margin:16px 0 12px;"></div>
+
+                <!-- Stored legacy-provider record: explicit unsupported state
+                     (CVX-3). Banner + read-only stored voice id are filled by
+                     renderCustomVoiceUnsupportedState() via textContent — the
+                     stored record is preserved data this surface NEVER
+                     deletes or overwrites. -->
+                <div id="s-cv-unsupported" style="display:none;"></div>
+
+                <!-- Entitled: live controls -->
+                <div id="s-cv-controls" style="display:none;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">
+                    <div style="font-size:14px;font-weight:700;">Custom Voice</div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
+                      <input type="checkbox" id="s-cv-enabled" onchange="onCustomVoiceToggle();setDirty()" style="accent-color:var(--accent);width:16px;height:16px;" />
+                      Enable
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>Provider</label>
+                    <!-- Provider is ADMIN-ASSIGNED: the dropdown is disabled and
+                         only DISPLAYS the operator's assignment. OpenAI is the
+                         only assignable provider (CVX-3), so the list is fixed
+                         at one display-only option — a portal save can never
+                         set or change it (the server pins provider to the
+                         stored value on every portal write). -->
+                    <select id="s-cv-provider" onchange="setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;">
+                      <option value="openai">OpenAI GPT-Live</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom:10px;">
+                    <label>Voice ID</label>
+                    <input type="text" id="s-cv-voice-id" placeholder="e.g. my-openai-custom-voice" oninput="onCustomVoiceIdInput();setDirty()" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;" />
+                    <div id="s-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">Your custom Voice ID from OpenAI GPT-Live (1-200 printable characters).</div>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button id="s-cv-save-btn" onclick="saveCustomVoice()" style="background:linear-gradient(135deg,#3B82F6,#7C3AED);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;">Save custom voice</button>
+                    <span id="s-cv-status" style="font-size:11px;color:var(--muted);"></span>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:6px;">Your custom voice speaks on live calls — place a test call to hear it.</div>
+                </div>
+
+                <!-- Not entitled: locked hint (mirrors the Call-a-Lead lock) -->
+                <div id="s-cv-locked" style="display:none;text-align:center;padding:14px 10px;">
+                  <div style="font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:6px;">Custom voices are a $49/mo add-on</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Bring your own custom voice and your AI agent will answer every call with it — configured here once an operator provisions your account.</div>
+                  <a href="mailto:ahoward@auzora.io?subject=Custom%20Voice%20add-on%20inquiry" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-size:13px;font-weight:600;padding:8px 20px;border-radius:10px;text-decoration:none;">Ask about Custom Voice</a>
+                </div>
               </div>
             </div>
           </div>
@@ -3347,7 +3441,7 @@ async function loadVoices() {
       desc: v.description || '',
       emoji: GENDER_EMOJI[v.gender] || '🎙️',
       gender: v.gender || 'unknown',
-      provider: v.provider || 'elevenlabs',
+      provider: v.provider || 'openai',
       preview_url: v.preview_url,
       isDefault: v.is_default === true || v.isDefault === true,
       // PORTAL-VOICE: region/locale indicator + curated-grid membership.
@@ -3365,12 +3459,12 @@ async function loadVoices() {
 
 // Check if a voice is locked for the current tier (legacy Starter = default only)
 function isVoiceLocked(voiceId) {
-  // DISABLED (ELE-4) — ElevenLabs retired; OpenAI voices are included with every plan.
+  // DISABLED (ELE-4) + CVX-3: the catalog is OpenAI-only and OpenAI voices are
+  // included with every plan — nothing is locked anymore. Kept as a guard so
+  // a hypothetical non-OpenAI catalog entry stays unselectable.
   const voice = VOICES.find(v => v.id === voiceId);
   const provider = voice?.provider || 'openai';
-  if (provider === 'openai') return false; // OpenAI always selectable
-  // Legacy ElevenLabs voices: always treat as locked (cannot be selected)
-  return true;
+  return provider !== 'openai';
 }
 
 // ── HOURS GRID ───────────────────────────────────────────────────────────────
@@ -3937,6 +4031,10 @@ async function fetchEntitlements() {
     // (the card already rendered from the entitlements payload).
     loadSmsAddons();
     applyTierVisibility();
+    // Custom Voice (CV-3): re-apply the entitlement gate — a late or refreshed
+    // entitlements fetch must flip the section between controls and locked
+    // hint exactly like the nav gating above it.
+    applyCustomVoiceEntitlementGate();
     // Re-render voice grid if it's currently visible, to apply add-on gating.
     // Check the grid itself, not just currentPortalVoiceId — the grid can be
     // rendered with no selection yet (currentPortalVoiceId === null), and a
@@ -4280,7 +4378,12 @@ function renderSmsAddonOptions(data) {
   const btn = document.getElementById('usage-sms-btn');
   const coming = document.getElementById('usage-sms-coming');
   if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
+  // STRIPE-1: the catalog now lists BOTH add-on families (kind 'sms' | 'voice').
+  // This dropdown sells SMS ONLY — the voice add-on carries smsMessages: null
+  // and must never render as "0 messages". A missing kind (old payload)
+  // defaults to sms for backward compatibility.
+  const addons = (Array.isArray(data.addons) ? data.addons : [])
+    .filter(a => (a.kind || 'sms') === 'sms');
   if (!addons.length) {
     select.innerHTML = '<option value="">Unavailable</option>';
     select.disabled = true;
@@ -4360,7 +4463,10 @@ function renderSmsChangeOptions(data, smsAddOn) {
   const btn = document.getElementById('usage-sms-change-btn');
   const coming = document.getElementById('usage-sms-change-coming');
   if (!select || !btn) return;
-  const addons = Array.isArray(data.addons) ? data.addons : [];
+  // STRIPE-1: SMS tier changes move between SMS SKUs only — filter the voice
+  // family out (missing kind = sms on old payloads).
+  const addons = (Array.isArray(data.addons) ? data.addons : [])
+    .filter(a => (a.kind || 'sms') === 'sms');
   const currentSku = (smsAddOn && smsAddOn.sku) || null;
   if (!addons.length) {
     select.innerHTML = '<option value="">Unavailable</option>';
@@ -4744,7 +4850,15 @@ function showPage(name) {
   const meta = pageMeta[name] || { title: '', sub: '' };
   document.getElementById('topbar-title').textContent = meta.title;
   document.getElementById('topbar-sub').textContent = meta.sub;
-  if (name === 'settings') { restoreCollapseStates(); loadSettings(); }
+  if (name === 'settings') {
+    restoreCollapseStates();
+    // Hydrate from the LATEST persisted record before the first render of the
+    // page (zeus_1794558702500_c68613eb) — the sessionStorage snapshot may
+    // predate another writer's save (second tab/device, admin editor), and
+    // rendering + saving from it is exactly the reported "saves then reverts"
+    // behavior. Falls back to the snapshot when the fetch fails.
+    refreshClientSnapshot().finally(() => loadSettings());
+  }
   if (name === 'scheduling') loadScheduling();
   if (name === 'integrations') loadIntegrations();
   if (name === 'leads')       { loadOutbound(); loadLeadNotifyToggle(); }
@@ -5009,7 +5123,12 @@ async function openEmbedModal(formId) {
     const isPaused = form.status === 'paused';
     const embedToken = form.embed_token || '';
     const formName = escapeHtml(form.name || 'Untitled Form');
-    const baseUrl = 'https://atlas.6845165.xyz';
+    // Environment-correct embed origin: reuse the same hostname-derived API
+    // selection the portal itself uses (const API). The widget is served from
+    // the backend origin and calls the API same-origin, so a staging /
+    // netlify-preview portal must hand out staging snippets; a custom-domain
+    // portal keeps prod (byte-identical to the previous hardcode).
+    const baseUrl = API;
 
     const jsCode = `<!-- Sonello Form: ${form.name || 'Untitled Form'} -->
 <div id="atlas-form-${formId}"></div>
@@ -8766,6 +8885,37 @@ function updateServiceDuration(serviceName, minutes) {
   setDirty();
 }
 
+// Re-fetch the LATEST persisted client record into portalClient + sessionStorage
+// (zeus_1794558702500_c68613eb — Tone & Style persistence). The portal used to
+// hydrate the settings page purely from the sessionStorage snapshot, so a tab
+// (or device) that had not seen another writer's save rendered stale values and
+// its next full-payload save silently REVERTED them. Returns the fresh client,
+// or null when the fetch fails (offline tolerance: keep the snapshot).
+async function refreshClientSnapshot() {
+  if (!portalToken) return null;
+  try {
+    const res = await fetch(`${API}/portal/settings`, { headers: { 'x-portal-token': portalToken } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // GET /portal/settings answers with the FLAT sanitized client view (no
+    // {client: ...} wrapper). CVX-4 (ticket zeus_1794610535637_211b4258):
+    // this reader only accepted the wrapper shape, so the refresh was a
+    // silent no-op — the portal kept hydrating the LOGIN-time snapshot and
+    // never saw another writer's save (admin write, second tab) without a
+    // re-login, exactly the stale-render the persistence fix set out to
+    // kill. Accept both shapes defensively.
+    const fresh = data && data.client && typeof data.client === 'object'
+      ? data.client
+      : (data && !data.error && data.client_id ? data : null);
+    if (!fresh) return null;
+    portalClient = fresh;
+    sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+    return portalClient;
+  } catch (e) {
+    return null; // network/API hiccup — render from the last known snapshot
+  }
+}
+
 async function loadSettings() {
   const c = portalClient;
   document.getElementById('s-biz-name').value = c.business_name || '';
@@ -8783,6 +8933,11 @@ async function loadSettings() {
   document.getElementById('s-tone').value = c.tone || 'friendly';
   document.getElementById('s-pace').value = c.speaking_pace || 'normal';
   document.getElementById('s-lang').value = c.lang || 'en';
+  accentConfig = c.accent || {};
+  hydrateAccentControls();
+  // Custom Voice (CV-3): hydrate from the SAVED record (has_api_key projected)
+  // and sync the native-grid dim state to the saved enabled flag.
+  hydrateCustomVoiceControls();
 
   const ah = c.after_hours_enabled || false;
   document.getElementById('s-ah').checked = ah;
@@ -8835,7 +8990,7 @@ async function loadSettings() {
   // Shares ensureVoiceCatalog()'s cached promise with the dashboard agent card
   // so the catalog is fetched once per session, not once per page visit.
   ensureVoiceCatalog().then(() => {
-    // DISABLED (ELE-4) — default to OpenAI for all clients; legacy ElevenLabs voices render as unavailable
+    // ELE-4 + CVX-3: the catalog is OpenAI-only; the grid renders that set.
     currentVoiceProvider = 'openai';
     renderPortalVoiceGrid(resolvePortalVoiceId(c.voice_id, c.voice, c.voice_name, c.voice_label, c.selected_voice, c.agent_voice) || DEFAULT_VOICE_ID);
   }).catch(() => {});
@@ -8959,17 +9114,17 @@ function getPortalVoice() {
 }
 
 function renderPortalVoiceGrid(selected) {
-  // DISABLED (ELE-4) — OpenAI voices only; ElevenLabs section removed; removal ELE-6.
-  // Legacy clients with ElevenLabs voices render them in the OpenAI grid with
-  // the current voice preserved but locked for new selection.
+  // CVX-3 (zeus_1794610532814_36f2c999): the catalog is OpenAI-only — the
+  // legacy provider was removed from voice-catalog.json server-side in the
+  // core-removal ticket, so the grid renders the OpenAI set only (the old
+  // unavailable-legacy-voices section is gone; a saved legacy-provider
+  // CUSTOM voice is a different surface — the unsupported state under it).
   const VG = window.VoiceGrid || { regionBadgeHtml: () => '', configuredVoiceSummary: () => '', escapeHtml: (s) => String(s == null ? '' : s), gridVoices: (v) => v };
   const openaiAllVoices = VOICES.filter(v => v.provider === 'openai');
-  const legacyElevenLabsVoices = VOICES.filter(v => (v.provider || 'elevenlabs') === 'elevenlabs');
 
-  // Keep the selected highlight inside the client's saved provider when the
-  // saved voice is still selectable there. A saved-but-locked voice (legacy
-  // ElevenLabs) must NOT stay selected — saving it would 403, so the
-  // default voice becomes the active selection instead.
+  // Keep the selected highlight on the client's saved voice when it is still
+  // selectable. A saved-but-locked voice must NOT stay selected — saving it
+  // would 403, so the default voice becomes the active selection instead.
   let activeVoiceId = selected;
   if (activeVoiceId && !VOICES.some(v => v.id === activeVoiceId)) {
     // GPTL-3: retired OpenAI id (nova/onyx/fable) → its GPT-Live equivalent
@@ -9030,18 +9185,6 @@ function renderPortalVoiceGrid(selected) {
     html += renderColumn(openaiVoices.filter(v => v.gender === 'female'), 'left');
     html += renderColumn(openaiVoices.filter(v => v.gender === 'male'), 'right');
   }
-  // DISABLED (ELE-4) — ElevenLabs section hidden; removal ELE-6
-  // Legacy ElevenLabs voices are rendered in the OpenAI grid if they were the
-  // client's saved voice, to avoid breaking existing configurations.
-  if (legacyElevenLabsVoices.length > 0) {
-    // Only show legacy voices if they include the currently selected voice
-    const activeIsLegacy = activeVoiceId && legacyElevenLabsVoices.some(v => v.id === activeVoiceId);
-    if (activeIsLegacy) {
-      html += sectionHeader('Legacy Voices (Unavailable)', '<span style="font-size:11px;color:var(--red);font-weight:600;">No longer available</span>');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'female'), 'left');
-      html += renderColumn(legacyElevenLabsVoices.filter(v => v.gender === 'male'), 'right');
-    }
-  }
   if (!html) {
     html = '<div style="color:var(--muted);font-size:12px;grid-column:1/-1;">No approved voices available.</div>';
   }
@@ -9052,6 +9195,10 @@ function renderPortalVoiceGrid(selected) {
 // Selecting a voice also switches the active provider so saves persist the
 // matching provider alongside the voice id.
 function selectPortalVoice(id) {
+  // Custom Voice (CV-3): while a custom voice is active the native grid is
+  // dimmed/disabled — pointer-events are already off, this guards programmatic
+  // and stale-handler paths too. Disable custom voice first to switch back.
+  if (isCustomVoiceActive()) return;
   // Tier gate: prevent selecting a locked voice
   if (isVoiceLocked(id)) return;
   const voice = VOICES.find(v => v.id === id);
@@ -9094,7 +9241,7 @@ async function playPortalVoice(id) {
     const res = await fetch(`${API}/portal/voice-preview`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ voice: id, provider: voice.provider || 'elevenlabs' })
+      body: JSON.stringify({ voice: id, provider: voice.provider || 'openai' })
     });
     if (!res.ok) throw new Error(`Preview failed (${res.status})`);
     const blob = await res.blob();
@@ -9390,6 +9537,323 @@ function toggleFederalHoliday(i) {
 }
 
 // Save
+// ── Accent (zeus_1794454473455_8e725c38 — GLOBAL model) ─────────────────────
+// Fourth Tone & Style control. client.accent = { variant, strength } — a
+// SINGLE GLOBAL accent object. Accent and Language are INDEPENDENT controls:
+// changing #s-lang never resets, filters, or re-labels the accent options,
+// and changing the accent never touches the language. The selected accent
+// applies to whichever language the receptionist speaks — the backend emits
+// one global accent instruction and it is never tied to client.lang.
+// Legacy per-language records ({en:{...},es:{...}} from PR #835) migrate for
+// display with the same deterministic rule as the backend: the Spanish entry
+// wins when valid, else the English entry. Missing/None accent = {} = the
+// backend injects no accent instructions.
+let accentConfig = {};
+
+const ACCENT_OPTIONS = [
+  ['', 'None'],
+  ['neutral_american', 'Neutral American'],
+  ['mexican_american', 'Mexican-American'],
+  ['mexican_spanish', 'Mexican Spanish'],
+];
+
+function hydrateAccentControls() {
+  const accentSel = document.getElementById('s-accent');
+  const strengthSel = document.getElementById('s-accent-strength');
+  const validVariants = ACCENT_OPTIONS.map(([v]) => v);
+  let cfg = accentConfig && typeof accentConfig === 'object' && !Array.isArray(accentConfig)
+    ? accentConfig : {};
+  if (!validVariants.includes(cfg.variant)) {
+    // Legacy per-language record → closest single global value (es first).
+    const es = cfg.es && validVariants.includes(cfg.es.variant) ? cfg.es : null;
+    const en = cfg.en && validVariants.includes(cfg.en.variant) ? cfg.en : null;
+    cfg = es || en || {};
+  }
+  accentSel.innerHTML = ACCENT_OPTIONS
+    .map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('');
+  accentSel.disabled = false;
+  accentSel.value = validVariants.includes(cfg.variant) ? cfg.variant : '';
+  strengthSel.disabled = !accentSel.value;
+  strengthSel.value = strengthSel.disabled ? 'moderate' : (cfg.strength || 'moderate');
+}
+
+function onAccentChange() {
+  setDirty();
+  document.getElementById('s-accent-strength').disabled =
+    !document.getElementById('s-accent').value;
+}
+
+function buildAccentPayload() {
+  const variant = document.getElementById('s-accent').value;
+  if (!variant) return {};
+  return {
+    variant: variant,
+    strength: document.getElementById('s-accent-strength').value || 'moderate',
+  };
+}
+
+// ── Custom Voice (CV-3, zeus_1794504207719_52a3cee0; de-ElevenLabs CVX-3,
+//    zeus_1794610532814_36f2c999) ─────────────────────────────────────────────
+// Portal surface of the custom-voice feature: enable/disable + voice id only.
+// THE PORTAL NEVER SEES, ENTERS, OR HOLDS AN API KEY — OpenAI GPT-Live (the
+// only supported provider) needs none: the Voice ID rides the platform call
+// session. Entitlement gate: the stored field voice_addon_elevenlabs ($49/mo,
+// NOT renamed) — non-entitled clients get the locked hint, never the controls.
+// CVX-3: a stored provider='elevenlabs' record renders the explicit
+// unsupported state — the server resolver already resolves it inactive
+// (reason 'provider_removed') and calls use the native voice. The stored
+// record is shown read-only and is NEVER deleted or overwritten by this
+// surface: every save path omits custom_voice while unsupported.
+// While a supported custom voice is ENABLED (saved state), the native voice
+// grid dims and its selection path is guarded — the grid markup itself is
+// untouched.
+
+// CV-GPTL/CVX-3: openai is permissive printable ASCII — mirrors the server's
+// OPENAI_VOICE_ID_RE (provisional until OpenAI's custom-voice id format is
+// confirmed). It is the ONLY shape: the provider is admin-assigned and the
+// only assignable provider is OpenAI (1-200 printable chars).
+const CV_OPENAI_VOICE_ID_RE = /^[!-~]{1,200}$/;
+
+function cvVoiceIdValidForProvider(provider, v) {
+  // The provider argument survives for call-site clarity (the dropdown is
+  // admin-assigned); the only assignable provider is OpenAI, so there is a
+  // single voice-id shape. Anything else fails closed.
+  return String(provider || '').toLowerCase() === 'openai' && CV_OPENAI_VOICE_ID_RE.test(v);
+}
+
+function cvProviderForSection() {
+  const el = document.getElementById('s-cv-provider');
+  return (el && el.value) || (portalClient && portalClient.custom_voice && portalClient.custom_voice.provider) || 'openai';
+}
+
+function isCustomVoiceEntitled() {
+  return !!(portalTierVoices && portalTierVoices.elevenlabsAddon === true);
+}
+
+// CVX-3: the stored record is a legacy-provider configuration the portal can
+// no longer serve. Detection ONLY — this surface never modifies the record.
+function isCustomVoiceUnsupported() {
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  return !!(cv && String(cv.provider || '').toLowerCase() === 'elevenlabs');
+}
+
+function isCustomVoiceActive() {
+  // Mirrors the server resolver: a custom voice is portal-active only when it
+  // is enabled AND its provider is supported. Stored legacy records resolve
+  // inactive server-side (reason 'provider_removed') — the portal must agree
+  // so the native voice grid stays live for those clients.
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  return !!(cv && cv.enabled === true
+    && String(cv.provider || '').toLowerCase() === 'openai');
+}
+
+// Called from fetchEntitlements() (and the init cache-restore path) and from
+// hydrateCustomVoiceControls() so a late entitlements fetch — or any client
+// snapshot refresh — flips the section between its three states:
+//   stored legacy record → unsupported banner (takes precedence);
+//   entitled             → live controls;
+//   otherwise            → locked hint.
+function applyCustomVoiceEntitlementGate() {
+  const block = document.getElementById('s-cv-block');
+  if (!block) return;
+  const controls = document.getElementById('s-cv-controls');
+  const locked = document.getElementById('s-cv-locked');
+  const unsupported = document.getElementById('s-cv-unsupported');
+  if (isCustomVoiceUnsupported()) {
+    renderCustomVoiceUnsupportedState();
+    if (controls) controls.style.display = 'none';
+    if (locked) locked.style.display = 'none';
+    if (unsupported) unsupported.style.display = '';
+  } else {
+    if (unsupported) { unsupported.style.display = 'none'; unsupported.textContent = ''; }
+    const entitled = isCustomVoiceEntitled();
+    if (controls) controls.style.display = entitled ? '' : 'none';
+    if (locked) locked.style.display = entitled ? 'none' : '';
+  }
+  block.style.display = ''; // shell visible either way (banner, controls or hint)
+}
+
+// CVX-3: the unsupported banner for stored legacy-provider records. The
+// stored configuration is displayed READ-ONLY via textContent — never
+// interpolated into HTML, never prefilled into the editable input, and never
+// deleted. Same wording contract as the admin surface.
+function renderCustomVoiceUnsupportedState() {
+  const box = document.getElementById('s-cv-unsupported');
+  if (!box) return;
+  box.style.display = 'block';
+  box.textContent = '';
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  const notice = document.createElement('div');
+  notice.style.cssText = 'padding:8px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:6px;font-size:12px;';
+  notice.textContent = 'ElevenLabs is no longer supported \u2014 your calls use the native AI voice. Your saved configuration has not been deleted.';
+  const stored = document.createElement('div');
+  stored.style.cssText = 'font-size:11px;color:var(--muted);margin-top:4px;';
+  stored.textContent = 'Stored voice ID (read-only): ' + ((cv && cv.voice_id) || '(none)');
+  box.appendChild(notice);
+  box.appendChild(stored);
+}
+
+function onCustomVoiceToggle() {
+  const enabled = document.getElementById('s-cv-enabled').checked;
+  // Disabled toggle → config controls grayed out (save still carries the off).
+  // The provider select is NOT in this list: it is admin-assigned and stays
+  // permanently disabled/display-only — a portal save can never set it.
+  const voiceIdEl = document.getElementById('s-cv-voice-id');
+  if (voiceIdEl) voiceIdEl.disabled = !enabled;
+  const provider = document.getElementById('s-cv-provider');
+  if (provider) {
+    provider.disabled = true; // display-only, always
+    if (provider.options.length < 1) {
+      // OpenAI is the only assignable provider (CVX-3) — the list is fixed.
+      provider.innerHTML = '<option value="openai">OpenAI GPT-Live</option>';
+    }
+    provider.value = 'openai';
+  }
+}
+
+function onCustomVoiceIdInput() {
+  const v = document.getElementById('s-cv-voice-id').value.trim();
+  const hint = document.getElementById('s-cv-voice-id-hint');
+  if (!hint) return;
+  // OpenAI is the only supported provider (CVX-3) — one shape, one set of
+  // hints (1-200 printable characters, mirroring the server rule).
+  if (!v) {
+    hint.textContent = 'Your custom Voice ID from OpenAI GPT-Live.';
+    hint.style.color = 'var(--muted)';
+  } else if (!cvVoiceIdValidForProvider('openai', v)) {
+    hint.textContent = 'Invalid \u2014 1-200 printable characters, no spaces.';
+    hint.style.color = 'var(--red)';
+  } else {
+    hint.textContent = 'Valid voice id format.';
+    hint.style.color = 'var(--green)';
+  }
+}
+
+function updateCustomVoiceStatus() {
+  const el = document.getElementById('s-cv-status');
+  if (!el) return;
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  // CVX-3: unsupported records render the banner, not a status line.
+  if (!cv || isCustomVoiceUnsupported()) { el.textContent = ''; return; }
+  const keyPart = cv.has_api_key === true
+    ? 'key configured'
+    : (cv.has_api_key === false ? 'awaiting operator key' : '');
+  el.textContent = (cv.enabled === true ? 'Active' : 'Saved (off)') + (keyPart ? ' — ' + keyPart : '');
+}
+
+// Load-path hydration: reads the SAVED record (portalClient.custom_voice with
+// has_api_key) into the controls and syncs the native-grid dim state.
+// CVX-3: a stored legacy-provider record never checks the enable box and
+// never prefills the editable input — it renders the unsupported state
+// instead (the stored voice id is shown read-only in the banner).
+function hydrateCustomVoiceControls() {
+  const enabledEl = document.getElementById('s-cv-enabled');
+  if (!enabledEl) return;
+  const unsupported = isCustomVoiceUnsupported();
+  const cv = portalClient && typeof portalClient.custom_voice === 'object' ? portalClient.custom_voice : null;
+  enabledEl.checked = !!(cv && cv.enabled === true && !unsupported);
+  const providerEl = document.getElementById('s-cv-provider');
+  if (providerEl) providerEl.value = 'openai'; // display-only; OpenAI is the only provider (CVX-3)
+  const voiceIdEl = document.getElementById('s-cv-voice-id');
+  if (voiceIdEl) voiceIdEl.value = (!unsupported && cv && cv.voice_id) || '';
+  onCustomVoiceToggle();
+  onCustomVoiceIdInput();
+  updateCustomVoiceStatus();
+  syncCustomVoiceGridState();
+  // Covers snapshot refreshes that land between entitlements fetches — keeps
+  // controls / locked hint / unsupported banner in sync with the record.
+  applyCustomVoiceEntitlementGate();
+}
+
+// Payload for BOTH save surfaces (section button + global Save and Apply).
+// Deliberately narrow: enabled + provider + voice_id. NO key field exists.
+function buildCustomVoicePayload() {
+  const voiceId = document.getElementById('s-cv-voice-id').value.trim();
+  const payload = {
+    enabled: document.getElementById('s-cv-enabled').checked,
+    provider: document.getElementById('s-cv-provider').value || 'openai',
+  };
+  if (voiceId) payload.voice_id = voiceId;
+  return payload;
+}
+
+// Section save: PATCHes ONLY custom_voice so it cannot clobber other settings
+// (the same normalization runs on the global Save and Apply payload).
+async function saveCustomVoice() {
+  if (!isCustomVoiceEntitled()) return;
+  // CVX-3: a stored legacy-provider record is untouchable from the portal —
+  // the section renders the unsupported state (no live controls); this guard
+  // also blocks any stale-handler path from writing over the preserved record.
+  if (isCustomVoiceUnsupported()) return;
+  const voiceId = document.getElementById('s-cv-voice-id').value.trim();
+  // Shape check before save: the only assignable provider is OpenAI, so the
+  // OpenAI rule (1-200 printable characters) is THE rule. The server
+  // re-validates both fields on every save.
+  const provider = cvProviderForSection();
+  if (document.getElementById('s-cv-enabled').checked && !cvVoiceIdValidForProvider(provider, voiceId)) {
+    showToast('Enter a valid OpenAI GPT-Live custom Voice ID (1-200 printable characters) before saving.', 'error');
+    return;
+  }
+  const btn = document.getElementById('s-cv-save-btn');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const res = await fetch(`${API}/portal/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
+      body: JSON.stringify({
+        custom_voice: buildCustomVoicePayload(),
+        // Optimistic-concurrency (zeus_1794558702500_c68613eb): same contract
+        // as the global save — a stale snapshot 409s instead of writing.
+        base_config_rev: portalClient?.config_rev,
+      })
+    });
+    const data = await res.json();
+    // Stale snapshot (zeus_1794558702500_c68613eb): re-hydrate, re-sync the
+    // section from the latest record, ask the user to retry. Nothing was written.
+    if (res.status === 409 && data.code === 'config_conflict') {
+      await refreshClientSnapshot();
+      hydrateCustomVoiceControls();
+      showToast('Settings changed elsewhere since you opened this page. Re-check this section and save again.', 'error');
+      return;
+    }
+    if (res.ok && data.client) {
+      portalClient = data.client;
+      sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
+      hydrateCustomVoiceControls();
+      showToast('Custom voice saved — live on next call ✓', 'success');
+    } else {
+      throw new Error(data.error || 'Save failed');
+    }
+  } catch (e) {
+    showToast('Custom voice save failed: ' + e.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = original; }
+}
+
+// CVX-3: the old "Test voice" button is GONE — the custom-voice preview
+// endpoint was removed server-side in the core-removal ticket (an OpenAI
+// session_voice custom voice has no whole-utterance preview surface; the
+// platform session speaks it natively on a live call). The section now says
+// so: "place a test call to hear it". No dead control remains.
+
+// Native-grid dimming: visible-but-disabled while a supported custom voice is
+// enabled (saved state — not merely the checkbox), untouched otherwise.
+// CVX-3: only an OpenAI custom voice can be active (stored legacy records
+// resolve inactive, mirroring the server resolver), so the note names OpenAI.
+function syncCustomVoiceGridState() {
+  const active = isCustomVoiceActive();
+  const grid = document.getElementById('portal-voice-grid');
+  if (grid) grid.classList.toggle('cv-dim', active);
+  const note = document.getElementById('s-cv-grid-note');
+  if (note) {
+    // OpenAI is the only supported custom-voice provider (CVX-3), so an
+    // active custom voice is always an OpenAI one.
+    note.innerHTML = '<strong>Custom voice active</strong> — your calls use your custom OpenAI GPT-Live voice. Turn it off under Tone &amp; Style &rarr; Custom Voice to use the native voices below.';
+    note.style.display = active ? '' : 'none';
+  }
+}
+
 async function saveSettings() {
   const btn = document.getElementById('floating-save-btn');
   if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
@@ -9452,6 +9916,16 @@ async function saveSettings() {
       tone:                document.getElementById('s-tone').value,
       speaking_pace:       document.getElementById('s-pace').value,
       lang:                document.getElementById('s-lang').value,
+      accent:              buildAccentPayload(),
+      // Custom Voice (CV-3; CVX-3): only entitled clients with a SUPPORTED
+      // record carry the key in the global save — non-entitled saves never
+      // create a config, and a stored legacy-provider record is never
+      // touched (it would overwrite the preserved configuration).
+      custom_voice:        (isCustomVoiceEntitled() && !isCustomVoiceUnsupported()) ? buildCustomVoicePayload() : undefined,
+      // Optimistic-concurrency (zeus_1794558702500_c68613eb): the rev this
+      // page hydrated from. If another writer saved newer config in between,
+      // the API 409s BEFORE writing and this save cannot silently revert it.
+      base_config_rev:     portalClient?.config_rev,
     };
 
     const res = await fetch(`${API}/portal/settings`, {
@@ -9460,6 +9934,19 @@ async function saveSettings() {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
+    // Stale-snapshot guard (zeus_1794558702500_c68613eb): someone saved newer
+    // config between this page's hydration and this save. The API wrote
+    // NOTHING — re-hydrate the latest record, re-render, and let the user
+    // re-apply against current state. Auto-retrying the full payload would
+    // clobber whichever section the other writer changed.
+    if (res.status === 409 && data.code === 'config_conflict') {
+      await refreshClientSnapshot();
+      loadSettings();
+      settingsDirty = false;
+      hideFloatingFooter();
+      showToast('Settings changed elsewhere since you opened this page. The latest version is loaded — re-apply your change.', 'error');
+      return;
+    }
     if (data.client) {
       portalClient = data.client;
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
@@ -10540,6 +11027,7 @@ if (savedToken && savedClient) {
   const savedTierVoices = sessionStorage.getItem('atlas_tier_voices');
   if (savedTierVoices) { try { portalTierVoices = JSON.parse(savedTierVoices); } catch(e) {} }
   applyTierVisibility();
+  applyCustomVoiceEntitlementGate();
 }
 
 // ── LEAD WEBHOOK ─────────────────────────────────────────────────────────────
@@ -10551,9 +11039,19 @@ async function saveWebhookUrl() {
     const res = await fetch(`${API}/portal/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ webhook_url: url })
+      body: JSON.stringify({ webhook_url: url, base_config_rev: portalClient?.config_rev })
     });
     const data = await res.json();
+    // Stale snapshot (zeus_1794558702500_c68613eb): nothing written — refresh
+    // the snapshot and ask for a retry.
+    if (res.status === 409 && data.code === 'config_conflict') {
+      await refreshClientSnapshot();
+      status.textContent = 'Stale — retry';
+      status.style.color = '#f87171';
+      showToast('Settings changed elsewhere since you opened this page — retry the save.', 'error');
+      setTimeout(() => { status.textContent = ''; }, 4000);
+      return;
+    }
     if (data.client) {
       portalClient = data.client;
       sessionStorage.setItem('atlas_client', JSON.stringify(portalClient));
@@ -10634,6 +11132,12 @@ function copyLeadWebhookUrl() {
 let acDirty = false;
 let acAccessCodeVisible = false;
 let acAccessCode = '';
+// SEU-FOLLOWUP-UI: the login/session record strips access_code (server-side
+// sanitizeClient), so pre-regeneration the reveal must fetch the CURRENT code
+// from the owner surface GET /portal/account/access-code. Fetched lazily on
+// first Show, once per page load; the regenerate flow keeps setting
+// acAccessCode directly from its own response.
+let acAccessCodeFetched = false;
 const acNotifPrefs = [
   { key: 'email_new_lead', label: 'Email me when a new lead is captured' },
   { key: 'sms_new_lead', label: 'SMS me when a new lead is captured' },
@@ -10877,10 +11381,32 @@ async function saveProfile() {
   setTimeout(() => { status.textContent = ''; }, 3000);
 }
 
-function toggleAccessCodeVisibility() {
+async function toggleAccessCodeVisibility() {
   acAccessCodeVisible = !acAccessCodeVisible;
-  document.getElementById('ac-access-code').textContent = acAccessCodeVisible ? acAccessCode : '••••••••';
-  document.getElementById('ac-toggle-btn').textContent = acAccessCodeVisible ? 'Hide' : 'Show';
+  const codeEl = document.getElementById('ac-access-code');
+  const btn = document.getElementById('ac-toggle-btn');
+  if (acAccessCodeVisible && !acAccessCode && !acAccessCodeFetched) {
+    codeEl.textContent = 'Loading…';
+    try {
+      const res = await fetch(`${API}/portal/account/access-code`, {
+        headers: { 'X-Portal-Token': portalToken },
+      });
+      const data = await res.json();
+      if (res.ok && data.access_code) {
+        acAccessCode = data.access_code;
+      }
+    } catch (e) {
+      console.warn('[Sonello] access-code reveal fetch failed:', e.message);
+    }
+    acAccessCodeFetched = true;
+  }
+  if (!acAccessCodeVisible) {
+    codeEl.textContent = '••••••••';
+    btn.textContent = 'Show';
+  } else {
+    codeEl.textContent = acAccessCode || 'Unavailable';
+    btn.textContent = 'Hide';
+  }
 }
 
 async function regenerateAccessCode() {
@@ -11711,15 +12237,147 @@ async function deleteContact(leadId) {
   }
 }
 
-async function callLead(leadId, btn) {
-  if (!confirm('Have your AI agent call this lead now?')) return;
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Calling…'; btn.style.opacity = '0.6';
+// ── Manual lead call + Call Objective modal (OBJ-2) ─────────────────────────────────
+// The per-lead Call button used to fire a bare confirm() and POST {lead_id}.
+// It now opens a small modal with an OPTIONAL "Call Objective" field that
+// mirrors the Automations objective contract (wfObjectiveSection): same
+// label, same placeholder guidance, same 120-char ceiling the backend's
+// validateObjective enforces (absent/empty = valid, so an empty field never
+// blocks a call). The backend collapses newlines to single spaces, so the
+// field is a real <textarea> with a sub-hint saying so.
+const LEAD_CALL_OBJECTIVE_MAX = 120;
+let leadCallBtn = null;        // the Call button that opened the modal (busy state)
+let leadCallEscHandler = null; // Esc-to-close listener, removed with the modal
+
+function callLead(leadId, btn) {
+  openLeadCallModal(leadId, btn);
+}
+
+// Cancel, backdrop click and Esc all land here: the modal closes and
+// NOTHING is dialed.
+function closeLeadCallModal() {
+  const overlay = document.getElementById('lead-call-modal-overlay');
+  if (overlay) overlay.remove();
+  if (leadCallEscHandler) {
+    document.removeEventListener('keydown', leadCallEscHandler);
+    leadCallEscHandler = null;
+  }
+}
+
+function updateLeadCallObjectiveCount() {
+  const input = document.getElementById('lead-call-objective-input');
+  const out = document.getElementById('lead-call-objective-count');
+  if (!input || !out) return;
+  const len = (input.value || '').length;
+  out.textContent = `${len}/${LEAD_CALL_OBJECTIVE_MAX}`;
+  // Same tone ladder as the Automations counter (updateObjectiveCount):
+  // muted → amber approaching the ceiling → red at/over it.
+  out.style.color = len >= LEAD_CALL_OBJECTIVE_MAX ? '#ef4444' : (len >= LEAD_CALL_OBJECTIVE_MAX - 10 ? '#f59e0b' : 'var(--muted)');
+  // A previous over-cap error clears itself as soon as the text is legal again.
+  const err = document.getElementById('lead-call-objective-error');
+  if (err && len <= LEAD_CALL_OBJECTIVE_MAX) err.style.display = 'none';
+}
+
+function openLeadCallModal(leadId, btn) {
+  closeLeadCallModal(); // never stack a second one (embed-modal pattern)
+  leadCallBtn = btn || null;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'lead-call-modal-overlay';
+  // Same overlay family as the analytics/embed modals; padding tightens at
+  // the 480px breakpoint so the card fills a phone width instead of floating.
+  const pad = (window.innerWidth || 0) <= 480 ? '12px' : '20px';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:${pad};overflow-y:auto;`;
+  overlay.setAttribute('data-modal', '');
+
+  // Best-effort lead name for the subtitle, from the Captured Leads cache.
+  let leadName = '';
   try {
+    const lead = (typeof obLeadsAll !== 'undefined' ? obLeadsAll : []).find(l => l.lead_id === leadId);
+    if (lead && lead.name) leadName = lead.name;
+  } catch (e) { /* cache not loaded — subtitle stays generic */ }
+
+  overlay.innerHTML = `
+    <div role="dialog" aria-modal="true" aria-labelledby="lead-call-modal-title" style="background:var(--surface);border-radius:16px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="phone" style="width:18px;height:18px;color:#22c55e;"></i>
+          </div>
+          <div>
+            <div id="lead-call-modal-title" style="font-size:16px;font-weight:700;">Call this lead</div>
+            ${leadName ? `<div style="font-size:13px;color:var(--muted);">${escapeHtmlAttr(leadName)}</div>` : ''}
+          </div>
+        </div>
+        <button type="button" aria-label="Close" onclick="closeLeadCallModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+
+      <div style="padding:18px 20px;max-height:70vh;overflow-y:auto;">
+        <label for="lead-call-objective-input" style="display:block;font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Call Objective</label>
+        <textarea id="lead-call-objective-input" rows="3"
+               placeholder="Describe what you want the AI receptionist to accomplish during this call."
+               oninput="updateLeadCallObjectiveCount()"
+               style="width:100%;box-sizing:border-box;background:var(--field);border:1px solid var(--field-border);border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;resize:vertical;min-height:84px;"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">
+          <span style="font-size:11.5px;color:var(--muted);line-height:1.5;">Optional. Multiline is fine — newlines are collapsed to single spaces before the call.</span>
+          <span id="lead-call-objective-count" style="font-size:11.5px;color:var(--muted);white-space:nowrap;">0/${LEAD_CALL_OBJECTIVE_MAX}</span>
+        </div>
+        <div id="lead-call-objective-error" style="display:none;font-size:12px;color:#ef4444;line-height:1.5;margin-top:8px;"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);">
+        <button type="button" class="btn-secondary" onclick="closeLeadCallModal()" style="font-size:14px;padding:10px 18px;">Cancel</button>
+        <button type="button" id="lead-call-start-btn" onclick="confirmLeadCall('${leadId}')" style="background:#22c55e;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;">Start call</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeLeadCallModal(); });
+
+  // Esc closes without dialing — the old confirm() supported this natively.
+  leadCallEscHandler = (e) => { if (e.key === 'Escape') closeLeadCallModal(); };
+  document.addEventListener('keydown', leadCallEscHandler);
+
+  const ta = document.getElementById('lead-call-objective-input');
+  updateLeadCallObjectiveCount();
+  if (ta) ta.focus();
+}
+
+async function confirmLeadCall(leadId) {
+  const input = document.getElementById('lead-call-objective-input');
+  const errEl = document.getElementById('lead-call-objective-error');
+  const objective = ((input && input.value) || '').trim();
+
+  // Client-side ceiling guard — the same 120-char contract as the Automations
+  // objective (validateObjective). Over-cap shows guidance and the call does
+  // NOT fire; no silent truncation. An empty objective is VALID: it never
+  // blocks the call.
+  if (objective.length > LEAD_CALL_OBJECTIVE_MAX) {
+    if (errEl) {
+      errEl.textContent = `Call Objective is ${objective.length} of ${LEAD_CALL_OBJECTIVE_MAX} characters — shorten it to ${LEAD_CALL_OBJECTIVE_MAX} or fewer, then start the call.`;
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+
+  closeLeadCallModal();
+
+  const btn = leadCallBtn;
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Calling…'; btn.style.opacity = '0.6'; }
+  try {
+    const body = { lead_id: leadId };
+    // Objective is optional: the key is sent ONLY for a non-empty trimmed
+    // value, so an empty field keeps the legacy payload byte-for-byte.
+    if (objective) body.objective = objective;
     const res = await fetch(`${API}/outbound/call`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portal-Token': portalToken },
-      body: JSON.stringify({ lead_id: leadId })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (res.ok && data.success) {
@@ -11728,7 +12386,8 @@ async function callLead(leadId, btn) {
   } catch (e) {
     showToast(e.message, 'error');
   }
-  btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1';
+  if (btn) { btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1'; }
+  leadCallBtn = null;
   setTimeout(loadOutbound, 1500);
 }
 

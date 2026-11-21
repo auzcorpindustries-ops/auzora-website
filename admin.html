@@ -1227,31 +1227,10 @@ async function loadLiveCosts(forceRefresh) {
       cards.push(disabledCard('🤖', 'OpenAI', oa.reason));
     }
 
-    // ElevenLabs — DISABLED (ELE-4) — retired; removal ELE-6
-    /*
-    const el = data.elevenlabs;
-    if (el.enabled) {
-      const usedPct = parseFloat(el.usedPercent) || 0;
-      const barColor = usedPct > 80 ? 'var(--red)' : usedPct > 50 ? 'var(--yellow)' : 'var(--green)';
-      cards.push(`
-        <div class="table-card" style="padding:20px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-            <span style="font-size:1.1rem;">🔊</span>
-            <span style="font-weight:700;font-size:14px;">ElevenLabs</span>
-            <span style="margin-left:auto;background:rgba(124,58,237,.12);color:var(--purple);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">${el.tier} · $${el.tierCost}/mo</span>
-          </div>
-          <div style="font-size:12px;margin-bottom:8px;">
-            <span style="color:var(--muted);">Characters:</span> ${el.characterCount?.toLocaleString() || 0} / ${el.characterLimit?.toLocaleString() || 0}
-          </div>
-          <div style="background:var(--bg);border-radius:6px;height:6px;overflow:hidden;">
-            <div style="width:${usedPct}%;height:100%;background:${barColor};transition:width .3s;"></div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">${usedPct}% used</div>
-        </div>`);
-    } else {
-      cards.push(disabledCard('🔊', 'ElevenLabs', el.reason));
-    }
-    */
+    // CVX-2 (zeus_1794610530060_59116dba): the usage card is gone — ElevenLabs
+    // is no longer a supported custom-voice provider, so there is no EL spend
+    // to render (costDashboard.js may still serve the legacy payload; the
+    // admin surface simply ignores it).
 
     // AWS
     const aws = data.aws;
@@ -1579,7 +1558,9 @@ async function openDetail(clientId) {
 
   // Load entitlements for the tier management section
   loadClientEntitlements(clientId);
-  // Load the ElevenLabs add-on override state for the toggle
+  // Load the Custom Voice add-on override state + provider assignment
+  // (CVX-2: the per-client EL key state loader is gone — its route was
+  // removed server-side in the core-removal ticket)
   loadVoiceAddonState(clientId);
 
   document.getElementById('modal-body').innerHTML = `
@@ -1700,17 +1681,42 @@ async function openDetail(clientId) {
             </label>
           `).join('')}
         </div>
-        <!-- DISABLED (ELE-4) — ElevenLabs add-on control retired; removal ELE-6
-             Backend still accepts the PATCH field via ELE-3 allowlist entry -->
-        <!--
+        <!-- CVX-2 (zeus_1794610530060_59116dba): the toggle is the entitlement
+             gate for the portal's Custom Voice section. The stored field stays
+             voice_addon_elevenlabs (NOT renamed or migrated); only the visible
+             label dropped the legacy provider framing. -->
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-            <input type="checkbox" id="edit-voice-addon-elevenlabs" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
-            <span><strong>ElevenLabs voices add-on</strong> — $49/mo</span>
+            <input type="checkbox" id="edit-voice-addon" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
+            <span><strong>Custom Voice add-on</strong> — unlocks Custom Voice for this client</span>
           </label>
-          <span style="font-size:12px;color:var(--muted);">Admin override: unlocks premium ElevenLabs voices for this client, bypassing the paywall.</span>
+          <span style="font-size:12px;color:var(--muted);">Admin override: turns on the Custom Voice section for this client, bypassing the paywall ($49/mo add-on).</span>
         </div>
-        -->
+        <!-- Per-client Custom Voice provider assignment (CV-GPTL, ticket
+             zeus_1794586049156_7ae0fd76; CVX-2 de-ElevenLabs,
+             zeus_1794610530060_59116dba). The admin selects the provider and
+             enters the client's custom Voice ID; the client portal can toggle
+             enable + edit the voice id but can NEVER change the provider
+             (admin-only rule). OpenAI GPT-Live is the ONLY implemented
+             provider and needs NO per-client key — the Voice ID is injected
+             directly into the GPT-Live call session. A client with a stored
+             legacy provider config renders the explicit unsupported state
+             below (stored record shown read-only, never deleted). Saved with
+             "Save Changes" via PATCH /admin/clients/:id custom_voice; the
+             server validates provider (allow-list) and the voice-id shape
+             and 400s on error. -->
+        <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Custom Voice provider <span style="font-weight:400;color:var(--muted);">(per-client assignment)</span></div>
+          <div id="edit-cv-unsupported" style="display:none;margin-bottom:8px;"></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Voice the AI answers this client's calls with. OpenAI GPT-Live uses the custom Voice ID directly in the call session. Saved with "Save Changes".</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="edit-cv-provider" onchange="onAdminCvProviderChange()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+              <option value="openai">OpenAI GPT-Live</option>
+            </select>
+            <input type="text" id="edit-cv-voice-id" placeholder="Custom Voice ID" oninput="onAdminCvVoiceIdInput()" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;" />
+          </div>
+          <div id="edit-cv-voice-id-hint" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        </div>
       </div>
     </div>
   `;
@@ -1878,23 +1884,107 @@ async function loadClientEntitlements(clientId) {
   }
 }
 
-// Load the ElevenLabs add-on override state into the edit modal toggle.
-// DISABLED (ELE-4) — control retired; removal ELE-6
+// Load the Custom Voice add-on override state into the edit modal toggle.
 // Reads the raw client record (snake_case field straight from DynamoDB via
 // GET /admin/clients), not the entitlements payload — the add-on is a
 // separate paid flag, not part of the tier entitlements matrix.
+// CV-GPTL (zeus_1794586049156_7ae0fd76): the SAME record hydrates the
+// Custom Voice provider assignment (provider + voice id) — the admin stores
+// custom_voice { provider, voice_id, enabled, settings? } per client; the
+// provider is ADMIN-ONLY (the portal never sets it).
+// CVX-2 (zeus_1794610530060_59116dba): the legacy voice provider is no
+// longer supported. A stored provider='elevenlabs' record renders the
+// explicit unsupported state (stored config shown read-only, never
+// deleted); the editable controls target an OpenAI assignment, which
+// re-enables custom voice for the client.
+let adminCvStored = null; // the client's stored custom_voice object (null = hydration failed / none)
+let adminCvUnsupported = false; // stored record is legacy ElevenLabs (CVX-2)
+
 async function loadVoiceAddonState(clientId) {
   try {
     const res = await fetch(`${API}/clients/${clientId}`, {
       headers: { 'x-api-key': localStorage.getItem('atlas_admin_key') || '' }
     });
-    if (!res.ok) return;
+    if (!res.ok) { adminCvStored = null; adminCvUnsupported = false; return; }
     const client = await res.json();
-    const el = document.getElementById('edit-voice-addon-elevenlabs');
-    if (el) el.checked = client.voice_addon_elevenlabs === true;
+    const addonEl = document.getElementById('edit-voice-addon');
+    if (addonEl) addonEl.checked = client.voice_addon_elevenlabs === true;
+    // Custom Voice provider assignment hydration (CV-GPTL).
+    adminCvStored = client.custom_voice && typeof client.custom_voice === 'object'
+      ? client.custom_voice
+      : null;
+    adminCvUnsupported = !!(adminCvStored && adminCvStored.provider === 'elevenlabs');
+    const providerEl = document.getElementById('edit-cv-provider');
+    const voiceIdEl = document.getElementById('edit-cv-voice-id');
+    // OpenAI is the only implemented option (CVX-2). The stored legacy voice
+    // id is shown read-only in the unsupported banner and is NEVER prefilled
+    // into the editable input — saving it under the OpenAI provider would
+    // silently re-enable custom voice with a dead id.
+    if (providerEl) providerEl.value = 'openai';
+    if (voiceIdEl) voiceIdEl.value = (!adminCvUnsupported && adminCvStored && adminCvStored.voice_id) || '';
+    renderAdminCvUnsupportedState();
+    onAdminCvProviderChange();
+    onAdminCvVoiceIdInput();
   } catch (e) {
-    console.error('Failed to load ElevenLabs add-on state:', e);
+    console.error('Failed to load Custom Voice add-on state:', e);
+    adminCvStored = null;
+    adminCvUnsupported = false;
   }
+}
+
+// CVX-2: explicit unsupported state for stored provider='elevenlabs' clients.
+// Same wording as the client portal; the stored configuration is displayed
+// read-only (textContent — never interpolated into HTML) and never deleted.
+// The assignment controls below stay live so the admin can assign an OpenAI
+// custom voice to re-enable custom voice.
+function renderAdminCvUnsupportedState() {
+  const box = document.getElementById('edit-cv-unsupported');
+  if (!box) return;
+  if (!adminCvUnsupported) { box.style.display = 'none'; box.textContent = ''; return; }
+  box.style.display = 'block';
+  box.textContent = '';
+  const notice = document.createElement('div');
+  notice.style.cssText = 'padding:8px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:6px;font-size:12px;margin-bottom:6px;';
+  notice.textContent = 'ElevenLabs is no longer supported \u2014 this client\u2019s calls use the native voice. Assign an OpenAI custom voice to re-enable custom voice.';
+  const stored = document.createElement('div');
+  stored.style.cssText = 'font-size:11px;color:var(--muted);';
+  stored.textContent = `Stored configuration (read-only) — provider: ${(adminCvStored && adminCvStored.provider) || 'elevenlabs'} · voice id: ${(adminCvStored && adminCvStored.voice_id) || '(none)'}`;
+  box.appendChild(notice);
+  box.appendChild(stored);
+}
+
+// ── Custom Voice provider assignment helpers (CV-GPTL, zeus_1794586049156_7ae0fd76)
+// Mirrors the server's voice-id shape (customVoice/config.js): openai is
+// permissive printable ASCII (provisional until OpenAI's custom-voice id
+// format is confirmed). The hint is guidance — the server 400s are authoritative.
+const ADMIN_CV_VOICE_ID_RE = {
+  openai: /^[!-~]{1,200}$/,
+};
+
+function onAdminCvProviderChange() {
+  // CVX-2: OpenAI is the only provider option and there is no per-client key
+  // wiring anymore (GPT-Live rides the platform session auth) — this handler
+  // only refreshes the voice-id hint.
+  onAdminCvVoiceIdInput();
+}
+
+function onAdminCvVoiceIdInput() {
+  const inputEl = document.getElementById('edit-cv-voice-id');
+  const hint = document.getElementById('edit-cv-voice-id-hint');
+  if (!hint || !inputEl) return;
+  const v = inputEl.value.trim();
+  if (!v) {
+    hint.textContent = 'The client\u2019s OpenAI GPT-Live custom Voice ID (from their OpenAI account).';
+    hint.style.color = 'var(--muted)';
+    return;
+  }
+  if (!ADMIN_CV_VOICE_ID_RE.openai.test(v)) {
+    hint.textContent = 'Invalid \u2014 1-200 printable characters, no spaces.';
+    hint.style.color = 'var(--red)';
+    return;
+  }
+  hint.textContent = 'Valid voice id format.';
+  hint.style.color = 'var(--green)';
 }
 
 async function saveClientEdit() {
@@ -1939,10 +2029,31 @@ async function saveClientEdit() {
     updates.entitlements_override = null;
   }
 
-  // ElevenLabs add-on override — DISABLED (ELE-4) — control retired; removal ELE-6
-  // Backend still accepts the PATCH field via ELE-3 allowlist entry
-  const addonToggle = document.getElementById('edit-voice-addon-elevenlabs');
+  // Custom Voice add-on override (CVX-2): the toggle gates the portal's
+  // Custom Voice section; the stored PATCH field stays voice_addon_elevenlabs.
+  const addonToggle = document.getElementById('edit-voice-addon');
   if (addonToggle) updates.voice_addon_elevenlabs = addonToggle.checked;
+
+  // Custom Voice provider assignment (CV-GPTL, zeus_1794586049156_7ae0fd76;
+  // CVX-2 de-ElevenLabs). Sent ONLY when the client record hydrated
+  // (adminCvStored !== null) — if the hydration fetch failed, this save must
+  // not clobber the stored custom_voice with empty defaults. While a stored
+  // legacy ElevenLabs record is displayed (adminCvUnsupported), the PATCH
+  // carries custom_voice only once the admin has actually typed an OpenAI
+  // voice id — an incidental save never overwrites the preserved legacy
+  // config. The server's admin-scope normalizer merges with the stored
+  // record, so enabled + settings survive untouched (provider is admin-only).
+  if (adminCvStored !== null) {
+    const cvProviderEl = document.getElementById('edit-cv-provider');
+    const cvVoiceIdEl = document.getElementById('edit-cv-voice-id');
+    const cvVoiceId = cvVoiceIdEl ? cvVoiceIdEl.value.trim() : '';
+    if (!adminCvUnsupported || cvVoiceId !== '') {
+      updates.custom_voice = {
+        provider: cvProviderEl ? cvProviderEl.value : 'openai',
+        voice_id: cvVoiceId,
+      };
+    }
+  }
 
   try {
     const res = await fetch(`${API}/clients/${editingClientId}`, {
@@ -1950,12 +2061,15 @@ async function saveClientEdit() {
       headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('atlas_admin_key') || '' },
       body: JSON.stringify(updates)
     });
-    if (!res.ok) throw new Error('Update failed');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Update failed');
+    }
     closeModal();
     toast('Client updated');
     loadAll();
   } catch(e) {
-    toast('Failed to update', 'error');
+    toast(e.message === 'Update failed' ? 'Failed to update' : e.message, 'error');
   }
 }
 
