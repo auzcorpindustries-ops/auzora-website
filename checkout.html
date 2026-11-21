@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0C1D1B"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
   <link rel="icon" type="image/png" href="/logo.png" />
 <title>Checkout — Sonello</title>
 <!-- Legacy bookmark shim (ticket zeus_1788214888355_14fc36fe): the old
@@ -11,24 +14,82 @@
      ?plan= param into the new deep link and redirects immediately. -->
 <noscript><meta http-equiv="refresh" content="0;url=/index.html#pricing"/></noscript>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    font-family: 'Segoe UI', Arial, sans-serif;
-    color: #101826;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  :root{
+    --lowend:#0C1D1B; --under:#12332A; --carrier:#265B46; --pulse:#478C67;
+    --tint:#7CBC8B; --ground:#E3EFE6; --paper:#FAFAF6;
+    --ink:#0C1D1B; --mu:#4A5E57; --sub:#5B6E67;
+    --onDark:#E3EFE6; --onDarkMu:#A9BDB2; --onDarkSoft:#D6E6DA;
+    --font-display:'Outfit',system-ui,sans-serif;
+    --font-ui:'Hanken Grotesk',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
   }
-  .redirect-box { text-align: center; padding: 48px 24px; max-width: 560px; }
-  .spinner { width: 22px; height: 22px; border: 3px solid rgba(124,58,237,.2); border-top-color: #7C3AED; border-radius: 50%; animation: azspin 0.9s linear infinite; margin: 0 auto 18px; }
-  @keyframes azspin { to { transform: rotate(360deg); } }
-  .redirect-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #7C3AED; margin-bottom: 10px; }
-  .redirect-title { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 10px; }
-  .redirect-sub { font-size: 15px; color: #5f687a; margin-bottom: 26px; }
-  .redirect-btn { display: inline-block; padding: 14px 34px; border-radius: 99px; font-weight: 600; font-size: 16px; color: #fff; background: #7C3AED; box-shadow: 0 6px 20px rgba(124,58,237,.3); text-decoration: none; }
-  .redirect-btn:hover { box-shadow: 0 10px 28px rgba(124,58,237,.45); }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  html{overflow-x:hidden}
+  body{
+    background:var(--lowend);color:var(--onDark);
+    font-family:var(--font-ui);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;position:relative;overflow:hidden;isolation:isolate;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* static aurora field */
+  body::before{
+    content:"";position:absolute;inset:0;z-index:0;
+    background:
+      radial-gradient(520px 340px at 12% 8%,rgba(124,188,139,.9),transparent 72%),
+      radial-gradient(640px 380px at 92% 30%,rgba(124,188,139,.8),transparent 70%),
+      radial-gradient(700px 420px at 62% 112%,rgba(124,188,139,.8),transparent 70%),
+      radial-gradient(500px 300px at 30% 90%,rgba(71,140,103,.75),transparent 70%);
+    filter:blur(46px);
+  }
+  body::after{
+    content:"";position:absolute;inset:0;z-index:0;
+    background:linear-gradient(180deg,rgba(12,29,27,.76),rgba(12,29,27,.70));
+  }
+  .redirect-box{
+    position:relative;z-index:2;
+    text-align:center;padding:44px 40px;max-width:520px;width:100%;
+    background:rgba(12,29,27,.42);border:1px solid rgba(227,239,230,.22);
+    border-radius:16px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 24px 60px rgba(0,0,0,.28);
+  }
+  .spinner{
+    width:22px;height:22px;
+    border:2px solid rgba(227,239,230,.25);border-top-color:var(--tint);
+    border-radius:50%;animation:azspin .9s linear infinite;margin:0 auto 20px;
+  }
+  @keyframes azspin{to{transform:rotate(360deg)}}
+  .redirect-label{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    text-transform:uppercase;letter-spacing:.14em;color:var(--tint);margin-bottom:12px;
+  }
+  .redirect-title{
+    font-family:var(--font-display);font-size:clamp(26px,4vw,34px);font-weight:500;
+    letter-spacing:-.02em;line-height:1.15;color:var(--onDark);
+    margin-bottom:12px;text-wrap:balance;
+  }
+  .redirect-sub{font-size:15px;line-height:1.6;color:var(--onDarkSoft);margin-bottom:26px}
+  .redirect-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:48px;padding:0 30px;border-radius:999px;
+    background:var(--tint);border:1px solid var(--tint);color:var(--lowend);
+    font-family:var(--font-ui);font-size:16px;font-weight:600;text-decoration:none;
+    transition:background .2s ease,border-color .2s ease;
+  }
+  .redirect-btn:hover{background:#8FCCA0;border-color:#8FCCA0;box-shadow:none}
+  a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--tint);outline-offset:3px;border-radius:6px;
+  }
+  @media (max-width:390px){
+    .redirect-box{padding:34px 22px}
+    .redirect-title{font-size:24px}
+    .redirect-sub{font-size:14.5px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
 </style>
 </head>
 <body>
