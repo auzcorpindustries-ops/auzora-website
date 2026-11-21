@@ -270,6 +270,21 @@ async function openCallModal(page, leadId) {
     !!document.getElementById('lead-call-modal-overlay')));
 }
 
+// Resolve a theme custom property to the colour the browser actually paints.
+// The guidance tones are design tokens, so a palette reskin (Sonello: --red
+// #9C3B2F) must not break the assertion — the CONTRACT is "the over-cap tone
+// is the theme's danger token", not one literal hex value.
+async function resolveToken(page, token) {
+  return page.evaluate((name) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${name})`;
+    document.body.appendChild(probe);
+    const tone = getComputedStyle(probe).color;
+    probe.remove();
+    return tone;
+  }, token);
+}
+
 // Read the modal's whole state in one round-trip.
 async function modalState(page) {
   return page.evaluate(() => {
@@ -415,8 +430,12 @@ describeBrowser('Leads & CRM manual call — Call Objective modal (browser)', ()
 
       let st = await modalState(page);
       expect(st.counter).toBe('125/120');
-      // same guidance tone as the Automations counter: red at/over the ceiling
-      expect(st.counterColor).toMatch(/239,\s*68,\s*68|#ef4444/);
+      // Same guidance ladder as the Automations counter: the over-cap tone is
+      // the theme's danger token (--red), and it must be a real warning tone,
+      // not the muted default. Asserting the resolved token keeps the check
+      // honest across palettes (legacy #ef4444, Sonello #9C3B2F).
+      expect(st.counterColor).toBe(await resolveToken(page, '--red'));
+      expect(st.counterColor).not.toBe(await resolveToken(page, '--muted'));
 
       await page.click('#lead-call-start-btn');
 

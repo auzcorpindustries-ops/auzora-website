@@ -98,10 +98,11 @@ describe('the objective field mirrors the Automations objective contract', () =>
   test('the live counter renders len/120 with the same tone ladder as updateObjectiveCount', () => {
     const counter = fnBody('updateLeadCallObjectiveCount');
     expect(counter).toContain('`${len}/${LEAD_CALL_OBJECTIVE_MAX}`');
-    // red at/over the ceiling, amber approaching it — same colors as the
-    // Automations counter
-    expect(counter).toContain("'#ef4444'");
-    expect(counter).toContain("'#f59e0b'");
+    // red at/over the ceiling, amber approaching it — same tone ladder as the
+    // Automations counter. Expressed as theme tokens so the ladder follows the
+    // palette (Sonello: --red #9C3B2F) instead of pinning a literal hex.
+    expect(counter).toContain("'var(--red)'");
+    expect(counter).toContain("'var(--yellow)'");
     // the counter is initialised when the modal opens
     expect(fnBody('openLeadCallModal')).toContain('updateLeadCallObjectiveCount()');
   });

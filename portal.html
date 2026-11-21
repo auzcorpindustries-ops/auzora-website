@@ -12272,7 +12272,7 @@ function updateLeadCallObjectiveCount() {
   out.textContent = `${len}/${LEAD_CALL_OBJECTIVE_MAX}`;
   // Same tone ladder as the Automations counter (updateObjectiveCount):
   // muted → amber approaching the ceiling → red at/over it.
-  out.style.color = len >= LEAD_CALL_OBJECTIVE_MAX ? '#ef4444' : (len >= LEAD_CALL_OBJECTIVE_MAX - 10 ? '#f59e0b' : 'var(--muted)');
+  out.style.color = len >= LEAD_CALL_OBJECTIVE_MAX ? 'var(--red)' : (len >= LEAD_CALL_OBJECTIVE_MAX - 10 ? 'var(--yellow)' : 'var(--muted)');
   // A previous over-cap error clears itself as soon as the text is legal again.
   const err = document.getElementById('lead-call-objective-error');
   if (err && len <= LEAD_CALL_OBJECTIVE_MAX) err.style.display = 'none';
