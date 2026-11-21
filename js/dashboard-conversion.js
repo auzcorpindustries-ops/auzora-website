@@ -313,7 +313,9 @@
       return '<div class="dconv-empty"><i data-lucide="tags"></i>' +
         '<span>No intents yet — they appear as your AI handles calls and leads</span></div>';
     }
-    var colors = ['var(--accent)', 'var(--accent2)', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'];
+    // Sonello "Frequency" series ramp — token-driven so both themes stay in
+    // step. Labels + counts carry the meaning, never colour alone.
+    var colors = ['var(--accent)', 'var(--accent2)', 'var(--blue)', 'var(--yellow)', 'var(--red)', 'var(--muted)'];
     var html = '<div class="dconv-chips" role="group" aria-label="Top lead intents">';
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
