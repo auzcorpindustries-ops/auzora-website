@@ -6,355 +6,455 @@
   <link rel="icon" type="image/png" href="/logo.png" />
 <title>Sonello Admin</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap');
 /* ─────────────────────────────────────────────────────────────────────────────
-   SONELLO ADMIN — redesigned theme
-   Drop-in replacement for the contents of <style> in admin.html.
-   Every existing class / id / JS hook is preserved.
+   SONELLO ADMIN — "Frequency" theme
+   Dark green sidebar, SOLID white cards on a warm paper page. Staff-dense.
+   Every existing class / id / JS hook is preserved; no behaviour changes.
    ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --bg: #f6f7f9; --surface: #ffffff; --surface2: #f7f8fa; --panel: #fbfbfc;
-  --border: rgba(16,24,38,0.08); --head: #fafbfc; --glass: rgba(255,255,255,0.82);
-  --accent: #3b82f6; --accent-hover: #7c3aed;
-  --grad: linear-gradient(135deg, #3B82F6, #7C3AED, #EC4899);
-  --green: #16a34a; --yellow: #b45309; --orange: #f97316; --red: #dc2626;
-  --blue: #0284c7; --purple: #7c3aed; --pink: #db2777;
-  --text: #101826; --muted: #5f687a; --tint: rgba(16,24,38,0.035);
-  --shadow: 0 16px 40px rgba(24,33,47,0.06);
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Sonello "Frequency" brand tokens */
+  --lowend: #0C1D1B; --under: #12332A; --carrier: #265B46; --pulse: #478C67;
+  --overtone: #7CBC8B; --ground: #E3EFE6; --paper: #FAFAF6;
+  --ok: #265B46; --warn: #8A5A12; --warnbg: #F6EBD3; --bad: #9C3B2F; --badbg: #F6DDD8;
+  --on-dark: #E3EFE6; --on-dark-muted: #A9BDB2; --on-dark-subtle: #7F958A;
+  /* admin surface tokens (repointed to Sonello) */
+  --bg: #FAFAF6; --surface: #ffffff; --surface2: #F3F7F3; --panel: #F3F7F3;
+  --border: rgba(38,91,70,.12); --border-strong: rgba(38,91,70,.22); --head: #ffffff;
+  --glass: rgba(255,255,255,.82);
+  --accent: #265B46; --accent-hover: #12332A;
+  --grad: linear-gradient(135deg,#0C1D1B 0%,#265B46 60%,#7CBC8B 100%);
+  --green: #478C67; --yellow: #8A5A12; --orange: #8A5A12; --red: #9C3B2F;
+  --blue: #2F5F8F; --purple: #265B46; --pink: #7CBC8B;
+  --text: #0C1D1B; --muted: #4A5E57; --subtle: #5B6E67;
+  --tint: rgba(38,91,70,.06);
+  --shadow: 0 1px 2px rgba(12,29,27,.05), 0 8px 24px rgba(12,29,27,.06);
+  --font: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 16px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+html { color-scheme: light; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 500; letter-spacing: -.02em; }
 a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--purple); }
-::placeholder { color: #9aa3b2; }
+a:hover { color: var(--accent-hover); }
+::placeholder { color: var(--subtle); }
 input, select, textarea, button { font-family: inherit; }
-input[type=range] { width: 100%; accent-color: var(--purple); }
+input[type=range] { width: 100%; accent-color: var(--carrier); }
+input[type=number] { font-family: var(--mono); font-size: 13px; }
+/* keyboard focus — 2px Carrier ring on every real control.
+   !important because several controls carry an inline outline:none. */
+:focus-visible { outline: 2px solid var(--carrier); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--carrier) !important; outline-offset: 2px;
+}
+
+/* micro-typography helpers */
+.mono-caps, .cap { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--subtle); }
+.card-caption { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--subtle); font-weight: 500; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* ── AUTH ──────────────────────────────────────────────────────────────── */
 #auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px; }
 .auth-box {
   background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
-  border-radius: 18px; padding: 36px; width: 100%; max-width: 380px; text-align: center;
+  border-radius: var(--radius); padding: 36px; width: 100%; max-width: 380px; text-align: center;
 }
+.auth-mark { width: 34px; height: 38px; display: block; margin: 0 auto 16px; stroke: var(--lowend); }
 .auth-box img.brand { width: 46px; height: 46px; object-fit: contain; display: block; margin: 0 auto 14px; }
-.auth-logo { font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--text); margin-bottom: 6px; }
-.auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.auth-logo { font-family: var(--display); font-size: 26px; font-weight: 300; letter-spacing: .01em; color: var(--text); margin-bottom: 6px; line-height: 1; }
+.auth-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--subtle); margin-bottom: 24px; }
 .auth-box input {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  width: 100%; background: var(--surface); border: 1px solid var(--border-strong);
   border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
-  margin-bottom: 14px; outline: none; transition: border-color .2s;
+  margin-bottom: 14px; outline: none; transition: border-color .2s, box-shadow .2s;
 }
-.auth-box input:focus { border-color: var(--accent); }
+.auth-box input:focus { border-color: var(--carrier); box-shadow: 0 0 0 3px rgba(38,91,70,.12); }
 .btn-primary {
-  width: 100%; background: var(--grad); color: #fff; border: none; border-radius: 10px;
-  padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 10px 24px rgba(124,58,237,.22); transition: filter .2s;
+  width: 100%; background: var(--carrier); color: #EAF3EC; border: 1px solid var(--carrier); border-radius: 10px;
+  padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: none; transition: background .2s;
 }
-.btn-primary:hover { filter: brightness(1.06); }
-.auth-error { color: var(--red); font-size: 12px; margin-top: 10px; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.auth-error { color: var(--bad); font-size: 12px; margin-top: 10px; }
 
 /* ── SHELL ─────────────────────────────────────────────────────────────── */
 #app { display: none; }
 .sidebar {
-  position: fixed; left: 0; top: 0; bottom: 0; width: 246px; z-index: 110;
-  background: var(--panel); border-right: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 2px; padding: 14px 12px;
+  position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 110;
+  background: var(--lowend); border-right: 1px solid var(--under);
+  display: flex; flex-direction: column; gap: 2px; padding: 18px 14px; overflow-y: auto;
 }
-.sidebar-logo {
-  display: flex; align-items: center; gap: 10px; padding: 2px 4px 14px;
-  font-size: 14px; font-weight: 800; letter-spacing: .4px; color: var(--text);
-  border-bottom: none; margin-bottom: 0;
+.sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 2px 4px 14px; color: var(--on-dark); }
+.sidebar-logo .brand-mark { width: 24px; height: 27px; flex-shrink: 0; stroke: var(--on-dark); }
+.sidebar-logo .brand-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.sidebar-logo .wordmark { font-family: var(--display); font-weight: 300; font-size: 22px; letter-spacing: .01em; line-height: 1; color: var(--on-dark); }
+.sidebar-logo .brand-pill {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 8px; margin-top: 7px;
+  border-radius: 999px; background: rgba(124,188,139,.18); color: var(--overtone);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
 }
 .sidebar-logo img { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
-.sidebar-logo span { display: block; font-size: 10px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 .sidebar-search {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 7px 9px; font-size: 13px; color: var(--muted); cursor: text;
+  display: flex; align-items: center; gap: 8px; margin: 6px 0 4px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px; padding: 8px 10px; font-size: 13px; color: #9FB8A8; cursor: text;
 }
-.sidebar-search kbd { margin-left: auto; font-size: 10px; font-weight: 600; font-family: var(--font); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; }
-.nav-group { font-size: 10px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); opacity: .8; padding: 14px 10px 6px; }
+.sidebar-search kbd {
+  margin-left: auto; font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--on-dark-muted); border: 1px solid rgba(255,255,255,.15); border-radius: 5px; padding: 1px 5px;
+}
+.nav-group {
+  font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .14em;
+  text-transform: uppercase; color: #6F8F7E; opacity: 1; padding: 16px 12px 6px;
+}
 .nav-item {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px;
-  font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 9px;
+  font-size: 14px; font-weight: 500; color: #A9C4B4; cursor: pointer;
   border: none; transition: background .15s, color .15s;
 }
-.nav-item:hover { color: var(--text); background: var(--tint); }
-.nav-item.active { color: var(--text); background: rgba(124,58,237,.09); box-shadow: inset 2px 0 0 var(--purple); }
-.nav-icon { display: flex; width: 16px; height: 16px; }
-.nav-icon svg { width: 16px; height: 16px; }
-.sidebar-footer { margin-top: auto; padding: 12px 0 0; border-top: none; }
+.nav-item:hover { color: var(--on-dark); background: rgba(255,255,255,.06); }
+.nav-item.active { color: var(--overtone); background: rgba(124,188,139,.14); font-weight: 600; box-shadow: none; }
+.nav-icon { display: flex; width: 17px; height: 17px; }
+.nav-icon svg { width: 17px; height: 17px; stroke-width: 1.7; }
+.sidebar-footer { margin-top: auto; padding: 12px 0 0; border-top: 1px solid rgba(255,255,255,.08); }
 .sidebar-user {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px;
-  border: 1px solid var(--border); border-radius: 11px; background: var(--surface);
+  border: 1px solid rgba(255,255,255,.10); border-radius: 12px; background: rgba(255,255,255,.04);
 }
 .sidebar-user .avatar {
-  width: 30px; height: 30px; border-radius: 8px; background: var(--grad); color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%; background: rgba(124,188,139,.18); color: var(--overtone);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 500; flex-shrink: 0;
 }
 .sidebar-user .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.sidebar-user .meta b { font-size: 12px; font-weight: 700; }
-.sidebar-user .meta span { font-size: 11px; color: var(--muted); }
-.logout-btn { font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; }
-.logout-btn:hover { color: var(--red); }
+.sidebar-user .meta b { font-size: 12.5px; font-weight: 600; color: var(--on-dark); }
+.sidebar-user .meta span { font-size: 11px; color: var(--on-dark-muted); }
+.logout-btn { color: var(--on-dark-subtle); cursor: pointer; }
+.logout-btn:hover { color: #F0A598; }
+
+/* ── TOP STRIP ─────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  height: 58px; padding: 0 32px; background: var(--bg);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
+}
+.topbar .caption { color: var(--subtle); }
+.topbar .right { display: flex; align-items: center; gap: 12px; }
+.btn-signout {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+  color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s;
+}
+.btn-signout:hover { background: var(--tint); border-color: var(--border-strong); }
 
 /* ── PAGES ─────────────────────────────────────────────────────────────── */
-.main { margin-left: 246px; padding: 22px; min-height: 100vh; }
+.main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
 .page { display: none; }
-.page.active { display: flex; flex-direction: column; gap: 18px; }
+.page.active { display: flex; flex-direction: column; gap: 18px; padding: 26px 32px 44px; }
 .page-header { margin: 0; }
-.page-header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.2px; }
-.page-header p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.page-header h1 { font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -.02em; }
+.page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
 /* ── STATS ─────────────────────────────────────────────────────────────── */
 .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 0; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.stat-card {
+  display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px 20px; box-shadow: var(--shadow);
+}
 .stat-icon {
-  width: 34px; height: 34px; border-radius: 9px; margin-bottom: 14px;
+  width: 34px; height: 34px; border-radius: 10px; margin-bottom: 14px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(59,130,246,.10); color: var(--accent);
+  background: rgba(124,188,139,.16); color: var(--carrier);
 }
 .stat-icon svg { width: 17px; height: 17px; }
-.stat-icon.green { background: rgba(34,197,94,.10); color: var(--green); }
-.stat-icon.orange { background: rgba(249,115,22,.10); color: var(--orange); }
-.stat-icon.purple { background: rgba(124,58,237,.10); color: var(--purple); }
-.stat-label { font-size: 12px; color: var(--muted); text-transform: none; letter-spacing: 0; order: 2; margin-top: 3px; }
-.stat-value { font-size: 28px; font-weight: 800; letter-spacing: -.6px; margin-top: 0; }
-.stat-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.stat-icon.green { background: rgba(124,188,139,.16); color: var(--carrier); }
+.stat-icon.orange { background: var(--warnbg); color: var(--warn); }
+.stat-icon.purple { background: rgba(12,29,27,.06); color: var(--under); }
+.stat-label { order: 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--subtle); margin: 0 0 10px; }
+.stat-value { order: 1; font-family: var(--display); font-size: 36px; font-weight: 500; letter-spacing: -.02em; line-height: 1; color: var(--text); }
+.stat-sub { order: 2; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
 
 /* ── TABLE ─────────────────────────────────────────────────────────────── */
-.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.table-toolbar { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--border); }
-.table-toolbar h2 { font-size: 14px; font-weight: 700; flex: 1; }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.table-toolbar { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.table-toolbar h2 { font-family: var(--display); font-size: 16px; font-weight: 500; letter-spacing: -.01em; flex: 1; }
 .filter-select, .search-input {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 7px 10px; color: var(--text); font-size: 12px; outline: none; transition: border-color .2s;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
+  padding: 8px 11px; color: var(--text); font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s;
 }
-.filter-select:focus, .search-input:focus { border-color: var(--accent); }
+.filter-select:focus, .search-input:focus { border-color: var(--carrier); box-shadow: 0 0 0 3px rgba(38,91,70,.12); }
 .btn-sm {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--grad); color: #fff; border: none; border-radius: 9px;
-  padding: 9px 15px; font-size: 12px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 18px rgba(124,58,237,.20); transition: filter .2s;
+  background: var(--carrier); color: #EAF3EC; border: 1px solid var(--carrier); border-radius: 999px;
+  padding: 8px 16px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: none; transition: background .2s;
 }
-.btn-sm:hover { filter: brightness(1.06); }
-table { width: 100%; border-collapse: collapse; }
+.btn-sm:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th {
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--muted); padding: 10px 18px; text-align: left;
-  background: var(--head); border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--subtle); padding: 11px 20px; text-align: left;
+  background: transparent; border-bottom: 1px solid var(--border); white-space: nowrap;
 }
-td { padding: 12px 18px; font-size: 13px; border-bottom: 1px solid var(--border); }
+td { padding: 13px 20px; font-size: 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--tint); }
 .client-cell { display: flex; align-items: center; gap: 10px; }
 .client-avatar {
-  width: 28px; height: 28px; border-radius: 8px; background: #f1f3f7; color: var(--muted);
-  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 8px; background: var(--surface2); color: var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0;
 }
 .client-name { font-weight: 600; }
-.client-email { font-size: 11px; color: var(--muted); }
+.client-email { font-size: 11.5px; color: var(--muted); }
 
-/* ── BADGES ────────────────────────────────────────────────────────────── */
+/* ── BADGES / STATUS PILLS ─────────────────────────────────────────────── */
 .badge {
-  display: inline-block; padding: 3px 10px; border-radius: 999px;
-  font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 600; text-transform: none; letter-spacing: 0;
+  white-space: nowrap; border: 1px solid transparent;
 }
-.badge-active { background: rgba(34,197,94,.10); color: var(--green); border: 1px solid rgba(34,197,94,.24); }
-.badge-pending { background: rgba(245,158,11,.10); color: var(--yellow); border: 1px solid rgba(245,158,11,.26); }
-.badge-inactive { background: rgba(16,24,38,.05); color: var(--muted); border: 1px solid rgba(16,24,38,.10); }
-.badge-cancelled { background: rgba(239,68,68,.08); color: var(--red); border: 1px solid rgba(239,68,68,.24); }
-.badge-starter { background: rgba(56,189,248,.12); color: var(--blue); border: 1px solid rgba(56,189,248,.26); }
-.badge-growth { background: rgba(124,58,237,.10); color: var(--purple); border: 1px solid rgba(124,58,237,.24); }
-.badge-full { background: rgba(236,72,153,.10); color: var(--pink); border: 1px solid rgba(236,72,153,.24); }
+.badge-active::before, .badge-pending::before, .badge-inactive::before, .badge-cancelled::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none;
+}
+.badge-active { background: var(--ground); color: var(--carrier); border-color: rgba(38,91,70,.18); }
+.badge-pending { background: var(--warnbg); color: var(--warn); border-color: rgba(138,90,18,.20); }
+.badge-inactive { background: #EDF0ED; color: var(--muted); border-color: rgba(12,29,27,.08); }
+.badge-cancelled { background: var(--badbg); color: var(--bad); border-color: rgba(156,59,47,.20); }
+.badge-starter { background: var(--surface2); color: var(--muted); border-color: var(--border); }
+.badge-growth { background: rgba(124,188,139,.16); color: var(--carrier); border-color: rgba(38,91,70,.16); }
+.badge-full { background: rgba(12,29,27,.06); color: var(--text); border-color: rgba(12,29,27,.10); }
 
 .action-btn {
-  background: none; border: 1px solid var(--border); border-radius: 7px;
-  padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
-  cursor: pointer; transition: all .15s;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 11px; font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: background .15s, color .15s, border-color .15s;
 }
-.action-btn:hover { border-color: var(--purple); color: var(--purple); }
+.action-btn:hover { border-color: var(--carrier); color: var(--carrier); background: var(--tint); }
 .n8n-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-.n8n-yes { background: #22c55e; }
-.n8n-no { background: #ef4444; }
+.n8n-yes { background: var(--pulse); }
+.n8n-no { background: var(--bad); }
 
 /* ── PAGINATION ────────────────────────────────────────────────────────── */
-.table-foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border); }
+.table-foot { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); }
 .table-foot .count { font-size: 12px; color: var(--muted); flex: 1; }
 .pager { display: flex; gap: 5px; align-items: center; }
 .pager span {
   min-width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: var(--muted); cursor: pointer;
+  font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer;
 }
-.pager span.active { border: none; color: #fff; font-weight: 700; background: linear-gradient(135deg, #3B82F6, #7C3AED); }
+.pager span.active { border: 1px solid var(--carrier); color: #EAF3EC; font-weight: 500; background: var(--carrier); }
 
 /* ── MODAL ─────────────────────────────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(16,24,38,.42); backdrop-filter: blur(3px);
+  position: fixed; inset: 0; background: rgba(12,29,27,.45);
   display: flex; align-items: center; justify-content: center; z-index: 200; padding: 24px;
 }
 .modal {
-  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(24,33,47,.18);
-  border-radius: 16px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 24px 60px rgba(12,29,27,.22);
+  border-radius: var(--radius); width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
 }
 .modal-header { display: flex; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--border); }
-.modal-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
-.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.modal-header h2 { font-family: var(--display); font-size: 17px; font-weight: 500; letter-spacing: -.01em; flex: 1; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; }
 .modal-close:hover { color: var(--text); }
 .modal-body { padding: 22px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .form-row.single { grid-template-columns: 1fr; }
 .form-group label {
-  display: block; font-size: 11px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+  display: block; font-family: var(--mono); font-size: 10.5px; font-weight: 500; color: var(--subtle);
+  text-transform: uppercase; letter-spacing: .14em; margin-bottom: 6px;
 }
 .form-group input, .form-group select, .form-group textarea {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 10px 12px; color: var(--text); font-size: 13px;
-  outline: none; transition: border-color .2s;
+  width: 100%; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 13.5px;
+  outline: none; transition: border-color .2s, box-shadow .2s;
 }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--carrier); box-shadow: 0 0 0 3px rgba(38,91,70,.12);
+}
 .form-group textarea { resize: vertical; min-height: 80px; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--border); }
 .btn-ghost {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 9px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.btn-ghost:hover { border-color: var(--purple); color: var(--purple); }
+.btn-ghost:hover { border-color: var(--carrier); color: var(--carrier); background: var(--tint); }
 .btn-save {
   display: inline-flex; align-items: center; gap: 7px;
-  background: var(--grad); color: #fff; border: none; border-radius: 9px;
-  padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 18px rgba(124,58,237,.22); transition: filter .2s;
+  background: var(--carrier); color: #EAF3EC; border: 1px solid var(--carrier); border-radius: 10px;
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  box-shadow: none; transition: background .2s;
 }
-.btn-save:hover { filter: brightness(1.06); }
+.btn-save:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-delete {
-  background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.35);
-  border-radius: 9px; padding: 10px 18px; font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: all .2s; margin-right: auto;
+  background: transparent; color: var(--bad); border: 1px solid rgba(156,59,47,.35);
+  border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .2s, color .2s; margin-right: auto;
 }
-.btn-delete:hover:not(:disabled) { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-delete:hover:not(:disabled) { background: var(--bad); color: #fff; border-color: var(--bad); }
 .btn-delete:disabled { opacity: .4; cursor: not-allowed; }
 
 /* ── DETAIL ────────────────────────────────────────────────────────────── */
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.detail-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
-.detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.detail-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.detail-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--subtle); text-transform: uppercase; }
 .detail-value { font-size: 14px; font-weight: 600; margin-top: 4px; }
 
 .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
 .empty-icon { font-size: 34px; margin-bottom: 12px; opacity: .5; }
-.empty h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.empty h3 { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
 .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
 
 /* ── TOAST ─────────────────────────────────────────────────────────────── */
 #toast {
   position: fixed; bottom: 24px; right: 24px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px;
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px;
   font-size: 13px; z-index: 300; opacity: 0; transition: opacity .3s;
   pointer-events: none; box-shadow: var(--shadow);
 }
 #toast.show { opacity: 1; }
-#toast.success { border-color: var(--green); color: var(--green); }
-#toast.error { border-color: var(--red); color: var(--red); }
+#toast.success { border-color: var(--carrier); color: var(--carrier); }
+#toast.error { border-color: var(--bad); color: var(--bad); }
+
+/* ── LIVE SPEND / PROVIDER CARDS ───────────────────────────────────────── */
+.cost-pill {
+  margin-left: auto; display: inline-flex; align-items: center;
+  background: var(--ground); color: var(--carrier); border: 1px solid rgba(38,91,70,.14);
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: .04em;
+  padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+}
+.cost-pill.bad { background: var(--badbg); color: var(--bad); border-color: rgba(156,59,47,.18); }
+
+/* ── COST ESTIMATOR ────────────────────────────────────────────────────── */
+.cost-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.cost-row:last-child { border-bottom: none; }
+.cost-row .k { color: var(--muted); }
+.cost-row .v { font-family: var(--mono); font-size: 12.5px; color: var(--text); white-space: nowrap; }
+.cost-row.total { border-top: 1px solid var(--border); border-bottom: none; padding-top: 11px; margin-top: 3px; font-size: 14px; font-weight: 600; }
+.cost-row.total .v { color: var(--bad); font-size: 13.5px; }
+.cost-row.sub { border-bottom: none; font-size: 12px; padding-top: 2px; }
+.cost-row.sub .k, .cost-row.sub .v { color: var(--muted); font-size: 11.5px; }
+
+.margin-card { background: var(--lowend); border-color: var(--under); box-shadow: none; }
+.margin-card .card-caption { color: var(--overtone); }
+.margin-card .margin-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.margin-card .margin-rows > div { display: flex; justify-content: space-between; gap: 16px; font-size: 12.5px; color: var(--on-dark-muted); }
+.margin-card .margin-rows .v { font-family: var(--mono); font-size: 12px; color: var(--on-dark); }
+.margin-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.margin-big { font-family: var(--mono); font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.05; color: var(--on-dark); }
+.margin-cap { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--on-dark-muted); margin-top: 6px; }
+.waveform { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin-top: 4px; }
+.waveform span { display: block; flex: 1; min-width: 2px; border-radius: 99px; background: var(--pulse); opacity: .85; }
 
 /* ── VOICE & PERSONA ───────────────────────────────────────────────────── */
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 18px; align-items: start; }
-.persona-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.persona-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .persona-card-title {
   display: flex; align-items: center; gap: 9px;
-  font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  font-family: var(--display); font-size: 15px; font-weight: 500; text-transform: none; letter-spacing: -.01em;
   color: var(--text); margin-bottom: 14px;
 }
-.persona-card-title svg { width: 16px; height: 16px; color: var(--purple); }
+.persona-card-title svg { width: 16px; height: 16px; color: var(--carrier); }
 
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-items: start; }
 .voice-column { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid transparent; }
-.voice-column.left { background: linear-gradient(180deg, rgba(59,130,246,.07), rgba(59,130,246,.02)); border-color: rgba(59,130,246,.14); }
-.voice-column.right { background: linear-gradient(180deg, rgba(124,58,237,.07), rgba(124,58,237,.02)); border-color: rgba(124,58,237,.14); }
+.voice-column.left { background: rgba(124,188,139,.10); border-color: rgba(38,91,70,.14); }
+.voice-column.right { background: rgba(12,29,27,.03); border-color: rgba(12,29,27,.08); }
 .voice-card {
   position: relative; overflow: hidden; background: var(--surface);
-  border: 1.5px solid var(--border); border-radius: 11px;
-  padding: 12px 11px 10px; cursor: pointer; transition: all .15s;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 12px 11px 10px; cursor: pointer; transition: border-color .15s, box-shadow .15s, background .15s;
 }
-.voice-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--voice-accent, var(--accent)); }
-.voice-card.selected { border-color: var(--voice-accent, var(--accent)); box-shadow: 0 8px 20px rgba(24,33,47,.08); }
-.voice-card.selected.voice-tone-left { background: rgba(59,130,246,.07); }
-.voice-card.selected.voice-tone-right { background: rgba(124,58,237,.07); }
+.voice-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--voice-accent, var(--carrier)); }
+.voice-card.selected { border-color: var(--voice-accent, var(--carrier)); box-shadow: 0 8px 20px rgba(12,29,27,.08); }
+.voice-card.selected.voice-tone-left { background: rgba(124,188,139,.10); }
+.voice-card.selected.voice-tone-right { background: rgba(12,29,27,.03); }
 .voice-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
 .voice-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.voice-name { font-size: 12px; font-weight: 700; }
-.voice-name.left { color: var(--accent); }
-.voice-name.right { color: var(--purple); }
+.voice-name { font-size: 12px; font-weight: 600; }
+.voice-name.left { color: var(--carrier); }
+.voice-name.right { color: var(--under); }
 /* VOICE-FLAGS: region flag next to the voice label (full region in tooltip) */
 .voice-region { font-size: 11px; line-height: 1; cursor: help; }
 .voice-badge {
   display: inline-flex; align-items: center; white-space: nowrap;
-  padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700;
-  letter-spacing: .4px; text-transform: uppercase;
-  color: var(--purple); background: rgba(124,58,237,.10); border: 1px solid rgba(124,58,237,.24);
+  padding: 2px 7px; border-radius: 999px; font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: .10em; text-transform: uppercase;
+  color: var(--carrier); background: rgba(124,188,139,.18); border: 1px solid rgba(38,91,70,.18);
 }
 .play-btn {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
   width: 22px; height: 22px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text);
 }
-.play-btn.left { color: var(--accent); }
-.play-btn.right { color: var(--purple); }
+.play-btn.left { color: var(--carrier); }
+.play-btn.right { color: var(--under); }
 
 .slider-row { margin-bottom: 18px; }
 .slider-label { display: flex; justify-content: space-between; margin-bottom: 7px; }
-.slider-label span:first-child { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-.slider-label span:last-child { font-size: 12px; font-weight: 700; color: var(--purple); }
-.slider-hints { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.slider-label span:first-child { font-family: var(--mono); font-size: 10.5px; font-weight: 500; color: var(--subtle); text-transform: uppercase; letter-spacing: .14em; }
+.slider-label span:last-child { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--carrier); }
+.slider-hints { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--subtle); margin-top: 4px; }
 
 .tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 26px; }
 .tag {
-  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.24);
+  background: var(--badbg); border: 1px solid rgba(156,59,47,.22);
   border-radius: 999px; padding: 3px 9px; font-size: 12px; font-weight: 600;
-  color: var(--red); display: flex; align-items: center; gap: 6px;
+  color: var(--bad); display: flex; align-items: center; gap: 6px;
 }
 .tag-x { cursor: pointer; font-size: 13px; line-height: 1; }
 .s-tags-wrap {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
   padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-  cursor: text; min-height: 44px; transition: border-color .2s;
+  cursor: text; min-height: 44px; transition: border-color .2s, box-shadow .2s;
 }
-.s-tags-wrap:focus-within { border-color: var(--accent); }
+.s-tags-wrap:focus-within { border-color: var(--carrier); box-shadow: 0 0 0 3px rgba(38,91,70,.12); }
 .s-tag-pill {
-  background: rgba(124,58,237,.10); border: 1px solid rgba(124,58,237,.22);
+  background: rgba(124,188,139,.16); border: 1px solid rgba(38,91,70,.18);
   border-radius: 999px; padding: 3px 9px; font-size: 12px; font-weight: 600;
-  color: var(--purple); display: flex; align-items: center; gap: 5px;
+  color: var(--carrier); display: flex; align-items: center; gap: 5px;
 }
 .s-tag-pill button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0; line-height: 1; }
 .s-tags-input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; min-width: 120px; flex: 1; }
 
 .save-bar { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
-.unsaved { font-size: 12px; font-weight: 600; color: var(--orange); display: none; }
+.unsaved { font-size: 12px; font-weight: 600; color: var(--warn); display: none; }
 
 .hours-grid { display: grid; gap: 8px; }
 .hours-row { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 10px; align-items: center; }
 .hours-day { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.hours-day input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--purple); flex-shrink: 0; cursor: pointer; }
+.hours-day input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--carrier); flex-shrink: 0; cursor: pointer; }
 .hours-day label { cursor: pointer; }
 .hours-times { display: flex; gap: 8px; align-items: center; min-width: 0; }
 .hours-times input[type="time"] {
   flex: 1 1 112px; min-width: 112px;
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
   padding: 7px 8px; color: var(--text); font-size: 13px; outline: none;
+  font-family: var(--mono);
 }
-.hours-times input[type="time"]:focus { border-color: var(--accent); }
+.hours-times input[type="time"]:focus { border-color: var(--carrier); box-shadow: 0 0 0 3px rgba(38,91,70,.12); }
 .hours-sep { font-size: 12px; color: var(--muted); }
 
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
 @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media (max-width: 900px) {
   .sidebar { position: static; width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .main { margin-left: 0; padding: 16px; }
+  .main { margin-left: 0; }
+  .topbar { padding: 0 16px; }
+  .page.active { padding: 16px; }
   .stats-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 </style>
 </head>
@@ -363,8 +463,10 @@ tr:hover td { background: var(--tint); }
 <!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
-    <img class="brand" src="/logo.png" alt="Sonello" />
-    <div class="auth-logo">Sonello</div>
+    <svg class="auth-mark" viewBox="0 0 34 38" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+      <line x1="3" x2="3" y1="15" y2="23"/><line x1="10" x2="10" y1="8" y2="30"/><line x1="17" x2="17" y1="2" y2="36"/><line x1="24" x2="24" y1="6" y2="32"/><line x1="31" x2="31" y1="13" y2="25"/>
+    </svg>
+    <div class="auth-logo">sonello</div>
     <div class="auth-sub">Admin Portal</div>
     <input type="password" id="admin-pass" placeholder="Admin password" />
     <button class="btn-primary" onclick="login()">Sign In</button>
@@ -376,10 +478,13 @@ tr:hover td { background: var(--tint); }
 <div id="app">
   <nav class="sidebar">
     <div class="sidebar-logo">
-      <img src="/logo.png" alt="Sonello" />
-      <div>Sonello<span>Admin Portal</span></div>
+      <svg class="brand-mark" viewBox="0 0 34 38" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" x2="3" y1="15" y2="23"/><line x1="10" x2="10" y1="8" y2="30"/><line x1="17" x2="17" y1="2" y2="36"/><line x1="24" x2="24" y1="6" y2="32"/><line x1="31" x2="31" y1="13" y2="25"/>
+      </svg>
+      <div class="brand-text"><span class="wordmark">sonello</span><span class="brand-pill">Admin</span></div>
     </div>
     <div class="sidebar-search">Search clients <kbd>⌘K</kbd></div>
+    <div class="nav-group">Overview</div>
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
       <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span> Dashboard
     </div>
@@ -431,6 +536,14 @@ tr:hover td { background: var(--tint); }
 
   <main class="main">
 
+    <!-- TOP STRIP -->
+    <div class="topbar">
+      <span class="caption">SONELLO ADMIN</span>
+      <div class="right">
+        <button class="btn-signout" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+
     <!-- DASHBOARD PAGE -->
     <div class="page active" id="page-dashboard">
       <div class="page-header">
@@ -439,9 +552,9 @@ tr:hover td { background: var(--tint); }
       </div>
       <div class="stats-grid" id="stats-grid">
         <div class="stat-card"><div class="stat-label">Total Clients</div><div class="stat-value" id="stat-total">—</div></div>
-        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--green)" id="stat-active">—</div></div>
-        <div class="stat-card"><div class="stat-label">Pending Setup</div><div class="stat-value" style="color:var(--yellow)" id="stat-pending">—</div></div>
-        <div class="stat-card"><div class="stat-label">n8n Configured</div><div class="stat-value" style="color:var(--blue)" id="stat-n8n">—</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--carrier)" id="stat-active">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Setup</div><div class="stat-value" style="color:var(--warn)" id="stat-pending">—</div></div>
+        <div class="stat-card"><div class="stat-label">n8n Configured</div><div class="stat-value" style="color:var(--subtle)" id="stat-n8n">—</div></div>
       </div>
       <div class="table-card">
         <div class="table-toolbar"><h2>Recent Clients</h2></div>
@@ -533,11 +646,11 @@ tr:hover td { background: var(--tint); }
         <p>Calculate Sonello costs and margins per client</p>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;max-width:1040px;align-items:start;">
 
         <!-- INPUTS -->
         <div class="table-card" style="padding:24px;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px;">Client Configuration</div>
+          <div class="card-caption" style="margin-bottom:18px;">Client configuration</div>
 
           <div class="form-group" style="margin-bottom:14px;">
             <label>Calls per month</label>
@@ -553,7 +666,7 @@ tr:hover td { background: var(--tint); }
           </div>
 
           <div style="border-top:1px solid var(--border);margin:18px 0;"></div>
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Rate Overrides</div>
+          <div class="card-caption" style="margin-bottom:14px;">Rate overrides</div>
 
           <div class="form-row" style="margin-bottom:0;">
             <div class="form-group">
@@ -575,17 +688,17 @@ tr:hover td { background: var(--tint); }
         <div style="display:flex;flex-direction:column;gap:14px;">
 
           <div class="table-card" style="padding:20px;">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Monthly Cost Breakdown</div>
-            <div style="display:flex;flex-direction:column;gap:10px;" id="cost-breakdown"></div>
+            <div class="card-caption" style="margin-bottom:14px;">Monthly cost breakdown</div>
+            <div id="cost-breakdown"></div>
           </div>
 
-          <div class="table-card" style="padding:20px;">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">Margin Analysis</div>
+          <div class="table-card margin-card" style="padding:20px;">
+            <div class="card-caption" style="margin-bottom:16px;">Margin analysis</div>
             <div id="margin-analysis"></div>
           </div>
 
           <div class="table-card" style="padding:20px;">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;">💡 Pricing Recommendation</div>
+            <div class="card-caption" style="margin-bottom:14px;">Pricing recommendation</div>
             <div id="pricing-rec" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
           </div>
 
@@ -593,7 +706,7 @@ tr:hover td { background: var(--tint); }
       </div>
 
       <!-- SCALE TABLE -->
-      <div class="table-card" style="margin-top:20px;max-width:860px;">
+      <div class="table-card" style="margin-top:20px;max-width:1040px;">
         <div class="table-toolbar"><h2>Revenue at Scale</h2><span style="font-size:12px;color:var(--muted);">Based on current inputs</span></div>
         <table>
           <thead><tr>
@@ -614,8 +727,8 @@ tr:hover td { background: var(--tint); }
       <!-- Summary cards -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;" id="costs-summary">
         <div class="table-card" style="padding:20px;text-align:center;">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Total Estimated Monthly</div>
-          <div style="font-size:2rem;font-weight:800;margin-top:8px;" id="costs-total">—</div>
+          <div class="card-caption">Total estimated monthly</div>
+          <div style="font-family:var(--display);font-size:34px;font-weight:500;letter-spacing:-.02em;margin-top:10px;" id="costs-total">—</div>
         </div>
       </div>
 
@@ -627,7 +740,7 @@ tr:hover td { background: var(--tint); }
       </div>
 
       <div style="margin-top:20px;display:flex;gap:12px;">
-        <button onclick="loadLiveCosts(true)" id="costs-refresh-btn" style="background:var(--purple);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">Refresh</button>
+        <button onclick="loadLiveCosts(true)" id="costs-refresh-btn" style="background:var(--carrier);color:#EAF3EC;border:1px solid var(--carrier);padding:10px 20px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;">Refresh</button>
       </div>
     </div>
 
@@ -666,7 +779,7 @@ tr:hover td { background: var(--tint); }
         <select id="persona-client-select" class="filter-select" style="min-width:240px;" onchange="loadPersonaClient()">
           <option value="">Loading...</option>
         </select>
-        <span id="persona-save-status" style="font-size:12px;color:var(--green);display:none;">✓ Saved</span>
+        <span id="persona-save-status" style="font-size:12px;color:var(--carrier);display:none;">✓ Saved</span>
       </div>
 
       <div id="persona-form" style="display:none;">
@@ -975,13 +1088,13 @@ tr:hover td { background: var(--tint); }
           <h2>Capture Methods</h2>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;" id="test-lead-buttons">
-          <button onclick="createTestLead('inbound')" style="background:#3B82F6;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Inbound Call</button>
-          <button onclick="createTestLead('webhook')" style="background:#7C3AED;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Lead Intake Webhook</button>
-          <button onclick="createTestLead('missed-call')" style="background:#EC4899;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call Callback</button>
-          <button onclick="createTestLead('missed-sms')" style="background:#EC4899;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call SMS</button>
-          <button onclick="createTestLead('triggered-call')" style="background:#F59E0B;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Triggered Call</button>
-          <button onclick="createTestLead('triggered-sms')" style="background:#F59E0B;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Triggered SMS</button>
-          <button onclick="createTestLead('campaign')" style="background:#22c55e;border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Campaign Outreach</button>
+          <button onclick="createTestLead('inbound')" style="background:var(--carrier);border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Inbound Call</button>
+          <button onclick="createTestLead('webhook')" style="background:var(--under);border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Lead Intake Webhook</button>
+          <button onclick="createTestLead('missed-call')" style="background:var(--lowend);border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call Callback</button>
+          <button onclick="createTestLead('missed-sms')" style="background:var(--lowend);border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Missed Call SMS</button>
+          <button onclick="createTestLead('triggered-call')" style="background:var(--ground);border:1px solid var(--border-strong);border-radius:10px;padding:14px;color:var(--carrier);font-size:14px;font-weight:700;cursor:pointer;">Triggered Call</button>
+          <button onclick="createTestLead('triggered-sms')" style="background:var(--ground);border:1px solid var(--border-strong);border-radius:10px;padding:14px;color:var(--carrier);font-size:14px;font-weight:700;cursor:pointer;">Triggered SMS</button>
+          <button onclick="createTestLead('campaign')" style="background:var(--carrier);border:none;border-radius:10px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Campaign Outreach</button>
         </div>
         <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
           <button onclick="scoreTestLeads()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;">Score All Unsored Leads</button>
@@ -1005,7 +1118,7 @@ tr:hover td { background: var(--tint); }
 
       <div class="table-card" style="margin-bottom:20px;">
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <button onclick="runTestSuite('lead-followup')" id="btn-run-tests" style="background:#22c55e;border:none;border-radius:10px;padding:14px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Run Lead Follow-Up Tests</button>
+          <button onclick="runTestSuite('lead-followup')" id="btn-run-tests" style="background:var(--carrier);border:none;border-radius:10px;padding:14px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Run Lead Follow-Up Tests</button>
           <button onclick="runTestSuite('all')" id="btn-run-all-tests" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 24px;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;">Run All Unit Tests</button>
           <span id="test-run-status" style="font-size:13px;color:var(--muted);"></span>
         </div>
@@ -1046,7 +1159,7 @@ tr:hover td { background: var(--tint); }
           <option value="">Random scenario</option>
         </select>
         <div style="display:flex;gap:12px;align-items:center;">
-          <button onclick="runSimulatedCall()" id="btn-simulate" style="background:#22c55e;border:none;border-radius:10px;padding:14px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Generate Test Lead</button>
+          <button onclick="runSimulatedCall()" id="btn-simulate" style="background:var(--carrier);border:none;border-radius:10px;padding:14px 24px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Generate Test Lead</button>
           <span id="sim-status" style="font-size:13px;color:var(--muted);"></span>
         </div>
       </div>
@@ -1196,7 +1309,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">📞</span>
             <span style="font-weight:700;font-size:14px;">Twilio</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${tw.estimatedCost?.total || '0.00'}/mo</span>
+            <span class="cost-pill">$${tw.estimatedCost?.total || '0.00'}/mo</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
             <div><span style="color:var(--muted);">Phone Numbers:</span> ${tw.phoneNumbers}</div>
@@ -1217,7 +1330,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">🤖</span>
             <span style="font-weight:700;font-size:14px;">OpenAI</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${oa.currentMonthCost || '0.00'} this mo</span>
+            <span class="cost-pill">$${oa.currentMonthCost || '0.00'} this mo</span>
           </div>
           <div style="font-size:12px;color:var(--muted);">
             ${oa.monthly?.slice(-3).map(m => `${m.month}: $${m.total}`).join(' · ') || 'No data'}
@@ -1240,7 +1353,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">☁️</span>
             <span style="font-weight:700;font-size:14px;">AWS</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">$${aws.currentMonthCost?.toFixed(2) || '0.00'} this mo</span>
+            <span class="cost-pill">$${aws.currentMonthCost?.toFixed(2) || '0.00'} this mo</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
             ${aws.topServices?.slice(0, 5).map(s => `<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">${s.service}</span><span>$${s.amount}</span></div>`).join('') || 'No data'}
@@ -1258,7 +1371,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">💳</span>
             <span style="font-weight:700;font-size:14px;">Stripe</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">MRR: $${st.mrr}</span>
+            <span class="cost-pill">MRR: $${st.mrr}</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
             <div><span style="color:var(--muted);">Available:</span> $${st.balance?.available?.toFixed(2)}</div>
@@ -1279,7 +1392,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">📧</span>
             <span style="font-weight:700;font-size:14px;">Resend</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free tier</span>
+            <span class="cost-pill">Free tier</span>
           </div>
           <div style="font-size:12px;">
             <div><span style="color:var(--muted);">Emails this month:</span> ${rs.emailsThisMonth}</div>
@@ -1297,7 +1410,7 @@ async function loadLiveCosts(forceRefresh) {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
           <span style="font-size:1.1rem;">📅</span>
           <span style="font-weight:700;font-size:14px;">Google Workspace</span>
-          <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free</span>
+          <span class="cost-pill">Free</span>
         </div>
         <div style="font-size:12px;color:var(--muted);">${go.note || 'Calendar API is free'}</div>
       </div>`);
@@ -1310,7 +1423,7 @@ async function loadLiveCosts(forceRefresh) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <span style="font-size:1.1rem;">⬜</span>
             <span style="font-weight:700;font-size:14px;">Square</span>
-            <span style="margin-left:auto;background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Free</span>
+            <span class="cost-pill">Free</span>
           </div>
           <div style="font-size:12px;">
             <div><span style="color:var(--muted);">Connected locations:</span> ${sq.connectedLocations}</div>
@@ -1334,7 +1447,7 @@ function disabledCard(icon, name, reason) {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <span style="font-size:1.1rem;">${icon}</span>
         <span style="font-weight:700;font-size:14px;">${name}</span>
-        <span style="margin-left:auto;background:rgba(239,68,68,.12);color:var(--red);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;">Disabled</span>
+        <span class="cost-pill bad">Disabled</span>
       </div>
       <div style="font-size:11px;color:var(--muted);">${reason || 'Not configured'}</div>
     </div>`;
@@ -1410,7 +1523,7 @@ function renderPhonesTable() {
       ? '—'
       : `<button class="btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deletePhoneNumber('${n.sid}', '${n.phoneNumber}')">Delete</button>`;
     return `<tr>
-      <td style="font-family:monospace;font-size:13px">${n.phoneNumber}</td>
+      <td style="font-family:var(--mono);font-size:12.5px">${n.phoneNumber}</td>
       <td>${status}</td>
       <td>${client}</td>
       <td style="color:var(--muted);font-size:12px">${n.friendlyName || '—'}</td>
@@ -1420,9 +1533,9 @@ function renderPhonesTable() {
   }).join('');
 
   document.getElementById('phones-table-body').innerHTML = `
-    <table><thead><tr>
+    <div class="table-scroll"><table><thead><tr>
       <th>Phone Number</th><th>Status</th><th>Assigned To</th><th>Friendly Name</th><th>SID</th><th>Actions</th>
-    </tr></thead><tbody>${tbody}</tbody></table>`;
+    </tr></thead><tbody>${tbody}</tbody></table></div>`;
 }
 
 // TRUE DELETE (ticket zeus_1790795230078_8124ab73): permanently releases the
@@ -1519,9 +1632,9 @@ function clientRow(c) {
 
 function tableWrap(rows) {
   if (!rows.length) return `<div class="empty"><div class="empty-icon">📭</div><h3>No clients yet</h3><p>Add your first client to get started.</p></div>`;
-  return `<table><thead><tr>
+  return `<div class="table-scroll"><table><thead><tr>
     <th>Client</th><th>Status</th><th>Plan</th><th>Industry</th><th>n8n</th><th>Added</th><th></th>
-  </tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  </tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 
 function renderDashboardTable() {
@@ -1687,7 +1800,7 @@ async function openDetail(clientId) {
              label dropped the legacy provider framing. -->
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-            <input type="checkbox" id="edit-voice-addon" style="cursor:pointer;accent-color:var(--purple);width:16px;height:16px;" />
+            <input type="checkbox" id="edit-voice-addon" style="cursor:pointer;accent-color:var(--carrier);width:16px;height:16px;" />
             <span><strong>Custom Voice add-on</strong> — unlocks Custom Voice for this client</span>
           </label>
           <span style="font-size:12px;color:var(--muted);">Admin override: turns on the Custom Voice section for this client, bypassing the paywall ($49/mo add-on).</span>
@@ -1824,10 +1937,10 @@ function renderUsageReadout(usage, usageOverride) {
   if (!usage) { box.textContent = 'Usage unavailable'; return; }
   const used = `${Number(usage.voiceMinutes || 0).toLocaleString()} voice min · ${Number(usage.smsMessages || 0).toLocaleString()} SMS`;
   if (usage.unlimited) {
-    box.innerHTML = `<strong>This month:</strong> ${used} — <span style="color:#059669;font-weight:600;">Unlimited plan</span>`;
+    box.innerHTML = `<strong>This month:</strong> ${used} — <span style="color:var(--carrier);font-weight:600;">Unlimited plan</span>`;
   } else {
     const pct = Math.max(usage.percentUsed?.voice ?? 0, usage.percentUsed?.sms ?? 0);
-    const color = pct > 100 ? '#DC2626' : pct >= 80 ? '#F59E0B' : 'inherit';
+    const color = pct > 100 ? 'var(--bad)' : pct >= 80 ? 'var(--warn)' : 'inherit';
     box.innerHTML = `<strong>This month:</strong> ${used} — caps ${Number(usage.limits?.voiceMinutes).toLocaleString()} / ${Number(usage.limits?.smsMessages).toLocaleString()} <span style="color:${color};font-weight:600;">(${Math.round(pct)}% peak)</span>${usageOverride ? ' · <em>override active</em>' : ''}`;
   }
 }
@@ -1984,7 +2097,7 @@ function onAdminCvVoiceIdInput() {
     return;
   }
   hint.textContent = 'Valid voice id format.';
-  hint.style.color = 'var(--green)';
+  hint.style.color = 'var(--carrier)';
 }
 
 async function saveClientEdit() {
@@ -2630,38 +2743,44 @@ function calcCosts() {
 
   // Cost breakdown
   document.getElementById('cost-breakdown').innerHTML = `
-    <div style="display:flex;justify-content:space-between;font-size:13px;">
-      <span style="color:var(--muted);">OpenAI Realtime (${totalMins.toFixed(0)} min × ${fmt(rOpenAI)})</span>
-      <span>${fmt(costOpenAI)}</span>
+    <div class="cost-row">
+      <span class="k">OpenAI Realtime (${totalMins.toFixed(0)} min × ${fmt(rOpenAI)})</span>
+      <span class="v">${fmt(costOpenAI)}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;">
-      <span style="color:var(--muted);">Twilio minutes (${totalMins.toFixed(0)} min × ${fmt(rTwilio)})</span>
-      <span>${fmt(totalMins * rTwilio)}</span>
+    <div class="cost-row">
+      <span class="k">Twilio minutes (${totalMins.toFixed(0)} min × ${fmt(rTwilio)})</span>
+      <span class="v">${fmt(totalMins * rTwilio)}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;">
-      <span style="color:var(--muted);">Twilio phone number</span>
-      <span>${fmt(rNumber)}</span>
+    <div class="cost-row">
+      <span class="k">Twilio phone number</span>
+      <span class="v">${fmt(rNumber)}</span>
     </div>
-    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:14px;font-weight:600;">
-      <span>Total Cost</span><span style="color:var(--red);">${fmt(costTotal)}</span>
+    <div class="cost-row total">
+      <span>Total Cost</span><span class="v">${fmt(costTotal)}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);">
-      <span>Cost per call</span><span>${fmt(costPerCall)}</span>
+    <div class="cost-row sub">
+      <span class="k">Cost per call</span><span class="v">${fmt(costPerCall)}</span>
     </div>`;
 
-  // Margin
-  const marginColor = margin >= 60 ? 'var(--green)' : margin >= 40 ? 'var(--yellow)' : 'var(--red)';
+  // Margin — dark Low End hero card, mono caps labels, large numerals
+  const marginColor = margin >= 60 ? '#7CBC8B' : margin >= 40 ? '#E6C07A' : '#F0A598';
+  const wave = [6,10,14,20,28,30,24,17,23,29,30,25,18,12,19,27,23,15,9,7,11,16,10,6];
   document.getElementById('margin-analysis').innerHTML = `
-    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;">
-      <span style="color:var(--muted);">Client pays you</span><span style="color:var(--green);font-weight:600;">${fmt(price)}/mo</span>
+    <div class="margin-stats">
+      <div>
+        <div class="margin-big" style="color:${marginColor}">${fmt(profit)}</div>
+        <div class="margin-cap">monthly profit</div>
+      </div>
+      <div>
+        <div class="margin-big">${pct(margin)}</div>
+        <div class="margin-cap">margin</div>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px;">
-      <span style="color:var(--muted);">Your costs</span><span style="color:var(--red);">${fmt(costTotal)}/mo</span>
+    <div class="margin-rows">
+      <div><span>Client pays you</span><span class="v">${fmt(price)}/mo</span></div>
+      <div><span>Your costs</span><span class="v">${fmt(costTotal)}/mo</span></div>
     </div>
-    <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center;">
-      <div style="font-size:32px;font-weight:800;color:${marginColor};">${fmt(profit)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;">profit/month · ${pct(margin)} margin</div>
-    </div>`;
+    <div class="waveform" aria-hidden="true">${wave.map(h => `<span style="height:${h}px"></span>`).join('')}</div>`;
 
   // Recommendation
   const breakeven = Math.ceil(costTotal * 1.5);
@@ -2684,13 +2803,13 @@ function calcCosts() {
     const cost = n * costTotal;
     const prof = rev - cost;
     const annual = prof * 12;
-    const color = prof > 0 ? 'var(--green)' : 'var(--red)';
+    const color = prof > 0 ? 'var(--carrier)' : 'var(--bad)';
     return `<tr>
-      <td style="font-weight:600;">${n}</td>
-      <td style="color:var(--green);">${fmt(rev)}</td>
-      <td style="color:var(--red);">${fmt(cost)}</td>
-      <td style="color:${color};font-weight:600;">${fmt(prof)}</td>
-      <td style="color:${color};font-weight:600;">${fmt(annual)}</td>
+      <td style="font-family:var(--mono);font-weight:600;">${n}</td>
+      <td style="font-family:var(--mono);color:var(--carrier);">${fmt(rev)}</td>
+      <td style="font-family:var(--mono);color:var(--bad);">${fmt(cost)}</td>
+      <td style="font-family:var(--mono);color:${color};font-weight:600;">${fmt(prof)}</td>
+      <td style="font-family:var(--mono);color:${color};font-weight:600;">${fmt(annual)}</td>
     </tr>`;
   });
   document.getElementById('scale-table').innerHTML = rows.join('');
@@ -2773,7 +2892,7 @@ async function loadWorkflowRequests() {
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="approveWorkflow(${clientLit}, ${refLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve</button>
+          <button onclick="approveWorkflow(${clientLit}, ${refLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--carrier);color:#EAF3EC;border:none;cursor:pointer;">Approve</button>
           <button onclick="rejectWorkflow(${clientLit}, ${refLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>
         </div>
       </div>`;
@@ -2854,12 +2973,12 @@ async function loadSmsApprovals() {
         ? `Change to ${messages} messages/mo · ${price} · from ${adminEsc(r.from_sku || r.current_sku || 'current tier')}`
         : `${adminEsc(r.addon_name || r.sku)} · ${messages} messages/mo · ${price}`;
       const actions = isChange
-        ? `<button onclick="approveSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Approve change</button>
+        ? `<button onclick="approveSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--carrier);color:#EAF3EC;border:none;cursor:pointer;">Approve change</button>
           <button onclick="rejectSmsTierChange(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`
-        : `<button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:pointer;">Activate</button>
+        : `<button onclick="activateSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:var(--carrier);color:#EAF3EC;border:none;cursor:pointer;">Activate</button>
           <button onclick="rejectSmsApproval(${clientLit})" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:transparent;color:var(--red);border:1px solid var(--red);cursor:pointer;">Reject</button>`;
       const kindBadge = isChange
-        ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.12);color:#7c3aed;margin-left:6px;vertical-align:middle;">Tier change</span>'
+        ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(124,188,139,.18);color:var(--carrier);margin-left:6px;vertical-align:middle;">Tier change</span>'
         : '';
       return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
@@ -3040,7 +3159,7 @@ async function loadCsvAutomations() {
         : status === 'cancelled' ? 'Disabled'
         : status === 'rejected' ? 'Rejected'
         : status === 'failed' ? 'Failed' : 'Off';
-      const statusColor = enabled ? 'var(--green)' : pending ? '#f59e0b' : 'var(--muted)';
+      const statusColor = enabled ? 'var(--carrier)' : pending ? 'var(--warn)' : 'var(--muted)';
       const keyLit = adminJsLiteral(a.key);
       return `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--border);">
@@ -3049,7 +3168,7 @@ async function loadCsvAutomations() {
           <div style="color:${statusColor};font-size:12px;margin-top:2px;">${statusText}</div>
         </div>
         <button onclick="setCsvAutomation(${clientLit}, ${keyLit}, ${enabled ? 'false' : 'true'}, this)"
-          style="white-space:nowrap;flex-shrink:0;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:${enabled ? 'transparent' : 'var(--green)'};color:${enabled ? 'var(--red)' : '#fff'};border:${enabled ? '1px solid var(--red)' : 'none'};cursor:pointer;">
+          style="white-space:nowrap;flex-shrink:0;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;background:${enabled ? 'transparent' : 'var(--carrier)'};color:${enabled ? 'var(--red)' : '#fff'};border:${enabled ? '1px solid var(--red)' : 'none'};cursor:pointer;">
           ${enabled ? 'Disable' : 'Enable'}
         </button>
       </div>`;
@@ -3109,7 +3228,7 @@ function addTestResult(type, result, error) {
   const list = document.getElementById('test-lead-results-list');
   container.style.display = 'block';
   const status = error ? 'error' : 'success';
-  const color = error ? 'var(--red)' : '#22c55e';
+  const color = error ? 'var(--red)' : 'var(--carrier)';
   const msg = error ? error : result.message + (result.lead_id ? ` (ID: ${result.lead_id})` : '');
   const entry = document.createElement('div');
   entry.style.cssText = 'padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;';
@@ -3197,7 +3316,7 @@ async function runTestSuite(suite) {
     const data = await res.json();
 
     // Summary card
-    const passedColor = data.failed === 0 ? '#22c55e' : '#ef4444';
+    const passedColor = data.failed === 0 ? 'var(--carrier)' : 'var(--bad)';
     summaryEl.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:16px 0;">
         <div style="text-align:center;">
@@ -3205,7 +3324,7 @@ async function runTestSuite(suite) {
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Passed</div>
         </div>
         <div style="text-align:center;">
-          <div style="font-size:32px;font-weight:800;color:${data.failed > 0 ? '#ef4444' : 'var(--muted)'};">${data.failed}</div>
+          <div style="font-size:32px;font-weight:800;color:${data.failed > 0 ? 'var(--bad)' : 'var(--muted)'};">${data.failed}</div>
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Failed</div>
         </div>
         <div style="text-align:center;">
@@ -3224,14 +3343,14 @@ async function runTestSuite(suite) {
 
     // Per-file results
     filesEl.innerHTML = data.files.map(f => {
-      const statusColor = f.failed > 0 ? '#ef4444' : '#22c55e';
-      const statusBg = f.failed > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)';
+      const statusColor = f.failed > 0 ? 'var(--bad)' : 'var(--carrier)';
+      const statusBg = f.failed > 0 ? 'rgba(156,59,47,.10)' : 'rgba(124,188,139,.16)';
       const fileName = f.name.split('/').pop();
       const failures = f.failures.length > 0
-        ? `<div style="margin-top:8px;padding:12px;background:rgba(239,68,68,0.05);border-radius:8px;">
+        ? `<div style="margin-top:8px;padding:12px;background:rgba(156,59,47,.06);border-radius:8px;">
             ${f.failures.map(fail => `
               <div style="margin-bottom:8px;">
-                <div style="font-size:13px;font-weight:600;color:#ef4444;">${fail.title}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--bad);">${fail.title}</div>
                 <pre style="font-size:11px;color:var(--muted);margin-top:4px;white-space:pre-wrap;max-height:200px;overflow-y:auto;">${(fail.error || 'No error message').substring(0, 500)}</pre>
               </div>
             `).join('')}
@@ -3245,8 +3364,8 @@ async function runTestSuite(suite) {
             <span style="font-size:11px;color:var(--muted);">${f.name}</span>
           </div>
           <div style="display:flex;gap:12px;font-size:13px;">
-            <span style="color:#22c55e;">${f.passed} passed</span>
-            ${f.failed > 0 ? `<span style="color:#ef4444;">${f.failed} failed</span>` : ''}
+            <span style="color:var(--carrier);">${f.passed} passed</span>
+            ${f.failed > 0 ? `<span style="color:var(--bad);">${f.failed} failed</span>` : ''}
             ${f.skipped > 0 ? `<span style="color:var(--muted);">${f.skipped} skipped</span>` : ''}
             <span style="color:var(--muted);">${(f.duration / 1000).toFixed(1)}s</span>
           </div>
@@ -3258,12 +3377,12 @@ async function runTestSuite(suite) {
     status.textContent = data.failed === 0
       ? `All ${data.passed} tests passed!`
       : `${data.failed} test(s) failed. See details below.`;
-    status.style.color = data.failed === 0 ? '#22c55e' : '#ef4444';
+    status.style.color = data.failed === 0 ? 'var(--carrier)' : 'var(--bad)';
   } catch (e) {
     console.error('Test suite error:', e.message);
-    summaryEl.innerHTML = `<div style="padding:20px;color:#ef4444;">Error: ${e.message}</div>`;
+    summaryEl.innerHTML = `<div style="padding:20px;color:var(--bad);">Error: ${e.message}</div>`;
     status.textContent = 'Error: ' + e.message;
-    status.style.color = '#ef4444';
+    status.style.color = 'var(--bad)';
   } finally {
     btn.disabled = false; btnAll.disabled = false;
     btn.textContent = 'Run Lead Follow-Up Tests';
@@ -3276,6 +3395,8 @@ async function runTestSuite(suite) {
 const SIM_CLIENTS = [
   { id: '2b239df7-c6ea-4227-abf6-50f69df3eb73', name: 'Meridian BioPharm Solutions' },
 ];
+// Decorative waveform (aria-hidden) — echoes the sonello mark; not data.
+const SIM_WAVE = [5,9,14,20,26,18,12,22,26,16,10,6,14,22,18,10,6,12,18,24,16,9,5,8];
 
 async function loadSimulatorClients() {
   const sel = document.getElementById('sim-client');
@@ -3330,9 +3451,10 @@ async function runSimulatedCall() {
     const score = data.score;
 
     body.innerHTML = `
+      <div class="waveform" style="margin:16px 16px 0;height:26px;" aria-hidden="true">${SIM_WAVE.map(h => `<span style="height:${h}px"></span>`).join('')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;">
         <div style="background:var(--surface2);border-radius:10px;padding:16px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEAD</div>
+          <div class="card-caption" style="margin-bottom:6px;">Lead</div>
           <div style="font-weight:700;font-size:16px;">${lead.name}</div>
           <div style="font-size:13px;color:var(--muted);margin-top:4px;">${lead.phone} · ${lead.email}</div>
           <div style="font-size:13px;margin-top:8px;"><strong>Intent:</strong> ${lead.intent}</div>
@@ -3341,9 +3463,9 @@ async function runSimulatedCall() {
           <div style="font-size:12px;color:var(--muted);">Call SID: ${data.call_sid}</div>
         </div>
         <div style="background:var(--surface2);border-radius:10px;padding:16px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">SCORE</div>
+          <div class="card-caption" style="margin-bottom:6px;">Score</div>
           ${score ? `
-            <div style="font-size:32px;font-weight:800;color:${score.score >= 70 ? '#22c55e' : score.score >= 40 ? '#f59e0b' : '#9aa3b2'};">${score.score}</div>
+            <div style="font-size:32px;font-weight:800;color:${score.score >= 70 ? 'var(--carrier)' : score.score >= 40 ? 'var(--warn)' : 'var(--subtle)'};">${score.score}</div>
             <div style="font-size:13px;margin-top:4px;"><strong>Trend:</strong> ${score.trend}</div>
             <div style="font-size:13px;margin-top:8px;"><strong>Next Action:</strong> ${score.next_action}</div>
             <div style="font-size:13px;margin-top:4px;"><strong>AI Rec:</strong> ${score.recommendation}</div>
