@@ -12,10 +12,11 @@
 //   - Pure data→SVG-string render functions: everything below the "render*"
 //     boundary is a pure function of its inputs (unit-tested in
 //     test/dashboard-charts.test.js via `module.exports`).
-//   - Styling via CSS variables from portal.html's oklch-family palette
-//     (--accent #3B82F6, --accent2 #7C3AED, --text/--muted/--border), so the
-//     charts follow the light/dark theme automatically. Axis/label numerics
-//     use a JetBrains-style mono stack (ui-monospace → JetBrains Mono).
+//   - Styling via CSS variables from portal.html's Sonello "Frequency" palette
+//     (--accent #265B46 carrier / --accent2 #478C67 pulse, --text/--muted/
+//     --border), so the charts follow the light/dark theme automatically.
+//     Axis/label numerics use a JetBrains-style mono stack
+//     (ui-monospace → JetBrains Mono).
 //   - Every chart: role="img" + aria-label summary; weekday/source charts
 //     ALSO carry a <desc>/text-alternative block (values are in the DOM as
 //     real <text> nodes, so they are readable text alternatives).
@@ -32,8 +33,8 @@
 
   // ── Palette / metrics constants (shared with portal CSS) ──────────────────
   var MONO_FONT = "ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace";
-  var ACCENT = 'var(--accent)';        // minutes series (blue)
-  var ACCENT2 = 'var(--accent2)';      // calls series (violet)
+  var ACCENT = 'var(--accent)';        // minutes series (carrier green)
+  var ACCENT2 = 'var(--pink)';         // calls series (tint overtone — 3.5:1 apart)
   var TEXT = 'var(--text)';
   var MUTED = 'var(--muted)';
   var BORDER = 'var(--border)';
@@ -527,12 +528,14 @@
   }
 
   // KPI id → { field in each `daily` row, stroke color, aria label }.
-  // Colors match each card's icon tile (blue / violet / pink / orange).
+  // Four DISTINCT Sonello tints, one per card and each legible on both glass
+  // themes: carrier green / steel blue / pulse green / amber. Adjacent cards
+  // never share a hue family, so the row reads as four metrics at a glance.
   var KPI_SPARKS = [
     { slot: 'kpi-calls-spark', field: 'calls', color: 'var(--accent)', label: 'Calls answered' },
-    { slot: 'kpi-minutes-spark', field: 'minutes', color: 'var(--accent2)', label: 'Voice minutes' },
-    { slot: 'kpi-sms-spark', field: 'sms', color: 'var(--pink)', label: 'SMS messages' },
-    { slot: 'kpi-leads-spark', field: 'leads', color: 'var(--orange)', label: 'Leads captured' },
+    { slot: 'kpi-minutes-spark', field: 'minutes', color: 'var(--blue)', label: 'Voice minutes' },
+    { slot: 'kpi-sms-spark', field: 'sms', color: 'var(--accent2)', label: 'SMS messages' },
+    { slot: 'kpi-leads-spark', field: 'leads', color: 'var(--yellow)', label: 'Leads captured' },
   ];
 
   /**
