@@ -11705,6 +11705,7 @@ async function regenerateAccessCode() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
+    if (data.token) { portalToken = data.token; sessionStorage.setItem('portalToken', portalToken); }
     acAccessCode = data.access_code;
     acAccessCodeVisible = true;
     document.getElementById('ac-access-code').textContent = acAccessCode;
