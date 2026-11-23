@@ -1279,6 +1279,55 @@ input[type="checkbox"] { accent-color: var(--accent); }
   .table-header { padding: 14px; }
 }
 
+/* ── SUPPORT CENTER (SUP-12) ─────────────────────────────────────────────────
+   Three systems the portal did not have are ported here from admin.html:127-220
+   (.table-card, .badge, .modal-*) and expressed with THIS file's tokens and
+   literal radii — no new tokens, no second stylesheet. The .support-* block is
+   the two-pane Support page from docs/SUPPORT-DESK-SCOPE.md §4.1: a 320px list
+   column plus the thread/ticket column, stacked under 900px. */
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-open, .badge-resolved { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+.badge-progress, .badge-p3 { background: rgba(47,95,143,.10); color: var(--blue); border: 1px solid rgba(47,95,143,.24); }
+.badge-waiting, .badge-escalated, .badge-p2 { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+.badge-closed, .badge-p4 { background: var(--tint); color: var(--muted); border: 1px solid var(--border); }
+.badge-p1 { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(12,29,27,.42); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+.modal { background: var(--surface-solid); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 16px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+.modal-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--border); }
+
+.support-shell { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+.support-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.support-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.support-list { display: flex; flex-direction: column; }
+.support-list-item { display: block; width: 100%; text-align: left; background: none; border: none; border-top: 1px solid var(--border); padding: 12px 16px; cursor: pointer; font-family: var(--font); color: var(--text); }
+.support-list-item:first-child { border-top: none; }
+.support-list-item:hover { background: var(--tint); }
+.support-list-item.active { background: var(--tint); box-shadow: inset 3px 0 0 var(--accent); }
+.support-item-title { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.support-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.support-empty { padding: 18px 16px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.support-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.support-messages { max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.support-msg-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.support-composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); align-items: flex-end; }
+.support-input { flex: 1; min-width: 0; padding: 10px 14px; background: var(--field); border: 1px solid var(--field-border); border-radius: 10px; font-size: 14px; color: var(--text); font-family: var(--font); }
+.support-input:focus { outline: none; border-color: var(--accent); }
+.support-field { width: 100%; background: var(--field); border: 1px solid var(--field-border); border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: var(--font); }
+.support-field:focus { outline: none; border-color: var(--accent); }
+.support-label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.support-timeline { max-height: 320px; overflow-y: auto; padding: 4px 16px; }
+.support-timeline-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.support-timeline-item:last-child { border-bottom: none; }
+.support-timeline-meta { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); margin-bottom: 5px; }
+@media (max-width: 900px) { .support-shell { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -1354,6 +1403,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
       <div class="nav-item" onclick="showPage('integrations')" id="nav-integrations"><span class="nav-icon"><i data-lucide="unplug"></i></span> Integrations</div>
       <div class="nav-item" onclick="showPage('account')" id="nav-account"><span class="nav-icon"><i data-lucide="user-cog"></i></span> Account</div>
       <div class="nav-item" onclick="showPage('docs')" id="nav-docs"><span class="nav-icon"><i data-lucide="book-open"></i></span> Docs</div>
+      <div class="nav-item" onclick="showPage('support')" id="nav-support"><span class="nav-icon"><i data-lucide="life-buoy"></i></span> Support</div>
     </div>
   </nav>
 
@@ -3439,6 +3489,128 @@ input[type="checkbox"] { accent-color: var(--accent); }
       </div>
     </div>
 
+    <!-- SUPPORT CENTER (SUP-12) — client-facing chat with the support
+         assistant plus ticket tracking, against /portal/support/* (atlas-ai
+         supportRouter.js, SUP-11). Server-supplied text is written with
+         textContent only (see the .support-* JS block at the end of this file);
+         message bodies are plain text, never markdown, never an HTML sink. -->
+    <div class="page" id="page-support">
+      <div class="page-header">
+        <h1><i data-lucide="life-buoy" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i> Support Center</h1>
+        <p>Ask the support assistant, then follow every ticket it opens</p>
+      </div>
+
+      <div class="support-shell">
+        <!-- Left: conversations, then tickets -->
+        <div class="support-col">
+          <div class="table-card">
+            <div class="support-pane-head">
+              <div class="card-title" style="margin:0;"><i data-lucide="message-square"></i> Conversations</div>
+              <button type="button" class="btn-secondary" id="support-new-conv" onclick="supportNewConversation()" style="font-size:12.5px;padding:7px 12px;">New conversation</button>
+            </div>
+            <div id="support-conv-list" class="support-list">
+              <div class="support-empty">Loading conversations…</div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="support-pane-head">
+              <div class="card-title" style="margin:0;"><i data-lucide="ticket"></i> Tickets</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="support-ticket-count" style="font-size:11.5px;color:var(--muted);"></span>
+                <button type="button" class="btn-secondary" id="support-new-ticket" onclick="supportOpenNewTicket()" style="font-size:12.5px;padding:7px 12px;">New ticket</button>
+              </div>
+            </div>
+            <div id="support-ticket-list" class="support-list">
+              <div class="support-empty">Loading tickets…</div>
+            </div>
+            <div class="support-pager" id="support-ticket-pager" style="display:none;">
+              <span id="support-ticket-pageinfo"></span>
+              <button type="button" class="btn-secondary" id="support-ticket-more" onclick="supportLoadTickets(true)" style="font-size:12.5px;padding:6px 12px;">Load older</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: the open thread, then the open ticket -->
+        <div class="support-col">
+          <div class="card" id="support-thread-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+              <div style="min-width:0;">
+                <div class="card-title" style="margin:0;" id="support-thread-title">Conversation</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:4px;" id="support-thread-sub">Pick a conversation, or start a new one.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="support-thread-status"></span>
+                <button type="button" class="btn-secondary" id="support-escalate-btn" onclick="supportEscalate()" disabled style="font-size:12.5px;padding:8px 14px;">Talk to a human</button>
+              </div>
+            </div>
+            <div id="support-messages" class="support-messages" aria-live="polite">
+              <div class="support-empty">No conversation selected.</div>
+            </div>
+            <div class="support-composer">
+              <input type="text" id="support-message-input" class="support-input" placeholder="Type your message…" maxlength="4000" autocomplete="off" onkeydown="if(event.key==='Enter')supportSendMessage()" />
+              <button type="button" class="btn-primary" id="support-send-btn" onclick="supportSendMessage()" style="padding:10px 20px;font-size:14px;">Send</button>
+            </div>
+          </div>
+
+          <div class="card" id="support-ticket-card" style="display:none;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;">
+              <div style="min-width:0;">
+                <div class="card-title" style="margin:0;" id="support-ticket-title">Ticket</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:4px;" id="support-ticket-sub"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;" id="support-ticket-badges"></div>
+            </div>
+            <div id="support-ticket-events" class="support-timeline"></div>
+            <div class="support-composer">
+              <textarea id="support-ticket-reply" class="support-input" rows="2" maxlength="4000" placeholder="Add a reply to this ticket…" style="resize:vertical;min-height:44px;"></textarea>
+              <button type="button" class="btn-primary" id="support-ticket-reply-btn" onclick="supportReplyTicket()" style="padding:10px 20px;font-size:14px;">Reply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New-ticket dialog — the portal had no .modal-* system; this IS that
+           system (ported above), used here as its first consumer. -->
+      <div class="modal-overlay" id="support-ticket-modal" style="display:none;" onclick="if(event.target===this)supportCloseNewTicket()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="support-ticket-modal-title">
+          <div class="modal-header">
+            <h2 id="support-ticket-modal-title">Open a support ticket</h2>
+            <button type="button" class="modal-close" onclick="supportCloseNewTicket()" aria-label="Close">×</button>
+          </div>
+          <div class="modal-body">
+            <div>
+              <label class="support-label" for="support-ticket-subject">Subject</label>
+              <input type="text" class="support-field" id="support-ticket-subject" maxlength="200" placeholder="What's going wrong?" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div>
+                <label class="support-label" for="support-ticket-category">Category</label>
+                <select class="support-field" id="support-ticket-category"></select>
+              </div>
+              <div>
+                <label class="support-label" for="support-ticket-priority">Priority</label>
+                <select class="support-field" id="support-ticket-priority">
+                  <option value="P1">P1 — critical</option>
+                  <option value="P2">P2 — high</option>
+                  <option value="P3" selected>P3 — normal</option>
+                  <option value="P4">P4 — low</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="support-label" for="support-ticket-body">Details</label>
+              <textarea class="support-field" id="support-ticket-body" rows="4" maxlength="4000" placeholder="What happened, and what have you tried?" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="supportCloseNewTicket()">Cancel</button>
+            <button type="button" class="btn-primary" id="support-ticket-create-btn" onclick="supportCreateTicket()" style="padding:10px 20px;">Create ticket</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
     </div><!-- /shell -->
   </div><!-- /shell-wrap -->
@@ -3618,6 +3790,12 @@ window.fetch = function(...args) {
       portalToken = null;
       sessionStorage.removeItem('atlas_token');
       sessionStorage.removeItem('atlas_client');
+      // Support Center (SUP-12): the same interceptor covers every
+      // /portal/support/* call, so an expired token bounces to login instead of
+      // leaving a support pane that silently fails. Tear its poll + caches down
+      // here as well, so nothing keeps querying with a dead token behind the
+      // login screen.
+      try { supportOnSessionExpired(); } catch (e) {}
       const app = document.getElementById('app');
       const login = document.getElementById('login-screen');
       if (app) app.style.display = 'none';
@@ -5131,6 +5309,7 @@ function showPage(name) {
     integrations: { title: 'Integrations', sub: 'Connect your calendars and lead destinations' },
     account: { title: 'Account', sub: 'Profile, security, notifications and connected integrations' },
     docs: { title: 'Docs', sub: 'Guides for getting the most out of your agent' },
+    support: { title: 'Support Center', sub: 'Chat with the support assistant and track your tickets' },
     forms: { title: 'Forms', sub: 'Embeddable contact forms for your website' },
   };
   const meta = pageMeta[name] || { title: '', sub: '' };
@@ -5159,6 +5338,7 @@ function showPage(name) {
   if (name === 'analytics') { loadLeadAnalytics(); loadActivity(); resetContactsModule(); }
   if (name === 'account') loadAccount();
   if (name === 'docs') loadDocs();
+  if (name === 'support') loadSupport(); else supportStopPoll();
   if (name === 'forms') loadForms();
   // Close sidebar on mobile after navigation
   const sidebar = document.querySelector('.sidebar');
@@ -15577,6 +15757,646 @@ async function convResumeAI() {
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ── SUPPORT CENTER (SUP-12) ──────────────────────────────────────────────────
+// Client-facing support: chat with the support assistant, escalate to a human,
+// then track and reply to the ticket.
+//
+// Backend contract — atlas-ai src/handlers/supportRouter.js (SUP-11), already
+// merged on atlas-ai develop before this page was built, so nothing below is a
+// stub of a route that does not exist:
+//   GET  /conversations              -> {conversations, next_cursor}
+//   POST /conversations              -> {conversation_id, conversation}
+//   GET  /conversations/:id          -> {conversation, messages, next_cursor}
+//   POST /conversations/:id/messages -> {user_message, assistant_message,
+//                                        escalated, ticket_id, tier, model}
+//   POST /conversations/:id/escalate -> {escalated, created, reason, ticket_id,
+//                                        ticket, trigger}
+//   GET  /tickets                    -> {tickets, next_cursor}
+//   POST /tickets                    -> {ticket}
+//   GET  /tickets/:id                -> {ticket, events, next_cursor}
+//   POST /tickets/:id/replies        -> {event}
+//
+// THREE RULES THIS BLOCK EXISTS TO HOLD — do not relax them:
+//   1. Every server-supplied string is written with textContent. There is no
+//      innerHTML anywhere below. The assistant's reply is model output, and a
+//      support bot must not be the portal's first HTML sink. Message bodies are
+//      plain text with white-space:pre-wrap (SUPPORT-DESK-SCOPE §17.2), so a
+//      reply containing markup is displayed literally, never parsed.
+//   2. Identity is the portal session token in the X-Portal-Token header and
+//      nothing else. This page never stores, reads or sends an API key, and
+//      never sends a client id — the server derives the tenant from the token.
+//   3. Refresh is pull-only (v1): a 30s poll while the page is visible, plus a
+//      refresh on window focus. No websockets, no SSE.
+
+const SUPPORT_POLL_MS = 30000;
+const SUPPORT_LIST_LIMIT = 10;
+
+// Ticket lifecycle (ticketStateMachine.js §12.2) and priority set (§12.3).
+const SUPPORT_TICKET_STATUS = {
+  open: { label: 'Open', cls: 'badge-open' },
+  in_progress: { label: 'In progress', cls: 'badge-progress' },
+  waiting_on_customer: { label: 'Waiting on you', cls: 'badge-waiting' },
+  resolved: { label: 'Resolved', cls: 'badge-resolved' },
+  closed: { label: 'Closed', cls: 'badge-closed' },
+};
+const SUPPORT_CONVERSATION_STATUS = {
+  open: { label: 'Open', cls: 'badge-open' },
+  escalated: { label: 'Escalated', cls: 'badge-escalated' },
+  closed: { label: 'Closed', cls: 'badge-closed' },
+};
+const SUPPORT_PRIORITY_CLASS = { P1: 'badge-p1', P2: 'badge-p2', P3: 'badge-p3', P4: 'badge-p4' };
+// Closed set from §12.3 — the form offers exactly what POST /tickets accepts.
+const SUPPORT_CATEGORIES = [
+  ['phone_number', 'Phone number'],
+  ['voice_agent', 'Voice agent'],
+  ['booking_calendar', 'Bookings & calendar'],
+  ['integrations', 'Integrations'],
+  ['billing', 'Billing'],
+  ['account_access', 'Account access'],
+  ['data_leads', 'Data & leads'],
+  ['other', 'Something else'],
+];
+
+const supportState = {
+  conversations: [],
+  convCursor: null,
+  activeConversationId: null,
+  messages: [],
+  tickets: [],
+  ticketCursor: null,
+  activeTicketId: null,
+  pollTimer: null,
+  lastRefresh: 0,
+  sending: false,
+};
+
+// ── rendering helpers (the ONLY way server strings reach the DOM) ────────────
+
+function supportEl(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text !== undefined && text !== null) el.textContent = String(text);
+  return el;
+}
+
+function supportReplace(node, children) {
+  if (!node) return;
+  while (node.firstChild) node.removeChild(node.firstChild);
+  for (let i = 0; i < children.length; i++) node.appendChild(children[i]);
+}
+
+function supportBadge(className, text) {
+  return supportEl('span', 'badge ' + (className || ''), text);
+}
+
+function supportShortDate(iso) {
+  const ms = Date.parse(iso);
+  if (!ms) return '';
+  try {
+    return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch (e) { return ''; }
+}
+
+function supportRelTime(iso) {
+  const ms = Date.parse(iso);
+  if (!ms) return '';
+  const mins = Math.round((Date.now() - ms) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.round(hrs / 24);
+  if (days < 7) return days + 'd ago';
+  return supportShortDate(iso);
+}
+
+// ── transport ───────────────────────────────────────────────────────────────
+
+async function supportApi(path, opts) {
+  const options = Object.assign({}, opts || {});
+  options.headers = Object.assign({ 'X-Portal-Token': portalToken }, options.headers || {});
+  const res = await fetch(API + '/portal/support' + path, options);
+  if (res.status === 401) {
+    // The global fetch interceptor has already torn the session down and shown
+    // the login screen (supportOnSessionExpired). Render nothing further.
+    console.warn('[Sonello] Support: session expired (401)');
+    return null;
+  }
+  if (!res.ok) {
+    let message = 'Support request failed (HTTP ' + res.status + ')';
+    try {
+      const body = await res.json();
+      if (body && typeof body.error === 'string') message = body.error;
+    } catch (e) {}
+    throw new Error(message);
+  }
+  try { return await res.json(); } catch (e) { return {}; }
+}
+
+// ── conversations ───────────────────────────────────────────────────────────
+
+function supportRenderConversations() {
+  const list = document.getElementById('support-conv-list');
+  if (!list) return;
+  if (!supportState.conversations.length) {
+    supportReplace(list, [supportEl('div', 'support-empty', 'No conversations yet. Start one to ask the support assistant.')]);
+    return;
+  }
+  const rows = supportState.conversations.map(function (c) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'support-list-item' + (c.conversation_id === supportState.activeConversationId ? ' active' : '');
+    item.id = 'support-conv-' + c.conversation_id;
+    item.setAttribute('data-conversation-id', c.conversation_id);
+    item.onclick = function () { supportOpenConversation(c.conversation_id); };
+    item.appendChild(supportEl('div', 'support-item-title', 'Support chat · ' + supportShortDate(c.started_at)));
+    const meta = supportEl('div', 'support-item-meta');
+    const status = SUPPORT_CONVERSATION_STATUS[c.status] || { label: c.status || 'Open', cls: 'badge-open' };
+    meta.appendChild(supportBadge(status.cls, status.label));
+    meta.appendChild(supportEl('span', null, supportRelTime(c.last_message_at || c.started_at)));
+    const count = Number(c.message_count || 0);
+    meta.appendChild(supportEl('span', null, count + (count === 1 ? ' message' : ' messages')));
+    item.appendChild(meta);
+    return item;
+  });
+  supportReplace(list, rows);
+}
+
+async function supportLoadConversations(opts) {
+  const options = opts || {};
+  if (!portalToken) return;
+  if (options.initial) {
+    const list = document.getElementById('support-conv-list');
+    if (list) supportReplace(list, [supportEl('div', 'support-empty', 'Loading conversations…')]);
+  }
+  try {
+    const data = await supportApi('/conversations?limit=' + SUPPORT_LIST_LIMIT);
+    if (!data) return;
+    supportState.conversations = Array.isArray(data.conversations) ? data.conversations : [];
+    supportState.convCursor = data.next_cursor || null;
+    supportRenderConversations();
+    const ids = supportState.conversations.map(function (c) { return c.conversation_id; });
+    if (supportState.activeConversationId && ids.indexOf(supportState.activeConversationId) !== -1) {
+      return; // keep the open thread (and its scroll position) on a poll
+    }
+    if (ids.length) {
+      await supportOpenConversation(ids[0]);
+    } else {
+      supportState.activeConversationId = null;
+      supportState.messages = [];
+      supportRenderThread(null, []);
+    }
+  } catch (err) {
+    if (!options.silent) showToast('Could not load your conversations: ' + err.message, 'error');
+    const list = document.getElementById('support-conv-list');
+    if (list && !supportState.conversations.length) {
+      supportReplace(list, [supportEl('div', 'support-empty', 'Could not load conversations. Pull the page again in a moment.')]);
+    }
+  }
+}
+
+async function supportOpenConversation(conversationId, opts) {
+  if (!conversationId) return;
+  const options = opts || {};
+  supportState.activeConversationId = conversationId;
+  supportRenderConversations();
+  try {
+    const data = await supportApi('/conversations/' + encodeURIComponent(conversationId));
+    if (!data) return;
+    supportState.messages = Array.isArray(data.messages) ? data.messages : [];
+    supportRenderThread(data.conversation || null, supportState.messages);
+  } catch (err) {
+    if (!options.silent) showToast('Could not open the conversation: ' + err.message, 'error');
+  }
+}
+
+function supportRenderThread(conversation, messages) {
+  const title = document.getElementById('support-thread-title');
+  const sub = document.getElementById('support-thread-sub');
+  const statusEl = document.getElementById('support-thread-status');
+  const escalate = document.getElementById('support-escalate-btn');
+  const box = document.getElementById('support-messages');
+  if (!box) return;
+
+  if (!conversation) {
+    if (title) title.textContent = 'Conversation';
+    if (sub) sub.textContent = 'Pick a conversation, or start a new one.';
+    if (statusEl) supportReplace(statusEl, []);
+    if (escalate) escalate.disabled = true;
+    supportReplace(box, [supportEl('div', 'support-empty', 'No conversation selected.')]);
+    return;
+  }
+
+  if (title) title.textContent = 'Support chat · ' + supportShortDate(conversation.started_at);
+  if (sub) {
+    sub.textContent = conversation.ticket_id
+      ? 'Linked to ticket ' + String(conversation.ticket_id).slice(0, 8) + ' — replies are on the ticket below.'
+      : 'Answers come from the support assistant. Escalate when you need a human.';
+  }
+  if (statusEl) {
+    const status = SUPPORT_CONVERSATION_STATUS[conversation.status] || { label: conversation.status || 'Open', cls: 'badge-open' };
+    supportReplace(statusEl, [supportBadge(status.cls, status.label)]);
+  }
+  if (escalate) {
+    escalate.disabled = conversation.status === 'closed' || !!conversation.ticket_id;
+    escalate.textContent = conversation.ticket_id ? 'Ticket opened' : 'Talk to a human';
+  }
+
+  const rows = messages.map(supportMessageRow);
+  if (!rows.length) rows.push(supportEl('div', 'support-empty', 'Say hello — describe what is going wrong and the assistant will take it from there.'));
+  supportReplace(box, rows);
+  box.scrollTop = box.scrollHeight;
+}
+
+function supportMessageRow(m) {
+  const role = m && m.role ? m.role : 'assistant';
+  const bubble = supportEl('div', 'conv-bubble ' + (role === 'user' ? 'user' : 'ai'));
+  bubble.setAttribute('data-role', role);
+  bubble.setAttribute('data-message-id', (m && m.message_id) || '');
+  // textContent via supportEl: the reply is model output, so it is text here,
+  // and CSS keeps its newlines visible (white-space: pre-wrap).
+  bubble.appendChild(supportEl('div', 'support-msg-text', (m && typeof m.content === 'string') ? m.content : ''));
+  return bubble;
+}
+
+function supportAppendMessage(m) {
+  const box = document.getElementById('support-messages');
+  if (!box || !m) return;
+  const empty = box.querySelector('.support-empty');
+  if (empty) box.removeChild(empty);
+  box.appendChild(supportMessageRow(m));
+  box.scrollTop = box.scrollHeight;
+}
+
+async function supportNewConversation() {
+  const btn = document.getElementById('support-new-conv');
+  if (btn) btn.disabled = true;
+  try {
+    const data = await supportApi('/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel: 'portal' }),
+    });
+    if (!data) return;
+    if (data.conversation_id) {
+      supportState.activeConversationId = data.conversation_id;
+      supportState.messages = [];
+      supportRenderThread(data.conversation || {
+        conversation_id: data.conversation_id,
+        status: 'open',
+        started_at: new Date().toISOString(),
+      }, []);
+      await supportLoadConversations({ silent: true });
+      const input = document.getElementById('support-message-input');
+      if (input) input.focus();
+    }
+  } catch (err) {
+    showToast('Could not start a conversation: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function supportSendMessage() {
+  const input = document.getElementById('support-message-input');
+  const btn = document.getElementById('support-send-btn');
+  const conversationId = supportState.activeConversationId;
+  const content = (input && input.value ? input.value : '').trim();
+  if (!conversationId) { showToast('Start or pick a conversation first', 'error'); return; }
+  if (!content || supportState.sending) return;
+
+  supportState.sending = true;
+  if (btn) btn.disabled = true;
+  if (input) input.value = '';
+  try {
+    const data = await supportApi('/conversations/' + encodeURIComponent(conversationId) + '/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content }),
+    });
+    if (!data) return;
+    // Render exactly what the API stored — no optimistic local echo, so the
+    // thread on screen is the thread the server has.
+    if (data.user_message) supportAppendMessage(data.user_message);
+    if (data.assistant_message) supportAppendMessage(data.assistant_message);
+    if (data.escalated && data.ticket_id) {
+      showToast('A support ticket was opened for this chat');
+      await supportLoadTickets(false, { silent: true });
+      await supportOpenTicket(data.ticket_id);
+      await supportOpenConversation(conversationId, { silent: true });
+    }
+  } catch (err) {
+    if (input) input.value = content;
+    showToast('Could not send the message: ' + err.message, 'error');
+  } finally {
+    supportState.sending = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function supportEscalate() {
+  const conversationId = supportState.activeConversationId;
+  const btn = document.getElementById('support-escalate-btn');
+  if (!conversationId) return;
+  if (btn) btn.disabled = true;
+  try {
+    const data = await supportApi('/conversations/' + encodeURIComponent(conversationId) + '/escalate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!data) return;
+    if (data.ticket_id) {
+      showToast(data.created === false ? 'This chat is already linked to a ticket' : 'A support ticket was opened');
+      await supportLoadTickets(false, { silent: true });
+      await supportOpenTicket(data.ticket_id);
+      await supportOpenConversation(conversationId, { silent: true });
+    }
+  } catch (err) {
+    if (btn) btn.disabled = false;
+    showToast('Could not open a ticket: ' + err.message, 'error');
+  }
+}
+
+// ── tickets ─────────────────────────────────────────────────────────────────
+
+function supportRenderTickets() {
+  const list = document.getElementById('support-ticket-list');
+  const pager = document.getElementById('support-ticket-pager');
+  const count = document.getElementById('support-ticket-count');
+  const info = document.getElementById('support-ticket-pageinfo');
+  if (!list) return;
+
+  if (!supportState.tickets.length) {
+    supportReplace(list, [supportEl('div', 'support-empty', 'No tickets yet. Ask for a human in a conversation, or open a ticket directly.')]);
+  } else {
+    const rows = supportState.tickets.map(function (t) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'support-list-item' + (t.ticket_id === supportState.activeTicketId ? ' active' : '');
+      item.id = 'support-ticket-' + t.ticket_id;
+      item.setAttribute('data-ticket-id', t.ticket_id);
+      item.onclick = function () { supportOpenTicket(t.ticket_id); };
+      item.appendChild(supportEl('div', 'support-item-title', t.subject || 'Support ticket'));
+      const meta = supportEl('div', 'support-item-meta');
+      const status = SUPPORT_TICKET_STATUS[t.status] || { label: t.status || 'Open', cls: 'badge-open' };
+      meta.appendChild(supportBadge(status.cls, status.label));
+      meta.appendChild(supportBadge(SUPPORT_PRIORITY_CLASS[t.priority] || 'badge-p4', t.priority || 'P4'));
+      meta.appendChild(supportEl('span', null, supportRelTime(t.created_at)));
+      item.appendChild(meta);
+      return item;
+    });
+    supportReplace(list, rows);
+  }
+
+  if (count) {
+    const n = supportState.tickets.length;
+    count.textContent = n + (supportState.ticketCursor ? '+' : '') + (n === 1 ? ' ticket' : ' tickets');
+  }
+  if (pager) pager.style.display = supportState.ticketCursor ? 'flex' : 'none';
+  if (info) info.textContent = supportState.ticketCursor ? 'Showing the ' + supportState.tickets.length + ' newest' : '';
+}
+
+async function supportLoadTickets(more, opts) {
+  const options = opts || {};
+  if (!portalToken) return;
+  const cursor = more ? supportState.ticketCursor : null;
+  if (more && !cursor) return;
+  let path = '/tickets?limit=' + SUPPORT_LIST_LIMIT;
+  if (cursor) path += '&cursor=' + encodeURIComponent(cursor);
+  try {
+    const data = await supportApi(path);
+    if (!data) return;
+    const rows = Array.isArray(data.tickets) ? data.tickets : [];
+    if (more) {
+      const seen = {};
+      supportState.tickets.forEach(function (t) { seen[t.ticket_id] = true; });
+      rows.forEach(function (t) { if (!seen[t.ticket_id]) { seen[t.ticket_id] = true; supportState.tickets.push(t); } });
+    } else {
+      supportState.tickets = rows;
+    }
+    supportState.ticketCursor = data.next_cursor || null;
+    supportRenderTickets();
+  } catch (err) {
+    if (!options.silent) showToast('Could not load your tickets: ' + err.message, 'error');
+    if (!supportState.tickets.length) {
+      const list = document.getElementById('support-ticket-list');
+      if (list) supportReplace(list, [supportEl('div', 'support-empty', 'Could not load tickets. Pull the page again in a moment.')]);
+    }
+  }
+}
+
+async function supportOpenTicket(ticketId) {
+  if (!ticketId) return;
+  supportState.activeTicketId = ticketId;
+  supportRenderTickets();
+  try {
+    const data = await supportApi('/tickets/' + encodeURIComponent(ticketId));
+    if (!data || !data.ticket) return;
+    supportRenderTicketDetail(data.ticket, Array.isArray(data.events) ? data.events : []);
+  } catch (err) {
+    showToast('Could not open the ticket: ' + err.message, 'error');
+  }
+}
+
+function supportRenderTicketDetail(ticket, events) {
+  const card = document.getElementById('support-ticket-card');
+  const title = document.getElementById('support-ticket-title');
+  const sub = document.getElementById('support-ticket-sub');
+  const badges = document.getElementById('support-ticket-badges');
+  const timeline = document.getElementById('support-ticket-events');
+  if (!card) return;
+
+  card.style.display = 'block';
+  if (title) title.textContent = ticket.subject || 'Support ticket';
+  if (sub) {
+    const ref = ticket.ticket_number || String(ticket.ticket_id || '').slice(0, 8);
+    sub.textContent = 'Ticket ' + ref + ' · opened ' + supportRelTime(ticket.created_at);
+  }
+  if (badges) {
+    const status = SUPPORT_TICKET_STATUS[ticket.status] || { label: ticket.status || 'Open', cls: 'badge-open' };
+    supportReplace(badges, [
+      supportBadge(status.cls, status.label),
+      supportBadge(SUPPORT_PRIORITY_CLASS[ticket.priority] || 'badge-p4', ticket.priority || 'P4'),
+    ]);
+  }
+  if (timeline) {
+    // Customer-visible events only: internal notes are not this surface's data.
+    const visible = events.filter(function (ev) { return ev && ev.visibility === 'customer'; });
+    if (!visible.length) {
+      supportReplace(timeline, [supportEl('div', 'support-empty', 'No updates on this ticket yet.')]);
+    } else {
+      supportReplace(timeline, visible.map(function (ev) {
+        const row = supportEl('div', 'support-timeline-item');
+        const meta = supportEl('div', 'support-timeline-meta');
+        meta.appendChild(supportEl('span', null, ev.actor === 'customer' ? 'You' : 'Support team'));
+        meta.appendChild(supportEl('span', null, supportRelTime(ev.created_at)));
+        row.appendChild(meta);
+        row.appendChild(supportEl('div', 'support-msg-text', typeof ev.body === 'string' ? ev.body : ''));
+        return row;
+      }));
+    }
+    timeline.scrollTop = timeline.scrollHeight;
+  }
+}
+
+async function supportReplyTicket() {
+  const box = document.getElementById('support-ticket-reply');
+  const btn = document.getElementById('support-ticket-reply-btn');
+  const ticketId = supportState.activeTicketId;
+  const content = (box && box.value ? box.value : '').trim();
+  if (!ticketId) return;
+  if (!content) { showToast('Write a reply first', 'error'); return; }
+  if (btn) btn.disabled = true;
+  try {
+    const data = await supportApi('/tickets/' + encodeURIComponent(ticketId) + '/replies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content }),
+    });
+    if (!data) return;
+    if (box) box.value = '';
+    showToast('Reply sent');
+    await supportOpenTicket(ticketId);
+    await supportLoadTickets(false, { silent: true });
+  } catch (err) {
+    showToast('Could not send the reply: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── new-ticket dialog ───────────────────────────────────────────────────────
+
+function supportOpenNewTicket() {
+  const modal = document.getElementById('support-ticket-modal');
+  const select = document.getElementById('support-ticket-category');
+  if (select && !select.options.length) {
+    SUPPORT_CATEGORIES.forEach(function (pair) {
+      const opt = document.createElement('option');
+      opt.value = pair[0];
+      opt.textContent = pair[1];
+      select.appendChild(opt);
+    });
+  }
+  if (modal) modal.style.display = 'flex';
+  const subject = document.getElementById('support-ticket-subject');
+  if (subject) subject.focus();
+}
+
+function supportCloseNewTicket() {
+  const modal = document.getElementById('support-ticket-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function supportCreateTicket() {
+  const subjectEl = document.getElementById('support-ticket-subject');
+  const categoryEl = document.getElementById('support-ticket-category');
+  const priorityEl = document.getElementById('support-ticket-priority');
+  const bodyEl = document.getElementById('support-ticket-body');
+  const btn = document.getElementById('support-ticket-create-btn');
+  const subject = (subjectEl && subjectEl.value ? subjectEl.value : '').trim();
+  if (!subject) { showToast('Give the ticket a subject first', 'error'); return; }
+
+  const payload = {
+    subject: subject,
+    category: (categoryEl && categoryEl.value) || 'other',
+    priority: (priorityEl && priorityEl.value) || 'P3',
+  };
+  const body = (bodyEl && bodyEl.value ? bodyEl.value : '').trim();
+  if (body) payload.body = body;
+
+  if (btn) btn.disabled = true;
+  try {
+    const data = await supportApi('/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!data) return;
+    supportCloseNewTicket();
+    if (subjectEl) subjectEl.value = '';
+    if (bodyEl) bodyEl.value = '';
+    showToast('Ticket created');
+    await supportLoadTickets(false, { silent: true });
+    const created = data.ticket || (data.ticket_id ? { ticket_id: data.ticket_id } : null);
+    if (created && created.ticket_id) await supportOpenTicket(created.ticket_id);
+  } catch (err) {
+    showToast('Could not create the ticket: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── refresh: poll while visible + refresh on focus (no websockets, no SSE) ──
+
+function supportPageActive() {
+  const page = document.getElementById('page-support');
+  return !!page && page.classList.contains('active');
+}
+
+function supportStopPoll() {
+  if (supportState.pollTimer) {
+    clearInterval(supportState.pollTimer);
+    supportState.pollTimer = null;
+  }
+}
+
+function supportStartPoll() {
+  supportStopPoll();
+  supportState.pollTimer = setInterval(supportPollTick, SUPPORT_POLL_MS);
+}
+
+async function supportRefresh(force) {
+  if (!portalToken || !supportPageActive()) return;
+  const now = Date.now();
+  if (!force && now - supportState.lastRefresh < 2000) return; // focus+poll debounce
+  supportState.lastRefresh = now;
+  const before = supportState.conversations.filter(function (c) {
+    return c.conversation_id === supportState.activeConversationId;
+  })[0];
+  const beforeCount = before ? Number(before.message_count || 0) : 0;
+  await supportLoadConversations({ silent: true });
+  await supportLoadTickets(false, { silent: true });
+  const after = supportState.conversations.filter(function (c) {
+    return c.conversation_id === supportState.activeConversationId;
+  })[0];
+  // A reply that landed while the tab was in the background shows up here.
+  if (after && Number(after.message_count || 0) !== beforeCount) {
+    await supportOpenConversation(supportState.activeConversationId, { silent: true });
+  }
+}
+
+function supportPollTick() {
+  if (!portalToken || document.hidden) return;
+  supportRefresh(false);
+}
+
+window.addEventListener('focus', function () {
+  if (!portalToken || !supportPageActive()) return;
+  supportRefresh(true);
+});
+
+// Called by the global 401 interceptor: drop everything tied to the dead token.
+function supportOnSessionExpired() {
+  supportStopPoll();
+  supportState.conversations = [];
+  supportState.tickets = [];
+  supportState.messages = [];
+  supportState.activeConversationId = null;
+  supportState.activeTicketId = null;
+  supportState.sending = false;
+  const card = document.getElementById('support-ticket-card');
+  if (card) card.style.display = 'none';
+}
+
+function loadSupport() {
+  supportStartPoll();
+  supportRenderTickets();
+  supportLoadConversations({ initial: true });
+  supportLoadTickets(false, { initial: true });
 }
 
 </script>
